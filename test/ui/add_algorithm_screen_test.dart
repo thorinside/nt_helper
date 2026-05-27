@@ -28,6 +28,8 @@ void main() {
   late AlgorithmInfo mockUnloadedPlugin;
   late AlgorithmInfo mockLoadedPlugin;
   late AlgorithmInfo mockZeroDefaultAlgorithm;
+  late AlgorithmInfo mockBooleanAlgorithm;
+  late AlgorithmInfo mockTypeThreeAlgorithm;
   late AppDatabase database;
 
   setUpAll(() async {
@@ -117,6 +119,32 @@ void main() {
       ],
       isLoaded: true,
     );
+
+    mockBooleanAlgorithm = AlgorithmInfo(
+      algorithmIndex: 4,
+      guid: 'delt',
+      name: 'Delay (Tape)',
+      specifications: [
+        Specification(name: 'Stereo', min: 0, max: 1, defaultValue: 0, type: 2),
+      ],
+      isLoaded: true,
+    );
+
+    mockTypeThreeAlgorithm = AlgorithmInfo(
+      algorithmIndex: 5,
+      guid: 'tpfz',
+      name: 'Typed Numeric',
+      specifications: [
+        Specification(
+          name: 'History',
+          min: 1,
+          max: 20,
+          defaultValue: 4,
+          type: 3,
+        ),
+      ],
+      isLoaded: true,
+    );
   });
 
   Widget createTestWidget() {
@@ -125,6 +153,73 @@ void main() {
         value: mockCubit,
         child: const AddAlgorithmScreen(),
       ),
+    );
+  }
+
+  Widget createRouteTestWidget(ValueChanged<Object?> onResult) {
+    return MaterialApp(
+      home: BlocProvider<DistingCubit>.value(
+        value: mockCubit,
+        child: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider<DistingCubit>.value(
+                        value: mockCubit,
+                        child: const AddAlgorithmScreen(),
+                      ),
+                    ),
+                  );
+                  onResult(result);
+                },
+                child: const Text('Open Add Algorithm'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  DistingState synchronizedWith(
+    List<AlgorithmInfo> algorithms, {
+    int slotCount = 0,
+    bool offline = false,
+  }) {
+    return DistingState.synchronized(
+      disting: mockDistingMidi,
+      distingVersion: '',
+      firmwareVersion: mockFirmwareVersion,
+      presetName: 'Test Preset',
+      algorithms: algorithms,
+      slots: List.generate(
+        slotCount,
+        (i) => Slot(
+          algorithm: Algorithm(
+            algorithmIndex: i,
+            guid: 'placeholder',
+            name: 'Slot $i',
+          ),
+          routing: RoutingInfo.filler(),
+          pages: ParameterPages(algorithmIndex: i, pages: const []),
+          parameters: const [],
+          values: const [],
+          enums: const [],
+          mappings: const [],
+          valueStrings: const [],
+        ),
+      ),
+      unitStrings: const [],
+      inputDevice: null,
+      outputDevice: null,
+      loading: false,
+      offline: offline,
+      screenshot: null,
+      demo: false,
+      videoStream: null,
     );
   }
 
@@ -261,7 +356,9 @@ void main() {
       expect(find.text('Load Plugin'), findsNothing);
     });
 
-    testWidgets('uses in-range zero specification default', (tester) async {
+    testWidgets('uses in-range zero specification default in dialog', (
+      tester,
+    ) async {
       when(() => mockCubit.state).thenReturn(
         DistingState.synchronized(
           disting: mockDistingMidi,
@@ -288,10 +385,276 @@ void main() {
       await tester.tap(find.text('Sample Player (Clocked)'));
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const ValueKey('samc_spec_0')), findsNothing);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
       final specField = tester.widget<TextFormField>(
-        find.byType(TextFormField),
+        find.byKey(const ValueKey('samc_spec_0')),
       );
-      expect(specField.initialValue, '0');
+      expect(specField.controller?.text, '0');
+    });
+
+    testWidgets('shows specification dialog after Add Algorithm is pressed', (
+      tester,
+    ) async {
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockLoadedPlugin]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Test Plugin'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('TestPlugin_spec_0')), findsNothing);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Configure Test Plugin'), findsOneWidget);
+      expect(find.text('2 specifications required'), findsOneWidget);
+      expect(find.byKey(const ValueKey('TestPlugin_spec_0')), findsOneWidget);
+      expect(find.byKey(const ValueKey('TestPlugin_spec_1')), findsOneWidget);
+    });
+
+    testWidgets('Cancel closes specification dialog without popping picker', (
+      tester,
+    ) async {
+      Object? routeResult = 'not-set';
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockLoadedPlugin]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createRouteTestWidget((result) {
+          routeResult = result;
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Add Algorithm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Test Plugin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AddAlgorithmScreen), findsOneWidget);
+      expect(find.text('Test Plugin'), findsOneWidget);
+      expect(routeResult, 'not-set');
+    });
+
+    testWidgets('Add returns algorithm and specification values', (
+      tester,
+    ) async {
+      Object? routeResult;
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockLoadedPlugin]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createRouteTestWidget((result) {
+          routeResult = result;
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Add Algorithm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Test Plugin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const ValueKey('TestPlugin_spec_0')),
+        '7',
+      );
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      final result = routeResult as Map<String, dynamic>;
+      expect(result['algorithm'], mockLoadedPlugin);
+      expect(result['specValues'], [7, 0]);
+    });
+
+    testWidgets('boolean specification renders as switch and submits 1', (
+      tester,
+    ) async {
+      Object? routeResult;
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockBooleanAlgorithm]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createRouteTestWidget((result) {
+          routeResult = result;
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Add Algorithm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delay (Tape)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SwitchListTile), findsOneWidget);
+      expect(find.byType(TextFormField), findsNothing);
+
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      final result = routeResult as Map<String, dynamic>;
+      expect(result['specValues'], [1]);
+    });
+
+    testWidgets('type 3 specification remains numeric', (tester) async {
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockTypeThreeAlgorithm]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Typed Numeric'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SwitchListTile), findsNothing);
+      expect(find.byKey(const ValueKey('tpfz_spec_0')), findsOneWidget);
+    });
+
+    testWidgets('invalid numeric input blocks Add', (tester) async {
+      Object? routeResult = 'not-set';
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockLoadedPlugin]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createRouteTestWidget((result) {
+          routeResult = result;
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Add Algorithm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Test Plugin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const ValueKey('TestPlugin_spec_0')),
+        '99',
+      );
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Spec 1 must be between 0 and 10'), findsOneWidget);
+      expect(find.text('Configure Test Plugin'), findsOneWidget);
+      expect(routeResult, 'not-set');
+    });
+
+    testWidgets('offline mode shows disabled defaults and submits them', (
+      tester,
+    ) async {
+      Object? routeResult;
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockLoadedPlugin], offline: true));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createRouteTestWidget((result) {
+          routeResult = result;
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Add Algorithm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Test Plugin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Defaults are used in offline mode.'), findsOneWidget);
+      final specField = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const ValueKey('TestPlugin_spec_0')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(specField.readOnly, isTrue);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      final result = routeResult as Map<String, dynamic>;
+      expect(result['specValues'], [5, 0]);
+    });
+
+    testWidgets('specification dialog exposes accessible semantics', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockBooleanAlgorithm]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Delay (Tape)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+
+      final titleNode = tester.getSemantics(
+        find.text('Configure Delay (Tape)'),
+      );
+      expect(titleNode.flagsCollection.isHeader, isTrue);
+
+      final switchTileNode = tester.getSemantics(find.byType(SwitchListTile));
+      expect(switchTileNode.label, contains('Stereo'));
+      final hasSwitchStateSemantics = tester
+          .widgetList<Semantics>(find.byType(Semantics))
+          .any(
+            (widget) =>
+                widget.properties.hint == 'Off sends 0, on sends 1' &&
+                widget.properties.toggled == false,
+          );
+      expect(hasSwitchStateSemantics, isTrue);
+
+      expect(
+        tester.getSemantics(find.widgetWithText(TextButton, 'Cancel')).label,
+        'Cancel',
+      );
+      expect(
+        tester.getSemantics(find.widgetWithText(ElevatedButton, 'Add')).label,
+        'Add',
+      );
+      semantics.dispose();
     });
 
     group('Plugin Loading Workflow', () {
@@ -662,6 +1025,43 @@ void main() {
 
       // Picker is still open (AppBar title still visible)
       expect(find.text('Add Algorithm'), findsOneWidget);
+    });
+
+    testWidgets('Add Another with specs waits for dialog Add', (tester) async {
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockLoadedPlugin]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockCubit.onAlgorithmSelected(any(), any()),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Test Plugin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Another'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockCubit.onAlgorithmSelected(any(), any()));
+      expect(find.text('Configure Test Plugin'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('TestPlugin_spec_0')),
+        '6',
+      );
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockCubit.onAlgorithmSelected(
+          any(that: predicate<AlgorithmInfo>((a) => a.guid == 'TestPlugin')),
+          any(that: equals([6, 0])),
+        ),
+      ).called(1);
+      expect(find.text('Test Plugin added'), findsOneWidget);
+      expect(find.text('Select Algorithm'), findsOneWidget);
     });
 
     testWidgets('Add Another shows generic error when add verification fails', (

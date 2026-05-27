@@ -14,6 +14,7 @@ import 'package:nt_helper/mcp/mcp_constants.dart';
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
+import 'package:nt_helper/ui/widgets/algorithm_specification_dialog.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 
 /// View modes for displaying algorithms in the Add Algorithm screen
@@ -702,17 +703,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // --- Specification Inputs (Auto-sized to content) ---
-                        if (_currentAlgoInfo != null &&
-                            _currentAlgoInfo!.numSpecifications > 0) ...[
-                          const Divider(),
-                          const SizedBox(height: 12),
-                          _buildSpecificationInputs(
-                            _currentAlgoInfo!,
-                            isOffline,
-                          ),
-                        ],
-
                         // --- Action Buttons (fixed at the bottom) ---
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
@@ -1316,103 +1306,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     );
   }
 
-  Widget _buildSpecificationInputs(AlgorithmInfo algorithm, bool isOffline) {
-    if (specValues == null ||
-        specValues!.length != algorithm.numSpecifications ||
-        _currentAlgoInfo?.guid != algorithm.guid) {
-      specValues = algorithm.specifications
-          .map((s) => s.safeDefaultValue)
-          .toList();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {});
-        }
-      });
-      return const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Text("Loading specifications..."),
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: Text(
-            'Specifications:',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-        ...List.generate(algorithm.numSpecifications, (index) {
-          final specInfo = algorithm.specifications[index];
-          if (index >= specValues!.length) {
-            return const SizedBox.shrink();
-          }
-
-          final textField = TextFormField(
-            key: ValueKey('${algorithm.guid}_spec_$index'),
-            initialValue: specValues![index].toString(),
-            readOnly: isOffline,
-            decoration: InputDecoration(
-              labelText: specInfo.name.isNotEmpty
-                  ? '${specInfo.name} (${specInfo.min}\u2013${specInfo.max})'
-                  : 'Specification ${index + 1} (${specInfo.min}\u2013${specInfo.max})',
-              helperText: isOffline ? 'Read only in offline mode' : null,
-              border: const OutlineInputBorder(),
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12.0,
-                vertical: 10.0,
-              ),
-            ),
-            keyboardType: TextInputType.number,
-            onChanged: isOffline
-                ? null
-                : (value) {
-                    int parsedValue =
-                        int.tryParse(value) ?? specInfo.defaultValue;
-                    parsedValue = parsedValue.clamp(specInfo.min, specInfo.max);
-                    if (index < specValues!.length &&
-                        specValues![index] != parsedValue) {
-                      setState(() {
-                        specValues![index] = parsedValue;
-                      });
-                    }
-                  },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter a value';
-              }
-              final int? parsed = int.tryParse(value);
-              if (parsed == null) {
-                return 'Please enter a number';
-              }
-              if (parsed < specInfo.min || parsed > specInfo.max) {
-                return 'Value must be between ${specInfo.min} and ${specInfo.max}';
-              }
-              return null;
-            },
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-          );
-
-          final blockedField = DigitShortcutBlocker(child: textField);
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: isOffline
-                ? Tooltip(
-                    message: 'Defaults are used in offline mode',
-                    child: blockedField,
-                  )
-                : blockedField,
-          );
-        }),
-      ],
-    );
-  }
-
   Widget _buildActionButton(bool isOffline) {
     if (_currentAlgoInfo == null) {
       return ElevatedButton(
@@ -1433,14 +1326,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
     final canAdd = specValues != null;
     final addButton = ElevatedButton(
-      onPressed: canAdd
-          ? () {
-              Navigator.pop(context, {
-                'algorithm': _currentAlgoInfo,
-                'specValues': specValues,
-              });
-            }
-          : null,
+      onPressed: canAdd ? () => _addAndClose(isOffline) : null,
       child: const Text('Add Algorithm'),
     );
 
@@ -1454,7 +1340,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: ElevatedButton(
-            onPressed: _addAndStayOpen,
+            onPressed: () => _addAndStayOpen(isOffline),
             child: const Text('Add Another'),
           ),
         ),
@@ -1468,10 +1354,55 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     return state.slots.length < MCPConstants.maxSlots;
   }
 
-  Future<void> _addAndStayOpen() async {
+  Future<List<int>?> _resolveSpecificationValues(
+    AlgorithmInfo algorithm,
+    bool isOffline,
+  ) async {
+    final currentSpecValues =
+        specValues ??
+        algorithm.specifications.map((s) => s.safeDefaultValue).toList();
+    if (algorithm.numSpecifications == 0) {
+      return List<int>.from(currentSpecValues);
+    }
+
+    final selectedValues = await AlgorithmSpecificationDialog.show(
+      context: context,
+      algorithm: algorithm,
+      initialValues: currentSpecValues,
+      readOnly: isOffline,
+    );
+
+    if (selectedValues != null && mounted) {
+      setState(() {
+        specValues = List<int>.from(selectedValues);
+      });
+    }
+
+    return selectedValues;
+  }
+
+  Future<void> _addAndClose(bool isOffline) async {
     final algorithm = _currentAlgoInfo;
-    final specs = specValues;
-    if (algorithm == null || specs == null) return;
+    if (algorithm == null) return;
+
+    final selectedValues = await _resolveSpecificationValues(
+      algorithm,
+      isOffline,
+    );
+    if (selectedValues == null || !mounted) return;
+
+    Navigator.pop(context, {
+      'algorithm': algorithm,
+      'specValues': selectedValues,
+    });
+  }
+
+  Future<void> _addAndStayOpen(bool isOffline) async {
+    final algorithm = _currentAlgoInfo;
+    if (algorithm == null) return;
+
+    final specs = await _resolveSpecificationValues(algorithm, isOffline);
+    if (specs == null || !mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
     final name = algorithm.name;
@@ -1504,6 +1435,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         content: Text('$name added'),
         duration: const Duration(seconds: 2),
       ),
+    );
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      '$name added',
+      TextDirection.ltr,
     );
     _clearSelection();
   }
