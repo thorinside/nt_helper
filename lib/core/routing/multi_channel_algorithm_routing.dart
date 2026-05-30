@@ -581,9 +581,14 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       for (final p in slot.parameters) p.name: p,
     };
 
-    // Build a map of parameter numbers to their send page (if any)
+    // Build maps of parameter numbers to their page and send page (if any).
+    final parameterToPageName = <int, String>{};
     final parameterToSendPage = <int, String>{};
     for (final page in slot.pages.pages) {
+      for (final paramNum in page.parameters) {
+        parameterToPageName[paramNum] = page.name;
+      }
+
       // Check if this is a send page (e.g., "Send 1", "Send 2")
       if (page.name.startsWith('Send ') &&
           RegExp(r'Send \d+').hasMatch(page.name)) {
@@ -592,6 +597,54 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
           parameterToSendPage[paramNum] = page.name;
         }
       }
+    }
+
+    final valueByParam = <int, int>{
+      for (final v in slot.values) v.parameterNumber: v.value,
+    };
+
+    final ioParameterEntries =
+        <({String name, int busValue, ParameterInfo? paramInfo})>[];
+    final consumedIoParameterNumbers = <int>{};
+
+    // Prefer the slot parameter list so duplicate parameter names on different
+    // pages (for example mixer channel inputs) do not collapse into one map key.
+    for (final param in slot.parameters) {
+      final isIoParameter =
+          param.isInput ||
+          param.isOutput ||
+          AlgorithmRouting.isHardcodedInput(slot.algorithm.guid, param.name);
+      if (!isIoParameter) continue;
+
+      ioParameterEntries.add((
+        name: param.name,
+        busValue: valueByParam[param.parameterNumber] ?? param.defaultValue,
+        paramInfo: param,
+      ));
+      consumedIoParameterNumbers.add(param.parameterNumber);
+    }
+
+    // Preserve compatibility with callers/tests that provide synthetic
+    // ioParameters not present in the slot metadata.
+    for (final entry in ioParameters.entries) {
+      final fallbackParamInfo = paramsByName[entry.key];
+      if (fallbackParamInfo != null &&
+          consumedIoParameterNumbers.contains(
+            fallbackParamInfo.parameterNumber,
+          )) {
+        continue;
+      }
+
+      ioParameterEntries.add((
+        name: entry.key,
+        busValue: entry.value,
+        paramInfo: fallbackParamInfo,
+      ));
+    }
+
+    final ioNameCounts = <String, int>{};
+    for (final entry in ioParameterEntries) {
+      ioNameCounts[entry.name] = (ioNameCounts[entry.name] ?? 0) + 1;
     }
 
     // Group send parameters by send number
@@ -627,12 +680,12 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
     }
 
     // Process routing parameters as regular ports
-    for (final entry in ioParameters.entries) {
-      final paramName = entry.key;
-      final busValue = entry.value;
+    for (final entry in ioParameterEntries) {
+      final paramName = entry.name;
+      final busValue = entry.busValue;
 
       // Get parameter number for unique ID generation
-      final paramInfo = paramsByName[paramName];
+      final paramInfo = entry.paramInfo;
       final paramNumber = paramInfo?.parameterNumber ?? 0;
 
       // Check if this parameter belongs to a send page
@@ -682,10 +735,20 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
           .replaceAll('(', '')
           .replaceAll(')', '');
 
+      final pageName = paramInfo == null
+          ? null
+          : parameterToPageName[paramInfo.parameterNumber];
+      final displayName =
+          (ioNameCounts[paramName] ?? 0) > 1 &&
+              pageName != null &&
+              pageName.isNotEmpty
+          ? '$pageName: $paramName'
+          : paramName;
+
       final port = {
         'id': '${algorithmUuid ?? 'algo'}_${sanitizedName}_$paramNumber',
         // Use algorithm UUID, sanitized name, and parameter number for uniqueness
-        'name': paramName, // Keep original name for display
+        'name': displayName,
         'type': portType == PortType.audio
             ? 'audio'
             : 'cv', // Store as string for parsing
