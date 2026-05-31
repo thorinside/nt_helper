@@ -64,7 +64,9 @@ class SettingsService {
   static const String _openaiApiKeyKey = 'openai_api_key';
   static const String _anthropicModelKey = 'anthropic_model';
   static const String _openaiModelKey = 'openai_model';
+  static const String _openaiSubscriptionModelKey = 'openai_subscription_model';
   static const String _openaiBaseUrlKey = 'openai_base_url';
+  static const String _allowCodexAuthRefreshKey = 'allow_codex_auth_refresh';
   static const String _uiScaleKey = 'ui_scale';
   static const String _autoCenterOnSelectionKey = 'auto_center_on_selection';
 
@@ -101,7 +103,9 @@ class SettingsService {
     _openaiApiKeyKey,
     _anthropicModelKey,
     _openaiModelKey,
+    _openaiSubscriptionModelKey,
     _openaiBaseUrlKey,
+    _allowCodexAuthRefreshKey,
     _uiScaleKey,
     _autoCenterOnSelectionKey,
   ];
@@ -137,6 +141,8 @@ class SettingsService {
   static const double defaultChatPanelWidth = 360;
   static const String defaultAnthropicModel = 'claude-haiku-4-5-20251001';
   static const String defaultOpenaiModel = 'gpt-5-nano';
+  static const String defaultOpenaiSubscriptionModel = 'gpt-5.4-mini';
+  static const bool defaultAllowCodexAuthRefresh = false;
   static const double defaultUiScale = 1.0;
   static const double minUiScale = 0.7;
   static const double maxUiScale = 1.5;
@@ -384,6 +390,9 @@ class SettingsService {
   LlmProviderType get chatLlmProvider {
     final value = _prefs?.getString(_chatLlmProviderKey);
     if (value == 'openai') return LlmProviderType.openai;
+    if (value == 'openai_subscription') {
+      return LlmProviderType.openaiSubscription;
+    }
     if (value == 'anthropic_subscription') {
       return LlmProviderType.anthropicSubscription;
     }
@@ -396,6 +405,8 @@ class SettingsService {
     switch (provider) {
       case LlmProviderType.openai:
         value = 'openai';
+      case LlmProviderType.openaiSubscription:
+        value = 'openai_subscription';
       case LlmProviderType.anthropicSubscription:
         value = 'anthropic_subscription';
       case LlmProviderType.anthropic:
@@ -448,6 +459,29 @@ class SettingsService {
       return await _prefs?.remove(_openaiModelKey) ?? false;
     }
     return await _prefs?.setString(_openaiModelKey, value) ?? false;
+  }
+
+  /// Get the OpenAI subscription model name
+  String get openaiSubscriptionModel =>
+      _prefs?.getString(_openaiSubscriptionModelKey) ??
+      defaultOpenaiSubscriptionModel;
+
+  /// Set the OpenAI subscription model name
+  Future<bool> setOpenaiSubscriptionModel(String value) async {
+    if (value.isEmpty) {
+      return await _prefs?.remove(_openaiSubscriptionModelKey) ?? false;
+    }
+    return await _prefs?.setString(_openaiSubscriptionModelKey, value) ?? false;
+  }
+
+  /// Whether nt_helper may refresh Codex ChatGPT auth when a request is unauthorized.
+  bool get allowCodexAuthRefresh =>
+      _prefs?.getBool(_allowCodexAuthRefreshKey) ??
+      defaultAllowCodexAuthRefresh;
+
+  /// Set whether nt_helper may refresh Codex ChatGPT auth.
+  Future<bool> setAllowCodexAuthRefresh(bool value) async {
+    return await _prefs?.setBool(_allowCodexAuthRefreshKey, value) ?? false;
   }
 
   /// Get the OpenAI base URL (for LM Studio, OpenRouter, etc.)

@@ -11,6 +11,7 @@ import 'package:nt_helper/chat/providers/anthropic_provider.dart';
 import 'package:nt_helper/chat/providers/anthropic_subscription_provider.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/providers/openai_provider.dart';
+import 'package:nt_helper/chat/providers/openai_subscription_provider.dart';
 import 'package:nt_helper/chat/services/chat_service.dart';
 import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/chat/services/system_prompt.dart';
@@ -46,6 +47,7 @@ class ChatCubit extends Cubit<ChatState> {
     'claude-haiku-4-5-20251001': 200000,
     'claude-sonnet-4-5-20250514': 200000,
     'gpt-5-nano': 128000,
+    'gpt-5.4-mini': 128000,
   };
   static const _defaultContextLimit = 100000;
 
@@ -506,6 +508,8 @@ class ChatCubit extends Cubit<ChatState> {
         return settings.anthropicModel;
       case LlmProviderType.openai:
         return settings.openaiModel;
+      case LlmProviderType.openaiSubscription:
+        return settings.openaiSubscriptionModel;
     }
   }
 
@@ -527,6 +531,11 @@ class ChatCubit extends Cubit<ChatState> {
           apiKey: settings.openaiApiKey!,
           model: settings.openaiModel,
           baseUrl: settings.openaiBaseUrl,
+        );
+      case LlmProviderType.openaiSubscription:
+        return OpenAISubscriptionProvider(
+          model: settings.openaiSubscriptionModel,
+          allowAuthRefresh: settings.allowCodexAuthRefresh,
         );
     }
   }

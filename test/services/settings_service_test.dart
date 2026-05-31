@@ -35,7 +35,9 @@ const Map<String, Object> _nonDefaultSeeds = {
   'openai_api_key': 'sk-fake-openai',
   'anthropic_model': 'fake-anthropic-model',
   'openai_model': 'fake-openai-model',
+  'openai_subscription_model': 'fake-openai-subscription-model',
   'openai_base_url': 'https://example.invalid/v1',
+  'allow_codex_auth_refresh': true,
   'ui_scale': 1.4,
   'auto_center_on_selection': false,
 };
@@ -92,6 +94,14 @@ void main() {
         expect(settings.anthropicApiKey, isNotNull);
         expect(settings.openaiApiKey, isNotNull);
         expect(settings.openaiBaseUrl, isNotNull);
+        expect(
+          settings.openaiSubscriptionModel,
+          isNot(SettingsService.defaultOpenaiSubscriptionModel),
+        );
+        expect(
+          settings.allowCodexAuthRefresh,
+          isNot(SettingsService.defaultAllowCodexAuthRefresh),
+        );
 
         await settings.resetToDefaults();
 
@@ -155,7 +165,15 @@ void main() {
         expect(settings.openaiApiKey, isNull);
         expect(settings.anthropicModel, SettingsService.defaultAnthropicModel);
         expect(settings.openaiModel, SettingsService.defaultOpenaiModel);
+        expect(
+          settings.openaiSubscriptionModel,
+          SettingsService.defaultOpenaiSubscriptionModel,
+        );
         expect(settings.openaiBaseUrl, isNull);
+        expect(
+          settings.allowCodexAuthRefresh,
+          SettingsService.defaultAllowCodexAuthRefresh,
+        );
         expect(settings.dismissedUpdateVersion, isNull);
         expect(settings.lastUpdateCheckTimestamp, isNull);
         expect(settings.uiScale, SettingsService.defaultUiScale);

@@ -72,7 +72,9 @@ class _ChatPanelState extends State<ChatPanel> {
       openaiApiKey: settings.openaiApiKey,
       anthropicModel: settings.anthropicModel,
       openaiModel: settings.openaiModel,
+      openaiSubscriptionModel: settings.openaiSubscriptionModel,
       openaiBaseUrl: settings.openaiBaseUrl,
+      allowCodexAuthRefresh: settings.allowCodexAuthRefresh,
       chatEnabled: settings.chatEnabled,
     );
   }
