@@ -2,10 +2,103 @@
 
 #include <flutter_windows.h>
 #include <io.h>
+#include <shlobj.h>
 #include <stdio.h>
 #include <windows.h>
 
+#include <chrono>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+
+namespace {
+
+std::wstring GetStartupLogDirectory() {
+  std::wstring base_path;
+
+  DWORD env_length = GetEnvironmentVariableW(L"LOCALAPPDATA", nullptr, 0);
+  if (env_length > 1) {
+    std::wstring env_value(env_length, L'\0');
+    DWORD copied = GetEnvironmentVariableW(L"LOCALAPPDATA", env_value.data(),
+                                           env_length);
+    if (copied > 0 && copied < env_length) {
+      env_value.resize(copied);
+      base_path = env_value;
+    }
+  }
+
+  if (base_path.empty()) {
+    PWSTR local_app_data = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, KF_FLAG_CREATE,
+                                       nullptr, &local_app_data))) {
+      base_path = local_app_data;
+      CoTaskMemFree(local_app_data);
+    }
+  }
+
+  if (base_path.empty()) {
+    wchar_t temp_path[MAX_PATH];
+    DWORD length = GetTempPathW(MAX_PATH, temp_path);
+    if (length > 0 && length < MAX_PATH) {
+      base_path = temp_path;
+    } else {
+      base_path = L".";
+    }
+  }
+
+  std::wstring app_dir = base_path + L"\\nt_helper";
+  CreateDirectoryW(app_dir.c_str(), nullptr);
+
+  std::wstring log_dir = app_dir + L"\\logs";
+  CreateDirectoryW(log_dir.c_str(), nullptr);
+  return log_dir;
+}
+
+std::wstring CurrentTimestamp() {
+  const auto now = std::chrono::system_clock::now();
+  const auto time = std::chrono::system_clock::to_time_t(now);
+  const auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          now.time_since_epoch()) %
+                      1000;
+
+  std::tm local_time;
+  localtime_s(&local_time, &time);
+
+  std::wstringstream stream;
+  stream << std::put_time(&local_time, L"%Y-%m-%dT%H:%M:%S") << L"."
+         << std::setw(3) << std::setfill(L'0') << millis.count();
+  return stream.str();
+}
+
+void InitializeStartupLog() {
+  static bool initialized = false;
+  if (initialized) {
+    return;
+  }
+  initialized = true;
+
+  const std::wstring log_path = GetStartupLogPath();
+  const std::wstring previous_log_path =
+      GetStartupLogDirectory() + L"\\nt_helper_startup.previous.log";
+
+  DeleteFileW(previous_log_path.c_str());
+  MoveFileExW(log_path.c_str(), previous_log_path.c_str(),
+              MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
+
+  std::wofstream file(log_path, std::ios::out | std::ios::trunc);
+  if (file.is_open()) {
+    file << L"[" << CurrentTimestamp()
+         << L"] ============================================================"
+         << std::endl;
+    file << L"[" << CurrentTimestamp() << L"] nt_helper native startup log"
+         << std::endl;
+    file << L"[" << CurrentTimestamp() << L"] Log file: " << log_path
+         << std::endl;
+  }
+}
+
+}  // namespace
 
 void CreateAndAttachConsole() {
   if (::AllocConsole()) {
@@ -62,4 +155,25 @@ std::string Utf8FromUtf16(const wchar_t* utf16_string) {
     return std::string();
   }
   return utf8_string;
+}
+
+std::wstring GetStartupLogPath() {
+  return GetStartupLogDirectory() + L"\\nt_helper_startup.log";
+}
+
+void StartupLog(const std::wstring& message) {
+  InitializeStartupLog();
+
+  const std::wstring line = L"[" + CurrentTimestamp() + L"] " + message;
+  std::wofstream file(GetStartupLogPath(), std::ios::out | std::ios::app);
+  if (file.is_open()) {
+    file << line << std::endl;
+  }
+
+  OutputDebugStringW((message + L"\n").c_str());
+}
+
+void StartupLogLastError(const std::wstring& message) {
+  const DWORD error = GetLastError();
+  StartupLog(message + L" (GetLastError=" + std::to_wstring(error) + L")");
 }

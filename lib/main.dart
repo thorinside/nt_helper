@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +13,7 @@ import 'package:nt_helper/services/database_integrity_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
+import 'package:nt_helper/services/startup_log_service.dart';
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
 import 'package:nt_helper/util/in_app_logger.dart';
 import 'package:provider/provider.dart';
@@ -74,22 +78,60 @@ class _WindowBoundsManager with WindowListener {
 
 final _windowBoundsManager = _WindowBoundsManager();
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  StartupLogService.initialize();
+  StartupLogService.log('main() entered');
+
+  runZonedGuarded(
+    () async {
+      await _bootstrapApp();
+    },
+    (error, stackTrace) {
+      StartupLogService.logError(
+        'UNCAUGHT startup zone error',
+        error,
+        stackTrace,
+      );
+      _showStartupFailure(error, stackTrace);
+    },
+  );
+}
+
+Future<void> _bootstrapApp() async {
+  _installGlobalErrorHandlers();
+
+  StartupLogService.traceSync(
+    'WidgetsFlutterBinding.ensureInitialized',
+    WidgetsFlutterBinding.ensureInitialized,
+  );
 
   // Initialize window_manager on desktop platforms
   Rect? savedBounds;
-  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-    await windowManager.ensureInitialized();
+  if (_isDesktop) {
+    await StartupLogService.traceAsync(
+      'windowManager.ensureInitialized',
+      windowManager.ensureInitialized,
+    );
 
     // Load saved window position/size
-    final prefs = await SharedPreferences.getInstance();
-    savedBounds = await _WindowBoundsManager.loadBounds(prefs);
+    final prefs = await StartupLogService.traceAsync(
+      'SharedPreferences.getInstance',
+      SharedPreferences.getInstance,
+    );
+    savedBounds = await StartupLogService.traceAsync(
+      'WindowBoundsManager.loadBounds',
+      () => _WindowBoundsManager.loadBounds(prefs),
+    );
+    StartupLogService.log('Saved window bounds: ${savedBounds ?? 'none'}');
 
     // Initialize bounds manager to save on move/resize
-    await _windowBoundsManager.init(prefs);
+    await StartupLogService.traceAsync(
+      'WindowBoundsManager.init',
+      () => _windowBoundsManager.init(prefs),
+    );
 
     final initialSize = savedBounds?.size ?? const Size(720, 1080);
+    StartupLogService.log('Initial window size: $initialSize');
 
     // Configure window options but DON'T show yet - wait for first frame
     WindowOptions windowOptions = WindowOptions(
@@ -103,28 +145,58 @@ void main() async {
 
     // Set up the window but don't show yet
     // We'll set bounds and show after first frame renders to avoid white flash
-    await windowManager.waitUntilReadyToShow(windowOptions, () async {
-      // Set position immediately in this callback (before show)
-      if (savedBounds != null) {
-        await windowManager.setBounds(savedBounds);
-      }
-    });
+    await StartupLogService.traceAsync(
+      'windowManager.waitUntilReadyToShow',
+      () => windowManager.waitUntilReadyToShow(windowOptions, () async {
+        // Set position immediately in this callback (before show)
+        if (savedBounds != null) {
+          StartupLogService.log('Applying saved window bounds: $savedBounds');
+          await windowManager.setBounds(savedBounds);
+        }
+      }),
+    );
   }
 
   // Check database integrity before opening
-  final integrityResult = await DatabaseIntegrityService.checkIntegrity();
+  final integrityResult = await StartupLogService.traceAsync(
+    'DatabaseIntegrityService.checkIntegrity',
+    DatabaseIntegrityService.checkIntegrity,
+  );
+  StartupLogService.log(
+    'Database integrity: fileExists=${integrityResult.fileExists}, '
+    'isCorrupt=${integrityResult.isCorrupt}, error=${integrityResult.error}',
+  );
   if (integrityResult.isCorrupt) {
-    await DatabaseIntegrityService.deleteDatabase();
+    await StartupLogService.traceAsync(
+      'DatabaseIntegrityService.deleteDatabase',
+      DatabaseIntegrityService.deleteDatabase,
+    );
   }
 
-  final database = AppDatabase();
-  await SettingsService().init();
-  await NodePositionsPersistenceService().init();
-  await AlgorithmMetadataService().initialize(database);
+  final database = StartupLogService.traceSync(
+    'AppDatabase()',
+    AppDatabase.new,
+  );
+  await StartupLogService.traceAsync(
+    'SettingsService.init',
+    SettingsService().init,
+  );
+  await StartupLogService.traceAsync(
+    'NodePositionsPersistenceService.init',
+    NodePositionsPersistenceService().init,
+  );
+  await StartupLogService.traceAsync(
+    'AlgorithmMetadataService.initialize',
+    () => AlgorithmMetadataService().initialize(database),
+  );
 
   // Initialize routing dependencies
-  await RoutingServiceLocator.setup();
+  await StartupLogService.traceAsync(
+    'RoutingServiceLocator.setup',
+    RoutingServiceLocator.setup,
+  );
 
+  StartupLogService.log('Calling runApp');
   runApp(
     MultiProvider(
       providers: [
@@ -134,43 +206,59 @@ void main() async {
       child: DistingApp(),
     ),
   );
+  StartupLogService.log('runApp returned');
 
   // Show window after first frame renders to avoid white flash
-  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await windowManager.show();
-      await windowManager.focus();
+  if (_isDesktop) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      StartupLogService.log('First frame rendered; showing desktop window');
+      unawaited(_showDesktopWindow('normal startup'));
     });
   }
 
   // Set up the method call handler for _windowEventsChannel
   _windowEventsChannel.setMethodCallHandler((call) async {
     if (call.method == 'windowWillClose') {
+      StartupLogService.log('windowWillClose received');
       // Bounds are already saved by _WindowBoundsManager on move/resize
-      if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      if (_isDesktop) {
         try {
           await McpServerService.instance.stop();
-        } catch (e) {
-          // Intentionally empty
+        } catch (error, stackTrace) {
+          StartupLogService.logError(
+            'McpServerService.stop failed during shutdown',
+            error,
+            stackTrace,
+          );
         }
       }
 
       try {
         await database.close();
-      } catch (e) {
-        // Intentionally empty
+      } catch (error, stackTrace) {
+        StartupLogService.logError(
+          'Database close failed during shutdown',
+          error,
+          stackTrace,
+        );
       }
 
       try {
         await RoutingServiceLocator.reset();
-      } catch (e) {
-        // Intentionally empty
+      } catch (error, stackTrace) {
+        StartupLogService.logError(
+          'RoutingServiceLocator.reset failed during shutdown',
+          error,
+          stackTrace,
+        );
       }
 
+      StartupLogService.log('windowWillClose completed');
       return true; // Signal Swift to proceed with close
     }
     return null;
   });
+  StartupLogService.log('Window events MethodChannel handler installed');
 
   _zoomHotkeysChannel.setMethodCallHandler((call) async {
     switch (call.method) {
@@ -186,4 +274,109 @@ void main() async {
     }
     return null;
   });
+  StartupLogService.log('Zoom hotkeys MethodChannel handler installed');
+  StartupLogService.log('Startup bootstrap completed');
+}
+
+bool get _isDesktop =>
+    Platform.isLinux || Platform.isMacOS || Platform.isWindows;
+
+void _installGlobalErrorHandlers() {
+  final previousFlutterErrorHandler = FlutterError.onError;
+  FlutterError.onError = (details) {
+    StartupLogService.logError(
+      'Flutter framework error',
+      details.exception,
+      details.stack ?? StackTrace.current,
+    );
+    (previousFlutterErrorHandler ?? FlutterError.presentError).call(details);
+  };
+
+  final previousPlatformErrorHandler = PlatformDispatcher.instance.onError;
+  PlatformDispatcher.instance.onError = (error, stackTrace) {
+    StartupLogService.logError(
+      'PlatformDispatcher uncaught error',
+      error,
+      stackTrace,
+    );
+    return previousPlatformErrorHandler?.call(error, stackTrace) ?? false;
+  };
+
+  StartupLogService.log('Global error handlers installed');
+}
+
+Future<void> _showDesktopWindow(String reason) async {
+  try {
+    await windowManager.ensureInitialized();
+    await windowManager.show();
+    await windowManager.focus();
+    StartupLogService.log('Desktop window shown for $reason');
+  } catch (error, stackTrace) {
+    StartupLogService.logError(
+      'Unable to show desktop window for $reason',
+      error,
+      stackTrace,
+    );
+  }
+}
+
+void _showStartupFailure(Object error, StackTrace stackTrace) {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    runApp(_StartupFailureApp(error: error, stackTrace: stackTrace));
+    if (_isDesktop) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_showDesktopWindow('startup failure'));
+      });
+    }
+  } catch (secondaryError, secondaryStackTrace) {
+    StartupLogService.logError(
+      'Unable to display startup failure screen',
+      secondaryError,
+      secondaryStackTrace,
+    );
+  }
+}
+
+class _StartupFailureApp extends StatelessWidget {
+  const _StartupFailureApp({required this.error, required this.stackTrace});
+
+  final Object error;
+  final StackTrace stackTrace;
+
+  @override
+  Widget build(BuildContext context) {
+    final logPath = StartupLogService.logPath ?? 'unknown';
+
+    return MaterialApp(
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ListView(
+              children: [
+                Semantics(
+                  header: true,
+                  child: const Text(
+                    'nt_helper failed to start',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Please send the startup log file and the error below to the nt_helper developer.',
+                ),
+                const SizedBox(height: 12),
+                SelectableText('Startup log: $logPath'),
+                const SizedBox(height: 24),
+                SelectableText('Error: $error'),
+                const SizedBox(height: 16),
+                SelectableText('Stack trace:\n$stackTrace'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

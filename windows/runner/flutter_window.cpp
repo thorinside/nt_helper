@@ -9,6 +9,7 @@
 #include "flutter/generated_plugin_registrant.h"
 #include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
 #include "flutter/method_result.h"   // Changed from method_result_functions.h
+#include "utils.h"
 
 // Forward declaration for USB video plugin registration
 extern void UsbVideoCapturePluginRegisterWithRegistrar(
@@ -68,7 +69,7 @@ std::wstring FlutterWindow::GetSavePath()
   PWSTR path_app_data = nullptr;
   if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &path_app_data)))
   {
-    OutputDebugStringW(L"GetSavePath: SHGetKnownFolderPath FAILED. Falling back to local file window_placement.dat\n");
+    StartupLog(L"GetSavePath: SHGetKnownFolderPath FAILED. Falling back to local file window_placement.dat");
     return L"window_placement.dat";
   }
 
@@ -87,7 +88,7 @@ std::wstring FlutterWindow::GetSavePath()
   final_path += (L"\\" + vendor_dir_name);
   if (!(CreateDirectory(final_path.c_str(), NULL) || GetLastError() == ERROR_ALREADY_EXISTS))
   {
-    OutputDebugStringW((L"GetSavePath: Failed to create/access vendor directory: " + final_path + L". Falling back.\n").c_str());
+    StartupLog(L"GetSavePath: Failed to create/access vendor directory: " + final_path + L". Falling back.");
     return L"window_placement.dat";
   }
 
@@ -95,12 +96,12 @@ std::wstring FlutterWindow::GetSavePath()
   final_path += (L"\\" + app_dir_name);
   if (!(CreateDirectory(final_path.c_str(), NULL) || GetLastError() == ERROR_ALREADY_EXISTS))
   {
-    OutputDebugStringW((L"GetSavePath: Failed to create/access app directory: " + final_path + L". Falling back.\n").c_str());
+    StartupLog(L"GetSavePath: Failed to create/access app directory: " + final_path + L". Falling back.");
     return L"window_placement.dat";
   }
 
   final_path += L"\\window_placement.dat";
-  OutputDebugStringW((L"GetSavePath: Using path: " + final_path + L"\n").c_str());
+  StartupLog(L"GetSavePath: Using path: " + final_path);
   return final_path;
 }
 
@@ -109,7 +110,7 @@ void FlutterWindow::SaveWindowPlacement()
   HWND handle = GetHandle();
   if (!handle)
   {
-    OutputDebugStringW(L"SaveWindowPlacement: Invalid window handle, cannot save.\n");
+    StartupLog(L"SaveWindowPlacement: Invalid window handle, cannot save.");
     return;
   }
 
@@ -117,11 +118,11 @@ void FlutterWindow::SaveWindowPlacement()
   if (GetWindowPlacement(handle, &wp))
   {
     std::wstring save_path = GetSavePath();
-    OutputDebugStringW((L"SaveWindowPlacement: Attempting to save to: " + save_path + L"\n").c_str());
+    StartupLog(L"SaveWindowPlacement: Attempting to save to: " + save_path);
 
     if (save_path.empty() || save_path == L"window_placement.dat")
     {
-      OutputDebugStringW(L"SaveWindowPlacement: GetSavePath returned empty or fallback path, cannot save to roaming profile.\n");
+      StartupLog(L"SaveWindowPlacement: GetSavePath returned empty or fallback path, cannot save to roaming profile.");
       if (save_path.empty())
         return;
     }
@@ -133,22 +134,22 @@ void FlutterWindow::SaveWindowPlacement()
       save_file.write(reinterpret_cast<char *>(&wp), sizeof(wp));
       if (save_file.good())
       {
-        OutputDebugStringW(L"SaveWindowPlacement: Successfully wrote WINDOWPLACEMENT to file.\n");
+        StartupLog(L"SaveWindowPlacement: Successfully wrote WINDOWPLACEMENT to file.");
       }
       else
       {
-        OutputDebugStringW(L"SaveWindowPlacement: Failed to write data to file.\n");
+        StartupLog(L"SaveWindowPlacement: Failed to write data to file.");
       }
       save_file.close();
     }
     else
     {
-      OutputDebugStringW((L"SaveWindowPlacement: Failed to open file for writing: " + save_path + L"\n").c_str());
+      StartupLog(L"SaveWindowPlacement: Failed to open file for writing: " + save_path);
     }
   }
   else
   {
-    OutputDebugStringW(L"SaveWindowPlacement: GetWindowPlacement failed.\n");
+    StartupLogLastError(L"SaveWindowPlacement: GetWindowPlacement failed.");
   }
 }
 
@@ -157,23 +158,23 @@ bool FlutterWindow::RestoreWindowPlacement()
   HWND handle = GetHandle();
   if (!handle)
   {
-    OutputDebugStringW(L"RestoreWindowPlacement: Invalid window handle.\n");
+    StartupLog(L"RestoreWindowPlacement: Invalid window handle.");
     return false;
   }
 
   std::wstring load_path = GetSavePath();
-  OutputDebugStringW((L"RestoreWindowPlacement: Attempting to load from: " + load_path + L"\n").c_str());
+  StartupLog(L"RestoreWindowPlacement: Attempting to load from: " + load_path);
 
   if (load_path.empty() || load_path == L"window_placement.dat")
   {
-    OutputDebugStringW(L"RestoreWindowPlacement: GetSavePath returned empty or fallback path.\n");
+    StartupLog(L"RestoreWindowPlacement: GetSavePath returned empty or fallback path.");
     return false;
   }
 
   std::ifstream load_file(load_path, std::ios::binary | std::ios::in);
   if (!load_file.is_open())
   {
-    OutputDebugStringW((L"RestoreWindowPlacement: Failed to open file: " + load_path + L"\n").c_str());
+    StartupLog(L"RestoreWindowPlacement: Failed to open file: " + load_path);
     return false;
   }
 
@@ -182,7 +183,7 @@ bool FlutterWindow::RestoreWindowPlacement()
 
   if (load_file.gcount() != sizeof(wp))
   {
-    OutputDebugStringW((L"RestoreWindowPlacement: Read " + std::to_wstring(load_file.gcount()) + L" bytes, expected " + std::to_wstring(sizeof(wp)) + L" bytes.\n").c_str());
+    StartupLog(L"RestoreWindowPlacement: Read " + std::to_wstring(load_file.gcount()) + L" bytes, expected " + std::to_wstring(sizeof(wp)) + L" bytes.");
     load_file.close();
     return false;
   }
@@ -194,7 +195,7 @@ bool FlutterWindow::RestoreWindowPlacement()
 
   if (width <= 0 || height <= 0)
   {
-    OutputDebugStringW(L"RestoreWindowPlacement: Invalid dimensions in saved placement.\n");
+    StartupLog(L"RestoreWindowPlacement: Invalid dimensions in saved placement.");
     return false;
   }
 
@@ -211,13 +212,13 @@ bool FlutterWindow::RestoreWindowPlacement()
     std::wstring log = L"RestoreWindowPlacement: Successfully restored window to (" +
                        std::to_wstring(wp.rcNormalPosition.left) + L", " +
                        std::to_wstring(wp.rcNormalPosition.top) + L") size " +
-                       std::to_wstring(width) + L"x" + std::to_wstring(height) + L"\n";
-    OutputDebugStringW(log.c_str());
+                       std::to_wstring(width) + L"x" + std::to_wstring(height);
+    StartupLog(log);
     return true;
   }
   else
   {
-    OutputDebugStringW(L"RestoreWindowPlacement: SetWindowPlacement failed.\n");
+    StartupLogLastError(L"RestoreWindowPlacement: SetWindowPlacement failed.");
     return false;
   }
 }
@@ -227,44 +228,44 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
   // Always create window with default position/size first
   if (!Win32Window::Create(title, default_origin, default_size))
   {
-    OutputDebugStringW(L"Win32Window::Create failed.\n");
+    StartupLog(L"Win32Window::Create failed.");
     return false;
   }
-  OutputDebugStringW(L"Win32Window::Create succeeded.\n");
+  StartupLog(L"Win32Window::Create succeeded.");
 
   // Now restore saved window placement using SetWindowPlacement
   // This properly handles coordinate systems, DPI, and multi-monitor setups
   if (!RestoreWindowPlacement())
   {
-    OutputDebugStringW(L"No saved placement found or restore failed, using defaults.\n");
+    StartupLog(L"No saved placement found or restore failed, using defaults.");
   }
 
   RECT frame = GetClientArea();
   long view_width = frame.right - frame.left;
   long view_height = frame.bottom - frame.top;
 
-  std::wstring log_msg2 = L"GetClientArea after Win32Window::Create: (" + std::to_wstring(view_width) + L"x" + std::to_wstring(view_height) + L")\n";
-  OutputDebugStringW(log_msg2.c_str());
+  std::wstring log_msg2 = L"GetClientArea after Win32Window::Create: (" + std::to_wstring(view_width) + L"x" + std::to_wstring(view_height) + L")";
+  StartupLog(log_msg2);
 
   if (view_width <= 0 || view_height <= 0)
   {
-    std::wstring log_msg_fallback = L"Warning: Window client area is zero or negative. Falling back to default Flutter view size: (" + std::to_wstring(default_size.width) + L"x" + std::to_wstring(default_size.height) + L")\n";
-    OutputDebugStringW(log_msg_fallback.c_str());
+    std::wstring log_msg_fallback = L"Warning: Window client area is zero or negative. Falling back to default Flutter view size: (" + std::to_wstring(default_size.width) + L"x" + std::to_wstring(default_size.height) + L")";
+    StartupLog(log_msg_fallback);
     view_width = default_size.width;
     view_height = default_size.height;
   }
 
-  std::wstring log_msg3 = L"Creating FlutterViewController with size: (" + std::to_wstring(view_width) + L"x" + std::to_wstring(view_height) + L")\n";
-  OutputDebugStringW(log_msg3.c_str());
+  std::wstring log_msg3 = L"Creating FlutterViewController with size: (" + std::to_wstring(view_width) + L"x" + std::to_wstring(view_height) + L")";
+  StartupLog(log_msg3);
 
   flutter_controller_ = std::make_unique<flutter::FlutterViewController>(
       view_width, view_height, project_);
   if (!flutter_controller_->engine() || !flutter_controller_->view())
   {
-    OutputDebugStringW(L"FlutterViewController setup failed.\n");
+    StartupLog(L"FlutterViewController setup failed.");
     return false;
   }
-  OutputDebugStringW(L"FlutterViewController setup succeeded.\n");
+  StartupLog(L"FlutterViewController setup succeeded.");
 
   window_events_channel_ =
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
@@ -272,12 +273,17 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
           "com.nt_helper.app/window_events",
           &flutter::StandardMethodCodec::GetInstance());
 
+  StartupLog(L"Registering Flutter plugins");
   RegisterPlugins(flutter_controller_->engine());
+  StartupLog(L"Flutter plugins registered");
 
   // Register USB video capture plugin
+  StartupLog(L"Registering USB video capture plugin");
   UsbVideoCapturePluginRegisterWithRegistrar(
       flutter_controller_->engine()->GetRegistrarForPlugin("UsbVideoCapturePlugin"));
+  StartupLog(L"USB video capture plugin registered");
 
+  StartupLog(L"Attaching Flutter view native window");
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   // Note: Window showing is handled by window_manager plugin in Dart code.

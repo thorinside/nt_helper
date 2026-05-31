@@ -34,6 +34,17 @@ A cross-platform Flutter application designed for editing presets on the Expert 
 
 For detailed instructions, troubleshooting, and a full feature list, please refer to the [project website documentation](https://nosuch.dev/nt-helper).
 
+## Startup Diagnostics
+
+If the app does not show a window, nt_helper writes an early startup log that can be shared with the developer:
+
+- **Windows:** `%LOCALAPPDATA%\nt_helper\logs\nt_helper_startup.log`
+- **macOS/Linux:** `~/.nt_helper/logs/nt_helper_startup.log`
+
+On Windows, if that file is not created at all, the failure is likely occurring before nt_helper's native entry point runs (for example, a missing system runtime or loader error).
+
+The Disting NT does not need to be connected for the app window to open. After the UI starts, the same log records MIDI device discovery/autoconnect attempts and will say when the saved Disting NT MIDI ports are not visible. In Flutter CLI output, `Lost connection to device` refers to the macOS/Windows app process used by `flutter run`, not to the Disting NT hardware.
+
 ## Recent Updates
 
 - **v1.39.0+77**: Added incremental sync and improved algorithm rescan UX

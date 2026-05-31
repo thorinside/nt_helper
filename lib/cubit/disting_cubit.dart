@@ -29,6 +29,7 @@ import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/services/firmware_version_service.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/services/startup_log_service.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart'; // Add collection package import
@@ -270,7 +271,7 @@ class DistingCubit extends _DistingCubitBase
 
   // Private helper to perform the full synchronization and emit the state
   Future<void> _performSyncAndEmit() async {
-    return _connectionDelegate.performSyncAndEmit();
+    await _connectionDelegate.performSyncAndEmit();
   }
 
   Future<void> connectToDevices(

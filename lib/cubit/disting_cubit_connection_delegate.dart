@@ -6,11 +6,25 @@ class _ConnectionDelegate {
   final DistingCubit _cubit;
 
   Future<void> initialize() async {
+    StartupLogService.log(
+      'DistingCubit.initialize: starting MIDI discovery/autoconnect. '
+      'The app can start without a Disting NT connected; missing hardware '
+      'should leave the app on device selection or offline mode.',
+    );
+
     // Check for offline capability first
     bool canWorkOffline = false; // Default to false
     try {
       canWorkOffline = await _cubit._metadataDao.hasCachedAlgorithms();
+      StartupLogService.log(
+        'DistingCubit.initialize: cached offline algorithms available=$canWorkOffline',
+      );
     } catch (e, stackTrace) {
+      StartupLogService.logError(
+        'DistingCubit.initialize: failed to check offline cache',
+        e,
+        stackTrace,
+      );
       debugPrintStack(stackTrace: stackTrace);
       // Proceed with canWorkOffline as false
     }
@@ -23,8 +37,18 @@ class _ConnectionDelegate {
     if (savedOutputDeviceName != null &&
         savedInputDeviceName != null &&
         savedSysExId != null) {
+      StartupLogService.log(
+        'DistingCubit.initialize: saved MIDI prefs found: '
+        'input="$savedInputDeviceName", output="$savedOutputDeviceName", '
+        'sysExId=$savedSysExId',
+      );
+
       // Try to connect to the saved device
       final devices = await _cubit._midiCommand.devices;
+      StartupLogService.log(
+        'DistingCubit.initialize: MIDI devices visible for autoconnect: '
+        '${_describeDevices(devices)}',
+      );
       final MidiDevice? savedInputDevice = devices
           ?.where((device) => device.name == savedInputDeviceName)
           .firstOrNull;
@@ -34,12 +58,20 @@ class _ConnectionDelegate {
           .firstOrNull;
 
       if (savedInputDevice != null && savedOutputDevice != null) {
+        StartupLogService.log(
+          'DistingCubit.initialize: saved MIDI devices found; attempting autoconnect',
+        );
         await connectToDevices(
           savedInputDevice,
           savedOutputDevice,
           savedSysExId,
         );
       } else {
+        StartupLogService.log(
+          'DistingCubit.initialize: saved MIDI devices are not currently visible. '
+          'This usually means the Disting NT is not connected/enumerated, the OS '
+          'has not exposed its MIDI ports, or the port names changed.',
+        );
         // Saved prefs exist, but devices not found now.
         final devices = await _fetchDeviceLists(); // Use helper
         _cubit._emitState(
@@ -49,10 +81,16 @@ class _ConnectionDelegate {
             canWorkOffline: canWorkOffline, // Pass the flag
           ),
         );
+        StartupLogService.log(
+          'DistingCubit.initialize: showing device selection after missing saved devices',
+        );
         // Start listening for MIDI device connection changes
         startMidiSetupListener();
       }
     } else {
+      StartupLogService.log(
+        'DistingCubit.initialize: no saved MIDI device settings; showing device selection',
+      );
       // No saved settings found, load devices and show selection
       final devices = await _fetchDeviceLists(); // Use helper
       _cubit._emitState(
@@ -68,6 +106,9 @@ class _ConnectionDelegate {
   }
 
   Future<void> loadDevices() async {
+    StartupLogService.log(
+      'DistingCubit.loadDevices: refreshing MIDI device list',
+    );
     try {
       if (_cubit.state is! DistingStateSelectDevice) {
         _cubit._emitState(const DistingState.initial());
@@ -88,10 +129,21 @@ class _ConnectionDelegate {
           canWorkOffline: canWorkOffline, // Pass the flag here
         ),
       );
+      StartupLogService.log(
+        'DistingCubit.loadDevices: device selection updated; '
+        'inputs=${devices['input']?.length ?? 0}, '
+        'outputs=${devices['output']?.length ?? 0}, '
+        'canWorkOffline=$canWorkOffline',
+      );
 
       // Start listening for MIDI device connection changes
       startMidiSetupListener();
     } catch (e, stackTrace) {
+      StartupLogService.logError(
+        'DistingCubit.loadDevices: failed to refresh MIDI device list',
+        e,
+        stackTrace,
+      );
       debugPrintStack(stackTrace: stackTrace);
       // Emit default state on error
       _cubit._emitState(
@@ -117,12 +169,17 @@ class _ConnectionDelegate {
     // Subscribe to MIDI setup changes
     _cubit._midiSetupSubscription = _cubit._midiCommand.onMidiSetupChanged
         ?.listen((_) {
+          StartupLogService.log('DistingCubit: MIDI setup changed');
           // Only refresh if we're still in the device selection state
           if (_cubit.state is DistingStateInitial ||
               _cubit.state is DistingStateSelectDevice) {
             loadDevices();
           }
         });
+    StartupLogService.log(
+      'DistingCubit: MIDI setup listener '
+      '${_cubit._midiSetupSubscription == null ? 'not available' : 'started'}',
+    );
   }
 
   /// Stops listening for MIDI setup changes.
@@ -182,7 +239,10 @@ class _ConnectionDelegate {
     }
   }
 
-  Future<void> performSyncAndEmit() async {
+  Future<bool> performSyncAndEmit() async {
+    StartupLogService.log(
+      'DistingCubit.performSyncAndEmit: starting Disting NT sync',
+    );
     final currentState = _cubit.state;
     MidiDevice? inputDevice; // Variables to hold devices from state
     MidiDevice? outputDevice;
@@ -195,7 +255,10 @@ class _ConnectionDelegate {
       inputDevice = currentState.inputDevice;
       outputDevice = currentState.outputDevice;
     } else {
-      return;
+      StartupLogService.log(
+        'DistingCubit.performSyncAndEmit: skipped because no online Disting NT connection is active',
+      );
+      return false;
     }
 
     // Now state is confirmed, get manager
@@ -296,6 +359,10 @@ class _ConnectionDelegate {
             perfPageItems: perfPageItems,
           ),
         );
+        StartupLogService.log(
+          'DistingCubit.performSyncAndEmit: Disting NT sync complete; '
+          'firmware="$distingVersion", preset="$presetName", slots=${slots.length}',
+        );
 
         // Start CC notification processing for push updates
         _cubit._ccNotificationDelegate.start();
@@ -322,15 +389,28 @@ class _ConnectionDelegate {
           _cubit.checkForFirmwareUpdate();
         }
       }).timeout(_syncTimeout);
-    } on TimeoutException {
+      return true;
+    } on TimeoutException catch (e, stackTrace) {
+      StartupLogService.logError(
+        'DistingCubit.performSyncAndEmit: sync timed out while querying Disting NT',
+        e,
+        stackTrace,
+      );
       _emitSyncProgress(
         'Synchronization timed out. The device may not be responding.\n'
         'Please check your MIDI connections and try again.',
       );
+      return false;
     } catch (e, stackTrace) {
+      StartupLogService.logError(
+        'DistingCubit.performSyncAndEmit: sync failed while querying Disting NT',
+        e,
+        stackTrace,
+      );
       debugPrintStack(stackTrace: stackTrace);
       // Do NOT store connection details if sync fails
       await loadDevices();
+      return false;
     }
   }
 
@@ -339,6 +419,11 @@ class _ConnectionDelegate {
     MidiDevice outputDevice,
     int sysExId,
   ) async {
+    StartupLogService.log(
+      'DistingCubit.connectToDevices: attempting connection to '
+      'input="${inputDevice.name}" (${inputDevice.id}), '
+      'output="${outputDevice.name}" (${outputDevice.id}), sysExId=$sysExId',
+    );
     // Get the potentially existing manager AND devices from the CURRENT state
     final currentState = _cubit.state;
     MidiDevice? existingInputDevice;
@@ -377,8 +462,14 @@ class _ConnectionDelegate {
       _cubit._offlineManager = null;
 
       // Connect to the selected device
+      StartupLogService.log(
+        'DistingCubit.connectToDevices: opening input MIDI device "${inputDevice.name}"',
+      );
       await _cubit._midiCommand.connectToDevice(inputDevice);
       if (inputDevice != outputDevice) {
+        StartupLogService.log(
+          'DistingCubit.connectToDevices: opening output MIDI device "${outputDevice.name}"',
+        );
         await _cubit._midiCommand.connectToDevice(outputDevice);
       }
       final prefs = await _cubit._prefs;
@@ -402,6 +493,9 @@ class _ConnectionDelegate {
           outputDevice: outputDevice,
           offline: false,
         ),
+      );
+      StartupLogService.log(
+        'DistingCubit.connectToDevices: MIDI ports opened; querying Disting NT next',
       );
 
       // Create parameter queue for the new manager
@@ -429,12 +523,30 @@ class _ConnectionDelegate {
         );
         final localEpoch = localAsUtc.millisecondsSinceEpoch ~/ 1000;
         await newDistingManager.requestSetRealTimeClock(localEpoch);
-      } catch (e) {
+        StartupLogService.log(
+          'DistingCubit.connectToDevices: device clock synchronized',
+        );
+      } catch (e, stackTrace) {
+        StartupLogService.logError(
+          'DistingCubit.connectToDevices: device clock sync failed; continuing',
+          e,
+          stackTrace,
+        );
         // Continue with connection even if clock sync fails
       }
 
-      await performSyncAndEmit(); // Sync with the new connection
+      final syncSucceeded =
+          await performSyncAndEmit(); // Sync with the new connection
+      StartupLogService.log(
+        'DistingCubit.connectToDevices: connection flow completed; '
+        'syncSucceeded=$syncSucceeded',
+      );
     } catch (e, stackTrace) {
+      StartupLogService.logError(
+        'DistingCubit.connectToDevices: connection failed',
+        e,
+        stackTrace,
+      );
       debugPrintStack(stackTrace: stackTrace);
       // Clear last connection details if connection/sync fails
       _cubit._lastOnlineInputDevice = null;
@@ -458,10 +570,37 @@ class _ConnectionDelegate {
     devices?.sort(
       (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
     );
-    return {
-      'input': devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
-      'output':
-          devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
-    };
+    final inputDevices =
+        devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [];
+    final outputDevices =
+        devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [];
+    StartupLogService.log(
+      'DistingCubit._fetchDeviceLists: visible MIDI devices: '
+      '${_describeDevices(devices)}; inputs=${inputDevices.length}, '
+      'outputs=${outputDevices.length}',
+    );
+    if (inputDevices.isEmpty || outputDevices.isEmpty) {
+      StartupLogService.log(
+        'DistingCubit._fetchDeviceLists: no usable MIDI '
+        '${inputDevices.isEmpty ? 'inputs' : ''}'
+        '${inputDevices.isEmpty && outputDevices.isEmpty ? ' or ' : ''}'
+        '${outputDevices.isEmpty ? 'outputs' : ''} found. '
+        'If the Disting NT is expected, check USB cable, power, OS MIDI '
+        'permissions/drivers, and whether the device appears in the system MIDI utility.',
+      );
+    }
+    return {'input': inputDevices, 'output': outputDevices};
+  }
+
+  String _describeDevices(List<MidiDevice>? devices) {
+    if (devices == null) return 'unavailable';
+    if (devices.isEmpty) return 'none';
+    return devices
+        .map(
+          (device) =>
+              '"${device.name}" id=${device.id} '
+              'inputs=${device.inputPorts.length} outputs=${device.outputPorts.length}',
+        )
+        .join('; ');
   }
 }

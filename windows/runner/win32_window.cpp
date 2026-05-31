@@ -4,6 +4,7 @@
 #include <flutter_windows.h>
 
 #include "resource.h"
+#include "utils.h"
 
 namespace {
 
@@ -100,7 +101,11 @@ const wchar_t* WindowClassRegistrar::GetWindowClass() {
     window_class.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));  // Black background to minimize flash
     window_class.lpszMenuName = nullptr;
     window_class.lpfnWndProc = Win32Window::WndProc;
-    RegisterClass(&window_class);
+    if (!RegisterClass(&window_class)) {
+      StartupLogLastError(L"RegisterClass failed for Flutter runner window class");
+    } else {
+      StartupLog(L"Registered Flutter runner window class");
+    }
     class_registered_ = true;
   }
   return kWindowClassName;
@@ -134,6 +139,7 @@ bool Win32Window::Create(const std::wstring& title,
   UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
   double scale_factor = dpi / 96.0;
 
+  StartupLog(L"Calling CreateWindow for main window");
   HWND window = CreateWindow(
       window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
       Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
@@ -141,12 +147,17 @@ bool Win32Window::Create(const std::wstring& title,
       nullptr, nullptr, GetModuleHandle(nullptr), this);
 
   if (!window) {
+    StartupLogLastError(L"CreateWindow failed for main window");
     return false;
   }
 
+  StartupLog(L"CreateWindow succeeded for main window");
   UpdateTheme(window);
 
-  return OnCreate();
+  const bool on_create_result = OnCreate();
+  StartupLog(L"Win32Window::OnCreate result: " +
+             std::wstring(on_create_result ? L"true" : L"false"));
+  return on_create_result;
 }
 
 bool Win32Window::Show() {

@@ -16,4 +16,14 @@ std::string Utf8FromUtf16(const wchar_t* utf16_string);
 // encoded in UTF-8. Returns an empty std::vector<std::string> on failure.
 std::vector<std::string> GetCommandLineArguments();
 
+// Returns the full path to the startup diagnostics log.
+std::wstring GetStartupLogPath();
+
+// Appends a timestamped line to the startup diagnostics log and mirrors it to
+// OutputDebugString. Safe to call during the earliest native startup code.
+void StartupLog(const std::wstring& message);
+
+// Logs a message plus the current Win32 GetLastError() value.
+void StartupLogLastError(const std::wstring& message);
+
 #endif  // RUNNER_UTILS_H_
