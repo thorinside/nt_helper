@@ -12,6 +12,15 @@ class ChatSettingsDialog extends StatefulWidget {
 }
 
 class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
+  static const _openaiSubscriptionModels = [
+    'gpt-5.5',
+    'gpt-5.4',
+    'gpt-5.4-mini',
+    'gpt-5.3-codex',
+    'gpt-5.3-codex-spark',
+    'gpt-5.2',
+  ];
+
   final _settings = SettingsService();
   final _codexAuthService = CodexAuthService();
   late LlmProviderType _provider;
@@ -337,17 +346,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     const SizedBox(height: 16),
     Text('Model', style: theme.textTheme.titleSmall),
     const SizedBox(height: 8),
-    DigitShortcutBlocker(
-      child: TextField(
-        key: const ValueKey('model_openai_subscription'),
-        controller: _openaiSubscriptionModelController,
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(),
-          hintText: 'gpt-5.4-mini',
-          isDense: true,
-        ),
-      ),
-    ),
+    _buildOpenAISubscriptionModelDropdown(),
     const SizedBox(height: 12),
     SwitchListTile(
       title: Text(
@@ -360,6 +359,33 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       dense: true,
     ),
   ];
+
+  Widget _buildOpenAISubscriptionModelDropdown() {
+    final current = _openaiSubscriptionModelController.text.trim();
+    final models =
+        current.isNotEmpty && !_openaiSubscriptionModels.contains(current)
+        ? [current, ..._openaiSubscriptionModels]
+        : _openaiSubscriptionModels;
+
+    return DropdownButtonFormField<String>(
+      key: const ValueKey('model_openai_subscription'),
+      initialValue: models.contains(current) ? current : 'gpt-5.4-mini',
+      decoration: const InputDecoration(
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      items: models
+          .map(
+            (model) =>
+                DropdownMenuItem<String>(value: model, child: Text(model)),
+          )
+          .toList(),
+      onChanged: (model) {
+        if (model == null) return;
+        _openaiSubscriptionModelController.text = model;
+      },
+    );
+  }
 
   List<Widget> _buildOpenAIApiKeySettings(ThemeData theme) => [
     const SizedBox(height: 16),
