@@ -60,6 +60,9 @@ dependencies:
   # Drift dependencies
   drift: ^2.33.0
   sqlite3: ^3.3.1
+  # Keep the pre-EOL Flutter library plugin pinned: 0.6.0+eol is a no-op,
+  # while 0.5.41 still bundles sqlite3.dll for Windows startup fallback.
+  sqlite3_flutter_libs: 0.5.41
   path_provider: ^2.1.5
   path: ^1.9.1
   intl: ^0.20.2
@@ -116,14 +119,6 @@ dev_dependencies:
   # Drift dev dependencies
   drift_dev: ^2.33.0
   fake_async: ^1.3.3
-
-hooks:
-  user_defines:
-    sqlite3:
-      source: system
-      # Windows ships SQLite as winsqlite3.dll rather than sqlite3.dll.
-      name_windows: winsqlite3
-      name: sqlite3
 
 dependency_overrides:
   flutter_midi_command_linux:

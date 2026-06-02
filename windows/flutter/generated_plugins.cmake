@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   pasteboard
   screen_retriever_windows
   share_plus
+  sqlite3_flutter_libs
   universal_ble
   url_launcher_windows
   window_manager
