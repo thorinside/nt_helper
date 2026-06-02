@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:nt_helper/utils/app_directory.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,11 +54,37 @@ class DatabaseIntegrityService {
       }
     } catch (e) {
       return DatabaseIntegrityResult(
-        isCorrupt: true,
+        isCorrupt: _isDatabaseCorruptionError(e),
         error: e.toString(),
         fileExists: true,
       );
     }
+  }
+
+  @visibleForTesting
+  static bool isDatabaseCorruptionError(Object error) {
+    return _isDatabaseCorruptionError(error);
+  }
+
+  static bool _isDatabaseCorruptionError(Object error) {
+    final message = error.toString().toLowerCase();
+
+    // If sqlite3 itself cannot be loaded, the database file has not been
+    // inspected. Treating that as corruption would delete healthy user data and
+    // still leave startup broken.
+    const nativeLibraryLoadMarkers = [
+      'couldn\'t resolve native function',
+      'failed to load dynamic library',
+      'dynamiclibrary.open',
+      'sqlite3.dll',
+      'winsqlite3.dll',
+      'libsqlite3',
+    ];
+    if (nativeLibraryLoadMarkers.any(message.contains)) {
+      return false;
+    }
+
+    return true;
   }
 
   static Future<void> deleteDatabase() async {
