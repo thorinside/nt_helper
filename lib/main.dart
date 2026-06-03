@@ -78,6 +78,8 @@ class _WindowBoundsManager with WindowListener {
 
 final _windowBoundsManager = _WindowBoundsManager();
 
+bool _hasRunAppSuccessfully = false;
+
 void main() {
   StartupLogService.initialize();
   StartupLogService.log('main() entered');
@@ -87,12 +89,17 @@ void main() {
       await _bootstrapApp();
     },
     (error, stackTrace) {
+      final isStartupError = !_hasRunAppSuccessfully;
       StartupLogService.logError(
-        'UNCAUGHT startup zone error',
+        isStartupError
+            ? 'UNCAUGHT startup zone error'
+            : 'UNCAUGHT app zone error after startup',
         error,
         stackTrace,
       );
-      _showStartupFailure(error, stackTrace);
+      if (isStartupError) {
+        _showStartupFailure(error, stackTrace);
+      }
     },
   );
 }
@@ -206,6 +213,7 @@ Future<void> _bootstrapApp() async {
       child: DistingApp(),
     ),
   );
+  _hasRunAppSuccessfully = true;
   StartupLogService.log('runApp returned');
 
   // Show window after first frame renders to avoid white flash
