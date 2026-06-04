@@ -135,10 +135,30 @@ class TemplateShareService {
     };
   }
 
-  String _encodeMapping(PackedMappingData mapping) {
-    return base64Encode(
-      Uint8List.fromList([mapping.version, ...mapping.toBytes()]),
-    );
+  Map<String, Object?> _encodeMapping(PackedMappingData mapping) {
+    return {
+      'version': mapping.version,
+      'source': mapping.source,
+      'cv_input': mapping.cvInput,
+      'is_unipolar': mapping.isUnipolar,
+      'is_gate': mapping.isGate,
+      'volts': mapping.volts,
+      'delta': mapping.delta,
+      'midi_channel': mapping.midiChannel,
+      'midi_type': _midiTypeToString(mapping.midiMappingType),
+      'midi_cc': mapping.midiCC,
+      'is_midi_enabled': mapping.isMidiEnabled,
+      'is_midi_symmetric': mapping.isMidiSymmetric,
+      'is_midi_relative': mapping.isMidiRelative,
+      'midi_min': mapping.midiMin,
+      'midi_max': mapping.midiMax,
+      'i2c_cc': mapping.i2cCC,
+      'is_i2c_enabled': mapping.isI2cEnabled,
+      'is_i2c_symmetric': mapping.isI2cSymmetric,
+      'i2c_min': mapping.i2cMin,
+      'i2c_max': mapping.i2cMax,
+      'performance_page': mapping.perfPageIndex,
+    };
   }
 
   Map<int, int> _readIntMap(Object? value) {
@@ -166,17 +186,84 @@ class TemplateShareService {
   }
 
   PackedMappingData _decodeMapping(Object? value) {
-    if (value is! String) {
-      throw const FormatException('Mapping payload must be base64 text.');
+    if (value is Map<String, dynamic>) {
+      return _decodeMappingObject(value);
     }
-    final bytes = base64Decode(value);
-    if (bytes.length < 2) {
-      throw const FormatException('Mapping payload is too short.');
+    if (value is Map) {
+      return _decodeMappingObject(Map<String, dynamic>.from(value));
     }
-    return PackedMappingData.fromBytes(
-      bytes.first,
-      Uint8List.fromList(bytes.sublist(1)),
+    if (value is String) {
+      final bytes = base64Decode(value);
+      if (bytes.length < 2) {
+        throw const FormatException('Mapping payload is too short.');
+      }
+      return PackedMappingData.fromBytes(
+        bytes.first,
+        Uint8List.fromList(bytes.sublist(1)),
+      );
+    }
+    throw const FormatException('Mapping payload must be an object.');
+  }
+
+  PackedMappingData _decodeMappingObject(Map<String, dynamic> value) {
+    final midiType = _midiTypeFromString(value['midi_type'] as String?);
+    return PackedMappingData(
+      version: _optionalInt(value['version']) ?? 6,
+      source: _optionalInt(value['source']) ?? 0,
+      cvInput: _optionalInt(value['cv_input']) ?? 0,
+      isUnipolar: value['is_unipolar'] as bool? ?? false,
+      isGate: value['is_gate'] as bool? ?? false,
+      volts: _optionalInt(value['volts']) ?? 0,
+      delta: _optionalInt(value['delta']) ?? 0,
+      midiChannel: _optionalInt(value['midi_channel']) ?? 0,
+      midiMappingType: midiType,
+      midiCC: _isExpressiveMidiType(midiType)
+          ? 0
+          : _optionalInt(value['midi_cc']) ?? 0,
+      isMidiEnabled: value['is_midi_enabled'] as bool? ?? false,
+      isMidiSymmetric: value['is_midi_symmetric'] as bool? ?? false,
+      isMidiRelative: _isExpressiveMidiType(midiType)
+          ? false
+          : value['is_midi_relative'] as bool? ?? false,
+      midiMin: _optionalInt(value['midi_min']) ?? 0,
+      midiMax: _optionalInt(value['midi_max']) ?? 0,
+      i2cCC: _optionalInt(value['i2c_cc']) ?? 0,
+      isI2cEnabled: value['is_i2c_enabled'] as bool? ?? false,
+      isI2cSymmetric: value['is_i2c_symmetric'] as bool? ?? false,
+      i2cMin: _optionalInt(value['i2c_min']) ?? 0,
+      i2cMax: _optionalInt(value['i2c_max']) ?? 0,
+      perfPageIndex: _optionalInt(value['performance_page']) ?? 0,
     );
+  }
+
+  String _midiTypeToString(MidiMappingType type) {
+    return switch (type) {
+      MidiMappingType.cc => 'cc',
+      MidiMappingType.noteMomentary => 'note_momentary',
+      MidiMappingType.noteToggle => 'note_toggle',
+      MidiMappingType.cc14BitLow => 'cc_14bit_low',
+      MidiMappingType.cc14BitHigh => 'cc_14bit_high',
+      MidiMappingType.pitchBend => 'pitch_bend',
+      MidiMappingType.channelPressure => 'channel_pressure',
+    };
+  }
+
+  MidiMappingType _midiTypeFromString(String? value) {
+    return switch (value) {
+      null || 'cc' => MidiMappingType.cc,
+      'note_momentary' => MidiMappingType.noteMomentary,
+      'note_toggle' => MidiMappingType.noteToggle,
+      'cc_14bit_low' => MidiMappingType.cc14BitLow,
+      'cc_14bit_high' => MidiMappingType.cc14BitHigh,
+      'pitch_bend' => MidiMappingType.pitchBend,
+      'channel_pressure' => MidiMappingType.channelPressure,
+      _ => throw FormatException('Unknown MIDI mapping type "$value".'),
+    };
+  }
+
+  bool _isExpressiveMidiType(MidiMappingType type) {
+    return type == MidiMappingType.pitchBend ||
+        type == MidiMappingType.channelPressure;
   }
 
   PresetRoutingEntry? _readRouting(Object? value) {

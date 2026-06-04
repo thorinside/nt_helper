@@ -79,7 +79,7 @@ class MappingEditorBottomSheet extends StatelessWidget {
                   powerOfTen: powerOfTen,
                   unitString: unitString,
                   onSave: (updatedData) async {
-                    distingCubit.saveMapping(
+                    await distingCubit.saveMapping(
                       algorithmIndex,
                       parameterNumber,
                       updatedData,

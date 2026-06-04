@@ -1,10 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/metadata_import_service.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:drift/native.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -12,6 +16,51 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import '../../test_helpers/mock_midi_command.dart';
+
+class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
+
+void _emitSynchronizedClckSlot(DistingCubit cubit) {
+  cubit.emit(
+    DistingState.synchronized(
+      disting: MockDistingMidiManager(),
+      distingVersion: '1.17.0-beta',
+      firmwareVersion: FirmwareVersion('1.17.0-beta'),
+      presetName: 'Test',
+      algorithms: [
+        AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: 'clck',
+          name: 'Clock',
+          specifications: const [],
+        ),
+      ],
+      slots: [
+        Slot(
+          algorithm: Algorithm(algorithmIndex: 0, guid: 'clck', name: 'Clock'),
+          routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+          pages: ParameterPages(algorithmIndex: 0, pages: const []),
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              min: 0,
+              max: 100,
+              defaultValue: 0,
+              unit: 0,
+              name: 'Test',
+              powerOfTen: 0,
+            ),
+          ],
+          values: const [],
+          enums: const [],
+          mappings: const [],
+          valueStrings: const [],
+        ),
+      ],
+      unitStrings: const [],
+    ),
+  );
+}
 
 void main() {
   group('DistingTools - editPreset', () {
@@ -235,6 +284,39 @@ void main() {
     });
 
     group('editPreset - mapping validation', () {
+      test(
+        'should return error when MIDI mapping omits is_midi_enabled',
+        () async {
+          _emitSynchronizedClckSlot(distingCubit);
+
+          final result = await tools.editPreset({
+            'data': {
+              'name': 'test',
+              'slots': [
+                {
+                  'algorithm': {'guid': 'clck'},
+                  'parameters': [
+                    {
+                      'parameter_number': 0,
+                      'mapping': {
+                        'midi': {
+                          'midi_type': 'channel_pressure',
+                          'midi_channel': 0,
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          });
+
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(decoded['error'], contains('is_midi_enabled'));
+        },
+      );
+
       test('should validate MIDI channel is 0-15', () async {
         final result = await tools.editPreset({
           'data': {

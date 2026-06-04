@@ -42,6 +42,7 @@ void main() {
     Widget createTestWidget({
       PackedMappingData? initialData,
       FirmwareVersion? firmwareVersion,
+      Future<void> Function(PackedMappingData)? onSave,
     }) {
       if (firmwareVersion != null) {
         when(() => mockCubit.state).thenReturn(
@@ -62,7 +63,7 @@ void main() {
           child: Scaffold(
             body: PackedMappingDataEditor(
               initialData: initialData ?? testData,
-              onSave: (_) async {},
+              onSave: onSave ?? (_) async {},
               slots: mockSlots,
               algorithmIndex: 0,
               parameterNumber: 0,
@@ -241,6 +242,74 @@ void main() {
               )
               .length,
           equals(1),
+        );
+      },
+    );
+
+    testWidgets(
+      'unsupported expressive MIDI dropdown edit warns and preserves selection',
+      (tester) async {
+        final accessibilityMessages = <Object?>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                accessibilityMessages.add(message);
+                return null;
+              },
+            );
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              );
+        });
+
+        var saveCount = 0;
+        await tester.pumpWidget(
+          createTestWidget(
+            firmwareVersion: FirmwareVersion('1.16.0'),
+            initialData: testData.copyWith(
+              version: 7,
+              midiMappingType: MidiMappingType.pitchBend,
+              midiCC: 0,
+              isMidiEnabled: true,
+            ),
+            onSave: (_) async {
+              saveCount++;
+            },
+          ),
+        );
+
+        await tester.tap(find.text('MIDI'));
+        await tester.pumpAndSettle();
+
+        final dropdownFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is DropdownMenu<MidiMappingType> &&
+              widget.label.toString().contains('MIDI Type'),
+        );
+        tester
+            .widget<DropdownMenu<MidiMappingType>>(dropdownFinder)
+            .onSelected
+            ?.call(MidiMappingType.channelPressure);
+        await tester.pump();
+
+        expect(saveCount, isZero);
+        expect(
+          tester
+              .widget<DropdownMenu<MidiMappingType>>(dropdownFinder)
+              .initialSelection,
+          MidiMappingType.pitchBend,
+        );
+        expect(
+          accessibilityMessages.any(
+            (message) => message.toString().contains(
+              'Pitch bend and channel pressure mappings require firmware 1.17 or newer.',
+            ),
+          ),
+          isTrue,
         );
       },
     );

@@ -9,6 +9,15 @@ import 'package:nt_helper/models/template_metadata.dart';
 import 'package:nt_helper/services/template_share_service.dart';
 
 FullPresetSlot _slot(int index, String guid, String name) {
+  return _slotWithMapping(index, guid, name, _mapping());
+}
+
+FullPresetSlot _slotWithMapping(
+  int index,
+  String guid,
+  String name,
+  PackedMappingData mapping,
+) {
   return FullPresetSlot(
     slot: PresetSlotEntry(
       id: index + 1,
@@ -20,7 +29,7 @@ FullPresetSlot _slot(int index, String guid, String name) {
     algorithm: AlgorithmEntry(guid: guid, name: name, numSpecifications: 0),
     parameterValues: {0: index + 10},
     parameterStringValues: {1: 'Value $index'},
-    mappings: {2: _mapping()},
+    mappings: {2: mapping},
     routing: PresetRoutingEntry(
       presetSlotId: index + 1,
       routingInfoJson: [index, index + 1, index + 2],
@@ -102,6 +111,44 @@ void main() {
     expect(imported.slots.first.mappings[2], _mapping());
     expect(imported.slots.first.routing?.routingInfoJson, [0, 1, 2]);
   });
+
+  test(
+    'exports and imports canonical expressive MIDI mapping objects',
+    () async {
+      final service = TemplateShareService(db);
+      final expressiveMapping = _mapping().copyWith(
+        version: 7,
+        midiMappingType: MidiMappingType.channelPressure,
+        midiCC: 0,
+        isMidiEnabled: true,
+        isMidiRelative: false,
+      );
+      final source = FullPresetDetails(
+        preset: PresetEntry(
+          id: 1,
+          name: 'Expressive Template',
+          lastModified: DateTime(2026),
+          isTemplate: true,
+        ),
+        slots: [_slotWithMapping(0, 'AAAA', 'Alpha', expressiveMapping)],
+      );
+
+      final jsonText = service.encodeTemplate(source);
+      final decoded = jsonDecode(jsonText) as Map<String, dynamic>;
+      final rawMapping =
+          (((decoded['template'] as Map<String, dynamic>)['slots'] as List)
+                  .single
+              as Map<String, dynamic>)['mappings']['2'];
+      expect(rawMapping, isA<Map<String, dynamic>>());
+      expect(rawMapping['midi_type'], 'channel_pressure');
+      expect(rawMapping['is_midi_enabled'], isTrue);
+
+      final importedId = await service.importTemplate(jsonText);
+      final imported = (await db.presetsDao.getFullPresetDetails(importedId))!;
+
+      expect(imported.slots.single.mappings[2], expressiveMapping);
+    },
+  );
 
   test('rejects unrelated JSON payloads', () async {
     await expectLater(

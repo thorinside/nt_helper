@@ -4381,6 +4381,11 @@ class DistingTools {
     if (mappingData.containsKey('midi')) {
       final midi = mappingData['midi'] as Map<String, dynamic>?;
       if (midi != null) {
+        if (!midi.containsKey('is_midi_enabled')) {
+          return MCPUtils.buildError(
+            'MIDI mapping requires "is_midi_enabled" field (true/false). Include this field to enable MIDI control.',
+          );
+        }
         if (midi.containsKey('midi_channel')) {
           final channel = midi['midi_channel'] as int?;
           if (channel != null && (channel < 0 || channel > 15)) {

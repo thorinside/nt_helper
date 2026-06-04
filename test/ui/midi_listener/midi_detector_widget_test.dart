@@ -74,6 +74,7 @@ void main() {
       await tester.pump();
 
       expect(callbackCount, isZero);
+      expect(find.text('Pitch bend Ch 3'), findsNothing);
     });
 
     testWidgets('does not replay stale detection on connection state update', (

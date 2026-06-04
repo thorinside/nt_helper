@@ -105,36 +105,6 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
         _statusMessage = 'Connected to ${s.selectedDevice!.name}.';
       }
       _lastHandledDetectionTime = s.lastDetectedTime;
-
-      // Replay last detection after first frame
-      if (s.lastDetectedType != null && s.lastDetectedChannel != null) {
-        final type = s.lastDetectedType!;
-        final channel = s.lastDetectedChannel!;
-        final eventInfo = switch (type) {
-          MidiEventType.cc => ('CC', s.lastDetectedCc),
-          MidiEventType.noteOn => ('Note On', s.lastDetectedNote),
-          MidiEventType.noteOff => ('Note Off', s.lastDetectedNote),
-          MidiEventType.cc14BitLowFirst => ('14-bit CC', s.lastDetectedCc),
-          MidiEventType.cc14BitHighFirst => ('14-bit CC', s.lastDetectedCc),
-          MidiEventType.pitchBend => ('Pitch bend', s.lastDetectedCc),
-          MidiEventType.channelPressure => (
-            'Channel pressure',
-            s.lastDetectedCc,
-          ),
-        };
-        final eventNumber = eventInfo.$2;
-        if (eventNumber != null) {
-          _statusMessage = switch (type) {
-            MidiEventType.cc14BitLowFirst || MidiEventType.cc14BitHighFirst =>
-              '14-bit CC $eventNumber Ch ${channel + 1}',
-            MidiEventType.pitchBend => 'Pitch bend Ch ${channel + 1}',
-            MidiEventType.channelPressure =>
-              'Channel pressure Ch ${channel + 1}',
-            _ =>
-              'Detected ${eventInfo.$1} $eventNumber on channel ${channel + 1}',
-          };
-        }
-      }
     }
   }
 

@@ -276,11 +276,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           _isDirty = false;
           _isSaving = false;
         });
-        SemanticsService.sendAnnouncement(
-          View.of(context),
-          'Changes saved',
-          TextDirection.ltr,
-        );
       }
     } catch (e) {
       if (attempt < _maxRetries) {
@@ -605,6 +600,11 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               label: const Text("MIDI Type"),
               onSelected: (newValue) {
                 if (newValue == null) return;
+                if (_isExpressiveMidiType(newValue) &&
+                    !supportsExpressiveMidiMapping) {
+                  _announceUnsupportedExpressiveMidiMapping();
+                  return;
+                }
                 setState(() {
                   _data = _data.copyWith(
                     midiMappingType: newValue,
