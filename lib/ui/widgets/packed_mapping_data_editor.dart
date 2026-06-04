@@ -576,6 +576,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               label: Text("MIDI Channel"),
               onSelected: (newValue) {
                 if (newValue == null) return;
+                if (_warnIfUnsupportedExpressiveMidiControlEdit()) return;
                 setState(() {
                   _data = _data.copyWith(midiChannel: newValue);
                 });
@@ -642,6 +643,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             dense: true,
             contentPadding: EdgeInsets.zero,
             onChanged: (val) {
+              if (_warnIfUnsupportedExpressiveMidiControlEdit()) return;
               setState(() {
                 _data = _data.copyWith(isMidiEnabled: val);
               });
@@ -654,6 +656,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             dense: true,
             contentPadding: EdgeInsets.zero,
             onChanged: (val) {
+              if (_warnIfUnsupportedExpressiveMidiControlEdit()) return;
               setState(() {
                 _data = _data.copyWith(isMidiSymmetric: val);
               });
@@ -689,6 +692,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             minValue: _data.midiMin,
             maxValue: _data.midiMax,
             onChanged: (rawMin, rawMax) {
+              if (_warnIfUnsupportedExpressiveMidiControlEdit()) return;
               final previousMin = _data.midiMin;
               setState(() {
                 _data = _data.copyWith(midiMin: rawMin, midiMax: rawMax);
@@ -782,6 +786,15 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   bool _isExpressiveMidiType(MidiMappingType type) {
     return type == MidiMappingType.pitchBend ||
         type == MidiMappingType.channelPressure;
+  }
+
+  bool _warnIfUnsupportedExpressiveMidiControlEdit() {
+    if (_isExpressiveMidiType(_data.midiMappingType) &&
+        !_supportsExpressiveMidiMapping()) {
+      _announceUnsupportedExpressiveMidiMapping();
+      return true;
+    }
+    return false;
   }
 
   int _mappingVersionForType(MidiMappingType type) {

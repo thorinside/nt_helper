@@ -314,6 +314,74 @@ void main() {
       },
     );
 
+    testWidgets(
+      'unsupported expressive MIDI control edit warns and preserves state',
+      (tester) async {
+        final accessibilityMessages = <Object?>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                accessibilityMessages.add(message);
+                return null;
+              },
+            );
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              );
+        });
+
+        var saveCount = 0;
+        await tester.pumpWidget(
+          createTestWidget(
+            firmwareVersion: FirmwareVersion('1.16.0'),
+            initialData: testData.copyWith(
+              version: 7,
+              midiMappingType: MidiMappingType.pitchBend,
+              midiCC: 0,
+              isMidiEnabled: true,
+            ),
+            onSave: (_) async {
+              saveCount++;
+            },
+          ),
+        );
+
+        await tester.tap(find.text('MIDI'));
+        await tester.pumpAndSettle();
+
+        final enabledSwitchFinder = find.byWidgetPredicate((widget) {
+          if (widget is! SwitchListTile) return false;
+          final title = widget.title;
+          return title is Text && title.data == 'MIDI Enabled';
+        });
+        tester
+            .widget<SwitchListTile>(enabledSwitchFinder)
+            .onChanged
+            ?.call(false);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+
+        expect(saveCount, isZero);
+        expect(
+          tester.widget<SwitchListTile>(enabledSwitchFinder).value,
+          isTrue,
+        );
+        expect(
+          accessibilityMessages.any(
+            (message) => message.toString().contains(
+              'Pitch bend and channel pressure mappings require firmware 1.17 or newer.',
+            ),
+          ),
+          isTrue,
+        );
+      },
+    );
+
     testWidgets('Pitch bend disables MIDI CC field and relative switch', (
       tester,
     ) async {
