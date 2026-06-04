@@ -15,6 +15,8 @@ String formatMidiDetectionMessage({
   return switch (type) {
     MidiEventType.cc14BitLowFirst || MidiEventType.cc14BitHighFirst =>
       '14-bit CC $eventNumber Ch ${channel + 1}',
+    MidiEventType.pitchBend => 'Pitch bend Ch ${channel + 1}',
+    MidiEventType.channelPressure => 'Channel pressure Ch ${channel + 1}',
     _ => 'Detected $eventTypeStr $eventNumber on channel ${channel + 1}',
   };
 }
@@ -113,6 +115,8 @@ void main() {
           MidiEventType.noteOff => 'Note Off',
           MidiEventType.cc14BitLowFirst => '14-bit CC',
           MidiEventType.cc14BitHighFirst => '14-bit CC',
+          MidiEventType.pitchBend => 'Pitch bend',
+          MidiEventType.channelPressure => 'Channel pressure',
         };
 
         final message = formatMidiDetectionMessage(
@@ -124,7 +128,10 @@ void main() {
 
         // All messages should be non-empty and contain the event number
         expect(message, isNotEmpty);
-        expect(message, contains('64'));
+        if (type != MidiEventType.pitchBend &&
+            type != MidiEventType.channelPressure) {
+          expect(message, contains('64'));
+        }
         expect(message, anyOf(contains('Ch 1'), contains('channel 1')));
       }
     });

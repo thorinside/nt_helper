@@ -201,7 +201,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     if (!_isDetecting) return;
 
     final data = packet.data;
-    if (data.isEmpty || data.length < 3) {
+    if (data.isEmpty) {
       _debugLog(
         'Short packet dropped: ${data.length} bytes from ${packet.device.name}',
       );
@@ -216,6 +216,8 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       0xB0 => 'CC',
       0x90 => 'NoteOn',
       0x80 => 'NoteOff',
+      0xE0 => 'PitchBend',
+      0xD0 => 'ChannelPressure',
       _ => '0x${messageType.toRadixString(16).toUpperCase()}',
     };
     _debugLog(
@@ -225,7 +227,20 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
     DetectionResult? result;
 
-    if (messageType == 0xB0) {
+    if (messageType == 0xD0) {
+      if (data.length < 2) {
+        _debugLog(
+          'Short channel pressure packet dropped: ${data.length} bytes',
+        );
+        return;
+      }
+      result = _detectionEngine.processChannelPressure(channel);
+    } else if (data.length < 3) {
+      _debugLog(
+        'Short packet dropped: ${data.length} bytes from ${packet.device.name}',
+      );
+      return;
+    } else if (messageType == 0xB0) {
       // CC message
       result = _detectionEngine.processCc(channel, data[1], data[2]);
     } else if (messageType == 0x90) {
@@ -238,13 +253,18 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     } else if (messageType == 0x80) {
       // Note Off
       result = _detectionEngine.processNoteOff(channel, data[1]);
+    } else if (messageType == 0xE0) {
+      // Pitch Bend
+      result = _detectionEngine.processPitchBend(channel);
     }
 
     if (result != null) {
       _emitDetectionResult(result);
     } else if (messageType == 0xB0 ||
         messageType == 0x90 ||
-        messageType == 0x80) {
+        messageType == 0x80 ||
+        messageType == 0xE0 ||
+        messageType == 0xD0) {
       _debugLog('Sub-threshold activity: $typeLabel ch=$channel');
       // Sub-threshold: emit state update with null detection (preserves activity indication)
       final currentState = state;
@@ -271,7 +291,9 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       final isCcType =
           result.type == MidiEventType.cc ||
           result.type == MidiEventType.cc14BitLowFirst ||
-          result.type == MidiEventType.cc14BitHighFirst;
+          result.type == MidiEventType.cc14BitHighFirst ||
+          result.type == MidiEventType.pitchBend ||
+          result.type == MidiEventType.channelPressure;
 
       emit(
         currentState.copyWith(

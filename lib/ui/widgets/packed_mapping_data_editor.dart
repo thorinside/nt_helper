@@ -553,6 +553,14 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// MIDI Editor
   /// ---------------------
   Widget _buildMidiEditor() {
+    final supportsExpressiveMidiMapping = _supportsExpressiveMidiMapping();
+    final expressiveMappingSelected = _isExpressiveMidiType(
+      _data.midiMappingType,
+    );
+    final showExpressiveMidiTypes =
+        supportsExpressiveMidiMapping || expressiveMappingSelected;
+    final midiTypeEntries = _midiTypeEntries(showExpressiveMidiTypes);
+
     // Safely clamp the current MIDI channel to 0..15
     final midiChannelValue = (_data.midiChannel >= 0 && _data.midiChannel <= 15)
         ? _data.midiChannel
@@ -596,44 +604,35 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               onSelected: (newValue) {
                 if (newValue == null) return;
                 setState(() {
-                  _data = _data.copyWith(midiMappingType: newValue);
+                  _data = _data.copyWith(
+                    midiMappingType: newValue,
+                    midiCC: _isExpressiveMidiType(newValue) ? 0 : _data.midiCC,
+                    version: _mappingVersionForType(newValue),
+                  );
                   // If type is not CC, disable relative
                   if (newValue != MidiMappingType.cc) {
                     _data = _data.copyWith(isMidiRelative: false);
                   }
+                  _midiCcController.text = _data.midiCC.toString();
                 });
                 _triggerOptimisticSave();
               },
-              dropdownMenuEntries: const [
-                DropdownMenuEntry<MidiMappingType>(
-                  value: MidiMappingType.cc,
-                  label: 'CC',
-                ),
-                DropdownMenuEntry<MidiMappingType>(
-                  value: MidiMappingType.noteMomentary,
-                  label: 'Note - Momentary',
-                ),
-                DropdownMenuEntry<MidiMappingType>(
-                  value: MidiMappingType.noteToggle,
-                  label: 'Note - Toggle',
-                ),
-                DropdownMenuEntry<MidiMappingType>(
-                  value: MidiMappingType.cc14BitLow,
-                  label: '14 bit CC - low',
-                ),
-                DropdownMenuEntry<MidiMappingType>(
-                  value: MidiMappingType.cc14BitHigh,
-                  label: '14 bit CC - high',
-                ),
-              ],
+              dropdownMenuEntries: midiTypeEntries,
             ),
           ),
           const SizedBox(height: 12),
           _buildNumericField(
-            label: 'MIDI CC / Note (0–128)',
+            label: expressiveMappingSelected
+                ? 'MIDI CC / Note (ignored)'
+                : _data.version >= 7
+                ? 'MIDI CC / Note (0-127)'
+                : 'MIDI CC / Note (0-128)',
             controller: _midiCcController,
             onSubmit: _updateMidiCcFromController,
-            onChanged: _triggerOptimisticSave,
+            onChanged: expressiveMappingSelected
+                ? null
+                : _triggerOptimisticSave,
+            enabled: !expressiveMappingSelected,
           ),
           SwitchListTile(
             title: const Text('MIDI Enabled'),
@@ -677,7 +676,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Text(
-                '(N/A for Notes and 14-bit CC)',
+                '(N/A for notes, 14-bit CC, pitch bend, and channel pressure)',
                 style: TextStyle(
                   color: Theme.of(context).disabledColor,
                   fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
@@ -726,11 +725,26 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                     detectedMappingType = MidiMappingType.cc14BitLow;
                   } else if (type == MidiEventType.cc14BitHighFirst) {
                     detectedMappingType = MidiMappingType.cc14BitHigh;
+                  } else if (type == MidiEventType.pitchBend) {
+                    if (!supportsExpressiveMidiMapping) {
+                      _announceUnsupportedExpressiveMidiMapping();
+                      return;
+                    }
+                    detectedMappingType = MidiMappingType.pitchBend;
+                  } else if (type == MidiEventType.channelPressure) {
+                    if (!supportsExpressiveMidiMapping) {
+                      _announceUnsupportedExpressiveMidiMapping();
+                      return;
+                    }
+                    detectedMappingType = MidiMappingType.channelPressure;
                   }
+
+                  final detectedNumber =
+                      _isExpressiveMidiType(detectedMappingType) ? 0 : number;
 
                   // Skip save if nothing actually changed
                   if (_data.midiMappingType == detectedMappingType &&
-                      _data.midiCC == number &&
+                      _data.midiCC == detectedNumber &&
                       _data.midiChannel == channel &&
                       _data.isMidiEnabled) {
                     return;
@@ -739,12 +753,16 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   setState(() {
                     _data = _data.copyWith(
                       midiMappingType: detectedMappingType,
-                      midiCC: number,
+                      midiCC: detectedNumber,
                       midiChannel: channel,
                       isMidiEnabled: true,
+                      isMidiRelative: detectedMappingType == MidiMappingType.cc
+                          ? _data.isMidiRelative
+                          : false,
+                      version: _mappingVersionForType(detectedMappingType),
                     );
                   });
-                  _midiCcController.text = number.toString();
+                  _midiCcController.text = detectedNumber.toString();
                   _triggerOptimisticSave(force: true);
                 },
           ),
@@ -753,9 +771,77 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     );
   }
 
+  bool _supportsExpressiveMidiMapping() {
+    final state = context.read<DistingCubit>().state;
+    return state is DistingStateSynchronized &&
+        state.firmwareVersion.hasExpressiveMidiMapping;
+  }
+
+  bool _isExpressiveMidiType(MidiMappingType type) {
+    return type == MidiMappingType.pitchBend ||
+        type == MidiMappingType.channelPressure;
+  }
+
+  int _mappingVersionForType(MidiMappingType type) {
+    if (_isExpressiveMidiType(type) && _supportsExpressiveMidiMapping()) {
+      return 7;
+    }
+    return _data.version;
+  }
+
+  List<DropdownMenuEntry<MidiMappingType>> _midiTypeEntries(
+    bool includeExpressiveTypes,
+  ) {
+    return [
+      const DropdownMenuEntry<MidiMappingType>(
+        value: MidiMappingType.cc,
+        label: 'CC',
+      ),
+      const DropdownMenuEntry<MidiMappingType>(
+        value: MidiMappingType.noteMomentary,
+        label: 'Note - Momentary',
+      ),
+      const DropdownMenuEntry<MidiMappingType>(
+        value: MidiMappingType.noteToggle,
+        label: 'Note - Toggle',
+      ),
+      const DropdownMenuEntry<MidiMappingType>(
+        value: MidiMappingType.cc14BitLow,
+        label: '14 bit CC - low',
+      ),
+      const DropdownMenuEntry<MidiMappingType>(
+        value: MidiMappingType.cc14BitHigh,
+        label: '14 bit CC - high',
+      ),
+      if (includeExpressiveTypes) ...const [
+        DropdownMenuEntry<MidiMappingType>(
+          value: MidiMappingType.pitchBend,
+          label: 'Pitch bend',
+        ),
+        DropdownMenuEntry<MidiMappingType>(
+          value: MidiMappingType.channelPressure,
+          label: 'Channel pressure',
+        ),
+      ],
+    ];
+  }
+
+  void _announceUnsupportedExpressiveMidiMapping() {
+    const message =
+        'Pitch bend and channel pressure mappings require firmware 1.17 or newer.';
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      TextDirection.ltr,
+    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text(message)));
+  }
+
   void _updateMidiCcFromController() {
     final parsed = int.tryParse(_midiCcController.text) ?? _data.midiCC;
-    final clamped = parsed.clamp(0, 128);
+    final clamped = parsed.clamp(0, _data.version >= 7 ? 127 : 128);
     setState(() {
       _data = _data.copyWith(midiCC: clamped);
     });
@@ -1214,11 +1300,13 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     required VoidCallback onSubmit,
     VoidCallback? onChanged,
     bool signed = false,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: DigitShortcutBlocker(
         child: TextField(
+          enabled: enabled,
           keyboardType: signed
               ? const TextInputType.numberWithOptions(signed: true)
               : TextInputType.number,

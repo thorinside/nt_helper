@@ -1124,7 +1124,7 @@ class MCPAlgorithmTools {
       result['midi'] = {
         'is_midi_enabled': data.isMidiEnabled,
         'midi_channel': data.midiChannel,
-        'midi_type': data.midiMappingType.name,
+        'midi_type': _midiTypeValueToString(data.midiMappingType.value),
         'midi_cc': data.midiCC,
         'is_midi_symmetric': data.isMidiSymmetric,
         'is_midi_relative': data.isMidiRelative,
@@ -1155,6 +1155,27 @@ class MCPAlgorithmTools {
   /// Helper to encode bytes to base64 string.
   String _base64Encode(List<int> bytes) {
     return base64.encode(bytes);
+  }
+
+  String _midiTypeValueToString(int typeValue) {
+    switch (typeValue) {
+      case 0:
+        return 'cc';
+      case 1:
+        return 'note_momentary';
+      case 2:
+        return 'note_toggle';
+      case 3:
+        return 'cc_14bit_low';
+      case 4:
+        return 'cc_14bit_high';
+      case 5:
+        return 'pitch_bend';
+      case 6:
+        return 'channel_pressure';
+      default:
+        return 'cc';
+    }
   }
 
   /// Convert string display mode to DisplayMode enum.

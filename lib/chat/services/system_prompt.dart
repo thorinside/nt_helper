@@ -42,7 +42,7 @@ Today's date is $date.
 - **Performance pages**: 1-30 valid, 0 to unassign. Multiple parameters can share a page. In the custom UI, parameters are grouped in threes, each controlled by a physical knob.
 - **Mappings** (partial updates — only include fields you want to change):
   - `cv`: `cv_input` (0=none, 1-12), `is_unipolar`, `is_gate`, `volts`, `delta`. CV *adds* to the base parameter value.
-  - `midi`: `is_midi_enabled`, `midi_channel` (0-15), `midi_cc` (0-128), `midi_type`, `is_midi_symmetric`, `is_midi_relative`, `midi_min`, `midi_max`. MIDI *sets* the parameter value directly.
+  - `midi`: `is_midi_enabled`, `midi_channel` (0-15), `midi_cc` (0-128; ignored for pitch_bend/channel_pressure), `midi_type`, `is_midi_symmetric`, `is_midi_relative`, `midi_min`, `midi_max`. MIDI *sets* the parameter value directly.
   - `i2c`: `is_i2c_enabled`, `i2c_cc` (0-255), `is_i2c_symmetric`, `i2c_min`, `i2c_max`. I2C *sets* the parameter value directly.
   - `performance_page`: 0-30.
 - **Search**: Results sorted by relevance. Use first match unless ambiguous — then present top results and ask.

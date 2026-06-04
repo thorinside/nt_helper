@@ -631,7 +631,7 @@ F0 00 21 27 6D <id> 4B <slot>
   <delta: 3 bytes (21-bit short)>
   --- MIDI mapping ---
   <cc: 1 byte>
-  <flags: 1 byte>       (bit 0 = enabled, bit 1 = symmetric, bit 2 = aftertouch, bits 3-6 = channel)
+  <flags: 1 byte>       (bit 0 = enabled, bit 1 = symmetric, bit 2 = legacy aftertouch before mapping v7, bits 3-6 = channel)
   [if version >= 2: <flags2: 1 byte>  (bit 0 = relative, bits 2-6 = type)]
   <min: 3 bytes>
   <max: 3 bytes>
@@ -786,7 +786,7 @@ F0 00 21 27 6D <id> 54 <slot> <param as 21-bit short> <mappingVersion> <index> F
 
 | Field | Description |
 |-------|-------------|
-| `mappingVersion` | Current mapping data version (currently `5`) |
+| `mappingVersion` | Current mapping data version (currently `7`) |
 | `index` | Performance page position (0–30) |
 
 ---

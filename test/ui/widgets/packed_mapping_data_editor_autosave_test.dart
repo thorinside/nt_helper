@@ -132,7 +132,7 @@ void main() {
       final textFieldFinder = find.byWidgetPredicate(
         (widget) =>
             widget is TextField &&
-            widget.decoration?.labelText == 'MIDI CC / Note (0–128)',
+            widget.decoration?.labelText == 'MIDI CC / Note (0-128)',
       );
 
       await tester.enterText(textFieldFinder, '64');
@@ -836,7 +836,7 @@ void main() {
       final textFieldFinder = find.byWidgetPredicate(
         (widget) =>
             widget is TextField &&
-            widget.decoration?.labelText == 'MIDI CC / Note (0–128)',
+            widget.decoration?.labelText == 'MIDI CC / Note (0-128)',
       );
 
       await tester.enterText(textFieldFinder, '100');

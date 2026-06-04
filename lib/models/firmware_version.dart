@@ -26,6 +26,11 @@ class FirmwareVersion {
     return major > 1 || (major == 1 && minor >= 16);
   }
 
+  /// Firmware 1.17+ supports MIDI mapping types for pitch bend and channel pressure.
+  bool get hasExpressiveMidiMapping {
+    return isSupported('1.17.0');
+  }
+
   /// Firmware 1.15+ supports entering bootloader mode via SysEx.
   bool get hasBootloaderSysEx {
     return major > 1 || (major == 1 && minor >= 15);

@@ -3,16 +3,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}
 
+class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
+
 void main() {
   late MockDistingCubit mockCubit;
+  late MockDistingMidiManager mockDisting;
 
   setUp(() {
     mockCubit = MockDistingCubit();
+    mockDisting = MockDistingMidiManager();
     when(() => mockCubit.state).thenReturn(DistingStateInitial());
     when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
   });
@@ -25,7 +31,23 @@ void main() {
       mockSlots = [];
     });
 
-    Widget createTestWidget({PackedMappingData? initialData}) {
+    Widget createTestWidget({
+      PackedMappingData? initialData,
+      FirmwareVersion? firmwareVersion,
+    }) {
+      if (firmwareVersion != null) {
+        when(() => mockCubit.state).thenReturn(
+          DistingState.synchronized(
+            disting: mockDisting,
+            distingVersion: firmwareVersion.versionString,
+            firmwareVersion: firmwareVersion,
+            presetName: 'Test',
+            algorithms: const [],
+            slots: mockSlots,
+            unitStrings: const [],
+          ),
+        );
+      }
       return MaterialApp(
         home: BlocProvider<DistingCubit>.value(
           value: mockCubit,
@@ -72,6 +94,96 @@ void main() {
       expect(dropdown.dropdownMenuEntries[2].label, equals('Note - Toggle'));
       expect(dropdown.dropdownMenuEntries[3].label, equals('14 bit CC - low'));
       expect(dropdown.dropdownMenuEntries[4].label, equals('14 bit CC - high'));
+    });
+
+    testWidgets('MIDI type dropdown adds expressive types on firmware 1.17', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestWidget(firmwareVersion: FirmwareVersion('1.17.0-beta')),
+      );
+
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      final dropdownFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is DropdownMenu<MidiMappingType> &&
+            widget.label.toString().contains('MIDI Type'),
+      );
+      final dropdown = tester.widget<DropdownMenu<MidiMappingType>>(
+        dropdownFinder,
+      );
+
+      expect(dropdown.dropdownMenuEntries.length, equals(7));
+      expect(dropdown.dropdownMenuEntries[5].label, equals('Pitch bend'));
+      expect(dropdown.dropdownMenuEntries[6].label, equals('Channel pressure'));
+    });
+
+    testWidgets(
+      'MIDI type dropdown omits expressive types before firmware 1.17',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(firmwareVersion: FirmwareVersion('1.16.0')),
+        );
+
+        await tester.tap(find.text('MIDI'));
+        await tester.pumpAndSettle();
+
+        final dropdownFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is DropdownMenu<MidiMappingType> &&
+              widget.label.toString().contains('MIDI Type'),
+        );
+        final dropdown = tester.widget<DropdownMenu<MidiMappingType>>(
+          dropdownFinder,
+        );
+
+        expect(dropdown.dropdownMenuEntries.length, equals(5));
+        expect(
+          dropdown.dropdownMenuEntries.map((entry) => entry.label),
+          isNot(contains('Pitch bend')),
+        );
+        expect(
+          dropdown.dropdownMenuEntries.map((entry) => entry.label),
+          isNot(contains('Channel pressure')),
+        );
+      },
+    );
+
+    testWidgets('Pitch bend disables MIDI CC field and relative switch', (
+      tester,
+    ) async {
+      final pitchBendData = testData.copyWith(
+        midiMappingType: MidiMappingType.pitchBend,
+        midiCC: 0,
+        version: 7,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          initialData: pitchBendData,
+          firmwareVersion: FirmwareVersion('1.17.0-beta'),
+        ),
+      );
+
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      final ccFieldFinder = find.byWidgetPredicate((widget) {
+        if (widget is! TextField) return false;
+        return widget.decoration?.labelText == 'MIDI CC / Note (ignored)';
+      });
+      expect(ccFieldFinder, findsOneWidget);
+      expect(tester.widget<TextField>(ccFieldFinder).enabled, isFalse);
+
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Relative';
+      });
+      expect(switchFinder, findsOneWidget);
+      expect(tester.widget<SwitchListTile>(switchFinder).onChanged, isNull);
     });
 
     testWidgets('Selecting 14-bit CC low updates data model', (tester) async {
@@ -272,7 +384,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify N/A message is displayed
-      expect(find.text('(N/A for Notes and 14-bit CC)'), findsOneWidget);
+      expect(
+        find.text(
+          '(N/A for notes, 14-bit CC, pitch bend, and channel pressure)',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Does not display N/A message for CC type', (tester) async {
@@ -540,7 +657,7 @@ void main() {
       final textFieldFinder = find.byWidgetPredicate(
         (widget) =>
             widget is TextField &&
-            widget.decoration?.labelText == 'MIDI CC / Note (0–128)',
+            widget.decoration?.labelText == 'MIDI CC / Note (0-128)',
       );
 
       // Enter text

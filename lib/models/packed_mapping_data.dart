@@ -8,7 +8,9 @@ enum MidiMappingType {
   noteMomentary(1),
   noteToggle(2),
   cc14BitLow(3),
-  cc14BitHigh(4);
+  cc14BitHigh(4),
+  pitchBend(5),
+  channelPressure(6);
 
   final int value;
   const MidiMappingType(this.value);
@@ -106,9 +108,9 @@ class PackedMappingData {
 
     // Parse using the highest known feature set. Version-conditional reads
     // below handle per-version field presence. For truly unknown future
-    // versions (> 6) we parse as v6 and let safe-read helpers handle any
+    // versions (> 7) we parse as v7 and let safe-read helpers handle any
     // fields beyond the data boundary.
-    final int parseVersion = version.clamp(1, 6);
+    final int parseVersion = version.clamp(1, 7);
 
     int offset = 0;
     final dataLength = data.length;
@@ -144,7 +146,8 @@ class PackedMappingData {
     //   v4: CV(7) + MIDI(9) + I2C(9)           = 25
     //   v5: CV(7) + MIDI(9) + I2C(9) + Perf(1) = 26
     //   v6: CV(7) + MIDI(9) + I2C(9)           = 25  (perf page removed)
-    // For unknown future versions (> 6), require the v4 core (25 bytes).
+    //   v7: CV(7) + MIDI(9) + I2C(9)           = 25  (pitch bend/channel pressure)
+    // For unknown future versions (> 7), require the v4 core (25 bytes).
     final int expectedLength = switch (parseVersion) {
       1 => 22,
       2 => 23,
@@ -173,8 +176,9 @@ class PackedMappingData {
     final midiFlags = safeReadByte(offset++);
     final midiFlags2 = parseVersion >= 2 ? safeReadByte(offset++) : 0;
 
-    // Handle aftertouch flag
-    if (midiFlags & 4 != 0) {
+    // Mapping v7 replaced the legacy CC 128 aftertouch convention with
+    // explicit MIDI type values for pitch bend and channel pressure.
+    if (parseVersion < 7 && midiFlags & 4 != 0) {
       midiCC = 128;
     }
 
@@ -186,7 +190,7 @@ class PackedMappingData {
     final isMidiRelative = (midiFlags2 & 0x01) != 0;
     final typeValue = midiFlags2 >> 2; // Extract type from bits 2-6
 
-    // Map type value to MidiMappingType enum (supports 0-4)
+    // Map type value to MidiMappingType enum.
     final MidiMappingType midiMappingType;
     if (typeValue >= 0 && typeValue < MidiMappingType.values.length) {
       midiMappingType = MidiMappingType.values[typeValue];
@@ -244,7 +248,7 @@ class PackedMappingData {
   }
 
   Uint8List encodeCVPackedData() {
-    final int encodeVersion = min(version, 6);
+    final int encodeVersion = min(version, 7);
 
     // Compute the flags
     int flags = (isUnipolar ? 1 : 0) | (isGate ? 2 : 0);
@@ -262,9 +266,13 @@ class PackedMappingData {
   }
 
   Uint8List encodeMIDIPackedData() {
-    final int encodeVersion = min(version, 6);
+    final int encodeVersion = min(version, 7);
 
-    var adjustedCC = midiCC;
+    var adjustedCC =
+        midiMappingType == MidiMappingType.pitchBend ||
+            midiMappingType == MidiMappingType.channelPressure
+        ? 0
+        : midiCC;
 
     // Compute the flags
     int flags =
@@ -275,8 +283,8 @@ class PackedMappingData {
     // Encode midiFlags2 using bit-shift: relative flag (bit 0) and type value (bits 2-6)
     int midiFlags2 = (isMidiRelative ? 1 : 0) | (midiMappingType.value << 2);
 
-    // Adjust the CC number and flags if necessary (for Aftertouch)
-    if (adjustedCC == 128) {
+    // Adjust the CC number and flags if necessary for legacy aftertouch.
+    if (encodeVersion < 7 && adjustedCC == 128) {
       adjustedCC = 0;
       flags |= (1 << 2); // Use bit 2 of flags for Aftertouch indication
     }
@@ -295,7 +303,7 @@ class PackedMappingData {
   }
 
   Uint8List encodeI2CPackedData() {
-    final int encodeVersion = min(version, 6);
+    final int encodeVersion = min(version, 7);
 
     var adjustedCC = i2cCC;
 
@@ -316,7 +324,7 @@ class PackedMappingData {
 
   // Convert back to Uint8List (excluding the version byte itself)
   Uint8List toBytes() {
-    final int encodeVersion = min(version, 6);
+    final int encodeVersion = min(version, 7);
 
     final cvBytes = encodeCVPackedData();
     final midiBytes = encodeMIDIPackedData();

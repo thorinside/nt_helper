@@ -729,6 +729,31 @@ void main() {
       expect(mapping.containsKey('i2c'), isFalse);
     });
 
+    test('serializes expressive MIDI mapping type as snake case', () async {
+      when(() => controller.getMappingsForSlot(0)).thenAnswer(
+        (_) async => [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: makeMappingData(isMidiEnabled: true, midiCC: 0)
+                .copyWith(
+                  midiMappingType: MidiMappingType.channelPressure,
+                  version: 7,
+                ),
+          ),
+          testMappings[1],
+          testMappings[2],
+        ],
+      );
+
+      final result = await algoTools.showParameter('0:0');
+      final json = jsonDecode(result) as Map<String, dynamic>;
+      final mapping = json['mapping'] as Map<String, dynamic>;
+      final midi = mapping['midi'] as Map<String, dynamic>;
+
+      expect(midi['midi_type'], equals('channel_pressure'));
+    });
+
     test('includes only i2c when i2c enabled', () async {
       when(() => controller.getMappingsForSlot(0)).thenAnswer(
         (_) async => [

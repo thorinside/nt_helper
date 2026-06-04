@@ -33,4 +33,22 @@ void main() {
       expect(version.hasPerfPageItems, false);
     });
   });
+
+  group('FirmwareVersion.hasExpressiveMidiMapping', () {
+    test('returns false before v1.17', () {
+      expect(FirmwareVersion('1.16.9').hasExpressiveMidiMapping, false);
+    });
+
+    test('returns true for v1.17 beta strings', () {
+      expect(FirmwareVersion('1.17.0-beta').hasExpressiveMidiMapping, true);
+    });
+
+    test('returns true for v1.17 release', () {
+      expect(FirmwareVersion('1.17.0').hasExpressiveMidiMapping, true);
+    });
+
+    test('returns true for v2.0', () {
+      expect(FirmwareVersion('2.0').hasExpressiveMidiMapping, true);
+    });
+  });
 }

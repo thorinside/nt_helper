@@ -447,7 +447,7 @@ class ToolRegistry {
                 'midi': {
                   'type': 'object',
                   'description':
-                      'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128), midi_type, is_midi_symmetric, is_midi_relative, midi_min, midi_max',
+                      'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128; ignored for pitch_bend/channel_pressure), midi_type, is_midi_symmetric, is_midi_relative, midi_min, midi_max',
                 },
                 'i2c': {
                   'type': 'object',

@@ -11,9 +11,18 @@ class _MappingDelegate {
     PackedMappingData data,
   ) async {
     switch (_cubit.state) {
-      case DistingStateSynchronized _:
+      case DistingStateSynchronized currentState:
         final disting = _cubit.requireDisting();
-        await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
+        if (_isExpressiveMidiType(data.midiMappingType) &&
+            !currentState.firmwareVersion.hasExpressiveMidiMapping) {
+          return;
+        }
+        final normalizedData = _normalizeMappingForFirmware(data, currentState);
+        await disting.requestSetMapping(
+          algorithmIndex,
+          parameterNumber,
+          normalizedData,
+        );
         await _cubit._refreshStateFromManager();
         final after = _cubit.state;
         if (after is DistingStateSynchronized) {
@@ -23,6 +32,32 @@ class _MappingDelegate {
       default:
       // Handle other cases or errors
     }
+  }
+
+  PackedMappingData _normalizeMappingForFirmware(
+    PackedMappingData data,
+    DistingStateSynchronized state,
+  ) {
+    final isExpressive = _isExpressiveMidiType(data.midiMappingType);
+    final version =
+        isExpressive && state.firmwareVersion.hasExpressiveMidiMapping
+        ? 7
+        : data.version < 1
+        ? state.firmwareVersion.hasExpressiveMidiMapping
+              ? 7
+              : 6
+        : data.version;
+
+    if (!isExpressive) {
+      return data.copyWith(version: version);
+    }
+
+    return data.copyWith(midiCC: 0, isMidiRelative: false, version: version);
+  }
+
+  bool _isExpressiveMidiType(MidiMappingType type) {
+    return type == MidiMappingType.pitchBend ||
+        type == MidiMappingType.channelPressure;
   }
 
   /// Reorders multiple performance parameters by setting new perfPageIndex values.

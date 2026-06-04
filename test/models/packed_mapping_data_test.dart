@@ -4,6 +4,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 
+PackedMappingData _mappingWithMidiType(
+  MidiMappingType type, {
+  int version = 7,
+}) {
+  return PackedMappingData(
+    source: 1,
+    cvInput: 2,
+    isUnipolar: true,
+    isGate: false,
+    volts: 5,
+    delta: 100,
+    midiChannel: 1,
+    midiMappingType: type,
+    midiCC:
+        type == MidiMappingType.pitchBend ||
+            type == MidiMappingType.channelPressure
+        ? 0
+        : 64,
+    isMidiEnabled: true,
+    isMidiSymmetric: false,
+    isMidiRelative: type == MidiMappingType.cc,
+    midiMin: 0,
+    midiMax: 127,
+    i2cCC: 32,
+    isI2cEnabled: false,
+    isI2cSymmetric: false,
+    i2cMin: 0,
+    i2cMax: 127,
+    perfPageIndex: 0,
+    version: version,
+  );
+}
+
 void main() {
   group('PackedMappingData Version 5', () {
     test('fromBytes parses version 5 with perfPageIndex correctly', () {
@@ -1049,6 +1082,62 @@ void main() {
       final mapping = PackedMappingData.fromBytes(5, data);
       expect(mapping.midiCC, equals(-1));
       expect(mapping.version, equals(-1));
+    });
+  });
+
+  group('PackedMappingData Version 7 expressive MIDI mappings', () {
+    test('MidiMappingType enum includes pitch bend and channel pressure', () {
+      expect(MidiMappingType.pitchBend.value, equals(5));
+      expect(MidiMappingType.channelPressure.value, equals(6));
+    });
+
+    test('encodes and decodes pitch bend type', () {
+      final mapping = _mappingWithMidiType(MidiMappingType.pitchBend);
+      final bytes = mapping.toBytes();
+
+      expect(bytes.length, equals(25));
+      expect(bytes[9] >> 2, equals(5));
+      expect(bytes[7], equals(0));
+
+      final decoded = PackedMappingData.fromBytes(7, bytes);
+      expect(decoded.version, equals(7));
+      expect(decoded.midiMappingType, equals(MidiMappingType.pitchBend));
+      expect(decoded.midiCC, equals(0));
+    });
+
+    test('encodes and decodes channel pressure type', () {
+      final mapping = _mappingWithMidiType(MidiMappingType.channelPressure);
+      final bytes = mapping.toBytes();
+
+      expect(bytes.length, equals(25));
+      expect(bytes[9] >> 2, equals(6));
+      expect(bytes[7], equals(0));
+
+      final decoded = PackedMappingData.fromBytes(7, bytes);
+      expect(decoded.version, equals(7));
+      expect(decoded.midiMappingType, equals(MidiMappingType.channelPressure));
+      expect(decoded.midiCC, equals(0));
+    });
+
+    test('legacy aftertouch flag is preserved before v7', () {
+      final mapping = _mappingWithMidiType(
+        MidiMappingType.cc,
+        version: 6,
+      ).copyWith(midiCC: 128);
+      final decoded = PackedMappingData.fromBytes(6, mapping.toBytes());
+
+      expect(decoded.midiCC, equals(128));
+      expect(decoded.midiMappingType, equals(MidiMappingType.cc));
+    });
+
+    test('v7 does not rewrite flag bit 2 to aftertouch CC 128', () {
+      final data = _mappingWithMidiType(MidiMappingType.cc).toBytes();
+      data[8] |= 0x04; // Legacy aftertouch flag position.
+
+      final decoded = PackedMappingData.fromBytes(7, data);
+
+      expect(decoded.midiCC, equals(64));
+      expect(decoded.midiMappingType, equals(MidiMappingType.cc));
     });
   });
 }

@@ -44,6 +44,14 @@ class DistingTools {
     return false;
   }
 
+  bool get _hasExpressiveMidiMapping {
+    final state = _distingCubit.state;
+    if (state is DistingStateSynchronized) {
+      return state.firmwareVersion.hasExpressiveMidiMapping;
+    }
+    return false;
+  }
+
   // Use shared utility
   num _scaleForDisplay(int value, int? powerOfTen) =>
       MCPUtils.scaleForDisplay(value, powerOfTen);
@@ -4114,10 +4122,18 @@ class DistingTools {
             'note_toggle',
             'cc_14bit_low',
             'cc_14bit_high',
+            'pitch_bend',
+            'channel_pressure',
           ];
           if (!validTypes.contains(midiType)) {
             return MCPUtils.buildError(
               'MIDI type must be one of: ${validTypes.join(", ")}, got "$midiType"',
+            );
+          }
+          if (_isExpressiveMidiTypeString(midiType) &&
+              !_hasExpressiveMidiMapping) {
+            return MCPUtils.buildError(
+              'MIDI type "$midiType" requires firmware 1.17.0 or newer',
             );
           }
         }
@@ -4378,6 +4394,29 @@ class DistingTools {
           if (cc != null && (cc < 0 || cc > 128)) {
             return MCPUtils.buildError(
               'MIDI CC must be 0-128, got $cc at slot $slotIndex parameter $paramNumber',
+            );
+          }
+        }
+        final midiType = midi['midi_type'] as String?;
+        if (midiType != null) {
+          final validTypes = [
+            'cc',
+            'note_momentary',
+            'note_toggle',
+            'cc_14bit_low',
+            'cc_14bit_high',
+            'pitch_bend',
+            'channel_pressure',
+          ];
+          if (!validTypes.contains(midiType)) {
+            return MCPUtils.buildError(
+              'MIDI type must be one of: ${validTypes.join(", ")}, got "$midiType"',
+            );
+          }
+          if (_isExpressiveMidiTypeString(midiType) &&
+              !_hasExpressiveMidiMapping) {
+            return MCPUtils.buildError(
+              'MIDI type "$midiType" requires firmware 1.17.0 or newer',
             );
           }
         }
@@ -4656,6 +4695,15 @@ class DistingTools {
             if (mappingTypeValue >= 0) {
               updatedPacked = updatedPacked.copyWith(
                 midiMappingType: MidiMappingType.values[mappingTypeValue],
+                midiCC: _isExpressiveMidiTypeString(midiType)
+                    ? 0
+                    : updatedPacked.midiCC,
+                isMidiRelative: _isExpressiveMidiTypeString(midiType)
+                    ? false
+                    : updatedPacked.isMidiRelative,
+                version: _isExpressiveMidiTypeString(midiType)
+                    ? 7
+                    : updatedPacked.version,
               );
             }
           }
@@ -4709,9 +4757,17 @@ class DistingTools {
         return 3;
       case 'cc_14bit_high':
         return 4;
+      case 'pitch_bend':
+        return 5;
+      case 'channel_pressure':
+        return 6;
       default:
         return -1; // Invalid type
     }
+  }
+
+  bool _isExpressiveMidiTypeString(String typeString) {
+    return typeString == 'pitch_bend' || typeString == 'channel_pressure';
   }
 
   /// Converts MIDI type enum value to string (snake_case)
@@ -4727,6 +4783,10 @@ class DistingTools {
         return 'cc_14bit_low';
       case 4:
         return 'cc_14bit_high';
+      case 5:
+        return 'pitch_bend';
+      case 6:
+        return 'channel_pressure';
       default:
         return 'cc'; // Default fallback
     }

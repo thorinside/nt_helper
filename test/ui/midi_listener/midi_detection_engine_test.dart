@@ -380,6 +380,26 @@ void main() {
       });
     });
 
+    group('expressive MIDI detection', () {
+      test('detects pitch bend immediately', () {
+        final result = engine.processPitchBend(3);
+
+        expect(result, isNotNull);
+        expect(result!.type, MidiEventType.pitchBend);
+        expect(result.channel, 3);
+        expect(result.number, 0);
+      });
+
+      test('detects channel pressure immediately', () {
+        final result = engine.processChannelPressure(4);
+
+        expect(result, isNotNull);
+        expect(result!.type, MidiEventType.channelPressure);
+        expect(result.channel, 4);
+        expect(result.number, 0);
+      });
+    });
+
     group('reset behavior', () {
       test('reset clears buffer', () {
         for (int i = 0; i < 5; i++) {

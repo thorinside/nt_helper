@@ -106,6 +106,26 @@ class MidiDetectionEngine {
     );
   }
 
+  /// Process a Pitch Bend message.
+  DetectionResult? processPitchBend(int channel) {
+    _buffer.clear();
+    return DetectionResult(
+      type: MidiEventType.pitchBend,
+      channel: channel,
+      number: 0,
+    );
+  }
+
+  /// Process a Channel Pressure message.
+  DetectionResult? processChannelPressure(int channel) {
+    _buffer.clear();
+    return DetectionResult(
+      type: MidiEventType.channelPressure,
+      channel: channel,
+      number: 0,
+    );
+  }
+
   /// Reset all tracking state.
   void reset() {
     _buffer.clear();

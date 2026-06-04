@@ -106,19 +106,22 @@ MIDI mappings allow MIDI controllers, DAW automation, and other MIDI hardware to
   - `"note_toggle"` - Note on/off (toggle button)
   - `"cc_14bit_low"` - 14-bit CC (low byte, CC 0-31)
   - `"cc_14bit_high"` - 14-bit CC (high byte, CC 32-63)
+  - `"pitch_bend"` - MIDI pitch bend (firmware 1.17+)
+  - `"channel_pressure"` - MIDI channel pressure (firmware 1.17+)
 - **Purpose**: Type of MIDI message
 - **Explanation**:
   - CC is the most common for continuous parameters
   - Note types are useful for gate signals and drum triggers
   - 14-bit CC provides higher resolution than standard 7-bit CC
+  - Pitch bend and channel pressure require firmware 1.17 or newer
 
 #### `midi_cc` (integer)
-- **Range**: 0-127 (or 128 for aftertouch)
+- **Range**: 0-127 (legacy mappings may use 128 for aftertouch)
 - **Purpose**: MIDI CC number
 - **Values**:
   - 0-127 = standard MIDI CC numbers
-  - 128 = channel aftertouch
-- **Explanation**: Specifies which MIDI CC or aftertouch controls this parameter.
+  - 128 = legacy channel aftertouch for pre-v7 mapping data
+- **Explanation**: Specifies which MIDI CC controls this parameter. Ignored for `pitch_bend` and `channel_pressure`.
 
 #### `is_midi_symmetric` (boolean)
 - **Purpose**: Symmetric scaling around center value
@@ -402,7 +405,7 @@ Existing CV and i2c mappings are preserved. Only the specified mapping section i
 
 #### "MIDI CC must be 0-128, got 129"
 **Problem**: MIDI CC numbers have a limited range.
-**Solution**: Use values 0-128 only. 128 = channel aftertouch.
+**Solution**: Use values 0-128 only. Value 128 is for legacy channel aftertouch mappings; on firmware 1.17+ use `midi_type: "channel_pressure"`.
 
 #### "Performance page must be 0-30, got 31"
 **Problem**: Only 30 performance pages available (1-30), plus 0 for "not assigned".

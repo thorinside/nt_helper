@@ -114,12 +114,20 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
           MidiEventType.noteOff => ('Note Off', s.lastDetectedNote),
           MidiEventType.cc14BitLowFirst => ('14-bit CC', s.lastDetectedCc),
           MidiEventType.cc14BitHighFirst => ('14-bit CC', s.lastDetectedCc),
+          MidiEventType.pitchBend => ('Pitch bend', s.lastDetectedCc),
+          MidiEventType.channelPressure => (
+            'Channel pressure',
+            s.lastDetectedCc,
+          ),
         };
         final eventNumber = eventInfo.$2;
         if (eventNumber != null) {
           _statusMessage = switch (type) {
             MidiEventType.cc14BitLowFirst || MidiEventType.cc14BitHighFirst =>
               '14-bit CC $eventNumber Ch ${channel + 1}',
+            MidiEventType.pitchBend => 'Pitch bend Ch ${channel + 1}',
+            MidiEventType.channelPressure =>
+              'Channel pressure Ch ${channel + 1}',
             _ =>
               'Detected ${eventInfo.$1} $eventNumber on channel ${channel + 1}',
           };
@@ -215,6 +223,14 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                           '14-bit CC',
                           lastDetectedCc,
                         ),
+                        MidiEventType.pitchBend => (
+                          'Pitch bend',
+                          lastDetectedCc,
+                        ),
+                        MidiEventType.channelPressure => (
+                          'Channel pressure',
+                          lastDetectedCc,
+                        ),
                       };
 
                       final eventNumber = eventInfo.$2;
@@ -224,6 +240,10 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                           MidiEventType.cc14BitLowFirst ||
                           MidiEventType.cc14BitHighFirst =>
                             '14-bit CC $eventNumber Ch ${lastDetectedChannel + 1}',
+                          MidiEventType.pitchBend =>
+                            'Pitch bend Ch ${lastDetectedChannel + 1}',
+                          MidiEventType.channelPressure =>
+                            'Channel pressure Ch ${lastDetectedChannel + 1}',
                           _ =>
                             'Detected $eventTypeStr $eventNumber on channel ${lastDetectedChannel + 1}',
                         };

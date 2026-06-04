@@ -16,6 +16,12 @@ enum MidiEventType {
 
   /// 14-bit CC where higher CC number (32-63) is MSB
   cc14BitHighFirst,
+
+  /// Pitch Bend message
+  pitchBend,
+
+  /// Channel Pressure message
+  channelPressure,
 }
 
 @freezed

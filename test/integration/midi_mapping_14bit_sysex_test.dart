@@ -262,5 +262,86 @@ void main() {
       expect(midiFlags2 >> 2, equals(3), reason: 'Type should be 3');
       expect(midiFlags2 & 0x01, equals(1), reason: 'Relative flag should be 1');
     });
+
+    test('SetMidiMappingMessage encodes pitch bend type for v7', () {
+      final mapping = PackedMappingData.filler().copyWith(
+        source: 1,
+        cvInput: 0,
+        midiChannel: 1,
+        midiMappingType: MidiMappingType.pitchBend,
+        midiCC: 64,
+        isMidiEnabled: true,
+        midiMin: 0,
+        midiMax: 16383,
+        i2cCC: 0,
+        i2cMin: 0,
+        i2cMax: 16383,
+        version: 7,
+      );
+
+      final message = SetMidiMappingMessage(
+        sysExId: 0,
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        data: mapping,
+      );
+
+      final encoded = message.encode();
+
+      expect(encoded[11], equals(7));
+      expect(encoded[12], equals(0), reason: 'Pitch bend ignores MIDI CC');
+      expect(encoded[14] >> 2, equals(5));
+    });
+
+    test('MappingResponse decodes channel pressure type for v7', () {
+      final payload = [
+        // Algorithm index
+        0,
+        // Parameter number (21-bit)
+        0,
+        0,
+        0,
+        // Mapping version
+        7,
+        // CV section
+        1,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        // MIDI section
+        0,
+        0x09,
+        0x18, // type=6 (channel pressure)
+        0,
+        0,
+        0,
+        0,
+        0x7F,
+        0x7F,
+        // I2C section
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0x7F,
+        0x7F,
+      ];
+
+      final response = MappingResponse(Uint8List.fromList(payload));
+      final mapping = response.parse();
+
+      expect(mapping.packedMappingData.version, equals(7));
+      expect(
+        mapping.packedMappingData.midiMappingType,
+        equals(MidiMappingType.channelPressure),
+      );
+      expect(mapping.packedMappingData.midiCC, equals(0));
+    });
   });
 }

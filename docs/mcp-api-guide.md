@@ -536,8 +536,8 @@ For MIDI controller and DAW integration.
 Fields:
 - `is_midi_enabled`: Boolean (required!)
 - `midi_channel`: 0-15 (where 0=MIDI Channel 1, 15=MIDI Channel 16)
-- `midi_type`: "cc", "note_momentary", "note_toggle", "cc_14bit_low", "cc_14bit_high"
-- `midi_cc`: CC number (0-127) or 128 for aftertouch
+- `midi_type`: "cc", "note_momentary", "note_toggle", "cc_14bit_low", "cc_14bit_high", "pitch_bend", "channel_pressure"
+- `midi_cc`: CC number (0-127); ignored for pitch bend/channel pressure; legacy mappings may use 128 for aftertouch
 - `is_midi_symmetric`: Symmetric scaling around center
 - `is_midi_relative`: Incremental changes
 - `midi_min`/`midi_max`: Scaling range
