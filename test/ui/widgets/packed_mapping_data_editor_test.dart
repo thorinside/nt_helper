@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -6,11 +10,15 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}
 
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
+
+class _MockMidiListenerCubit extends MockCubit<MidiListenerState>
+    implements MidiListenerCubit {}
 
 void main() {
   late MockDistingCubit mockCubit;
@@ -147,6 +155,92 @@ void main() {
         expect(
           dropdown.dropdownMenuEntries.map((entry) => entry.label),
           isNot(contains('Channel pressure')),
+        );
+      },
+    );
+
+    testWidgets(
+      'unsupported expressive MIDI learn emits one warning and does not save',
+      (tester) async {
+        final midiCubit = _MockMidiListenerCubit();
+        final midiController = StreamController<MidiListenerState>.broadcast();
+        addTearDown(midiController.close);
+        when(() => midiCubit.startDetecting()).thenReturn(null);
+        when(() => midiCubit.stopDetecting()).thenReturn(null);
+        whenListen(
+          midiCubit,
+          midiController.stream,
+          initialState: const MidiListenerState.data(),
+        );
+
+        final accessibilityMessages = <Object?>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                accessibilityMessages.add(message);
+                return null;
+              },
+            );
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              );
+        });
+
+        var saveCount = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<DistingCubit>.value(value: mockCubit),
+                BlocProvider<MidiListenerCubit>.value(value: midiCubit),
+              ],
+              child: Scaffold(
+                body: PackedMappingDataEditor(
+                  initialData: testData,
+                  onSave: (_) async {
+                    saveCount++;
+                  },
+                  slots: mockSlots,
+                  algorithmIndex: 0,
+                  parameterNumber: 0,
+                  parameterMin: 0,
+                  parameterMax: 100,
+                  powerOfTen: 0,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('MIDI'));
+        await tester.pumpAndSettle();
+
+        for (var i = 0; i < 3; i++) {
+          midiController.add(
+            MidiListenerState.data(
+              lastDetectedType: MidiEventType.pitchBend,
+              lastDetectedChannel: 0,
+              lastDetectedCc: 0,
+              lastDetectedTime: DateTime(2026, 6, 4, 12, 0, i),
+            ),
+          );
+          await tester.pump();
+        }
+
+        expect(saveCount, isZero);
+        expect(
+          accessibilityMessages
+              .where(
+                (message) => message.toString().contains(
+                  'Pitch bend and channel pressure mappings require firmware 1.17 or newer.',
+                ),
+              )
+              .length,
+          equals(1),
         );
       },
     );

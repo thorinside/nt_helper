@@ -76,6 +76,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
   String? _statusMessage;
   Timer? _fadeTimer;
   bool _wasConnected = false;
+  DateTime? _lastHandledDetectionTime;
 
   @override
   void initState() {
@@ -103,6 +104,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
       if (s.isConnected && s.selectedDevice != null) {
         _statusMessage = 'Connected to ${s.selectedDevice!.name}.';
       }
+      _lastHandledDetectionTime = s.lastDetectedTime;
 
       // Replay last detection after first frame
       if (s.lastDetectedType != null && s.lastDetectedChannel != null) {
@@ -177,6 +179,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                     :final lastDetectedChannel,
                     :final lastDetectedCc,
                     :final lastDetectedNote,
+                    :final lastDetectedTime,
                   ):
                     // Sync device list from cubit state
                     if (devices != _devices) {
@@ -200,8 +203,13 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                       _showStatusMessage('No device connected.');
                     }
                     _wasConnected = isConnected;
-                    if (lastDetectedType != null &&
-                        lastDetectedChannel != null) {
+                    final isNewDetection =
+                        lastDetectedType != null &&
+                        lastDetectedChannel != null &&
+                        lastDetectedTime != null &&
+                        lastDetectedTime != _lastHandledDetectionTime;
+                    if (isNewDetection) {
+                      _lastHandledDetectionTime = lastDetectedTime;
                       final (String, int?)
                       eventInfo = switch (lastDetectedType) {
                         MidiEventType.cc => ('CC', lastDetectedCc),

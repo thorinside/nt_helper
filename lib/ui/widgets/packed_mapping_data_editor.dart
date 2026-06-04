@@ -75,6 +75,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   // Parameter value preview during range slider drag
   DateTime? _lastPreviewSent;
   static const _previewThrottleDuration = Duration(milliseconds: 100);
+  DateTime? _lastUnsupportedExpressiveMidiWarningAt;
+  static const _unsupportedExpressiveMidiWarningDebounce = Duration(seconds: 2);
 
   @override
   void initState() {
@@ -827,6 +829,15 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   }
 
   void _announceUnsupportedExpressiveMidiMapping() {
+    final now = DateTime.now();
+    final lastWarning = _lastUnsupportedExpressiveMidiWarningAt;
+    if (lastWarning != null &&
+        now.difference(lastWarning) <
+            _unsupportedExpressiveMidiWarningDebounce) {
+      return;
+    }
+    _lastUnsupportedExpressiveMidiWarningAt = now;
+
     const message =
         'Pitch bend and channel pressure mappings require firmware 1.17 or newer.';
     SemanticsService.sendAnnouncement(

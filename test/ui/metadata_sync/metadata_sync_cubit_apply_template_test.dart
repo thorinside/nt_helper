@@ -485,6 +485,96 @@ void main() {
     );
 
     test(
+      'downgrades non-expressive v7 mappings when attached firmware is before 1.17',
+      () async {
+        final deviceAlgorithms = <Algorithm>[];
+        _stubRefreshableDevice(mockManager, deviceAlgorithms);
+        when(() => mockManager.requestAddAlgorithm(any(), any())).thenAnswer((
+          invocation,
+        ) async {
+          final info = invocation.positionalArguments[0] as AlgorithmInfo;
+          deviceAlgorithms.add(
+            Algorithm(
+              algorithmIndex: deviceAlgorithms.length,
+              guid: info.guid,
+              name: info.name,
+            ),
+          );
+        });
+        when(
+          () => mockManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMetadataDao.getFullAlgorithmDetails('guid-1'),
+        ).thenAnswer((_) async => _fullAlgorithmDetails('guid-1', 'Alg 1'));
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => <String, int>{});
+        when(
+          () => mockPresetsDao.getAllPresets(),
+        ).thenAnswer((_) async => <PresetEntry>[]);
+
+        final distingCubit = DistingCubit(
+          mockDatabase,
+          midiCommand: MockMidiCommand(),
+        )..emit(_synchronizedState(mockManager, firmwareVersion: '1.16.0'));
+        final syncCubit = MetadataSyncCubit(mockDatabase, distingCubit);
+        addTearDown(syncCubit.close);
+        addTearDown(distingCubit.close);
+
+        await syncCubit.applyTemplateToDevice(
+          template: _template(
+            slots: [
+              FullPresetSlot(
+                slot: const PresetSlotEntry(
+                  id: 1,
+                  presetId: 1,
+                  slotIndex: 0,
+                  algorithmGuid: 'guid-1',
+                ),
+                algorithm: const AlgorithmEntry(
+                  guid: 'guid-1',
+                  name: 'Alg 1',
+                  numSpecifications: 0,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {
+                  0: PackedMappingData.filler().copyWith(
+                    version: 7,
+                    midiMappingType: MidiMappingType.cc,
+                    midiCC: 74,
+                    isMidiEnabled: true,
+                  ),
+                },
+              ),
+            ],
+          ),
+          templateSlotIndices: const [0],
+          manager: mockManager,
+        );
+
+        final captured =
+            verify(
+                  () => mockManager.requestSetMapping(0, 0, captureAny()),
+                ).captured.single
+                as PackedMappingData;
+        expect(captured.version, equals(6));
+        expect(captured.midiMappingType, equals(MidiMappingType.cc));
+        expect(captured.midiCC, equals(74));
+      },
+    );
+
+    test(
       'refreshes attached DistingCubit slots after appending template',
       () async {
         final deviceAlgorithms = <Algorithm>[

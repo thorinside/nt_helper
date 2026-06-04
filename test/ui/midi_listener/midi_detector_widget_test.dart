@@ -75,6 +75,51 @@ void main() {
 
       expect(callbackCount, isZero);
     });
+
+    testWidgets('does not replay stale detection on connection state update', (
+      tester,
+    ) async {
+      final detectionTime = DateTime(2026, 6, 4, 12);
+      final staleState = MidiListenerState.data(
+        lastDetectedType: MidiEventType.pitchBend,
+        lastDetectedChannel: 2,
+        lastDetectedCc: 0,
+        lastDetectedTime: detectionTime,
+      );
+      whenListen(cubit, controller.stream, initialState: staleState);
+
+      var callbackCount = 0;
+
+      await tester.pumpWidget(
+        BlocProvider<MidiListenerCubit>.value(
+          value: cubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: MidiDetectorWidget(
+                onMidiEventFound:
+                    ({required type, required channel, required number}) {
+                      callbackCount++;
+                    },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      controller.add(
+        MidiListenerState.data(
+          isConnected: true,
+          lastDetectedType: MidiEventType.pitchBend,
+          lastDetectedChannel: 2,
+          lastDetectedCc: 0,
+          lastDetectedTime: detectionTime,
+        ),
+      );
+      await tester.pump();
+
+      expect(callbackCount, isZero);
+    });
   });
 
   group('MidiDetectorWidget - Status Message Format', () {

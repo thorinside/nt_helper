@@ -39,14 +39,16 @@ class _MappingDelegate {
     DistingStateSynchronized state,
   ) {
     final isExpressive = _isExpressiveMidiType(data.midiMappingType);
-    final version =
-        isExpressive && state.firmwareVersion.hasExpressiveMidiMapping
-        ? 7
-        : data.version < 1
-        ? state.firmwareVersion.hasExpressiveMidiMapping
+    final supportsExpressiveMidiMapping =
+        state.firmwareVersion.hasExpressiveMidiMapping;
+    final baseVersion = data.version < 1
+        ? supportsExpressiveMidiMapping
               ? 7
               : 6
         : data.version;
+    final version = isExpressive && supportsExpressiveMidiMapping
+        ? 7
+        : baseVersion.clamp(1, supportsExpressiveMidiMapping ? 7 : 6).toInt();
 
     if (!isExpressive) {
       return data.copyWith(version: version);

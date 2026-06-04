@@ -122,13 +122,14 @@ void main() {
 
   DistingStateSynchronized makeSyncState({
     String presetName = 'Test Preset',
+    String firmwareVersion = '1.14.0',
     bool isDirty = false,
     List<Slot>? slots,
   }) {
     return DistingStateSynchronized(
       disting: mockDisting,
-      distingVersion: '1.10.0',
-      firmwareVersion: FirmwareVersion('1.14.0'),
+      distingVersion: firmwareVersion,
+      firmwareVersion: FirmwareVersion(firmwareVersion),
       presetName: presetName,
       algorithms: const [],
       slots: slots ?? const [],
@@ -537,6 +538,43 @@ void main() {
         await cubit.saveMapping(0, 0, PackedMappingData.filler());
 
         expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+      },
+    );
+
+    test(
+      'saveMapping downgrades non-expressive v7 mappings before 1.17',
+      () async {
+        when(
+          () => mockDisting.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Test Preset');
+
+        cubit.emit(makeSyncState(firmwareVersion: '1.16.0'));
+
+        await cubit.saveMapping(
+          0,
+          0,
+          PackedMappingData.filler().copyWith(
+            version: 7,
+            midiMappingType: MidiMappingType.cc,
+            midiCC: 74,
+            isMidiEnabled: true,
+          ),
+        );
+
+        final captured =
+            verify(
+                  () => mockDisting.requestSetMapping(0, 0, captureAny()),
+                ).captured.single
+                as PackedMappingData;
+        expect(captured.version, equals(6));
+        expect(captured.midiMappingType, equals(MidiMappingType.cc));
+        expect(captured.midiCC, equals(74));
       },
     );
 

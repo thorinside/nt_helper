@@ -978,18 +978,29 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       return mapping;
     }
 
+    final supportsExpressiveMidiMapping =
+        state.firmwareVersion.hasExpressiveMidiMapping;
     final isExpressive = _isExpressiveMidiType(mapping.midiMappingType);
-    if (isExpressive && !state.firmwareVersion.hasExpressiveMidiMapping) {
+    if (isExpressive && !supportsExpressiveMidiMapping) {
       throw Exception(
         'Pitch bend and channel pressure mappings require firmware 1.17.0 or newer.',
       );
     }
 
+    final baseVersion = mapping.version < 1
+        ? supportsExpressiveMidiMapping
+              ? 7
+              : 6
+        : mapping.version;
+    final version = isExpressive && supportsExpressiveMidiMapping
+        ? 7
+        : baseVersion.clamp(1, supportsExpressiveMidiMapping ? 7 : 6).toInt();
+
     if (!isExpressive) {
-      return mapping;
+      return mapping.copyWith(version: version);
     }
 
-    return mapping.copyWith(version: 7, midiCC: 0, isMidiRelative: false);
+    return mapping.copyWith(version: version, midiCC: 0, isMidiRelative: false);
   }
 
   bool _isExpressiveMidiType(MidiMappingType type) {
