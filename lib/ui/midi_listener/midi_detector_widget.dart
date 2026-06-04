@@ -131,14 +131,6 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
             _ =>
               'Detected ${eventInfo.$1} $eventNumber on channel ${channel + 1}',
           };
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            widget.onMidiEventFound?.call(
-              type: type,
-              channel: channel,
-              number: eventNumber,
-            );
-          });
         }
       }
     }

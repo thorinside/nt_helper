@@ -46,10 +46,7 @@ class CcReverseLookup {
         final pmd = mapping.packedMappingData;
 
         if (!pmd.isMidiEnabled) continue;
-        if (pmd.midiMappingType == MidiMappingType.noteMomentary ||
-            pmd.midiMappingType == MidiMappingType.noteToggle) {
-          continue;
-        }
+        if (!_isCcMappingType(pmd.midiMappingType)) continue;
 
         final paramInfo = paramIdx < slot.parameters.length
             ? slot.parameters[paramIdx]
@@ -80,6 +77,12 @@ class CcReverseLookup {
     }
 
     return CcReverseLookup._(map);
+  }
+
+  static bool _isCcMappingType(MidiMappingType type) {
+    return type == MidiMappingType.cc ||
+        type == MidiMappingType.cc14BitLow ||
+        type == MidiMappingType.cc14BitHigh;
   }
 
   List<CcTarget>? lookup(int channel, int cc) => _lookup[_key(channel, cc)];

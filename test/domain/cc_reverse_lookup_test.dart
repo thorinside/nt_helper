@@ -187,6 +187,32 @@ void main() {
       expect(lookup.isEmpty, isTrue);
     });
 
+    test('build ignores expressive MIDI mappings', () {
+      final slots = [
+        _makeSlot(
+          algorithmIndex: 0,
+          params: [
+            _ParamSpec(
+              paramNumber: 0,
+              paramMin: 0,
+              paramMax: 100,
+              mapping: _ccMapping(type: MidiMappingType.pitchBend, cc: 0),
+            ),
+            _ParamSpec(
+              paramNumber: 1,
+              paramMin: 0,
+              paramMax: 100,
+              mapping: _ccMapping(type: MidiMappingType.channelPressure, cc: 0),
+            ),
+          ],
+        ),
+      ];
+
+      final lookup = CcReverseLookup.build(slots);
+      expect(lookup.isEmpty, isTrue);
+      expect(lookup.lookup(0, 0), isNull);
+    });
+
     test('build registers 14-bit CC on both MSB and LSB', () {
       final slots = [
         _makeSlot(

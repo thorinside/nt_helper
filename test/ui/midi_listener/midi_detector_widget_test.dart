@@ -1,4 +1,11 @@
+import 'dart:async';
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
 /// Format a MIDI detection message for display.
@@ -22,6 +29,54 @@ String formatMidiDetectionMessage({
 }
 
 void main() {
+  group('MidiDetectorWidget - stale detections', () {
+    late _MockMidiListenerCubit cubit;
+    late StreamController<MidiListenerState> controller;
+
+    setUp(() {
+      cubit = _MockMidiListenerCubit();
+      controller = StreamController<MidiListenerState>.broadcast();
+      when(() => cubit.startDetecting()).thenReturn(null);
+      when(() => cubit.stopDetecting()).thenReturn(null);
+    });
+
+    tearDown(() async {
+      await controller.close();
+    });
+
+    testWidgets('does not replay stale pitch bend detection on mount', (
+      tester,
+    ) async {
+      const staleState = MidiListenerState.data(
+        lastDetectedType: MidiEventType.pitchBend,
+        lastDetectedChannel: 2,
+        lastDetectedCc: 0,
+      );
+      whenListen(cubit, controller.stream, initialState: staleState);
+
+      var callbackCount = 0;
+
+      await tester.pumpWidget(
+        BlocProvider<MidiListenerCubit>.value(
+          value: cubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: MidiDetectorWidget(
+                onMidiEventFound:
+                    ({required type, required channel, required number}) {
+                      callbackCount++;
+                    },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(callbackCount, isZero);
+    });
+  });
+
   group('MidiDetectorWidget - Status Message Format', () {
     test('14-bit CC low-first uses concise format', () {
       final message = formatMidiDetectionMessage(
@@ -210,3 +265,6 @@ void main() {
     });
   });
 }
+
+class _MockMidiListenerCubit extends MockCubit<MidiListenerState>
+    implements MidiListenerCubit {}

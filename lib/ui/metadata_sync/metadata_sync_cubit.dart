@@ -10,6 +10,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show AlgorithmInfo, Specification;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
+import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -207,6 +208,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     emit(const MetadataSyncState.loadingPreset());
     if (kDebugMode) {}
     try {
+      _validateTemplateMappingsForAttachedFirmware(preset.slots);
+
       // 0. Clear the current preset on the device
       if (kDebugMode) {}
       await manager.requestNewPreset();
@@ -318,7 +321,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           await manager.requestSetMapping(
             i, // slotIndex (use loop index)
             parameterNumber,
-            mappingData,
+            _mappingForAttachedFirmware(mappingData),
           );
           // Optional small delay
           await Future.delayed(const Duration(milliseconds: 20));
@@ -766,6 +769,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           );
         }
       }
+      _validateTemplateMappingsForAttachedFirmware(
+        templateSlotIndices.map((i) => template.slots[i]),
+      );
 
       // Slot limit check.
       int currentSlotCount = 0;
@@ -895,7 +901,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           await manager.requestSetMapping(
             targetSlotIndex,
             parameterNumber,
-            mappingData,
+            _mappingForAttachedFirmware(mappingData),
           );
           await Future.delayed(const Duration(milliseconds: 20));
         }
@@ -954,6 +960,41 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     } catch (error) {
       return error;
     }
+  }
+
+  void _validateTemplateMappingsForAttachedFirmware(
+    Iterable<FullPresetSlot> slots,
+  ) {
+    for (final slot in slots) {
+      for (final mapping in slot.mappings.values) {
+        _mappingForAttachedFirmware(mapping);
+      }
+    }
+  }
+
+  PackedMappingData _mappingForAttachedFirmware(PackedMappingData mapping) {
+    final state = _distingCubit?.state;
+    if (state is! DistingStateSynchronized) {
+      return mapping;
+    }
+
+    final isExpressive = _isExpressiveMidiType(mapping.midiMappingType);
+    if (isExpressive && !state.firmwareVersion.hasExpressiveMidiMapping) {
+      throw Exception(
+        'Pitch bend and channel pressure mappings require firmware 1.17.0 or newer.',
+      );
+    }
+
+    if (!isExpressive) {
+      return mapping;
+    }
+
+    return mapping.copyWith(version: 7, midiCC: 0, isMidiRelative: false);
+  }
+
+  bool _isExpressiveMidiType(MidiMappingType type) {
+    return type == MidiMappingType.pitchBend ||
+        type == MidiMappingType.channelPressure;
   }
 
   /// Copies a subset of slots from a saved template into another saved

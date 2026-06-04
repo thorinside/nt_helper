@@ -1130,6 +1130,20 @@ void main() {
       expect(decoded.midiMappingType, equals(MidiMappingType.cc));
     });
 
+    test('v7 maps legacy aftertouch CC 128 to channel pressure', () {
+      final mapping = _mappingWithMidiType(
+        MidiMappingType.cc,
+      ).copyWith(midiCC: 128);
+      final bytes = mapping.toBytes();
+
+      expect(bytes[7], equals(0));
+      expect(bytes[9] >> 2, equals(MidiMappingType.channelPressure.value));
+
+      final decoded = PackedMappingData.fromBytes(7, bytes);
+      expect(decoded.midiCC, equals(0));
+      expect(decoded.midiMappingType, equals(MidiMappingType.channelPressure));
+    });
+
     test('v7 does not rewrite flag bit 2 to aftertouch CC 128', () {
       final data = _mappingWithMidiType(MidiMappingType.cc).toBytes();
       data[8] |= 0x04; // Legacy aftertouch flag position.

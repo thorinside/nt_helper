@@ -646,8 +646,9 @@ F0 00 21 27 6D <id> 4B <slot>
 F7
 ```
 
-**Mapping version** is currently `6`. The version field controls which optional fields are present.
+**Mapping version** is currently `7`. The version field controls which optional fields are present.
 Version 6 removed the perf page byte from mapping data; perf page assignments are managed via separate commands (0x54).
+Version 7 adds explicit MIDI mapping types for pitch bend and channel pressure.
 
 ---
 
@@ -786,7 +787,7 @@ F0 00 21 27 6D <id> 54 <slot> <param as 21-bit short> <mappingVersion> <index> F
 
 | Field | Description |
 |-------|-------------|
-| `mappingVersion` | Current mapping data version (currently `7`) |
+| `mappingVersion` | Performance page mapping protocol version (`5`) |
 | `index` | Performance page position (0–30) |
 
 ---

@@ -267,10 +267,16 @@ class PackedMappingData {
 
   Uint8List encodeMIDIPackedData() {
     final int encodeVersion = min(version, 7);
+    final effectiveMidiMappingType =
+        encodeVersion >= 7 &&
+            midiMappingType == MidiMappingType.cc &&
+            midiCC == 128
+        ? MidiMappingType.channelPressure
+        : midiMappingType;
 
     var adjustedCC =
-        midiMappingType == MidiMappingType.pitchBend ||
-            midiMappingType == MidiMappingType.channelPressure
+        effectiveMidiMappingType == MidiMappingType.pitchBend ||
+            effectiveMidiMappingType == MidiMappingType.channelPressure
         ? 0
         : midiCC;
 
@@ -281,7 +287,13 @@ class PackedMappingData {
         ((midiChannel & 0xF) << 3);
 
     // Encode midiFlags2 using bit-shift: relative flag (bit 0) and type value (bits 2-6)
-    int midiFlags2 = (isMidiRelative ? 1 : 0) | (midiMappingType.value << 2);
+    final effectiveIsMidiRelative =
+        effectiveMidiMappingType != MidiMappingType.pitchBend &&
+        effectiveMidiMappingType != MidiMappingType.channelPressure &&
+        isMidiRelative;
+    int midiFlags2 =
+        (effectiveIsMidiRelative ? 1 : 0) |
+        (effectiveMidiMappingType.value << 2);
 
     // Adjust the CC number and flags if necessary for legacy aftertouch.
     if (encodeVersion < 7 && adjustedCC == 128) {
