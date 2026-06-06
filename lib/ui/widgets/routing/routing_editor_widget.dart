@@ -22,6 +22,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
+import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
 // Haptics can be reintroduced later if needed
 import 'package:nt_helper/ui/widgets/routing/accessible_routing_list_view.dart';
@@ -1039,201 +1040,221 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<RoutingEditorCubit, RoutingEditorState>(
-      listenWhen: (previous, current) {
-        // Listen for cascade scroll target changes
-        if (previous is RoutingEditorStateLoaded &&
-            current is RoutingEditorStateLoaded) {
-          return previous.cascadeScrollTarget != current.cascadeScrollTarget &&
-              current.cascadeScrollTarget != null;
-        }
-        return false;
-      },
-      listener: (context, state) {
-        // Scroll to cascade target when it changes
-        if (state is RoutingEditorStateLoaded &&
-            state.cascadeScrollTarget != null) {
-          _scrollToPosition(state.cascadeScrollTarget!, state.zoomLevel);
-          // Clear the scroll target after scrolling
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              context.read<RoutingEditorCubit>().clearCascadeScrollTarget();
+    return ValueListenableBuilder<bool>(
+      valueListenable: SettingsService().showBackwardConnectionsNotifier,
+      builder: (context, showBackwardConnections, _) {
+        return BlocConsumer<RoutingEditorCubit, RoutingEditorState>(
+          listenWhen: (previous, current) {
+            // Listen for cascade scroll target changes
+            if (previous is RoutingEditorStateLoaded &&
+                current is RoutingEditorStateLoaded) {
+              return previous.cascadeScrollTarget !=
+                      current.cascadeScrollTarget &&
+                  current.cascadeScrollTarget != null;
             }
-          });
-        }
-      },
-      buildWhen: (previous, current) {
-        final shouldRebuild =
-            previous.runtimeType != current.runtimeType ||
-            (previous is RoutingEditorStateLoaded &&
-                current is RoutingEditorStateLoaded &&
-                _hasLoadedStateChanged(previous, current));
+            return false;
+          },
+          listener: (context, state) {
+            // Scroll to cascade target when it changes
+            if (state is RoutingEditorStateLoaded &&
+                state.cascadeScrollTarget != null) {
+              _scrollToPosition(state.cascadeScrollTarget!, state.zoomLevel);
+              // Clear the scroll target after scrolling
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  context.read<RoutingEditorCubit>().clearCascadeScrollTarget();
+                }
+              });
+            }
+          },
+          buildWhen: (previous, current) {
+            final shouldRebuild =
+                previous.runtimeType != current.runtimeType ||
+                (previous is RoutingEditorStateLoaded &&
+                    current is RoutingEditorStateLoaded &&
+                    _hasLoadedStateChanged(previous, current));
 
-        // Only clear port positions when the routing structure actually changes
-        // Since we now calculate positions from node layout, we don't need to clear on zoom
-        if (shouldRebuild && current is RoutingEditorStateLoaded) {
-          if (previous is! RoutingEditorStateLoaded ||
-              _hasRoutingStructureChanged(previous, current)) {
-            _pruneAndInitNodePositions(current);
-          }
-        }
+            // Only clear port positions when the routing structure actually changes
+            // Since we now calculate positions from node layout, we don't need to clear on zoom
+            if (shouldRebuild && current is RoutingEditorStateLoaded) {
+              if (previous is! RoutingEditorStateLoaded ||
+                  _hasRoutingStructureChanged(previous, current)) {
+                _pruneAndInitNodePositions(current);
+              }
+            }
 
-        return shouldRebuild;
-      },
-      builder: (context, state) {
-        if (!_viewModeLoaded) {
-          return SizedBox(
-            width: widget.canvasSize.width,
-            height: widget.canvasSize.height,
-          );
-        }
-
-        // Auto-detect accessible navigation mode
-        final effectiveMode = MediaQuery.of(context).accessibleNavigation
-            ? _RoutingViewMode.list
-            : _viewMode;
-
-        if (effectiveMode == _RoutingViewMode.list) {
-          return Stack(
-            children: [
-              Container(
+            return shouldRebuild;
+          },
+          builder: (context, state) {
+            if (!_viewModeLoaded) {
+              return SizedBox(
                 width: widget.canvasSize.width,
                 height: widget.canvasSize.height,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const AccessibleRoutingListView(),
-              ),
-              Positioned(top: 8, right: 8, child: _buildViewModeButton()),
-            ],
-          );
-        }
+              );
+            }
 
-        if (effectiveMode == _RoutingViewMode.table) {
-          return Stack(
-            children: [
-              Container(
-                width: widget.canvasSize.width,
-                height: widget.canvasSize.height,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const RoutingTableView(),
-              ),
-              Positioned(top: 8, right: 8, child: _buildViewModeButton()),
-            ],
-          );
-        }
+            // Auto-detect accessible navigation mode
+            final effectiveMode = MediaQuery.of(context).accessibleNavigation
+                ? _RoutingViewMode.list
+                : _viewMode;
 
-        return Stack(
-          children: [
-            Container(
-              width: widget.canvasSize.width,
-              height: widget.canvasSize.height,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border.all(
-                  color: Theme.of(context).dividerColor,
-                  width: 1,
+            if (effectiveMode == _RoutingViewMode.list) {
+              return Stack(
+                children: [
+                  Container(
+                    width: widget.canvasSize.width,
+                    height: widget.canvasSize.height,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      border: Border.all(
+                        color: Theme.of(context).dividerColor,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const AccessibleRoutingListView(),
+                  ),
+                  Positioned(top: 8, right: 8, child: _buildViewModeButton()),
+                ],
+              );
+            }
+
+            if (effectiveMode == _RoutingViewMode.table) {
+              return Stack(
+                children: [
+                  Container(
+                    width: widget.canvasSize.width,
+                    height: widget.canvasSize.height,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      border: Border.all(
+                        color: Theme.of(context).dividerColor,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const RoutingTableView(),
+                  ),
+                  Positioned(top: 8, right: 8, child: _buildViewModeButton()),
+                ],
+              );
+            }
+
+            return Stack(
+              children: [
+                Container(
+                  width: widget.canvasSize.width,
+                  height: widget.canvasSize.height,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: _platformService.isDesktopPlatform()
+                        ? Shortcuts(
+                            shortcuts: _keyBindingService.desktopZoomShortcuts,
+                            child: Actions(
+                              actions: _keyBindingService.buildZoomActions(
+                                onZoomIn: () =>
+                                    context.read<RoutingEditorCubit>().zoomIn(),
+                                onZoomOut: () => context
+                                    .read<RoutingEditorCubit>()
+                                    .zoomOut(),
+                                onResetZoom: () => context
+                                    .read<RoutingEditorCubit>()
+                                    .resetZoom(),
+                              ),
+                              child: Focus(
+                                focusNode: _canvasFocusNode,
+                                autofocus: true,
+                                onKeyEvent: _handleKeyEvent,
+                                child: _buildCanvasContent(
+                                  context,
+                                  state,
+                                  showBackwardConnections,
+                                ),
+                              ),
+                            ),
+                          )
+                        : _buildCanvasContent(
+                            context,
+                            state,
+                            showBackwardConnections,
+                          ),
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: _platformService.isDesktopPlatform()
-                    ? Shortcuts(
-                        shortcuts: _keyBindingService.desktopZoomShortcuts,
-                        child: Actions(
-                          actions: _keyBindingService.buildZoomActions(
-                            onZoomIn: () =>
-                                context.read<RoutingEditorCubit>().zoomIn(),
-                            onZoomOut: () =>
-                                context.read<RoutingEditorCubit>().zoomOut(),
-                            onResetZoom: () =>
-                                context.read<RoutingEditorCubit>().resetZoom(),
-                          ),
-                          child: Focus(
-                            focusNode: _canvasFocusNode,
-                            autofocus: true,
-                            onKeyEvent: _handleKeyEvent,
-                            child: _buildCanvasContent(context, state),
-                          ),
+                Positioned(top: 8, right: 8, child: _buildViewModeButton()),
+                // AUX bus usage + MiniMap in bottom-right corner
+                if (state is RoutingEditorStateLoaded)
+                  Positioned(
+                    bottom: 16.0,
+                    right: 16.0,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        AuxBusUsageWidget(
+                          auxBusUsage: state.auxBusUsage,
+                          hasExtendedAuxBuses: state.hasExtendedAuxBuses,
+                          focusedBusNumber: _deriveFocusedBusNumber(state),
+                          onBusTapped: (bus) => context
+                              .read<RoutingEditorCubit>()
+                              .focusAuxBus(bus),
+                          onBusMoved: (source, dest) => context
+                              .read<RoutingEditorCubit>()
+                              .moveAuxBus(source, dest),
                         ),
-                      )
-                    : _buildCanvasContent(context, state),
-              ),
-            ),
-            Positioned(top: 8, right: 8, child: _buildViewModeButton()),
-            // AUX bus usage + MiniMap in bottom-right corner
-            if (state is RoutingEditorStateLoaded)
-              Positioned(
-                bottom: 16.0,
-                right: 16.0,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    AuxBusUsageWidget(
-                      auxBusUsage: state.auxBusUsage,
-                      hasExtendedAuxBuses: state.hasExtendedAuxBuses,
-                      focusedBusNumber: _deriveFocusedBusNumber(state),
-                      onBusTapped: (bus) =>
-                          context.read<RoutingEditorCubit>().focusAuxBus(bus),
-                      onBusMoved: (source, dest) => context
-                          .read<RoutingEditorCubit>()
-                          .moveAuxBus(source, dest),
-                    ),
-                    const SizedBox(height: 8),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        double miniMapWidth;
-                        double miniMapHeight;
+                        const SizedBox(height: 8),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            double miniMapWidth;
+                            double miniMapHeight;
 
-                        if (_platformService.isMobilePlatform()) {
-                          miniMapWidth = 120.0;
-                          miniMapHeight = 90.0;
-                        } else {
-                          final screenWidth = MediaQuery.of(context).size.width;
-                          if (screenWidth < 900) {
-                            miniMapWidth = 160.0;
-                            miniMapHeight = 120.0;
-                          } else {
-                            miniMapWidth = 200.0;
-                            miniMapHeight = 150.0;
-                          }
-                        }
+                            if (_platformService.isMobilePlatform()) {
+                              miniMapWidth = 120.0;
+                              miniMapHeight = 90.0;
+                            } else {
+                              final screenWidth = MediaQuery.of(
+                                context,
+                              ).size.width;
+                              if (screenWidth < 900) {
+                                miniMapWidth = 160.0;
+                                miniMapHeight = 120.0;
+                              } else {
+                                miniMapWidth = 200.0;
+                                miniMapHeight = 150.0;
+                              }
+                            }
 
-                        return ExcludeSemantics(
-                          child: MiniMapWidget(
-                            horizontalScrollController:
-                                _horizontalScrollController,
-                            verticalScrollController: _verticalScrollController,
-                            canvasWidth: _canvasWidth,
-                            canvasHeight: _canvasHeight,
-                            width: miniMapWidth,
-                            height: miniMapHeight,
-                            nodePositions: _nodePositions,
-                            connections: state.connections,
-                          ),
-                        );
-                      },
+                            return ExcludeSemantics(
+                              child: MiniMapWidget(
+                                horizontalScrollController:
+                                    _horizontalScrollController,
+                                verticalScrollController:
+                                    _verticalScrollController,
+                                canvasWidth: _canvasWidth,
+                                canvasHeight: _canvasHeight,
+                                width: miniMapWidth,
+                                height: miniMapHeight,
+                                nodePositions: _nodePositions,
+                                connections: state.connections,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            // Error display widget in top-right corner (above mini-map in z-order)
-            if (_errorMessage != null) _buildErrorDisplay(),
-          ],
+                  ),
+                // Error display widget in top-right corner (above mini-map in z-order)
+                if (_errorMessage != null) _buildErrorDisplay(),
+              ],
+            );
+          },
         );
       },
     );
@@ -1665,7 +1686,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     );
   }
 
-  Widget _buildCanvasContent(BuildContext context, RoutingEditorState state) {
+  Widget _buildCanvasContent(
+    BuildContext context,
+    RoutingEditorState state,
+    bool showBackwardConnections,
+  ) {
     return state.when(
       initial: () =>
           _buildEmptyState(context, 'Initializing routing editor...'),
@@ -1702,6 +1727,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             nodePositions,
             zoomLevel,
             panOffset,
+            showBackwardConnections,
           ),
     );
   }
@@ -1743,8 +1769,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     Map<String, NodePosition> stateNodePositions,
     double zoomLevel,
     Offset panOffset,
+    bool showBackwardConnections,
   ) {
-    _latestConnections = connections;
+    final visibleConnections = _visibleCanvasConnections(
+      connections,
+      showBackwardConnections,
+    );
+    _latestConnections = visibleConnections;
     final routingCubit = context.read<RoutingEditorCubit>();
 
     // Get focused algorithm IDs for focus mode dimming
@@ -1810,9 +1841,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       zIndexByNodeId[algorithms[i].id] = zIndex + i;
     }
 
+    _clearHiddenConnectionState(visibleConnections);
+
     return Semantics(
       label:
-          'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
+          'Routing canvas with ${algorithms.length} algorithm nodes and ${visibleConnections.length} connections',
       hint:
           'Interactive routing canvas. Pan and zoom to navigate. Drag between ports to create connections.',
       container: true,
@@ -1894,7 +1927,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                             onTapDown: (details) {
                               _handleCanvasTap(
                                 details.localPosition,
-                                connections,
+                                visibleConnections,
                               );
                             },
                             onDoubleTap: () {
@@ -1928,7 +1961,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
                         // 1. Background Connections (Full paths, behind everything)
                         _buildConnections(
-                          connections,
+                          visibleConnections,
                           portToNodeIdMap,
                           nodeBoundsMap,
                           zIndexByNodeId,
@@ -1969,7 +2002,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
                         // 3. Foreground Connections (Tips only, on top of everything)
                         _buildConnections(
-                          connections,
+                          visibleConnections,
                           portToNodeIdMap,
                           nodeBoundsMap,
                           zIndexByNodeId,
@@ -1982,13 +2015,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                           _buildTemporaryConnection(),
 
                         // Connection label overlays (for tap detection)
-                        ..._buildConnectionLabelOverlays(),
+                        ..._buildConnectionLabelOverlays(visibleConnections),
 
                         // Labels for instant-deleted connections fade out here.
                         ..._buildFadingDeletedConnectionLabelOverlays(),
 
                         // Semantic-only connection list for screen readers
-                        _buildConnectionSemanticsOverlay(connections),
+                        _buildConnectionSemanticsOverlay(visibleConnections),
                       ],
                     ),
                   ),
@@ -1999,6 +2032,30 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         ),
       ),
     );
+  }
+
+  List<Connection> _visibleCanvasConnections(
+    List<Connection> connections,
+    bool showBackwardConnections,
+  ) {
+    if (showBackwardConnections) return connections;
+    return connections
+        .where((connection) => !connection.isBackwardEdge)
+        .toList(growable: false);
+  }
+
+  void _clearHiddenConnectionState(List<Connection> visibleConnections) {
+    final highlight = _connectionHighlight;
+    if (highlight == null) return;
+    final highlightIsVisible = visibleConnections.any(
+      (connection) => connection.id == highlight.id,
+    );
+    if (highlightIsVisible) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _connectionHighlight?.id != highlight.id) return;
+      _clearConnectionHighlightState(source: highlight.source);
+    });
   }
 
   /// Build a semantic-only overlay listing all connections for screen readers.
@@ -4353,10 +4410,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   /// Build invisible overlays positioned over connection labels for gesture detection
-  List<Widget> _buildConnectionLabelOverlays() {
+  List<Widget> _buildConnectionLabelOverlays(
+    List<Connection> visibleConnections,
+  ) {
     final overlays = <Widget>[];
     final routingState = context.read<RoutingEditorCubit>().state;
     if (routingState is! RoutingEditorStateLoaded) return overlays;
+    final visibleConnectionIds = visibleConnections
+        .map((connection) => connection.id)
+        .toSet();
 
     for (final entry in _connectionLabelBounds.entries) {
       final connectionId = entry.key;
@@ -4368,6 +4430,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         final actualConnectionId = connectionId.substring(
           8,
         ); // Remove 'partial_' prefix
+        if (!visibleConnectionIds.contains(actualConnectionId)) continue;
 
         overlays.add(
           Positioned(
@@ -4392,7 +4455,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       }
 
       // Find the connection to check if it has a mode parameter
-      final connection = routingState.connections.firstWhere(
+      final connection = visibleConnections.firstWhere(
         (conn) => conn.id == connectionId,
         orElse: () => Connection(
           id: connectionId,
@@ -4401,6 +4464,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           connectionType: ConnectionType.algorithmToAlgorithm,
         ),
       );
+      if (!visibleConnectionIds.contains(connection.id)) continue;
 
       // Find the source port to check for mode parameter
       // Collect all ports from algorithms

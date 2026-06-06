@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -40,6 +41,7 @@ const Map<String, Object> _nonDefaultSeeds = {
   'allow_codex_auth_refresh': true,
   'ui_scale': 1.4,
   'auto_center_on_selection': false,
+  'show_backward_connections': false,
 };
 
 void main() {
@@ -181,6 +183,10 @@ void main() {
           settings.autoCenterOnSelection,
           SettingsService.defaultAutoCenterOnSelection,
         );
+        expect(
+          settings.showBackwardConnections,
+          SettingsService.defaultShowBackwardConnections,
+        );
 
         final prefs = await SharedPreferences.getInstance();
         final leftoverOwnedKeys = prefs.getKeys().toSet().intersection(
@@ -215,6 +221,41 @@ void main() {
         expect(settings.uiScaleNotifier.value, SettingsService.defaultUiScale);
       },
     );
+  });
+
+  group('SettingsDialog routing visibility settings', () {
+    late SettingsService settings;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({
+        'show_backward_connections': false,
+      });
+      settings = SettingsService();
+      await settings.init();
+    });
+
+    testWidgets('loads and saves Show Back Connections', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: SettingsDialog())),
+      );
+      await tester.pump();
+
+      final settingTitle = find.text('Show Back Connections');
+      await tester.ensureVisible(settingTitle);
+      expect(settingTitle, findsOneWidget);
+      expect(settings.showBackwardConnections, isFalse);
+
+      await tester.tap(settingTitle);
+      await tester.pump();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(settings.showBackwardConnections, isTrue);
+      expect(settings.showBackwardConnectionsNotifier.value, isTrue);
+    });
   });
 
   group('SettingsService key registry', () {

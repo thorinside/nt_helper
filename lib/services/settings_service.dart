@@ -69,6 +69,7 @@ class SettingsService {
   static const String _allowCodexAuthRefreshKey = 'allow_codex_auth_refresh';
   static const String _uiScaleKey = 'ui_scale';
   static const String _autoCenterOnSelectionKey = 'auto_center_on_selection';
+  static const String _showBackwardConnectionsKey = 'show_backward_connections';
 
   /// Single source of truth for every persisted setting key owned by this
   /// service. `resetToDefaults()` clears every entry here so getters fall back
@@ -108,6 +109,7 @@ class SettingsService {
     _allowCodexAuthRefreshKey,
     _uiScaleKey,
     _autoCenterOnSelectionKey,
+    _showBackwardConnectionsKey,
   ];
 
   /// The set of persisted setting keys owned by this service. Test-only.
@@ -148,6 +150,12 @@ class SettingsService {
   static const double maxUiScale = 1.5;
   static const double uiScaleStep = 0.1;
   static const bool defaultAutoCenterOnSelection = true;
+  static const bool defaultShowBackwardConnections = true;
+
+  /// Notifier for routing back-connection visibility changes.
+  final showBackwardConnectionsNotifier = ValueNotifier<bool>(
+    defaultShowBackwardConnections,
+  );
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -155,6 +163,7 @@ class SettingsService {
     // Initialize notifier with stored value
     cpuMonitorEnabledNotifier.value = cpuMonitorEnabled;
     uiScaleNotifier.value = uiScale;
+    showBackwardConnectionsNotifier.value = showBackwardConnections;
   }
 
   /// Get the global UI scale factor, clamped to the allowed range.
@@ -345,6 +354,21 @@ class SettingsService {
     return await _prefs?.setBool(_autoCenterOnSelectionKey, value) ?? false;
   }
 
+  /// Check if backward connections should be shown on the routing canvas.
+  bool get showBackwardConnections =>
+      _prefs?.getBool(_showBackwardConnectionsKey) ??
+      defaultShowBackwardConnections;
+
+  /// Set whether backward connections should be shown on the routing canvas.
+  Future<bool> setShowBackwardConnections(bool value) async {
+    final result =
+        await _prefs?.setBool(_showBackwardConnectionsKey, value) ?? false;
+    if (result) {
+      showBackwardConnectionsNotifier.value = value;
+    }
+    return result;
+  }
+
   /// Check if CPU monitor is enabled
   bool get cpuMonitorEnabled =>
       _prefs?.getBool(_cpuMonitorEnabledKey) ?? defaultCpuMonitorEnabled;
@@ -531,6 +555,7 @@ class SettingsService {
     }
     cpuMonitorEnabledNotifier.value = defaultCpuMonitorEnabled;
     uiScaleNotifier.value = defaultUiScale;
+    showBackwardConnectionsNotifier.value = defaultShowBackwardConnections;
   }
 }
 
@@ -565,6 +590,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _showContextualHelp;
   late bool _cpuMonitorEnabled;
   late bool _autoCenterOnSelection;
+  late bool _showBackwardConnections;
   late double _uiScale;
 
   @override
@@ -588,6 +614,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _showContextualHelp = settings.showContextualHelp;
       _cpuMonitorEnabled = settings.cpuMonitorEnabled;
       _autoCenterOnSelection = settings.autoCenterOnSelection;
+      _showBackwardConnections = settings.showBackwardConnections;
       _uiScale = settings.uiScale;
     });
   }
@@ -613,6 +640,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setShowContextualHelp(_showContextualHelp);
       await settings.setCpuMonitorEnabled(_cpuMonitorEnabled);
       await settings.setAutoCenterOnSelection(_autoCenterOnSelection);
+      await settings.setShowBackwardConnections(_showBackwardConnections);
       await settings.setUiScale(_uiScale);
 
       if (mounted) {
@@ -921,6 +949,24 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       onChanged: (value) {
                         setState(() {
                           _autoCenterOnSelection = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    // Backward connection visibility setting
+                    SwitchListTile(
+                      title: Text(
+                        'Show Back Connections',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                        'Show connections that route from a later slot back to an earlier slot on the routing canvas',
+                      ),
+                      value: _showBackwardConnections,
+                      onChanged: (value) {
+                        setState(() {
+                          _showBackwardConnections = value;
                         });
                       },
                       contentPadding: EdgeInsets.zero,
