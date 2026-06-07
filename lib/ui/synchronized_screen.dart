@@ -702,6 +702,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           await cubit.onAlgorithmSelected(
             result['algorithm'],
             result['specValues'],
+            addBypassed: result['addBypassed'] == true,
           );
           SemanticsService.sendAnnouncement(
             view,
@@ -710,6 +711,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           );
         } on AlgorithmAddFailedException {
           _showAlgorithmAddFailedNotification();
+        } on AlgorithmAddBypassFailedException {
+          _showAlgorithmAddBypassFailedNotification();
         }
       }
     } finally {
@@ -730,6 +733,23 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     SemanticsService.sendAnnouncement(
       View.of(context),
       algorithmAddFailedMessage,
+      TextDirection.ltr,
+    );
+  }
+
+  void _showAlgorithmAddBypassFailedNotification() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text(algorithmAddBypassFailedMessage),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      algorithmAddBypassFailedMessage,
       TextDirection.ltr,
     );
   }
@@ -951,6 +971,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 await cubit.onAlgorithmSelected(
                   result['algorithm'],
                   result['specValues'],
+                  addBypassed: result['addBypassed'] == true,
                 );
                 SemanticsService.sendAnnouncement(
                   WidgetsBinding.instance.platformDispatcher.views.first,
@@ -959,6 +980,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 );
               } on AlgorithmAddFailedException {
                 _showAlgorithmAddFailedNotification();
+              } on AlgorithmAddBypassFailedException {
+                _showAlgorithmAddBypassFailedNotification();
               }
             }
           },

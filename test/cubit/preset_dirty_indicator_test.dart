@@ -337,7 +337,75 @@ void main() {
 
       expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
       expect((cubit.state as DistingStateSynchronized).slots, hasLength(1));
+      verifyNever(() => mockDisting.setParameterValue(any(), any(), any()));
     });
+
+    test('onAlgorithmSelected can add bypassed immediately', () async {
+      final algorithmInfo = AlgorithmInfo(
+        algorithmIndex: 0,
+        name: 'Bypassed Algo',
+        guid: 'bypa',
+        specifications: const [],
+      );
+      when(
+        () => mockDisting.requestAddAlgorithm(any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.setParameterValue(0, 0, 1),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(
+          timeout: any(named: 'timeout'),
+          maxRetries: any(named: 'maxRetries'),
+        ),
+      ).thenAnswer((_) async => 1);
+
+      cubit.emit(makeSyncState());
+      await cubit.onAlgorithmSelected(
+        algorithmInfo,
+        const [],
+        addBypassed: true,
+      );
+
+      verifyInOrder([
+        () => mockDisting.requestAddAlgorithm(any(), any()),
+        () => mockDisting.setParameterValue(0, 0, 1),
+        () => mockDisting.requestNumAlgorithmsInPreset(
+          timeout: any(named: 'timeout'),
+          maxRetries: any(named: 'maxRetries'),
+        ),
+      ]);
+      expect((cubit.state as DistingStateSynchronized).slots, hasLength(1));
+    });
+
+    test(
+      'onAlgorithmSelected reports bypass write failure separately',
+      () async {
+        final algorithmInfo = AlgorithmInfo(
+          algorithmIndex: 0,
+          name: 'Bypass Failed Algo',
+          guid: 'byfl',
+          specifications: const [],
+        );
+        when(
+          () => mockDisting.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDisting.setParameterValue(0, 0, 1),
+        ).thenAnswer((_) async => throw Exception('send failed'));
+
+        cubit.emit(makeSyncState());
+
+        await expectLater(
+          cubit.onAlgorithmSelected(algorithmInfo, const [], addBypassed: true),
+          throwsA(isA<AlgorithmAddBypassFailedException>()),
+        );
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots, hasLength(1));
+        expect(state.isDirty, isTrue);
+      },
+    );
 
     test(
       'onAlgorithmSelected removes placeholder when slot count does not grow',

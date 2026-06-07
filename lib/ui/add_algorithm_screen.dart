@@ -73,6 +73,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   String? selectedAlgorithmGuid;
   AlgorithmInfo? _currentAlgoInfo;
   List<int>? specValues;
+  bool _shiftHeld = false;
 
   @override
   void initState() {
@@ -80,6 +81,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     _loadSettings(); // Load both favorites and toggle state
     _loadCategories();
     _searchController.addListener(_onSearchChanged); // Use debounced listener
+    _shiftHeld = HardwareKeyboard.instance.isShiftPressed;
+    HardwareKeyboard.instance.addHandler(_handleKeyboardEvent);
 
     // Initialize algorithm lists based on current DistingCubit state
     final distingState = context.read<DistingCubit>().state;
@@ -98,6 +101,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyboardEvent);
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _debounce?.cancel();
@@ -106,6 +110,19 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     _viewFocusNode.dispose();
     super.dispose();
   }
+
+  bool _handleKeyboardEvent(KeyEvent event) {
+    final shiftHeld = HardwareKeyboard.instance.isShiftPressed;
+    if (_shiftHeld != shiftHeld && mounted) {
+      setState(() {
+        _shiftHeld = shiftHeld;
+      });
+    }
+    return false;
+  }
+
+  bool get _isAddBypassedRequested =>
+      _shiftHeld || HardwareKeyboard.instance.isShiftPressed;
 
   // --- Debounced Search Handler ---
   void _onSearchChanged() {
@@ -1325,9 +1342,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     }
 
     final canAdd = specValues != null;
+    final addBypassed = _shiftHeld;
     final addButton = ElevatedButton(
-      onPressed: canAdd ? () => _addAndClose(isOffline) : null,
-      child: const Text('Add Algorithm'),
+      onPressed: canAdd
+          ? () => _addAndClose(isOffline, addBypassed: _isAddBypassedRequested)
+          : null,
+      child: Text(addBypassed ? 'Add Algorithm Bypassed' : 'Add Algorithm'),
     );
 
     if (!canAdd || !_canStayOpen()) {
@@ -1340,8 +1360,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: ElevatedButton(
-            onPressed: () => _addAndStayOpen(isOffline),
-            child: const Text('Add Another'),
+            onPressed: () => _addAndStayOpen(
+              isOffline,
+              addBypassed: _isAddBypassedRequested,
+            ),
+            child: Text(addBypassed ? 'Add Another Bypassed' : 'Add Another'),
           ),
         ),
       ],
@@ -1381,7 +1404,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     return selectedValues;
   }
 
-  Future<void> _addAndClose(bool isOffline) async {
+  Future<void> _addAndClose(bool isOffline, {required bool addBypassed}) async {
     final algorithm = _currentAlgoInfo;
     if (algorithm == null) return;
 
@@ -1394,10 +1417,14 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     Navigator.pop(context, {
       'algorithm': algorithm,
       'specValues': selectedValues,
+      'addBypassed': addBypassed,
     });
   }
 
-  Future<void> _addAndStayOpen(bool isOffline) async {
+  Future<void> _addAndStayOpen(
+    bool isOffline, {
+    required bool addBypassed,
+  }) async {
     final algorithm = _currentAlgoInfo;
     if (algorithm == null) return;
 
@@ -1410,6 +1437,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       await context.read<DistingCubit>().onAlgorithmSelected(
         algorithm,
         List<int>.from(specs),
+        addBypassed: addBypassed,
       );
     } on AlgorithmAddFailedException {
       if (!mounted) return;
@@ -1423,6 +1451,21 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       SemanticsService.sendAnnouncement(
         View.of(context),
         algorithmAddFailedMessage,
+        TextDirection.ltr,
+      );
+      return;
+    } on AlgorithmAddBypassFailedException {
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text(algorithmAddBypassFailedMessage),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        algorithmAddBypassFailedMessage,
         TextDirection.ltr,
       );
       return;

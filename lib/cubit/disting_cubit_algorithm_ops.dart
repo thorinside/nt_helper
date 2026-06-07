@@ -2,6 +2,8 @@ part of 'disting_cubit.dart';
 
 const algorithmAddFailedMessage =
     'The algorithm did not appear. Something went wrong.';
+const algorithmAddBypassFailedMessage =
+    'Algorithm added, but bypass could not be enabled.';
 
 class AlgorithmAddFailedException implements Exception {
   const AlgorithmAddFailedException();
@@ -10,7 +12,16 @@ class AlgorithmAddFailedException implements Exception {
   String toString() => algorithmAddFailedMessage;
 }
 
+class AlgorithmAddBypassFailedException implements Exception {
+  const AlgorithmAddBypassFailedException();
+
+  @override
+  String toString() => algorithmAddBypassFailedMessage;
+}
+
 mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
+  static const _bypassParameterNumber = 0;
+  static const _bypassEnabledValue = 1;
   static const _addAlgorithmSlotCountRequestTimeout = Duration(
     milliseconds: 700,
   );
@@ -148,8 +159,9 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
 
   Future<void> onAlgorithmSelectedImpl(
     AlgorithmInfo algorithm,
-    List<int> specifications,
-  ) async {
+    List<int> specifications, {
+    bool addBypassed = false,
+  }) async {
     switch (state) {
       case DistingStateInitial():
       case DistingStateSelectDevice():
@@ -202,6 +214,10 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
             expectedPlaceholderName: expectedPlaceholderName,
           );
           throw const AlgorithmAddFailedException();
+        }
+
+        if (addBypassed) {
+          await _setNewAlgorithmBypassed(disting, newSlotIndex);
         }
 
         // 3) Fail-fast verification: confirm the preset slot count increased
@@ -292,6 +308,21 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           onCancel: () {},
         );
         break;
+    }
+  }
+
+  Future<void> _setNewAlgorithmBypassed(
+    IDistingMidiManager disting,
+    int newSlotIndex,
+  ) async {
+    try {
+      await disting.setParameterValue(
+        newSlotIndex,
+        _bypassParameterNumber,
+        _bypassEnabledValue,
+      );
+    } catch (_) {
+      throw const AlgorithmAddBypassFailedException();
     }
   }
 

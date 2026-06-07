@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
@@ -485,6 +486,7 @@ void main() {
       final result = routeResult as Map<String, dynamic>;
       expect(result['algorithm'], mockLoadedPlugin);
       expect(result['specValues'], [7, 0]);
+      expect(result['addBypassed'], isFalse);
     });
 
     testWidgets('boolean specification renders as switch and submits 1', (
@@ -981,6 +983,82 @@ void main() {
       );
     });
 
+    testWidgets('Shift changes add button labels while held', (tester) async {
+      addTearDown(() async {
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      });
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Clock'));
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+
+      expect(
+        find.widgetWithText(ElevatedButton, 'Add Algorithm Bypassed'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(ElevatedButton, 'Add Another Bypassed'),
+        findsOneWidget,
+      );
+
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+
+      expect(
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(ElevatedButton, 'Add Another'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Add Algorithm returns addBypassed when Shift is held', (
+      tester,
+    ) async {
+      addTearDown(() async {
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      });
+      Object? routeResult;
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createRouteTestWidget((result) {
+          routeResult = result;
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Add Algorithm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clock'));
+      await tester.pumpAndSettle();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+      await tester.tap(
+        find.widgetWithText(ElevatedButton, 'Add Algorithm Bypassed'),
+      );
+      await tester.pumpAndSettle();
+
+      final result = routeResult as Map<String, dynamic>;
+      expect(result['algorithm'], mockFactoryAlgorithm);
+      expect(result['specValues'], isEmpty);
+      expect(result['addBypassed'], isTrue);
+    });
+
     testWidgets('Add Another adds, clears selection, '
         'shows SnackBar, and stays open', (tester) async {
       when(
@@ -988,7 +1066,11 @@ void main() {
       ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
       when(
-        () => mockCubit.onAlgorithmSelected(any(), any()),
+        () => mockCubit.onAlgorithmSelected(
+          any(),
+          any(),
+          addBypassed: any(named: 'addBypassed'),
+        ),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(createTestWidget());
@@ -1010,6 +1092,7 @@ void main() {
         () => mockCubit.onAlgorithmSelected(
           any(that: predicate<AlgorithmInfo>((a) => a.guid == 'clck')),
           any(),
+          addBypassed: false,
         ),
       ).called(1);
 
@@ -1033,7 +1116,11 @@ void main() {
       ).thenReturn(synchronizedWith([mockLoadedPlugin]));
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
       when(
-        () => mockCubit.onAlgorithmSelected(any(), any()),
+        () => mockCubit.onAlgorithmSelected(
+          any(),
+          any(),
+          addBypassed: any(named: 'addBypassed'),
+        ),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(createTestWidget());
@@ -1044,7 +1131,13 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Add Another'));
       await tester.pumpAndSettle();
 
-      verifyNever(() => mockCubit.onAlgorithmSelected(any(), any()));
+      verifyNever(
+        () => mockCubit.onAlgorithmSelected(
+          any(),
+          any(),
+          addBypassed: any(named: 'addBypassed'),
+        ),
+      );
       expect(find.text('Configure Test Plugin'), findsOneWidget);
 
       await tester.enterText(
@@ -1058,10 +1151,59 @@ void main() {
         () => mockCubit.onAlgorithmSelected(
           any(that: predicate<AlgorithmInfo>((a) => a.guid == 'TestPlugin')),
           any(that: equals([6, 0])),
+          addBypassed: false,
         ),
       ).called(1);
       expect(find.text('Test Plugin added'), findsOneWidget);
       expect(find.text('Select Algorithm'), findsOneWidget);
+    });
+
+    testWidgets('Add Another preserves bypass intent through specs dialog', (
+      tester,
+    ) async {
+      addTearDown(() async {
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      });
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockLoadedPlugin]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockCubit.onAlgorithmSelected(
+          any(),
+          any(),
+          addBypassed: any(named: 'addBypassed'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Test Plugin'));
+      await tester.pumpAndSettle();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+      await tester.tap(
+        find.widgetWithText(ElevatedButton, 'Add Another Bypassed'),
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+
+      await tester.enterText(
+        find.byKey(const ValueKey('TestPlugin_spec_0')),
+        '6',
+      );
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockCubit.onAlgorithmSelected(
+          any(that: predicate<AlgorithmInfo>((a) => a.guid == 'TestPlugin')),
+          any(that: equals([6, 0])),
+          addBypassed: true,
+        ),
+      ).called(1);
     });
 
     testWidgets('Add Another shows generic error when add verification fails', (
@@ -1072,7 +1214,11 @@ void main() {
       ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
       when(
-        () => mockCubit.onAlgorithmSelected(any(), any()),
+        () => mockCubit.onAlgorithmSelected(
+          any(),
+          any(),
+          addBypassed: any(named: 'addBypassed'),
+        ),
       ).thenAnswer((_) async => throw const AlgorithmAddFailedException());
 
       await tester.pumpWidget(createTestWidget());

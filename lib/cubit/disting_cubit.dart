@@ -414,9 +414,14 @@ class DistingCubit extends _DistingCubitBase
 
   Future<void> onAlgorithmSelected(
     AlgorithmInfo algorithm,
-    List<int> specifications,
-  ) async {
-    return onAlgorithmSelectedImpl(algorithm, specifications);
+    List<int> specifications, {
+    bool addBypassed = false,
+  }) async {
+    return onAlgorithmSelectedImpl(
+      algorithm,
+      specifications,
+      addBypassed: addBypassed,
+    );
   }
 
   Future<void> onRemoveAlgorithm(int algorithmIndex) async {
