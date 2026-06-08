@@ -37,17 +37,20 @@ import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/ui/widgets/routing/es5_node.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_table_view.dart';
+import 'package:nt_helper/ui/widgets/routing/bus_lanes_view.dart';
 
 enum _RoutingViewMode {
   canvas,
   list,
-  table;
+  table,
+  busLanes;
 
   static const _prefsKey = 'routing_view_mode';
 
   static _RoutingViewMode fromString(String? value) => switch (value) {
     'list' => list,
     'table' => table,
+    'busLanes' => busLanes,
     _ => canvas,
   };
 }
@@ -1140,6 +1143,27 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
               );
             }
 
+            if (effectiveMode == _RoutingViewMode.busLanes) {
+              return Stack(
+                children: [
+                  Container(
+                    width: widget.canvasSize.width,
+                    height: widget.canvasSize.height,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      border: Border.all(
+                        color: Theme.of(context).dividerColor,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const BusLanesView(),
+                  ),
+                  Positioned(top: 8, right: 8, child: _buildViewModeButton()),
+                ],
+              );
+            }
+
             return Stack(
               children: [
                 Container(
@@ -1648,6 +1672,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           ),
         ),
         PopupMenuItem(
+          value: _RoutingViewMode.busLanes,
+          child: ListTile(
+            leading: Icon(Icons.view_column),
+            title: Text('Bus Lanes'),
+            dense: true,
+          ),
+        ),
+        PopupMenuItem(
           value: _RoutingViewMode.list,
           child: ListTile(
             leading: Icon(Icons.list_alt),
@@ -1669,6 +1701,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
               switch (_viewMode) {
                 _RoutingViewMode.canvas => Icons.grid_view,
                 _RoutingViewMode.table => Icons.table_chart,
+                _RoutingViewMode.busLanes => Icons.view_column,
                 _RoutingViewMode.list => Icons.list_alt,
               },
               size: 20,
