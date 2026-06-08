@@ -6,6 +6,7 @@ import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/util/routing_analyzer.dart';
+import 'package:nt_helper/util/routing_info_builder.dart';
 
 /// OG-style signal flow table visualization for the routing editor.
 ///
@@ -78,52 +79,13 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     );
   }
 
-  /// Build [RoutingInformation] from the routing editor's algorithm/port data.
-  List<RoutingInformation> _buildRoutingFromEditorState(
-    List<RoutingAlgorithm> algorithms,
-    Map<String, OutputMode> portOutputModes,
-  ) {
-    final sorted = List<RoutingAlgorithm>.from(algorithms)
-      ..sort((a, b) => a.index.compareTo(b.index));
-
-    return sorted.map((algo) {
-      int inputMask = 0;
-      int outputMask = 0;
-      int replaceMask = 0;
-
-      for (final port in algo.inputPorts) {
-        final bus = port.busValue;
-        if (bus != null && bus > 0 && bus <= BusSpec.extendedMax) {
-          inputMask |= (1 << bus);
-        }
-      }
-
-      for (final port in algo.outputPorts) {
-        final bus = port.busValue;
-        if (bus != null && bus > 0 && bus <= BusSpec.extendedMax) {
-          outputMask |= (1 << bus);
-          final mode = portOutputModes[port.id] ?? port.outputMode;
-          if (mode == OutputMode.replace) {
-            replaceMask |= (1 << bus);
-          }
-        }
-      }
-
-      return RoutingInformation(
-        algorithmIndex: algo.index,
-        routingInfo: [inputMask, outputMask, replaceMask, 0, 0, 0],
-        algorithmName: algo.algorithm.name,
-      );
-    }).toList();
-  }
-
   Widget _buildTable(
     BuildContext context, {
     required List<RoutingAlgorithm> algorithms,
     required Map<String, OutputMode> portOutputModes,
     required bool hasExtendedAuxBuses,
   }) {
-    final routing = _buildRoutingFromEditorState(algorithms, portOutputModes);
+    final routing = buildRoutingInfoFromEditor(algorithms, portOutputModes);
     if (routing.isEmpty) {
       return Center(
         child: Text(
