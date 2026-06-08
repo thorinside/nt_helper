@@ -652,7 +652,7 @@ class _BusLanesViewState extends State<BusLanesView> {
         ? 'Disconnected ${ref.label}'
         : 'Connected ${ref.label} → ${_busLabel(targetBus)}';
     final messenger = _messengerKey.currentState;
-    messenger?.clearSnackBars();
+    messenger?.hideCurrentSnackBar();
     messenger?.showSnackBar(
       SnackBar(
         content: Text(
@@ -661,6 +661,7 @@ class _BusLanesViewState extends State<BusLanesView> {
               : what,
         ),
         duration: const Duration(seconds: 7),
+        persist: false,
         behavior: SnackBarBehavior.floating,
         action: SnackBarAction(
           label: 'Undo',
