@@ -19,8 +19,52 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/core/routing/models/es5_hardware_node.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
+import 'package:nt_helper/core/routing/bus_flow_solver.dart';
+import 'package:nt_helper/core/routing/slot_reorder_planner.dart';
 
 import 'routing_editor_state.dart';
+
+/// Outcome of a slot reorder, carrying enough to describe and undo it.
+class ReorderResult {
+  /// Algorithm ids in slot order before the reorder.
+  final List<String> previousOrder;
+
+  /// Algorithm ids in slot order after the reorder.
+  final List<String> newOrder;
+
+  /// Human-readable summary, e.g. "Moved 'Reverb' up to keep signal flowing".
+  final String description;
+
+  /// Whether any slot actually moved.
+  final bool changed;
+
+  const ReorderResult({
+    required this.previousOrder,
+    required this.newOrder,
+    required this.description,
+    required this.changed,
+  });
+}
+
+/// Outcome of [RoutingEditorCubit.assignBusAndSolve], with the data needed to
+/// undo both the bus assignment and any auto-reorder it triggered.
+class BusAssignmentResult {
+  final int algorithmIndex;
+  final int parameterNumber;
+  final int previousBusValue;
+  final int newBusValue;
+
+  /// The reorder that was applied to keep the flow valid, if any.
+  final ReorderResult? reorder;
+
+  const BusAssignmentResult({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.previousBusValue,
+    required this.newBusValue,
+    required this.reorder,
+  });
+}
 
 /// Cubit that manages the state of the routing editor.
 ///
@@ -2238,6 +2282,176 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return currentState.portOutputModes[portId] ?? OutputMode.replace;
     }
     return OutputMode.replace;
+  }
+
+  /// Current algorithm ids in slot order (ascending index).
+  List<String> _currentAlgorithmOrder(RoutingEditorStateLoaded st) {
+    final algos = List<RoutingAlgorithm>.from(st.algorithms)
+      ..sort((a, b) => a.index.compareTo(b.index));
+    return algos.map((a) => a.id).toList();
+  }
+
+  String _describeReorder(
+    RoutingEditorStateLoaded st,
+    List<String> before,
+    List<String> after,
+  ) {
+    final names = {for (final a in st.algorithms) a.id: a.algorithm.name};
+    final beforePos = {for (var i = 0; i < before.length; i++) before[i]: i};
+    final afterPos = {for (var i = 0; i < after.length; i++) after[i]: i};
+    String? movedId;
+    int bestDelta = 0;
+    for (final id in before) {
+      final delta = (afterPos[id] ?? 0) - (beforePos[id] ?? 0);
+      if (delta.abs() > bestDelta.abs()) {
+        bestDelta = delta;
+        movedId = id;
+      }
+    }
+    if (movedId == null || bestDelta == 0) return 'Reordered algorithms';
+    final dir = bestDelta > 0 ? 'down' : 'up';
+    return "Moved '${names[movedId] ?? movedId}' $dir to keep signal flowing";
+  }
+
+  /// Reorders algorithm slots to match [targetOrder] using adjacent swaps.
+  ///
+  /// Returns a [ReorderResult] whose `previousOrder` can be passed back to
+  /// [applyReorder] to undo the change.
+  Future<ReorderResult> applyReorder(List<String> targetOrder) async {
+    final st = state;
+    if (st is! RoutingEditorStateLoaded || _distingCubit == null) {
+      return const ReorderResult(
+        previousOrder: [],
+        newOrder: [],
+        description: '',
+        changed: false,
+      );
+    }
+
+    final currentOrder = _currentAlgorithmOrder(st);
+    final steps = SlotReorderPlanner.planSwaps(currentOrder, targetOrder);
+    if (steps.isEmpty) {
+      return ReorderResult(
+        previousOrder: currentOrder,
+        newOrder: currentOrder,
+        description: '',
+        changed: false,
+      );
+    }
+
+    for (final step in steps) {
+      if (step.direction == SwapDirection.up) {
+        await _distingCubit.moveAlgorithmUp(step.index);
+      } else {
+        await _distingCubit.moveAlgorithmDown(step.index);
+      }
+    }
+
+    return ReorderResult(
+      previousOrder: currentOrder,
+      newOrder: targetOrder,
+      description: _describeReorder(st, currentOrder, targetOrder),
+      changed: true,
+    );
+  }
+
+  /// Computes a valid slot order from the current bus connections and applies
+  /// it. Returns the [ReorderResult] when a move happened, otherwise null.
+  Future<ReorderResult?> autoSolveFlow() async {
+    final st = state;
+    if (st is! RoutingEditorStateLoaded) return null;
+    final solution = BusFlowSolver.fromAlgorithms(st.algorithms).solve();
+    if (!solution.reorderNeeded) return null;
+    final result = await applyReorder(solution.order);
+    return result.changed ? result : null;
+  }
+
+  /// Writes a bus number to a port's bus-assignment parameter.
+  Future<void> setPortBus({
+    required int algorithmIndex,
+    required int parameterNumber,
+    required int busValue,
+  }) async {
+    if (_distingCubit == null) return;
+    await _distingCubit.updateParameterValue(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      value: busValue,
+      userIsChangingTheValue: true,
+    );
+  }
+
+  /// Assigns [busValue] to a port's bus parameter, then auto-solves the slot
+  /// order so the connection is valid. The returned [BusAssignmentResult] can
+  /// be passed to [undoBusAssignment] to revert both the assignment and any
+  /// reorder.
+  Future<BusAssignmentResult> assignBusAndSolve({
+    required int algorithmIndex,
+    required int parameterNumber,
+    required int previousBusValue,
+    required int busValue,
+  }) async {
+    final st = state;
+    ReorderResult? reorder;
+
+    if (st is RoutingEditorStateLoaded) {
+      // Solve against the hypothetical post-assignment state: the live state
+      // does not reflect the parameter write synchronously, so reading it back
+      // here would solve stale data and never reorder.
+      final hypothetical = st.algorithms.map((a) {
+        if (a.index != algorithmIndex) return a;
+        List<Port> upd(List<Port> ports) => [
+          for (final p in ports)
+            p.parameterNumber == parameterNumber
+                ? p.copyWith(busValue: busValue)
+                : p,
+        ];
+        return a.copyWith(
+          inputPorts: upd(a.inputPorts),
+          outputPorts: upd(a.outputPorts),
+        );
+      }).toList();
+      final solution = BusFlowSolver.fromAlgorithms(hypothetical).solve();
+
+      await setPortBus(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: parameterNumber,
+        busValue: busValue,
+      );
+
+      if (solution.reorderNeeded) {
+        final result = await applyReorder(solution.order);
+        if (result.changed) reorder = result;
+      }
+    } else {
+      await setPortBus(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: parameterNumber,
+        busValue: busValue,
+      );
+    }
+
+    return BusAssignmentResult(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      previousBusValue: previousBusValue,
+      newBusValue: busValue,
+      reorder: reorder,
+    );
+  }
+
+  /// Reverts a previous [assignBusAndSolve]: restores the bus value, then the
+  /// prior slot order.
+  Future<void> undoBusAssignment(BusAssignmentResult result) async {
+    await setPortBus(
+      algorithmIndex: result.algorithmIndex,
+      parameterNumber: result.parameterNumber,
+      busValue: result.previousBusValue,
+    );
+    final reorder = result.reorder;
+    if (reorder != null && reorder.changed) {
+      await applyReorder(reorder.previousOrder);
+    }
   }
 
   /// Update bus properties
