@@ -33,6 +33,7 @@ import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
+import 'package:nt_helper/core/routing/bus_flow_solver.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
@@ -108,6 +109,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   late final PlatformInteractionService _platformService;
   final RoutingEditorController _editorController = RoutingEditorController();
   final KeyBindingService _keyBindingService = KeyBindingService();
+  RoutingEditorViewMode _routingViewMode = RoutingEditorViewMode.canvas;
   final FocusNode _screenFocusNode = FocusNode();
   late int _selectedIndex;
   late TabController _tabController;
@@ -120,6 +122,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   AppUpdateService? _appUpdateService;
   RoutingEditorCubit? _routingEditorCubit;
   late final Widget _cachedRoutingCanvas = _buildRoutingCanvas();
+
+  Widget _buildKeyedRoutingCanvas(RoutingEditorViewMode mode) {
+    return KeyedSubtree(
+      key: ValueKey(mode),
+      child: _cachedRoutingCanvas,
+    );
+  }
   StreamSubscription<RoutingEditorState>? _routingFocusSub;
   bool _isSyncingSelection = false;
   bool _isAddAlgorithmOpen = false;
@@ -402,6 +411,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   @override
   Widget build(BuildContext context) {
     bool isWideScreen = MediaQuery.of(context).size.width > 900;
+    final effectiveRoutingViewMode = MediaQuery.of(context).accessibleNavigation
+        ? RoutingEditorViewMode.list
+        : _routingViewMode;
     final cubit = context.read<DistingCubit>();
     final routingCubit = _getOrCreateRoutingCubit(cubit);
 
@@ -431,7 +443,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   ? _buildSplitView()
                   : IndexedStack(
                       index: _currentMode == EditMode.routing ? 1 : 0,
-                      children: [_buildWideScreenBody(), _cachedRoutingCanvas],
+                      children: [
+                        _buildWideScreenBody(),
+                        _buildKeyedRoutingCanvas(effectiveRoutingViewMode),
+                      ],
                     ),
             ),
             AppUpdateBanner(
@@ -470,7 +485,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             Expanded(
               child: IndexedStack(
                 index: _currentMode == EditMode.routing ? 1 : 0,
-                children: [_buildBody(), _cachedRoutingCanvas],
+                children: [
+                  _buildBody(),
+                  _buildKeyedRoutingCanvas(effectiveRoutingViewMode),
+                ],
               ),
             ),
             AppUpdateBanner(
@@ -797,6 +815,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   Widget _buildSplitView() {
     const double dividerWidth = 8.0;
     const double minPaneWidth = 500.0;
+    final effectiveRoutingViewMode =
+        MediaQuery.of(context).accessibleNavigation
+            ? RoutingEditorViewMode.list
+            : _routingViewMode;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -850,7 +872,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 ),
               ),
             ),
-            Expanded(flex: rightFlex, child: _cachedRoutingCanvas),
+            Expanded(
+              flex: rightFlex,
+              child: _buildKeyedRoutingCanvas(effectiveRoutingViewMode),
+            ),
           ],
         );
       },
@@ -1012,10 +1037,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           padding: WidgetStatePropertyAll(EdgeInsets.all(8)),
                         )
                       : null;
+                  final effectiveRoutingViewMode =
+                      MediaQuery.of(context).accessibleNavigation
+                          ? RoutingEditorViewMode.list
+                          : _routingViewMode;
                   return Row(
                     children: [
-                      // Zoom controls
-                      if (state is RoutingEditorStateLoaded) ...[
+                      // Zoom controls (canvas-only)
+                      if (state is RoutingEditorStateLoaded &&
+                          effectiveRoutingViewMode ==
+                              RoutingEditorViewMode.canvas) ...[
                         IconButton(
                           onPressed: () =>
                               context.read<RoutingEditorCubit>().zoomOut(),
@@ -1117,64 +1148,65 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         ),
                         tooltip: 'Refresh Routing',
                       ),
-                      // Layout Algorithm Button
-                      state.maybeWhen(
-                        loaded:
-                            (
-                              physicalInputs,
-                              physicalOutputs,
-                              es5Inputs,
-                              algorithms,
-                              connections,
-                              buses,
-                              portOutputModes,
-                              nodePositions,
-                              zoomLevel,
-                              panOffset,
-                              isHardwareSynced,
-                              isPersistenceEnabled,
-                              lastSyncTime,
-                              lastPersistTime,
-                              lastError,
-                              subState,
-                              focusedAlgorithmIds,
-                              cascadeScrollTarget,
-                              auxBusUsage,
-                              hasExtendedAuxBuses,
-                            ) {
-                              // Show loading during layout calculation
-                              if (subState == SubState.syncing) {
-                                return IconButton(
-                                  icon: const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                      if (effectiveRoutingViewMode ==
+                          RoutingEditorViewMode.canvas)
+                        state.maybeWhen(
+                          loaded:
+                              (
+                                physicalInputs,
+                                physicalOutputs,
+                                es5Inputs,
+                                algorithms,
+                                connections,
+                                buses,
+                                portOutputModes,
+                                nodePositions,
+                                zoomLevel,
+                                panOffset,
+                                isHardwareSynced,
+                                isPersistenceEnabled,
+                                lastSyncTime,
+                                lastPersistTime,
+                                lastError,
+                                subState,
+                                focusedAlgorithmIds,
+                                cascadeScrollTarget,
+                                auxBusUsage,
+                                hasExtendedAuxBuses,
+                              ) {
+                                // Show loading during layout calculation
+                                if (subState == SubState.syncing) {
+                                  return IconButton(
+                                    icon: const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     ),
+                                    onPressed: null,
+                                    tooltip: 'Calculating Layout...',
+                                    style: buttonStyle,
+                                  );
+                                }
+
+                                // Show normal layout button
+                                return IconButton(
+                                  icon: const Icon(
+                                    Icons.auto_fix_high,
+                                    semanticLabel: 'Apply Layout Algorithm',
                                   ),
-                                  onPressed: null,
-                                  tooltip: 'Calculating Layout...',
+                                  onPressed: () {
+                                    context
+                                        .read<RoutingEditorCubit>()
+                                        .applyLayoutAlgorithm();
+                                  },
+                                  tooltip: 'Apply Layout Algorithm',
                                   style: buttonStyle,
                                 );
-                              }
-
-                              // Show normal layout button
-                              return IconButton(
-                                icon: const Icon(
-                                  Icons.auto_fix_high,
-                                  semanticLabel: 'Apply Layout Algorithm',
-                                ),
-                                onPressed: () {
-                                  context
-                                      .read<RoutingEditorCubit>()
-                                      .applyLayoutAlgorithm();
-                                },
-                                tooltip: 'Apply Layout Algorithm',
-                                style: buttonStyle,
-                              );
-                            },
-                        orElse: () => const SizedBox.shrink(),
-                      ),
+                              },
+                          orElse: () => const SizedBox.shrink(),
+                        ),
                       // Optimize AUX Buses
                       state.maybeWhen(
                         loaded:
@@ -1232,39 +1264,91 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             },
                         orElse: () => const SizedBox.shrink(),
                       ),
+                      state.maybeWhen(
+                        loaded:
+                            (
+                              physicalInputs,
+                              physicalOutputs,
+                              es5Inputs,
+                              algorithms,
+                              connections,
+                              buses,
+                              portOutputModes,
+                              nodePositions,
+                              zoomLevel,
+                              panOffset,
+                              isHardwareSynced,
+                              isPersistenceEnabled,
+                              lastSyncTime,
+                              lastPersistTime,
+                              lastError,
+                              subState,
+                              focusedAlgorithmIds,
+                              cascadeScrollTarget,
+                              auxBusUsage,
+                              hasExtendedAuxBuses,
+                            ) {
+                              final flowSolution =
+                                  BusFlowSolver.fromAlgorithms(algorithms)
+                                      .solve();
+                              if (effectiveRoutingViewMode !=
+                                      RoutingEditorViewMode.busLanes ||
+                                  !flowSolution.reorderNeeded) {
+                                return const SizedBox.shrink();
+                              }
+                              return IconButton(
+                                icon: const Icon(
+                                  Icons.alt_route,
+                                  semanticLabel: 'Reorder Algorithms',
+                                ),
+                                onPressed: () async {
+                                  await context
+                                      .read<RoutingEditorCubit>()
+                                      .autoSolveFlow();
+                                },
+                                tooltip:
+                                    'Reorder algorithms to fix bus flow',
+                                style: buttonStyle,
+                              );
+                            },
+                        orElse: () => const SizedBox.shrink(),
+                      ),
                       // Checkpoint
                       _buildCheckpointButton(context, buttonStyle),
-                      // Center View
-                      IconButton(
-                        icon: const Icon(
-                          Icons.center_focus_strong,
-                          semanticLabel: 'Center View',
+                      if (effectiveRoutingViewMode ==
+                          RoutingEditorViewMode.canvas) ...[
+                        // Center View
+                        IconButton(
+                          icon: const Icon(
+                            Icons.center_focus_strong,
+                            semanticLabel: 'Center View',
+                          ),
+                          onPressed: () => _editorController.fitToView(),
+                          tooltip: 'Center View',
+                          style: buttonStyle,
                         ),
-                        onPressed: () => _editorController.fitToView(),
-                        tooltip: 'Center View',
-                        style: buttonStyle,
-                      ),
 
-                      // Share/Copy Nodes Image (tight bounds, 24px margin)
-                      IconButton(
-                        icon: Icon(
-                          isMobile ? Icons.share : Icons.image_outlined,
-                          semanticLabel: isMobile
+                        // Share/Copy Nodes Image (tight bounds, 24px margin)
+                        IconButton(
+                          icon: Icon(
+                            isMobile ? Icons.share : Icons.image_outlined,
+                            semanticLabel: isMobile
+                                ? 'Share Nodes Image'
+                                : 'Copy Nodes Image',
+                          ),
+                          onPressed: () {
+                            if (isMobile) {
+                              _editorController.shareNodesImage();
+                            } else {
+                              _editorController.copyNodesImage();
+                            }
+                          },
+                          tooltip: isMobile
                               ? 'Share Nodes Image'
                               : 'Copy Nodes Image',
+                          style: buttonStyle,
                         ),
-                        onPressed: () {
-                          if (isMobile) {
-                            _editorController.shareNodesImage();
-                          } else {
-                            _editorController.copyNodesImage();
-                          }
-                        },
-                        tooltip: isMobile
-                            ? 'Share Nodes Image'
-                            : 'Copy Nodes Image',
-                        style: buttonStyle,
-                      ),
+                      ],
                     ],
                   );
                 },
@@ -1280,6 +1364,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   controller: _editorController,
                   canvasSize: Size(constraints.maxWidth, constraints.maxHeight),
                   showPhysicalPorts: true,
+                  onViewModeChanged: (mode) {
+                    if (!mounted) return;
+                    setState(() => _routingViewMode = mode);
+                  },
                   onConnectionCreated: (source, target) {
                     context.read<RoutingEditorCubit>().createConnection(
                       sourcePortId: source,

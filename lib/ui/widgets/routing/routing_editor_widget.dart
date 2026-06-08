@@ -39,7 +39,7 @@ import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_table_view.dart';
 import 'package:nt_helper/ui/widgets/routing/bus_lanes_view.dart';
 
-enum _RoutingViewMode {
+enum RoutingEditorViewMode {
   canvas,
   list,
   table,
@@ -47,7 +47,7 @@ enum _RoutingViewMode {
 
   static const _prefsKey = 'routing_view_mode';
 
-  static _RoutingViewMode fromString(String? value) => switch (value) {
+  static RoutingEditorViewMode fromString(String? value) => switch (value) {
     'list' => list,
     'table' => table,
     'busLanes' => busLanes,
@@ -68,6 +68,7 @@ class RoutingEditorWidget extends StatefulWidget {
   final PlatformInteractionService? platformService;
   final RoutingEditorController? controller;
   final KeyBindingService? keyBindingService;
+  final ValueChanged<RoutingEditorViewMode>? onViewModeChanged;
 
   RoutingEditorWidget({
     super.key,
@@ -81,6 +82,7 @@ class RoutingEditorWidget extends StatefulWidget {
     this.platformService,
     this.controller,
     this.keyBindingService,
+    this.onViewModeChanged,
   }) : showBusLabels = showBusLabels ?? (canvasSize.width >= 800);
 
   @override
@@ -120,7 +122,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       false; // True during the final fade-out phase (not cancellable)
 
   // View mode toggle (canvas, list, table) — persisted via SharedPreferences
-  _RoutingViewMode _viewMode = _RoutingViewMode.canvas;
+  RoutingEditorViewMode _viewMode = RoutingEditorViewMode.canvas;
   bool _viewModeLoaded = false;
   Timer? _scrollSaveTimer;
   // Tracks the last known scroll offset so it can be restored when the canvas
@@ -129,12 +131,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   Future<void> _loadViewMode() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_RoutingViewMode._prefsKey);
+    final saved = prefs.getString(RoutingEditorViewMode._prefsKey);
     if (mounted) {
       setState(() {
-        if (saved != null) _viewMode = _RoutingViewMode.fromString(saved);
+        if (saved != null) _viewMode = RoutingEditorViewMode.fromString(saved);
         _viewModeLoaded = true;
       });
+      widget.onViewModeChanged?.call(_viewMode);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final cubitState = context.read<RoutingEditorCubit>().state;
@@ -155,12 +158,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     }
   }
 
-  void _setViewMode(_RoutingViewMode mode) {
+  void _setViewMode(RoutingEditorViewMode mode) {
     setState(() => _viewMode = mode);
     SharedPreferences.getInstance().then(
-      (prefs) => prefs.setString(_RoutingViewMode._prefsKey, mode.name),
+      (prefs) => prefs.setString(RoutingEditorViewMode._prefsKey, mode.name),
     );
-    if (mode == _RoutingViewMode.canvas) {
+    widget.onViewModeChanged?.call(mode);
+    if (mode == RoutingEditorViewMode.canvas) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final target = _lastScrollOffset != Offset.zero
@@ -1098,10 +1102,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
             // Auto-detect accessible navigation mode
             final effectiveMode = MediaQuery.of(context).accessibleNavigation
-                ? _RoutingViewMode.list
+                ? RoutingEditorViewMode.list
                 : _viewMode;
 
-            if (effectiveMode == _RoutingViewMode.list) {
+            if (effectiveMode == RoutingEditorViewMode.list) {
               return Stack(
                 children: [
                   Container(
@@ -1122,7 +1126,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
               );
             }
 
-            if (effectiveMode == _RoutingViewMode.table) {
+            if (effectiveMode == RoutingEditorViewMode.table) {
               return Stack(
                 children: [
                   Container(
@@ -1143,7 +1147,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
               );
             }
 
-            if (effectiveMode == _RoutingViewMode.busLanes) {
+            if (effectiveMode == RoutingEditorViewMode.busLanes) {
               return Stack(
                 children: [
                   Container(
@@ -1651,12 +1655,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   // so we skip rigid preflight here to avoid blocking valid cases.
 
   Widget _buildViewModeButton() {
-    return PopupMenuButton<_RoutingViewMode>(
+    return PopupMenuButton<RoutingEditorViewMode>(
       initialValue: _viewMode,
       onSelected: _setViewMode,
       itemBuilder: (context) => const [
         PopupMenuItem(
-          value: _RoutingViewMode.canvas,
+          value: RoutingEditorViewMode.canvas,
           child: ListTile(
             leading: Icon(Icons.grid_view),
             title: Text('Canvas'),
@@ -1664,7 +1668,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           ),
         ),
         PopupMenuItem(
-          value: _RoutingViewMode.table,
+          value: RoutingEditorViewMode.table,
           child: ListTile(
             leading: Icon(Icons.table_chart),
             title: Text('Signal Flow'),
@@ -1672,7 +1676,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           ),
         ),
         PopupMenuItem(
-          value: _RoutingViewMode.busLanes,
+          value: RoutingEditorViewMode.busLanes,
           child: ListTile(
             leading: Icon(Icons.view_column),
             title: Text('Bus Lanes'),
@@ -1680,7 +1684,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           ),
         ),
         PopupMenuItem(
-          value: _RoutingViewMode.list,
+          value: RoutingEditorViewMode.list,
           child: ListTile(
             leading: Icon(Icons.list_alt),
             title: Text('Accessible List'),
@@ -1699,10 +1703,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           children: [
             Icon(
               switch (_viewMode) {
-                _RoutingViewMode.canvas => Icons.grid_view,
-                _RoutingViewMode.table => Icons.table_chart,
-                _RoutingViewMode.busLanes => Icons.view_column,
-                _RoutingViewMode.list => Icons.list_alt,
+                RoutingEditorViewMode.canvas => Icons.grid_view,
+                RoutingEditorViewMode.table => Icons.table_chart,
+                RoutingEditorViewMode.busLanes => Icons.view_column,
+                RoutingEditorViewMode.list => Icons.list_alt,
               },
               size: 20,
               color: Theme.of(context).colorScheme.onSecondaryContainer,
