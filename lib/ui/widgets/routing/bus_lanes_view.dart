@@ -354,7 +354,7 @@ class _BusLanesViewState extends State<BusLanesView> {
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: theme.colorScheme.primary, width: 2),
+          border: Border.all(color: theme.colorScheme.tertiary, width: 2),
         ),
         child: visual,
       );
@@ -389,7 +389,12 @@ class _BusLanesViewState extends State<BusLanesView> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          setState(() => _selected = bead.ref);
+          setState(() {
+            // Tapping the selected junction again clears the selection.
+            _selected = _selected?.portId == bead.ref.portId
+                ? null
+                : bead.ref;
+          });
           _focusNode.requestFocus();
         },
         onDoubleTap: (bead.ref.isOutput && bead.ref.modeParam != null)

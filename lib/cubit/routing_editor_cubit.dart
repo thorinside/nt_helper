@@ -2381,62 +2381,28 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     );
   }
 
-  /// Assigns [busValue] to a port's bus parameter, then auto-solves the slot
-  /// order so the connection is valid. The returned [BusAssignmentResult] can
-  /// be passed to [undoBusAssignment] to revert both the assignment and any
-  /// reorder.
+  /// Assigns [busValue] to a port's bus parameter.
+  /// Does NOT auto-reorder algorithms — use [autoSolveFlow] explicitly for that.
+  /// The returned [BusAssignmentResult] can be passed to [undoBusAssignment]
+  /// to revert the bus assignment.
   Future<BusAssignmentResult> assignBusAndSolve({
     required int algorithmIndex,
     required int parameterNumber,
     required int previousBusValue,
     required int busValue,
   }) async {
-    final st = state;
-    ReorderResult? reorder;
-
-    if (st is RoutingEditorStateLoaded) {
-      // Solve against the hypothetical post-assignment state: the live state
-      // does not reflect the parameter write synchronously, so reading it back
-      // here would solve stale data and never reorder.
-      final hypothetical = st.algorithms.map((a) {
-        if (a.index != algorithmIndex) return a;
-        List<Port> upd(List<Port> ports) => [
-          for (final p in ports)
-            p.parameterNumber == parameterNumber
-                ? p.copyWith(busValue: busValue)
-                : p,
-        ];
-        return a.copyWith(
-          inputPorts: upd(a.inputPorts),
-          outputPorts: upd(a.outputPorts),
-        );
-      }).toList();
-      final solution = BusFlowSolver.fromAlgorithms(hypothetical).solve();
-
-      await setPortBus(
-        algorithmIndex: algorithmIndex,
-        parameterNumber: parameterNumber,
-        busValue: busValue,
-      );
-
-      if (solution.reorderNeeded) {
-        final result = await applyReorder(solution.order);
-        if (result.changed) reorder = result;
-      }
-    } else {
-      await setPortBus(
-        algorithmIndex: algorithmIndex,
-        parameterNumber: parameterNumber,
-        busValue: busValue,
-      );
-    }
+    await setPortBus(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      busValue: busValue,
+    );
 
     return BusAssignmentResult(
       algorithmIndex: algorithmIndex,
       parameterNumber: parameterNumber,
       previousBusValue: previousBusValue,
       newBusValue: busValue,
-      reorder: reorder,
+      reorder: null,
     );
   }
 
