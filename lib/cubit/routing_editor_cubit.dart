@@ -21,6 +21,7 @@ import 'package:nt_helper/core/routing/models/es5_hardware_node.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/core/routing/bus_flow_solver.dart';
 import 'package:nt_helper/core/routing/slot_reorder_planner.dart';
+import 'package:nt_helper/core/routing/aux_bus_consolidation.dart';
 
 import 'routing_editor_state.dart';
 
@@ -1319,8 +1320,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return null;
   }
 
-  /// Build a greedy plan that consolidates as many AUX buses as possible.
-  /// Returns `null` if no consolidation is possible.
+  /// Build a signal-preserving plan that consolidates AUX buses whose usage
+  /// spans don't overlap in slot-time. Returns `null` if nothing can be safely
+  /// consolidated. See [planAuxBusConsolidation] for the correctness rules.
   AuxBusConsolidationPlan? buildConsolidationPlan() {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) return null;
@@ -1332,227 +1334,94 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       hasExtendedAuxBuses: distingState.firmwareVersion.hasExtendedAuxBuses,
     );
 
-    final busInfo = <int, _AuxBusInfo>{};
+    int? valueOf(Slot slot, int? parameterNumber) {
+      if (parameterNumber == null) return null;
+      for (final v in slot.values) {
+        if (v.parameterNumber == parameterNumber) return v.value;
+      }
+      return null;
+    }
 
+    final portsByBus = <int, List<AuxBusPort>>{};
     for (final algorithm in currentState.algorithms) {
       if (algorithm.index >= distingState.slots.length) continue;
       final slot = distingState.slots[algorithm.index];
 
       for (final port in algorithm.outputPorts) {
-        if (port.parameterNumber == null) continue;
-        try {
-          final paramValue = slot.values
-              .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
-              .value;
-          if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
-
-          final info = busInfo.putIfAbsent(paramValue, () => _AuxBusInfo());
-          info.addPort(algorithm.index, isSource: true);
-          info.sources.add(
-            _SourceRecord(
-              algorithm.index,
-              port.modeParameterNumber != null,
-              port.modeParameterNumber,
-            ),
-          );
-          info.ports.add(_BusPort(algorithm.index, port.parameterNumber!));
-        } catch (_) {}
+        final bus = valueOf(slot, port.parameterNumber);
+        if (bus == null || bus < BusSpec.auxMin || bus > auxCeiling) continue;
+        final modeParam = port.modeParameterNumber;
+        (portsByBus[bus] ??= []).add(
+          AuxBusPort(
+            slot: algorithm.index,
+            busParameterNumber: port.parameterNumber!,
+            isSource: true,
+            canReplace: modeParam != null,
+            isReplace: modeParam != null && valueOf(slot, modeParam) == 1,
+            modeParameterNumber: modeParam,
+          ),
+        );
       }
 
       for (final port in algorithm.inputPorts) {
-        if (port.parameterNumber == null) continue;
-        try {
-          final paramValue = slot.values
-              .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
-              .value;
-          if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
-
-          final info = busInfo.putIfAbsent(paramValue, () => _AuxBusInfo());
-          info.addPort(algorithm.index, isSource: false);
-          info.ports.add(_BusPort(algorithm.index, port.parameterNumber!));
-        } catch (_) {}
+        final bus = valueOf(slot, port.parameterNumber);
+        if (bus == null || bus < BusSpec.auxMin || bus > auxCeiling) continue;
+        (portsByBus[bus] ??= []).add(
+          AuxBusPort(
+            slot: algorithm.index,
+            busParameterNumber: port.parameterNumber!,
+            isSource: false,
+          ),
+        );
       }
     }
 
-    // Greedily find all possible merges, simulating each one before searching
-    // for the next so that updated bus membership is taken into account.
-    final merges = <ConsolidationMerge>[];
+    final usages = [
+      for (final entry in portsByBus.entries)
+        AuxBusUsage(bus: entry.key, ports: entry.value),
+    ];
 
-    bool foundMerge = true;
-    while (foundMerge) {
-      foundMerge = false;
-      final busNumbers = busInfo.keys.toList();
+    final plan = planAuxBusConsolidation(usages);
+    if (plan.isEmpty) return null;
 
-      for (int i = 0; i < busNumbers.length && !foundMerge; i++) {
-        for (int j = i + 1; j < busNumbers.length && !foundMerge; j++) {
-          final busA = busNumbers[i];
-          final busB = busNumbers[j];
-          final infoA = busInfo[busA]!;
-          final infoB = busInfo[busB]!;
+    String nameOf(int slotIndex) => slotIndex < distingState.slots.length
+        ? distingState.slots[slotIndex].algorithm.name
+        : 'Slot $slotIndex';
 
-          if (_canMerge(keepInfo: infoA, freeInfo: infoB)) {
-            merges.add(
-              _buildMerge(
-                keepBus: busA,
-                freeBus: busB,
-                keepBusInfo: infoA,
-                freeBusInfo: infoB,
-                portsToMove: infoB.ports,
-                distingState: distingState,
+    final merges = [
+      for (final merge in plan)
+        ConsolidationMerge(
+          keepBus: merge.keepBus,
+          freeBus: merge.freeBus,
+          description:
+              'Merge AUX ${BusSpec.toLocalNumber(merge.freeBus) ?? merge.freeBus}'
+              ' into AUX ${BusSpec.toLocalNumber(merge.keepBus) ?? merge.keepBus}',
+          steps: [
+            for (final move in merge.moves)
+              ConsolidationStep(
+                algorithmIndex: move.slot,
+                algorithmName: nameOf(move.slot),
+                parameterNumber: move.busParameterNumber,
+                fromBus: move.fromBus,
+                toBus: move.toBus,
               ),
-            );
-            _simulateMerge(busInfo, keepBus: busA, freeBus: busB);
-            foundMerge = true;
-            break;
-          }
-
-          if (_canMerge(keepInfo: infoB, freeInfo: infoA)) {
-            merges.add(
-              _buildMerge(
-                keepBus: busB,
-                freeBus: busA,
-                keepBusInfo: infoB,
-                freeBusInfo: infoA,
-                portsToMove: infoA.ports,
-                distingState: distingState,
+          ],
+          replaceModeSteps: [
+            for (final r in merge.replaces)
+              ReplaceModeStep(
+                algorithmIndex: r.slot,
+                algorithmName: nameOf(r.slot),
+                parameterNumber: r.modeParameterNumber,
               ),
-            );
-            _simulateMerge(busInfo, keepBus: busB, freeBus: busA);
-            foundMerge = true;
-            break;
-          }
-        }
-      }
-    }
-
-    if (merges.isEmpty) return null;
+          ],
+        ),
+    ];
 
     final description = merges.length == 1
         ? merges.first.description
         : 'Free ${merges.length} AUX buses';
 
     return AuxBusConsolidationPlan(description: description, merges: merges);
-  }
-
-  /// Check whether the free bus can be safely merged into the keep bus.
-  ///
-  /// Requirements:
-  /// 1. Keep bus has a Replace-capable source at slot R
-  /// 2. Free bus's entire activity (maxSlot) < R
-  /// 3. No keep bus ports in the danger zone that aren't also free bus ports
-  /// 4. Every source on the merged bus except the lowest-slot one must have
-  ///    Replace capability — otherwise earlier data stays on the bus and mixes
-  bool _canMerge({
-    required _AuxBusInfo keepInfo,
-    required _AuxBusInfo freeInfo,
-  }) {
-    if (keepInfo.replaceSourceSlot == null || freeInfo.maxSlot == null) {
-      return false;
-    }
-    if (keepInfo.replaceSourceSlot! <= freeInfo.maxSlot!) return false;
-
-    // If the free bus has no sources, it's read-only — safe to merge.
-    if (freeInfo.minSourceSlot == null) return true;
-
-    // Check for keep bus ports in the danger zone that would be affected
-    // by the free bus's source writes.
-    final dangerStart = freeInfo.minSourceSlot!;
-    final dangerEnd = keepInfo.replaceSourceSlot!;
-    for (final slot in keepInfo.portSlots) {
-      if (slot >= dangerStart &&
-          slot < dangerEnd &&
-          !freeInfo.portSlots.contains(slot)) {
-        return false;
-      }
-    }
-
-    // Every source except the lowest-slot one on the merged bus must have
-    // Replace capability so each creates a clean session boundary.
-    final allSources = [...keepInfo.sources, ...freeInfo.sources];
-    allSources.sort((a, b) => a.slot.compareTo(b.slot));
-    for (int i = 1; i < allSources.length; i++) {
-      if (!allSources[i].canReplace) return false;
-    }
-
-    return true;
-  }
-
-  /// Simulate a merge in the busInfo map so the next search iteration
-  /// sees updated bus membership.
-  void _simulateMerge(
-    Map<int, _AuxBusInfo> busInfo, {
-    required int keepBus,
-    required int freeBus,
-  }) {
-    final keepInfo = busInfo[keepBus]!;
-    final freeInfo = busInfo[freeBus]!;
-
-    keepInfo.ports.addAll(freeInfo.ports);
-    keepInfo.portSlots.addAll(freeInfo.portSlots);
-    keepInfo.sources.addAll(freeInfo.sources);
-    if (freeInfo.maxSlot != null) {
-      if (keepInfo.maxSlot == null || freeInfo.maxSlot! > keepInfo.maxSlot!) {
-        keepInfo.maxSlot = freeInfo.maxSlot;
-      }
-    }
-    busInfo.remove(freeBus);
-  }
-
-  ConsolidationMerge _buildMerge({
-    required int keepBus,
-    required int freeBus,
-    required _AuxBusInfo keepBusInfo,
-    required _AuxBusInfo freeBusInfo,
-    required List<_BusPort> portsToMove,
-    required DistingStateSynchronized distingState,
-  }) {
-    final keepLocal = BusSpec.toLocalNumber(keepBus) ?? keepBus;
-    final freeLocal = BusSpec.toLocalNumber(freeBus) ?? freeBus;
-
-    final steps = portsToMove.map((port) {
-      String algoName = 'Slot ${port.algorithmIndex}';
-      if (port.algorithmIndex < distingState.slots.length) {
-        algoName = distingState.slots[port.algorithmIndex].algorithm.name;
-      }
-      return ConsolidationStep(
-        algorithmIndex: port.algorithmIndex,
-        algorithmName: algoName,
-        parameterNumber: port.parameterNumber,
-        fromBus: freeBus,
-        toBus: keepBus,
-      );
-    }).toList();
-
-    // Collect all sources from both buses, sort by slot. Every source except
-    // the lowest-slot one needs Replace mode set to create session boundaries.
-    final allSources = [...keepBusInfo.sources, ...freeBusInfo.sources];
-    allSources.sort((a, b) => a.slot.compareTo(b.slot));
-
-    final replaceModeSteps = <ReplaceModeStep>[];
-    for (int i = 1; i < allSources.length; i++) {
-      final src = allSources[i];
-      if (src.canReplace && src.modeParameterNumber != null) {
-        String algoName = 'Slot ${src.slot}';
-        if (src.slot < distingState.slots.length) {
-          algoName = distingState.slots[src.slot].algorithm.name;
-        }
-        replaceModeSteps.add(
-          ReplaceModeStep(
-            algorithmIndex: src.slot,
-            algorithmName: algoName,
-            parameterNumber: src.modeParameterNumber!,
-          ),
-        );
-      }
-    }
-
-    return ConsolidationMerge(
-      keepBus: keepBus,
-      freeBus: freeBus,
-      description: 'Merge AUX $freeLocal into AUX $keepLocal',
-      steps: steps,
-      replaceModeSteps: replaceModeSteps,
-    );
   }
 
   /// Execute a previously-built consolidation plan, iterating through each
@@ -3646,62 +3515,4 @@ class _AvailableAuxBus {
   final int bus;
   final bool isReused;
   const _AvailableAuxBus({required this.bus, required this.isReused});
-}
-
-class _SourceRecord {
-  final int slot;
-  final bool canReplace;
-  final int? modeParameterNumber;
-  const _SourceRecord(this.slot, this.canReplace, this.modeParameterNumber);
-}
-
-class _AuxBusInfo {
-  /// Highest slot index across ALL ports (input and output) on this bus.
-  int? maxSlot;
-
-  /// All slot indices that have ports on this bus.
-  final Set<int> portSlots = {};
-
-  /// All output sources on this bus, in scan order.
-  final List<_SourceRecord> sources = [];
-
-  final List<_BusPort> ports = [];
-
-  void addPort(int slot, {required bool isSource}) {
-    portSlots.add(slot);
-    if (maxSlot == null || slot > maxSlot!) maxSlot = slot;
-  }
-
-  /// Highest-slot Replace-capable source, or null.
-  int? get replaceSourceSlot {
-    int? best;
-    for (final s in sources) {
-      if (s.canReplace && (best == null || s.slot > best)) best = s.slot;
-    }
-    return best;
-  }
-
-  /// Mode parameter number for the highest-slot Replace-capable source.
-  int? get replaceSourceModeParameter {
-    _SourceRecord? best;
-    for (final s in sources) {
-      if (s.canReplace && (best == null || s.slot > best.slot)) best = s;
-    }
-    return best?.modeParameterNumber;
-  }
-
-  int? get minSourceSlot {
-    if (sources.isEmpty) return null;
-    int m = sources.first.slot;
-    for (final s in sources) {
-      if (s.slot < m) m = s.slot;
-    }
-    return m;
-  }
-}
-
-class _BusPort {
-  final int algorithmIndex;
-  final int parameterNumber;
-  const _BusPort(this.algorithmIndex, this.parameterNumber);
 }
