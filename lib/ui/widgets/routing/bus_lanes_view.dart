@@ -51,6 +51,12 @@ class _BusLanesViewState extends State<BusLanesView> {
   List<int> _lastVisibleBuses = const [];
   bool _lastHasExtended = false;
 
+  /// Reorder responds to mouse/touch press-drag only. Trackpad two-finger
+  /// swipes are reserved for scrolling, so they're excluded here — otherwise
+  /// the drag-to-reorder gesture would capture every scroll over a block.
+  static final Set<PointerDeviceKind> _reorderDevices =
+      PointerDeviceKind.values.toSet()..remove(PointerDeviceKind.trackpad);
+
   @override
   void dispose() {
     _h.dispose();
@@ -159,6 +165,14 @@ class _BusLanesViewState extends State<BusLanesView> {
               _scroll(_v, event.scrollDelta.dy);
               _scroll(_h, event.scrollDelta.dx);
             }
+          },
+          // Trackpad two-finger swipes arrive as pan/zoom events, not pointer
+          // signals. Mirror Flutter's own scroll conversion (negated pan delta)
+          // so the canvas scrolls instead of the swipe falling through to a
+          // child gesture.
+          onPointerPanZoomUpdate: (event) {
+            _scroll(_v, -event.localPanDelta.dy);
+            _scroll(_h, -event.localPanDelta.dx);
           },
           child: Scrollbar(
             controller: _v,
@@ -301,6 +315,7 @@ class _BusLanesViewState extends State<BusLanesView> {
             height: height,
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
+              supportedDevices: _reorderDevices,
               onVerticalDragStart: (_) => setState(() {
                 _draggingId = card.id;
                 _dragDy = 0;
