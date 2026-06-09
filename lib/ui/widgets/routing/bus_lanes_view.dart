@@ -744,20 +744,28 @@ class _BusLanesViewState extends State<BusLanesView> {
           addDepth,
           isDark: isDark,
         );
-    var nextSignal = 0;
-
-    // Collect write events (global y, in evaluation order) per bus.
-    final writeYsByBus = <int, List<({double y, bool replace})>>{};
+    // Collect write events (global y, in evaluation order) per bus. Each write
+    // carries a stable [origin] id — the output's fixed ordinal across all
+    // slots — so any signal it starts is colored by *which output* started it,
+    // independent of how many other signals exist or their Add/Replace state.
+    final writeYsByBus =
+        <int, List<({double y, bool replace, int origin})>>{};
+    var outputOrdinal = 0;
     for (var s = 0; s < n; s++) {
       final algo = slots[s];
       final nIn = algo.inputPorts.length;
       for (var o = 0; o < algo.outputPorts.length; o++) {
         final p = algo.outputPorts[o];
         final b = p.busValue;
+        // Output-originated signal ids start past inputMax so they never
+        // collide with physical-input ids (which use the bus number, 1-12).
+        final origin = BusSpec.inputMax + 1 + outputOrdinal;
+        outputOrdinal++;
         if (b != null && b > 0 && railIndex.containsKey(b)) {
           (writeYsByBus[b] ??= []).add((
             y: cardTops[s] + BusLanesMetrics.portRowY(nIn + o),
             replace: modeOf(p) == OutputMode.replace,
+            origin: origin,
           ));
         }
       }
@@ -779,7 +787,11 @@ class _BusLanesViewState extends State<BusLanesView> {
       final changes = <({double y, Color color, bool driven, bool cap})>[];
       final caps = <LaneCap>[];
       var driven = isInput;
-      var signalId = isInput ? nextSignal++ : -1;
+      // A physical input's signal is keyed by its bus number, so the same
+      // input always reads the same color; a write's signal is keyed by the
+      // output that started it (w.origin). Neither shifts when an unrelated
+      // output toggles Add/Replace.
+      var signalId = isInput ? b : -1;
       var addDepth = 0;
       changes.add((
         y: metrics.railsTop,
@@ -789,11 +801,11 @@ class _BusLanesViewState extends State<BusLanesView> {
       ));
       for (final w in writes) {
         if (w.replace) {
-          signalId = nextSignal++;
+          signalId = w.origin;
           driven = true;
           addDepth = 0;
         } else if (!driven) {
-          signalId = nextSignal++;
+          signalId = w.origin;
           driven = true;
           addDepth = 0;
         } else {
