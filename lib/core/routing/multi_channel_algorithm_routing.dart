@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
@@ -571,6 +572,8 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
     Map<String, int>? modeParameters,
     Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
+    OutputMode? defaultOutputMode,
+    bool replaceNoneOutputWithInput = false,
   }) {
     // Process routing parameters as regular ports
     final inputPorts = <Map<String, Object?>>[];
@@ -835,6 +838,12 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
           }
         }
 
+        // Apply default output mode for algorithms that always use one mode
+        if (port['outputMode'] == null && defaultOutputMode != null) {
+          port['outputMode'] =
+              defaultOutputMode == OutputMode.replace ? 'replace' : 'add';
+        }
+
         outputPorts.add(port);
       } else {
         inputPorts.add(port);
@@ -899,6 +908,51 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
           'modeParameterNumber': modeParamNumber,
         });
       }
+    }
+
+    // For algorithms where Output=0 (None) means use Input bus in Replace mode,
+    // replace disconnected output ports with virtual replace outputs on the input bus.
+    if (replaceNoneOutputWithInput) {
+      String channelPrefix(String? busParam) {
+        if (busParam == null) return '';
+        final colon = busParam.indexOf(':');
+        return colon >= 0 ? busParam.substring(0, colon + 1) : '';
+      }
+
+      final toRemove = <Map<String, Object?>>[];
+      final toAdd = <Map<String, Object?>>[];
+
+      for (final outPort in outputPorts) {
+        final busValue = outPort['busValue'] as int? ?? 0;
+        if (busValue != 0) continue;
+
+        final prefix = channelPrefix(outPort['busParam'] as String?);
+        final inputPort = inputPorts.firstWhereOrNull((p) {
+          final ipPrefix = channelPrefix(p['busParam'] as String?);
+          final ipBus = p['busValue'] as int? ?? 0;
+          return ipPrefix == prefix && ipBus > 0;
+        });
+
+        toRemove.add(outPort);
+        if (inputPort != null) {
+          toAdd.add({
+            'id': '${outPort['id']}_virtual_replace',
+            'name': outPort['name'],
+            'type': outPort['type'],
+            'busParam': null,
+            'busValue': inputPort['busValue'],
+            'parameterNumber':
+                -(outPort['parameterNumber'] as int? ?? 0).abs() - 1000,
+            'outputMode': 'replace',
+            'modeParameterNumber': null,
+            if (outPort['channel'] != null) 'channel': outPort['channel'],
+          });
+        }
+      }
+      for (final p in toRemove) {
+        outputPorts.remove(p);
+      }
+      outputPorts.addAll(toAdd);
     }
 
     // Check for Width parameter to determine channel count

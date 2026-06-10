@@ -14,6 +14,8 @@ import 'clock_multiplier_algorithm_routing.dart';
 import 'clock_divider_algorithm_routing.dart';
 import 'euclidean_algorithm_routing.dart';
 import 'saturator_algorithm_routing.dart';
+import 'compressor_algorithm_routing.dart';
+import 'noise_gate_algorithm_routing.dart';
 
 /// Abstract base class for algorithm routing implementations.
 ///
@@ -348,6 +350,12 @@ abstract class AlgorithmRouting {
   @mustCallSuper
   void dispose() {}
 
+  static const _alwaysReplaceOutputGuids = {'quan', 'cali'};
+
+  static const _conditionalInPlaceGuids = {
+    'attn', 'absv', 'vcam', 'enfo', 'slew', 'debo', 'eqpa',
+  };
+
   /// Factory method to create the appropriate AlgorithmRouting from a Slot.
   ///
   /// This method asks each concrete implementation if it can handle the slot,
@@ -432,6 +440,34 @@ abstract class AlgorithmRouting {
         modeParametersWithNumbers: modeParametersWithNumbers,
         algorithmUuid: algorithmUuid,
       );
+    } else if (CompressorAlgorithmRouting.canHandle(slot)) {
+      // Compressor: in-place insert effect, input bus = output bus (replace)
+      instance = CompressorAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: ioParameters,
+        modeParameters: modeParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
+        algorithmUuid: algorithmUuid,
+      );
+    } else if (NoiseGateAlgorithmRouting.canHandle(slot)) {
+      // Noise gate: in-place insert effect, input bus = output bus (replace)
+      instance = NoiseGateAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: ioParameters,
+        modeParameters: modeParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
+        algorithmUuid: algorithmUuid,
+      );
+    } else if (_alwaysReplaceOutputGuids.contains(slot.algorithm.guid)) {
+      // Algorithms that always use Replace mode but have no Output mode parameter
+      instance = MultiChannelAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: ioParameters,
+        modeParameters: modeParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
+        algorithmUuid: algorithmUuid,
+        defaultOutputMode: OutputMode.replace,
+      );
     } else if (PolyAlgorithmRouting.canHandle(slot)) {
       instance = PolyAlgorithmRouting.createFromSlot(
         slot,
@@ -448,6 +484,8 @@ abstract class AlgorithmRouting {
         modeParameters: modeParameters,
         modeParametersWithNumbers: modeParametersWithNumbers,
         algorithmUuid: algorithmUuid,
+        replaceNoneOutputWithInput:
+            _conditionalInPlaceGuids.contains(slot.algorithm.guid),
       );
     }
 
