@@ -311,6 +311,16 @@ jobs:
       - name: Build Linux
         run: flutter build linux
 
+      - name: Verify Linux SQLite Native Asset
+        run: |
+          BUNDLE_DIR="build/linux/x64/release/bundle"
+          MANIFEST="$BUNDLE_DIR/data/flutter_assets/NativeAssetsManifest.json"
+          SQLITE_LIB="$BUNDLE_DIR/lib/libsqlite3.so"
+
+          test -f "$MANIFEST"
+          test -f "$SQLITE_LIB"
+          grep -Fq '"libsqlite3.so"' "$MANIFEST"
+
       - name: Zip Linux App
         run: |
           cd build/linux/x64/release/bundle
