@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
@@ -565,12 +566,20 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
   /// - [modeParameters]: Pre-extracted mode parameters (Add/Replace modes)
   /// - [modeParametersWithNumbers]: Mode parameters with their parameter numbers
   /// - [algorithmUuid]: Optional UUID for the algorithm instance
+  /// - [defaultOutputMode]: When an output port has no mode set, use this as default.
+  ///   Used for algorithms that always operate in a single mode (e.g. Quantizer always replaces).
+  /// - [replaceNoneOutputWithInput]: When true, output ports with busValue == 0
+  ///   (Output = None) are converted into virtual replace outputs on the matching
+  ///   input bus. Used for in-place algorithms whose firmware substitutes the
+  ///   input bus when Output is None.
   static MultiChannelAlgorithmRouting createFromSlot(
     Slot slot, {
     required Map<String, int> ioParameters,
     Map<String, int>? modeParameters,
     Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
+    OutputMode? defaultOutputMode,
+    bool replaceNoneOutputWithInput = false,
   }) {
     // Process routing parameters as regular ports
     final inputPorts = <Map<String, Object?>>[];
@@ -835,6 +844,13 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
           }
         }
 
+        // Apply default output mode for algorithms that always use one mode
+        // (e.g. Quantizer always replaces, regardless of any mode parameter).
+        if (port['outputMode'] == null && defaultOutputMode != null) {
+          port['outputMode'] =
+              defaultOutputMode == OutputMode.replace ? 'replace' : 'add';
+        }
+
         outputPorts.add(port);
       } else {
         inputPorts.add(port);
@@ -899,6 +915,52 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
           'modeParameterNumber': modeParamNumber,
         });
       }
+    }
+
+    // For conditional in-place algorithms (Output = None means write to Input
+    // bus in Replace mode), rewrite any output port with busValue == 0 into
+    // a virtual replace output on the matching input bus.
+    if (replaceNoneOutputWithInput) {
+      String channelPrefix(String? busParam) {
+        if (busParam == null) return '';
+        final colon = busParam.indexOf(':');
+        return colon >= 0 ? busParam.substring(0, colon + 1) : '';
+      }
+
+      final toRemove = <Map<String, Object?>>[];
+      final toAdd = <Map<String, Object?>>[];
+
+      for (final outPort in outputPorts) {
+        final busValue = outPort['busValue'] as int? ?? 0;
+        if (busValue != 0) continue;
+
+        final prefix = channelPrefix(outPort['busParam'] as String?);
+        final inputPort = inputPorts.firstWhereOrNull((p) {
+          final ipPrefix = channelPrefix(p['busParam'] as String?);
+          final ipBus = p['busValue'] as int? ?? 0;
+          return ipPrefix == prefix && ipBus > 0;
+        });
+
+        toRemove.add(outPort);
+        if (inputPort != null) {
+          toAdd.add({
+            'id': '${outPort['id']}_virtual_replace',
+            'name': outPort['name'],
+            'type': outPort['type'],
+            'busParam': null,
+            'busValue': inputPort['busValue'],
+            'parameterNumber':
+                -(outPort['parameterNumber'] as int? ?? 0).abs() - 1000,
+            'outputMode': 'replace',
+            'modeParameterNumber': null,
+            if (outPort['channel'] != null) 'channel': outPort['channel'],
+          });
+        }
+      }
+      for (final p in toRemove) {
+        outputPorts.remove(p);
+      }
+      outputPorts.addAll(toAdd);
     }
 
     // Check for Width parameter to determine channel count
