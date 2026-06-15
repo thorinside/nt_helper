@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
 import 'package:nt_helper/core/routing/bus_color_palette.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
@@ -100,137 +101,141 @@ class _BusLanesViewState extends State<BusLanesView> {
         backgroundColor: Colors.transparent,
         body: BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
           buildWhen: (prev, curr) {
-        if (prev is! RoutingEditorStateLoaded ||
-            curr is! RoutingEditorStateLoaded) {
-          return true;
-        }
-        return prev.algorithms != curr.algorithms ||
-            prev.connections != curr.connections ||
-            prev.portOutputModes != curr.portOutputModes ||
-            prev.hasExtendedAuxBuses != curr.hasExtendedAuxBuses;
-      },
-      builder: (context, state) {
-        final theme = Theme.of(context);
-        if (state is! RoutingEditorStateLoaded) {
-          return Center(
-            child: Text(
-              state is RoutingEditorStateInitial
-                  ? 'Initializing…'
-                  : 'Disconnected',
-              style: theme.textTheme.bodyMedium,
-            ),
-          );
-        }
-
-        final isDark = theme.brightness == Brightness.dark;
-        final data = _buildData(
-          state.algorithms,
-          state.portOutputModes,
-          state.hasExtendedAuxBuses,
-          isDark,
-        );
-        if (data == null) {
-          return Center(
-            child: Text(
-              'No algorithms loaded.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          );
-        }
-
-        final m = data.metrics;
-        final colors = _BlockColors(
-          card: theme.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.55,
-          ),
-          border: theme.colorScheme.outlineVariant,
-          text: theme.colorScheme.onSurface,
-          muted: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-          error: theme.colorScheme.error,
-        );
-
-        final order = [for (var i = 0; i < data.cards.length; i++) i];
-        order.sort((a, b) {
-          final ad = data.cards[a].id == _draggingId ? 1 : 0;
-          final bd = data.cards[b].id == _draggingId ? 1 : 0;
-          return ad - bd;
-        });
-        final tops = _displayTops(data);
-
-        return Listener(
-          onPointerSignal: (event) {
-            if (event is PointerScrollEvent) {
-              _scroll(_v, event.scrollDelta.dy);
-              _scroll(_h, event.scrollDelta.dx);
+            if (prev is! RoutingEditorStateLoaded ||
+                curr is! RoutingEditorStateLoaded) {
+              return true;
             }
+            return prev.algorithms != curr.algorithms ||
+                prev.connections != curr.connections ||
+                prev.portOutputModes != curr.portOutputModes ||
+                prev.hasExtendedAuxBuses != curr.hasExtendedAuxBuses;
           },
-          // Trackpad two-finger swipes arrive as pan/zoom events, not pointer
-          // signals. Mirror Flutter's own scroll conversion (negated pan delta)
-          // so the canvas scrolls instead of the swipe falling through to a
-          // child gesture.
-          onPointerPanZoomUpdate: (event) {
-            _scroll(_v, -event.localPanDelta.dy);
-            _scroll(_h, -event.localPanDelta.dx);
-          },
-          child: Scrollbar(
-            controller: _v,
-            thumbVisibility: true,
-            child: SingleChildScrollView(
-              controller: _v,
-              physics: const NeverScrollableScrollPhysics(),
-              child: Scrollbar(
-                controller: _h,
-                thumbVisibility: true,
-                notificationPredicate: (n) => n.depth == 1,
-                child: SingleChildScrollView(
-                  controller: _h,
-                  scrollDirection: Axis.horizontal,
-                  physics: const NeverScrollableScrollPhysics(),
-                  child: SizedBox(
-                    key: _contentKey,
-                    width: m.contentWidth,
-                    height: m.contentHeight,
-                    child: MouseRegion(
-                      onHover: (e) => _hover.value = e.localPosition,
-                      onExit: (_) => _hover.value = null,
-                      child: Focus(
-                        focusNode: _focusNode,
-                        onKeyEvent: _onKey,
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: CustomPaint(
-                                painter: BusLanesPainter(
-                                  rails: data.rails,
-                                  metrics: m,
-                                  noneColor: theme.colorScheme.outlineVariant,
-                                  separatorColor: theme.dividerColor,
-                                ),
-                              ),
-                            ),
-                            for (final i in order)
-                              _buildBlock(context, i, data, colors, tops),
-                            Positioned.fill(
-                              child: ValueListenableBuilder<Offset?>(
-                                valueListenable: _hover,
-                                builder: (ctx, hover, _) =>
-                                    _buildGhosts(context, data, hover, state),
-                              ),
-                            ),
+          builder: (context, state) {
+            final theme = Theme.of(context);
+            if (state is! RoutingEditorStateLoaded) {
+              return Center(
+                child: Text(
+                  state is RoutingEditorStateInitial
+                      ? 'Initializing…'
+                      : 'Disconnected',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              );
+            }
 
-                          ],
+            final isDark = theme.brightness == Brightness.dark;
+            final data = _buildData(
+              state.algorithms,
+              state.portOutputModes,
+              state.hasExtendedAuxBuses,
+              isDark,
+            );
+            if (data == null) {
+              return Center(
+                child: Text(
+                  'No algorithms loaded.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              );
+            }
+
+            final m = data.metrics;
+            final colors = _BlockColors(
+              card: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.55,
+              ),
+              border: theme.colorScheme.outlineVariant,
+              text: theme.colorScheme.onSurface,
+              muted: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              error: theme.colorScheme.error,
+            );
+
+            final order = [for (var i = 0; i < data.cards.length; i++) i];
+            order.sort((a, b) {
+              final ad = data.cards[a].id == _draggingId ? 1 : 0;
+              final bd = data.cards[b].id == _draggingId ? 1 : 0;
+              return ad - bd;
+            });
+            final tops = _displayTops(data);
+
+            return Listener(
+              onPointerSignal: (event) {
+                if (event is PointerScrollEvent) {
+                  _scroll(_v, event.scrollDelta.dy);
+                  _scroll(_h, event.scrollDelta.dx);
+                }
+              },
+              // Trackpad two-finger swipes arrive as pan/zoom events, not pointer
+              // signals. Mirror Flutter's own scroll conversion (negated pan delta)
+              // so the canvas scrolls instead of the swipe falling through to a
+              // child gesture.
+              onPointerPanZoomUpdate: (event) {
+                _scroll(_v, -event.localPanDelta.dy);
+                _scroll(_h, -event.localPanDelta.dx);
+              },
+              child: Scrollbar(
+                controller: _v,
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _v,
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Scrollbar(
+                    controller: _h,
+                    thumbVisibility: true,
+                    notificationPredicate: (n) => n.depth == 1,
+                    child: SingleChildScrollView(
+                      controller: _h,
+                      scrollDirection: Axis.horizontal,
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: SizedBox(
+                        key: _contentKey,
+                        width: m.contentWidth,
+                        height: m.contentHeight,
+                        child: MouseRegion(
+                          onHover: (e) => _hover.value = e.localPosition,
+                          onExit: (_) => _hover.value = null,
+                          child: Focus(
+                            focusNode: _focusNode,
+                            onKeyEvent: _onKey,
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: BusLanesPainter(
+                                      rails: data.rails,
+                                      metrics: m,
+                                      noneColor:
+                                          theme.colorScheme.outlineVariant,
+                                      separatorColor: theme.dividerColor,
+                                    ),
+                                  ),
+                                ),
+                                for (final i in order)
+                                  _buildBlock(context, i, data, colors, tops),
+                                Positioned.fill(
+                                  child: ValueListenableBuilder<Offset?>(
+                                    valueListenable: _hover,
+                                    builder: (ctx, hover, _) => _buildGhosts(
+                                      context,
+                                      data,
+                                      hover,
+                                      state,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
         ),
       ),
     );
@@ -336,9 +341,7 @@ class _BusLanesViewState extends State<BusLanesView> {
 
     return AnimatedPositioned(
       key: ValueKey(card.id),
-      duration: isDragging
-          ? Duration.zero
-          : const Duration(milliseconds: 300),
+      duration: isDragging ? Duration.zero : const Duration(milliseconds: 300),
       curve: Curves.easeOutBack,
       left: 0,
       top: top,
@@ -406,9 +409,7 @@ class _BusLanesViewState extends State<BusLanesView> {
         onTap: () {
           setState(() {
             // Tapping the selected junction again clears the selection.
-            _selected = _selected?.portId == bead.ref.portId
-                ? null
-                : bead.ref;
+            _selected = _selected?.portId == bead.ref.portId ? null : bead.ref;
           });
           _focusNode.requestFocus();
         },
@@ -551,15 +552,19 @@ class _BusLanesViewState extends State<BusLanesView> {
                   child: isAdd
                       ? Icon(Icons.add_circle_outline, size: 18, color: accent)
                       : (col == 0
-                          ? Icon(Icons.remove_circle_outline, size: 18, color: accent)
-                          : Container(
-                              width: 14,
-                              height: 14,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: accent, width: 2),
-                              ),
-                            )),
+                            ? Icon(
+                                Icons.remove_circle_outline,
+                                size: 18,
+                                color: accent,
+                              )
+                            : Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: accent, width: 2),
+                                ),
+                              )),
                 ),
               ),
             ),
@@ -579,7 +584,9 @@ class _BusLanesViewState extends State<BusLanesView> {
     }
     if (column < 1 || column > _lastVisibleBuses.length) return;
     final targetBus = _lastVisibleBuses[column - 1];
-    if (targetBus == ref.previousBus) return;
+    if (targetBus == ref.previousBus && !ref.appliesOnSameBus(targetBus)) {
+      return;
+    }
     _applyAssign(context, ref, targetBus);
   }
 
@@ -599,7 +606,9 @@ class _BusLanesViewState extends State<BusLanesView> {
       return;
     }
     final targetBus = col == 0 ? 0 : _lastVisibleBuses[col - 1];
-    if (targetBus == ref.previousBus) return;
+    if (targetBus == ref.previousBus && !ref.appliesOnSameBus(targetBus)) {
+      return;
+    }
     _applyAssign(context, ref, targetBus);
   }
 
@@ -726,7 +735,9 @@ class _BusLanesViewState extends State<BusLanesView> {
     // first lane; as buses get used they appear in order; when the last user of
     // a bus is removed it collapses out of the diagram. Any bus is reachable by
     // dropping a bead on "＋".
-    final maxBus = hasExtendedAuxBuses ? BusSpec.es5MaxExtended : BusSpec.es5Max;
+    final maxBus = hasExtendedAuxBuses
+        ? BusSpec.es5MaxExtended
+        : BusSpec.es5Max;
     final visible = usedBuses.where((b) => b >= 1 && b <= maxBus).toList()
       ..sort();
     final railIndex = {for (var i = 0; i < visible.length; i++) visible[i]: i};
@@ -763,8 +774,7 @@ class _BusLanesViewState extends State<BusLanesView> {
     // carries a stable [origin] id — the output's fixed ordinal across all
     // slots — so any signal it starts is colored by *which output* started it,
     // independent of how many other signals exist or their Add/Replace state.
-    final writeYsByBus =
-        <int, List<({double y, bool replace, int origin})>>{};
+    final writeYsByBus = <int, List<({double y, bool replace, int origin})>>{};
     var outputOrdinal = 0;
     for (var s = 0; s < n; s++) {
       final algo = slots[s];
@@ -838,8 +848,9 @@ class _BusLanesViewState extends State<BusLanesView> {
       final segs = <LaneSegment>[];
       for (var i = 0; i < changes.length; i++) {
         final segTop = changes[i].y + (changes[i].cap ? capGap : 0);
-        final segBottom =
-            i + 1 < changes.length ? changes[i + 1].y : metrics.railsBottom;
+        final segBottom = i + 1 < changes.length
+            ? changes[i + 1].y
+            : metrics.railsBottom;
         final fade = i + 1 < changes.length && changes[i + 1].cap;
         if (segBottom > segTop) {
           segs.add(
@@ -886,6 +897,25 @@ class _BusLanesViewState extends State<BusLanesView> {
       final algo = slots[s];
       final ports = <PortRowRender>[];
       final beads = <_Bead>[];
+      final isConditionalInPlace = core_routing
+          .AlgorithmRouting.isConditionalInPlaceGuid(algo.algorithm.guid);
+
+      String channelPrefix(String? busParam) {
+        if (busParam == null) return '';
+        final colon = busParam.indexOf(':');
+        return colon >= 0 ? busParam.substring(0, colon + 1) : '';
+      }
+
+      int? matchingInputBus(Port outputPort) {
+        if (!isConditionalInPlace) return null;
+        final prefix = channelPrefix(outputPort.busParam);
+        for (final inputPort in algo.inputPorts) {
+          if (channelPrefix(inputPort.busParam) != prefix) continue;
+          final bus = inputPort.busValue ?? 0;
+          return bus > 0 ? bus : null;
+        }
+        return null;
+      }
 
       void addPort(Port p, bool isOutput, int row) {
         final bus = p.busValue ?? 0;
@@ -942,6 +972,7 @@ class _BusLanesViewState extends State<BusLanesView> {
               isOutput: isOutput,
               portId: p.id,
               label: p.name,
+              matchingInputBus: isOutput ? matchingInputBus(p) : null,
             ),
           ),
         );
@@ -992,6 +1023,7 @@ class _PortRef {
   final bool isOutput;
   final String portId;
   final String label;
+  final int? matchingInputBus;
   const _PortRef({
     required this.algorithmIndex,
     required this.parameterNumber,
@@ -1000,7 +1032,11 @@ class _PortRef {
     required this.isOutput,
     required this.portId,
     required this.label,
+    required this.matchingInputBus,
   });
+
+  bool appliesOnSameBus(int bus) =>
+      isOutput && matchingInputBus != null && bus == matchingInputBus;
 }
 
 class _Bead {

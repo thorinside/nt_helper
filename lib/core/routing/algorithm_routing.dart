@@ -368,6 +368,11 @@ abstract class AlgorithmRouting {
     'eqpa',
   };
 
+  /// Whether [guid] uses `Output = None` to mean "write to the matching input
+  /// bus in Replace mode".
+  static bool isConditionalInPlaceGuid(String guid) =>
+      _conditionalInPlaceGuids.contains(guid);
+
   /// Factory method to create the appropriate AlgorithmRouting from a Slot.
   ///
   /// This method asks each concrete implementation if it can handle the slot,
@@ -497,7 +502,7 @@ abstract class AlgorithmRouting {
         modeParameters: modeParameters,
         modeParametersWithNumbers: modeParametersWithNumbers,
         algorithmUuid: algorithmUuid,
-        replaceNoneOutputWithInput: _conditionalInPlaceGuids.contains(
+        replaceNoneOutputWithInput: isConditionalInPlaceGuid(
           slot.algorithm.guid,
         ),
       );

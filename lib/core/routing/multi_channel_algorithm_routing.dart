@@ -569,9 +569,8 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
   /// - [defaultOutputMode]: When an output port has no mode set, use this as default.
   ///   Used for algorithms that always operate in a single mode (e.g. Quantizer always replaces).
   /// - [replaceNoneOutputWithInput]: When true, output ports with busValue == 0
-  ///   (Output = None) are converted into virtual replace outputs on the matching
-  ///   input bus. Used for in-place algorithms whose firmware substitutes the
-  ///   input bus when Output is None.
+  ///   (Output = None) are displayed as Replace outputs on the matching input
+  ///   bus. The real output parameter is preserved so the bus remains editable.
   static MultiChannelAlgorithmRouting createFromSlot(
     Slot slot, {
     required Map<String, int> ioParameters,
@@ -847,8 +846,9 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
         // Apply default output mode for algorithms that always use one mode
         // (e.g. Quantizer always replaces, regardless of any mode parameter).
         if (port['outputMode'] == null && defaultOutputMode != null) {
-          port['outputMode'] =
-              defaultOutputMode == OutputMode.replace ? 'replace' : 'add';
+          port['outputMode'] = defaultOutputMode == OutputMode.replace
+              ? 'replace'
+              : 'add';
         }
 
         outputPorts.add(port);
@@ -918,17 +918,14 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
     }
 
     // For conditional in-place algorithms (Output = None means write to Input
-    // bus in Replace mode), rewrite any output port with busValue == 0 into
-    // a virtual replace output on the matching input bus.
+    // bus in Replace mode), keep the real output parameter but use the
+    // matching input bus as its effective visual/routing bus.
     if (replaceNoneOutputWithInput) {
       String channelPrefix(String? busParam) {
         if (busParam == null) return '';
         final colon = busParam.indexOf(':');
         return colon >= 0 ? busParam.substring(0, colon + 1) : '';
       }
-
-      final toRemove = <Map<String, Object?>>[];
-      final toAdd = <Map<String, Object?>>[];
 
       for (final outPort in outputPorts) {
         final busValue = outPort['busValue'] as int? ?? 0;
@@ -941,26 +938,12 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
           return ipPrefix == prefix && ipBus > 0;
         });
 
-        toRemove.add(outPort);
         if (inputPort != null) {
-          toAdd.add({
-            'id': '${outPort['id']}_virtual_replace',
-            'name': outPort['name'],
-            'type': outPort['type'],
-            'busParam': null,
-            'busValue': inputPort['busValue'],
-            'parameterNumber':
-                -(outPort['parameterNumber'] as int? ?? 0).abs() - 1000,
-            'outputMode': 'replace',
-            'modeParameterNumber': null,
-            if (outPort['channel'] != null) 'channel': outPort['channel'],
-          });
+          outPort['busValue'] = inputPort['busValue'];
+          outPort['outputMode'] = 'replace';
+          outPort.remove('modeParameterNumber');
         }
       }
-      for (final p in toRemove) {
-        outputPorts.remove(p);
-      }
-      outputPorts.addAll(toAdd);
     }
 
     // Check for Width parameter to determine channel count

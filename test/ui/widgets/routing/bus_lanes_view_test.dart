@@ -66,6 +66,35 @@ void main() {
     ],
   );
 
+  state.RoutingAlgorithm inPlaceOutputOnInputBus() => state.RoutingAlgorithm(
+    id: 'algoInPlace',
+    index: 0,
+    algorithm: Algorithm(algorithmIndex: 0, guid: 'attn', name: 'Attn'),
+    inputPorts: const [
+      Port(
+        id: 'attn_in',
+        name: 'Input',
+        type: PortType.audio,
+        direction: PortDirection.input,
+        busValue: 5,
+        parameterNumber: 0,
+        busParam: 'Input',
+      ),
+    ],
+    outputPorts: const [
+      Port(
+        id: 'attn_out',
+        name: 'Output',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        busValue: 5,
+        outputMode: OutputMode.replace,
+        parameterNumber: 1,
+        busParam: 'Output',
+      ),
+    ],
+  );
+
   // Only bus 13 is in use, so it's column 1: gutter 172 + 1*42 + 21 = 235.
   // Output row 0 center y = header 28 + portRowY(0) 45 = 73.
   const beadCenter = Offset(235, 73);
@@ -193,6 +222,47 @@ void main() {
         parameterNumber: 3,
         previousBusValue: 13,
         busValue: 0,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('dragging an in-place output bead assigns another bus', (
+    tester,
+  ) async {
+    when(
+      cubit.state,
+    ).thenReturn(loadedWith([inPlaceOutputOnInputBus(), oscWithOutput()]));
+    when(
+      cubit.assignBusAndSolve(
+        algorithmIndex: anyNamed('algorithmIndex'),
+        parameterNumber: anyNamed('parameterNumber'),
+        previousBusValue: anyNamed('previousBusValue'),
+        busValue: anyNamed('busValue'),
+      ),
+    ).thenAnswer(
+      (_) async => const BusAssignmentResult(
+        algorithmIndex: 0,
+        parameterNumber: 1,
+        previousBusValue: 5,
+        newBusValue: 13,
+        reorder: null,
+      ),
+    );
+
+    await tester.pumpWidget(host());
+    await tester.pump();
+
+    // Visible buses are 5 and 13. The first algorithm's output row is row 1,
+    // so the bead starts on bus 5 at column 1 and drops onto bus 13 at column 2.
+    await tester.dragFrom(const Offset(235, 99), const Offset(42, 0));
+    await tester.pumpAndSettle();
+
+    verify(
+      cubit.assignBusAndSolve(
+        algorithmIndex: 0,
+        parameterNumber: 1,
+        previousBusValue: 5,
+        busValue: 13,
       ),
     ).called(1);
   });

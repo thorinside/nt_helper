@@ -2250,6 +2250,91 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     );
   }
 
+  String _channelPrefix(String? busParam) {
+    if (busParam == null) return '';
+    final colon = busParam.indexOf(':');
+    return colon >= 0 ? busParam.substring(0, colon + 1) : '';
+  }
+
+  int? _parameterValue(Slot slot, int parameterNumber) {
+    for (final value in slot.values) {
+      if (value.parameterNumber == parameterNumber) return value.value;
+    }
+    return null;
+  }
+
+  int? _matchingConditionalInPlaceInputBus({
+    required Slot slot,
+    required int outputParameterNumber,
+  }) {
+    if (!core_routing.AlgorithmRouting.isConditionalInPlaceGuid(
+      slot.algorithm.guid,
+    )) {
+      return null;
+    }
+
+    ParameterInfo? outputParam;
+    for (final param in slot.parameters) {
+      if (param.parameterNumber == outputParameterNumber) {
+        outputParam = param;
+        break;
+      }
+    }
+    if (outputParam == null || !outputParam.isOutput) return null;
+
+    final prefix = _channelPrefix(outputParam.name);
+    for (final inputParam in slot.parameters) {
+      final isInput =
+          inputParam.isInput ||
+          core_routing.AlgorithmRouting.isHardcodedInput(
+            slot.algorithm.guid,
+            inputParam.name,
+          );
+      if (!isInput) continue;
+      if (_channelPrefix(inputParam.name) != prefix) continue;
+
+      final inputBus =
+          _parameterValue(slot, inputParam.parameterNumber) ??
+          inputParam.defaultValue;
+      return inputBus > 0 ? inputBus : null;
+    }
+
+    return null;
+  }
+
+  ({int previousBusValue, int busValue})
+  _normalizeConditionalInPlaceAssignment({
+    required int algorithmIndex,
+    required int parameterNumber,
+    required int previousBusValue,
+    required int busValue,
+  }) {
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized ||
+        algorithmIndex < 0 ||
+        algorithmIndex >= distingState.slots.length) {
+      return (previousBusValue: previousBusValue, busValue: busValue);
+    }
+
+    final slot = distingState.slots[algorithmIndex];
+    final matchingInputBus = _matchingConditionalInPlaceInputBus(
+      slot: slot,
+      outputParameterNumber: parameterNumber,
+    );
+    if (matchingInputBus == null) {
+      return (previousBusValue: previousBusValue, busValue: busValue);
+    }
+
+    final literalPrevious =
+        _parameterValue(slot, parameterNumber) ?? previousBusValue;
+    int normalize(int value) => value == matchingInputBus ? 0 : value;
+
+    return (
+      previousBusValue: normalize(literalPrevious),
+      busValue: normalize(busValue),
+    );
+  }
+
   /// Assigns [busValue] to a port's bus parameter.
   /// Does NOT auto-reorder algorithms — use [autoSolveFlow] explicitly for that.
   /// The returned [BusAssignmentResult] can be passed to [undoBusAssignment]
@@ -2260,17 +2345,24 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     required int previousBusValue,
     required int busValue,
   }) async {
+    final normalized = _normalizeConditionalInPlaceAssignment(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      previousBusValue: previousBusValue,
+      busValue: busValue,
+    );
+
     await setPortBus(
       algorithmIndex: algorithmIndex,
       parameterNumber: parameterNumber,
-      busValue: busValue,
+      busValue: normalized.busValue,
     );
 
     return BusAssignmentResult(
       algorithmIndex: algorithmIndex,
       parameterNumber: parameterNumber,
-      previousBusValue: previousBusValue,
-      newBusValue: busValue,
+      previousBusValue: normalized.previousBusValue,
+      newBusValue: normalized.busValue,
       reorder: null,
     );
   }

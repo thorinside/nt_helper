@@ -6,8 +6,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 void main() {
   group('Conditional in-place: Output=None → write to Input bus', () {
-    test('attn with Input=5, Output=0 routes virtual replace output to bus 5',
-        () {
+    test('attn with Input=5, Output=0 routes real replace output to bus 5', () {
       final slot = _createInputOutputSlot(
         guid: 'attn',
         name: 'Attenuverter',
@@ -20,10 +19,11 @@ void main() {
       expect(
         routing.outputPorts.length,
         equals(1),
-        reason: 'Should produce exactly one virtual replace output',
+        reason: 'Should preserve the real output port',
       );
 
       final out = routing.outputPorts.single;
+      expect(out.parameterNumber, equals(1));
       expect(out.busValue, equals(5));
       expect(out.outputMode, equals(OutputMode.replace));
       expect(out.modeParameterNumber, isNull);
@@ -39,29 +39,31 @@ void main() {
 
       final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'attn_t');
 
-      final out = routing.outputPorts.firstWhere(
-        (p) => p.parameterNumber == 1,
-      );
+      final out = routing.outputPorts.firstWhere((p) => p.parameterNumber == 1);
       expect(out.busValue, equals(7));
     });
 
-    test('attn with Input=0, Output=0 produces no output port', () {
-      final slot = _createInputOutputSlot(
-        guid: 'attn',
-        name: 'Attenuverter',
-        inputBus: 0,
-        outputBus: 0,
-      );
+    test(
+      'attn with Input=0, Output=0 keeps editable disconnected output port',
+      () {
+        final slot = _createInputOutputSlot(
+          guid: 'attn',
+          name: 'Attenuverter',
+          inputBus: 0,
+          outputBus: 0,
+        );
 
-      final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'attn_t');
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid: 'attn_t',
+        );
 
-      expect(
-        routing.outputPorts,
-        isEmpty,
-        reason:
-            'Both input and output unconnected: no virtual output should appear',
-      );
-    });
+        expect(routing.outputPorts.length, equals(1));
+        final out = routing.outputPorts.single;
+        expect(out.parameterNumber, equals(1));
+        expect(out.busValue, equals(0));
+      },
+    );
 
     test('vcam (spot-check): Output=None → virtual replace on Input bus', () {
       final slot = _createInputOutputSlot(
@@ -75,29 +77,35 @@ void main() {
 
       expect(routing.outputPorts.length, equals(1));
       final out = routing.outputPorts.single;
+      expect(out.parameterNumber, equals(1));
       expect(out.busValue, equals(9));
       expect(out.outputMode, equals(OutputMode.replace));
     });
 
-    test('algorithm not in conditional-in-place list: Output=0 stays as-is',
-        () {
-      // 'unkn' is not in _conditionalInPlaceGuids - should keep existing
-      // behaviour (output port with busValue=0).
-      final slot = _createInputOutputSlot(
-        guid: 'unkn',
-        name: 'Unknown',
-        inputBus: 5,
-        outputBus: 0,
-      );
+    test(
+      'algorithm not in conditional-in-place list: Output=0 stays as-is',
+      () {
+        // 'unkn' is not in _conditionalInPlaceGuids - should keep existing
+        // behaviour (output port with busValue=0).
+        final slot = _createInputOutputSlot(
+          guid: 'unkn',
+          name: 'Unknown',
+          inputBus: 5,
+          outputBus: 0,
+        );
 
-      final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'unkn_t');
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid: 'unkn_t',
+        );
 
-      // The disconnected output port should still be present.
-      final out = routing.outputPorts.firstWhere(
-        (p) => p.parameterNumber == 1,
-      );
-      expect(out.busValue, equals(0));
-    });
+        // The disconnected output port should still be present.
+        final out = routing.outputPorts.firstWhere(
+          (p) => p.parameterNumber == 1,
+        );
+        expect(out.busValue, equals(0));
+      },
+    );
   });
 }
 
