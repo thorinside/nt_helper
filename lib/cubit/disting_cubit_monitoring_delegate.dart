@@ -14,6 +14,10 @@ class _MonitoringDelegate {
   late final StreamController<CpuUsage?> _cpuUsageController;
   Timer? _cpuUsageTimer;
   static const Duration _cpuUsagePollingInterval = Duration(seconds: 10);
+  static const Duration _cpuUsageBackoffInterval = Duration(seconds: 60);
+  Duration _activeCpuUsagePollingInterval = _cpuUsagePollingInterval;
+  int _consecutiveCpuUsageFailures = 0;
+  bool _cpuUsagePollInFlight = false;
 
   // Video Streaming
   UsbVideoManager? _videoManager;
@@ -49,8 +53,7 @@ class _MonitoringDelegate {
       await disting.requestWake();
       final cpuUsage = await disting.requestCpuUsage();
       return cpuUsage;
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
+    } catch (_) {
       return null;
     }
   }
@@ -95,12 +98,11 @@ class _MonitoringDelegate {
   void _startCpuUsagePolling() {
     // Cancel any existing timer
     _cpuUsageTimer?.cancel();
+    _activeCpuUsagePollingInterval = _cpuUsagePollingInterval;
 
     // Start polling immediately, then every 10 seconds
     _pollCpuUsageOnce();
-    _cpuUsageTimer = Timer.periodic(_cpuUsagePollingInterval, (_) {
-      _pollCpuUsageOnce();
-    });
+    _scheduleCpuUsagePolling(_cpuUsagePollingInterval);
   }
 
   void _checkStopCpuUsagePolling() {
@@ -115,17 +117,48 @@ class _MonitoringDelegate {
   }
 
   Future<void> _pollCpuUsageOnce() async {
+    if (_cpuUsagePollInFlight) return;
+
+    _cpuUsagePollInFlight = true;
     try {
       final cpuUsage = await getCpuUsage();
+      if (cpuUsage == null) {
+        _consecutiveCpuUsageFailures++;
+      } else {
+        _consecutiveCpuUsageFailures = 0;
+      }
       if (!_cpuUsageController.isClosed) {
         _cpuUsageController.add(cpuUsage);
       }
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
+      if (_consecutiveCpuUsageFailures >= 3) {
+        _scheduleCpuUsagePolling(_cpuUsageBackoffInterval);
+      } else if (cpuUsage != null) {
+        _scheduleCpuUsagePolling(_cpuUsagePollingInterval);
+      }
+    } catch (_) {
+      _consecutiveCpuUsageFailures++;
       if (!_cpuUsageController.isClosed) {
         _cpuUsageController.add(null);
       }
+      if (_consecutiveCpuUsageFailures >= 3) {
+        _scheduleCpuUsagePolling(_cpuUsageBackoffInterval);
+      }
+    } finally {
+      _cpuUsagePollInFlight = false;
     }
+  }
+
+  void _scheduleCpuUsagePolling(Duration interval) {
+    if (!_cpuUsageController.hasListener) return;
+    if (_cpuUsageTimer != null && _activeCpuUsagePollingInterval == interval) {
+      return;
+    }
+
+    _cpuUsageTimer?.cancel();
+    _activeCpuUsagePollingInterval = interval;
+    _cpuUsageTimer = Timer.periodic(interval, (_) {
+      _pollCpuUsageOnce();
+    });
   }
 
   /// Temporarily pause CPU usage polling (useful during sync operations)

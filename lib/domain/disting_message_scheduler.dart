@@ -18,6 +18,7 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/domain/sysex/response_factory.dart';
+import 'package:nt_helper/domain/sysex/responses/parameter_pages_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_parser.dart';
 
 // -----------------------------------------------------------------------------
@@ -44,6 +45,7 @@ enum _SchedulerState { idle, sending, waitingForResponse }
 
 class _ScheduledRequest {
   _ScheduledRequest({
+    required this.id,
     required this.packet,
     required this.key,
     required this.expectation,
@@ -53,6 +55,7 @@ class _ScheduledRequest {
     required this.retryDelay,
   });
 
+  final int id;
   final Uint8List packet;
   final RequestKey key;
   final ResponseExpectation expectation;
@@ -262,6 +265,9 @@ class DistingMessageScheduler {
   final MidiDevice _inputDevice;
   final MidiDevice _outputDevice;
   final int _sysExId;
+
+  static const bool _diagnosticsEnabled = true;
+  static int _nextRequestId = 0;
 
   // Timing configuration
   final Duration messageInterval;
@@ -596,6 +602,7 @@ class DistingMessageScheduler {
   }) {
     final completer = Completer<T?>();
     final request = _ScheduledRequest(
+      id: ++_nextRequestId,
       packet: packet,
       key: key,
       expectation: responseExpectation,
@@ -606,6 +613,11 @@ class DistingMessageScheduler {
     );
 
     _queue.add(request);
+    _diag(
+      'queued #${request.id} ${request.expectation.name} '
+      'timeout=${request.timeout.inMilliseconds}ms '
+      'maxRetries=${request.maxRetries} queue=${_queue.length} key=$key',
+    );
 
     // Process immediately if idle
     if (_state == _SchedulerState.idle) {
@@ -676,6 +688,11 @@ class DistingMessageScheduler {
     }
 
     request.attemptCount++;
+    _diag(
+      'send #${request.id} attempt=${request.attemptCount}/'
+      '${request.maxRetries} packetBytes=${request.packet.length} '
+      'queue=${_queue.length} key=${request.key}',
+    );
 
     // Start/restart stopwatch for RTT measurement
     request.stopwatch.reset();
@@ -683,8 +700,7 @@ class DistingMessageScheduler {
 
     // Register handler with demux BEFORE sending (first attempt only).
     // Handler persists across retries — only moved to expired on final timeout.
-    if (request.attemptCount == 1 &&
-        request.expectation != ResponseExpectation.none) {
+    if (request.expectation != ResponseExpectation.none) {
       _demux.registerActive(request.key, (parsed) {
         _onResponseMatched(request, parsed);
       });
@@ -701,6 +717,7 @@ class DistingMessageScheduler {
 
     if (request.expectation == ResponseExpectation.none) {
       // Fire-and-forget: complete immediately and schedule next
+      _diag('complete #${request.id} fire-and-forget key=${request.key}');
       request.completer.complete(null);
       _finishCurrentRequest();
     } else {
@@ -731,6 +748,10 @@ class DistingMessageScheduler {
     request.stopwatch.stop();
     final rtt = request.stopwatch.elapsed;
     _recordRtt(rtt, parsed.messageType, libraryIndex: request.key.libraryIndex);
+    _diag(
+      'response #${request.id} rtt=${rtt.inMicroseconds / 1000}ms '
+      'messageType=${parsed.messageType.name} key=${request.key}',
+    );
 
     // Parse and complete the response
     final response = ResponseFactory.fromMessageType(
@@ -744,8 +765,25 @@ class DistingMessageScheduler {
         request.completer.complete(parsedResponse);
       } catch (e) {
         if (request.expectation == ResponseExpectation.optional) {
+          _diag('parse-null #${request.id} optional key=${request.key}');
           request.completer.complete(null);
         } else {
+          _diag(
+            'parse-error #${request.id} key=${request.key} '
+            'payloadLength=${parsed.payload.length} '
+            'payloadHex=${_hex(parsed.payload)} error=$e',
+          );
+          final shouldRetryParseError = e is! TruncatedParameterPagesException;
+          if (shouldRetryParseError &&
+              request.attemptCount < request.maxRetries) {
+            _state = _SchedulerState.sending;
+            if (request.retryDelay == Duration.zero) {
+              _sendCurrentRequest();
+            } else {
+              _retryTimer = Timer(request.retryDelay, _sendCurrentRequest);
+            }
+            return;
+          }
           request.completer.completeError(
             StateError(
               'Failed to parse response: ${response.runtimeType} - $e',
@@ -755,8 +793,13 @@ class DistingMessageScheduler {
       }
     } else {
       if (request.expectation == ResponseExpectation.optional) {
+        _diag('unhandled-null #${request.id} optional key=${request.key}');
         request.completer.complete(null);
       } else {
+        _diag(
+          'unhandled-error #${request.id} messageType=${parsed.messageType.name} '
+          'key=${request.key}',
+        );
         request.completer.completeError(
           StateError('Unhandled response type: ${parsed.messageType}'),
         );
@@ -798,6 +841,11 @@ class DistingMessageScheduler {
       }
 
       if (request.expectation == ResponseExpectation.required) {
+        _diag(
+          'timeout-final #${request.id} attempts=${request.attemptCount} '
+          'timeout=${request.timeout.inMilliseconds}ms '
+          'consecutiveTimeouts=$_consecutiveTimeouts key=${request.key}',
+        );
         request.completer.completeError(
           TimeoutException(
             'No response after ${request.attemptCount} attempts',
@@ -805,12 +853,21 @@ class DistingMessageScheduler {
           ),
         );
       } else {
+        _diag(
+          'timeout-final #${request.id} optional attempts=${request.attemptCount} '
+          'timeout=${request.timeout.inMilliseconds}ms key=${request.key}',
+        );
         request.completer.complete(null);
       }
       _finishCurrentRequest();
     } else {
       // Retry after delay — handler persists across retries
       _state = _SchedulerState.sending;
+      _diag(
+        'timeout-retry #${request.id} attempt=${request.attemptCount} '
+        'nextAttempt=${request.attemptCount + 1} retryDelay='
+        '${request.retryDelay.inMilliseconds}ms key=${request.key}',
+      );
 
       if (request.retryDelay == Duration.zero) {
         _sendCurrentRequest();
@@ -828,6 +885,10 @@ class DistingMessageScheduler {
 
     if (request.attemptCount >= request.maxRetries) {
       _demux.expireActive();
+      _diag(
+        'send-failed-final #${request.id} attempts=${request.attemptCount} '
+        'key=${request.key} error=$error',
+      );
       request.completer.completeError(
         StateError(
           'Failed to send request after ${request.attemptCount} attempts: $error',
@@ -838,6 +899,11 @@ class DistingMessageScheduler {
     }
 
     _state = _SchedulerState.sending;
+    _diag(
+      'send-failed-retry #${request.id} attempt=${request.attemptCount} '
+      'retryDelay=${request.retryDelay.inMilliseconds}ms '
+      'key=${request.key} error=$error',
+    );
     if (request.retryDelay == Duration.zero) {
       _sendCurrentRequest();
     } else {
@@ -845,14 +911,32 @@ class DistingMessageScheduler {
     }
   }
 
+  void _diag(String message) {
+    if (!_diagnosticsEnabled) return;
+    final important =
+        (message.startsWith('timeout-final #') &&
+            !message.contains(' optional ')) ||
+        message.startsWith('send-failed') ||
+        message.startsWith('parse-error') ||
+        message.startsWith('parameter-pages-raw') ||
+        message.startsWith('unhandled-error');
+    if (!important) return;
+    debugPrint(
+      '[NT_DIAG scheduler ${DateTime.now().toIso8601String()}] $message',
+    );
+  }
+
+  String _hex(Uint8List bytes) {
+    return bytes
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join(' ');
+  }
+
   void _finishCurrentRequest() {
     _currentRequest?.dispose();
     _currentRequest = null;
     _state = _SchedulerState.idle;
     _retryTimer?.cancel();
-    // Clear SysEx buffer to avoid stale data affecting next request
-    _sysExBuffer.clear();
-    _isBufferingSysEx = false;
     _retryTimer = null;
 
     // Schedule next request after message interval
@@ -1025,6 +1109,14 @@ class DistingMessageScheduler {
       final parsed = decodeDistingNTSysEx(sysex);
       if (parsed == null) return;
       if (parsed.sysExId != _sysExId) return;
+
+      if (parsed.messageType == DistingNTRespMessageType.respParameterPages) {
+        _diag(
+          'parameter-pages-raw rawLength=${sysex.length} '
+          'payloadLength=${parsed.payload.length} '
+          'payloadHex=${_hex(parsed.payload)} rawHex=${_hex(sysex)}',
+        );
+      }
 
       _demux.dispatch(parsed);
     } catch (e) {

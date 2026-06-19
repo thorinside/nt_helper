@@ -158,20 +158,41 @@ class _ParameterFetchDelegate {
     void Function(int completed, int total)? onSlotProgress,
   }) async {
     final stopwatch = Stopwatch()..start();
+    _diag('fetchSlots start total=$numAlgorithmsInPreset parallelSlots=false');
 
     int completedCount = 0;
-    final slotsFutures = List.generate(numAlgorithmsInPreset, (
-      algorithmIndex,
-    ) async {
-      final slot = await fetchSlot(disting, algorithmIndex);
-      completedCount++;
-      onSlotProgress?.call(completedCount, numAlgorithmsInPreset);
-      return slot;
-    });
+    final slots = <Slot>[];
+    for (
+      var algorithmIndex = 0;
+      algorithmIndex < numAlgorithmsInPreset;
+      algorithmIndex++
+    ) {
+      final slotStopwatch = Stopwatch()..start();
+      _diag('fetchSlots slot=$algorithmIndex queued');
+      try {
+        final slot = await fetchSlot(disting, algorithmIndex);
+        completedCount++;
+        _diag(
+          'fetchSlots slot=$algorithmIndex done completed=$completedCount/'
+          '$numAlgorithmsInPreset elapsed=${slotStopwatch.elapsedMilliseconds}ms',
+        );
+        onSlotProgress?.call(completedCount, numAlgorithmsInPreset);
+        slots.add(slot);
+      } catch (e) {
+        completedCount++;
+        _diag(
+          'fetchSlots slot=$algorithmIndex failed '
+          'elapsed=${slotStopwatch.elapsedMilliseconds}ms error=$e',
+        );
+        onSlotProgress?.call(completedCount, numAlgorithmsInPreset);
+        slots.add(_errorSlot(algorithmIndex));
+      }
+    }
 
-    // Finish off the requests
-    final slots = await Future.wait(slotsFutures);
-    stopwatch.elapsedMilliseconds;
+    _diag(
+      'fetchSlots done total=$numAlgorithmsInPreset '
+      'elapsed=${stopwatch.elapsedMilliseconds}ms',
+    );
     return slots;
   }
 
@@ -179,24 +200,35 @@ class _ParameterFetchDelegate {
     IDistingMidiManager disting,
     int algorithmIndex,
   ) async {
-    Stopwatch().start();
+    final slotStopwatch = Stopwatch()..start();
+    _diag('fetchSlot[$algorithmIndex] start');
 
     /* ------------------------------------------------------------------ *
    * 1-2.  Pages  |  #Parameters  |  Algorithm GUID  |  All Values      *
    * ------------------------------------------------------------------ */
     // Fetch essential info first (these usually don't timeout)
+    final essentialStopwatch = Stopwatch()..start();
+    _diag('fetchSlot[$algorithmIndex] essentials start');
     final essentialResults = await Future.wait([
-      disting.requestParameterPages(algorithmIndex),
       disting.requestNumberOfParameters(algorithmIndex),
       disting.requestAlgorithmGuid(algorithmIndex),
     ]);
 
-    final pages =
-        (essentialResults[0] as ParameterPages?) ??
-        ParameterPages(algorithmIndex: algorithmIndex, pages: []);
     final numParams =
-        (essentialResults[1] as NumParameters?)?.numParameters ?? 0;
-    final guid = essentialResults[2] as Algorithm?;
+        (essentialResults[0] as NumParameters?)?.numParameters ?? 0;
+    final guid = essentialResults[1] as Algorithm?;
+    final pageResult = await _fetchParameterPagesWithMetadataFallback(
+      disting,
+      algorithmIndex,
+      guid,
+    );
+    final pages = pageResult.pages;
+    _diag(
+      'fetchSlot[$algorithmIndex] essentials done '
+      'pages=${pages.pages.length} numParams=$numParams '
+      'guid=${guid?.guid ?? 'null'} '
+      'elapsed=${essentialStopwatch.elapsedMilliseconds}ms',
+    );
 
     final currentState = _cubit.state;
     final firmware = currentState is DistingStateSynchronized
@@ -205,7 +237,10 @@ class _ParameterFetchDelegate {
 
     // Try to get parameter values with retry and longer timeout
     List<ParameterValue> allValues;
+    var allValuesFailed = false;
     try {
+      final valuesStopwatch = Stopwatch()..start();
+      _diag('fetchSlot[$algorithmIndex] allValues start');
       final paramValuesResult = await disting.requestAllParameterValues(
         algorithmIndex,
       );
@@ -215,12 +250,18 @@ class _ParameterFetchDelegate {
             numParams,
             (_) => ParameterValue.filler(),
           );
+      _diag(
+        'fetchSlot[$algorithmIndex] allValues done count=${allValues.length} '
+        'elapsed=${valuesStopwatch.elapsedMilliseconds}ms',
+      );
     } catch (e) {
+      _diag('fetchSlot[$algorithmIndex] allValues failed error=$e retrying');
       try {
         // Retry with a longer timeout - give it more time to respond
         await Future.delayed(
           const Duration(milliseconds: 500),
         ); // Brief pause before retry
+        final retryValuesStopwatch = Stopwatch()..start();
         final retryResult = await disting.requestAllParameterValues(
           algorithmIndex,
         );
@@ -230,11 +271,42 @@ class _ParameterFetchDelegate {
               numParams,
               (_) => ParameterValue.filler(),
             );
+        _diag(
+          'fetchSlot[$algorithmIndex] allValues retry done '
+          'count=${allValues.length} '
+          'elapsed=${retryValuesStopwatch.elapsedMilliseconds}ms',
+        );
       } catch (retryError) {
+        _diag(
+          'fetchSlot[$algorithmIndex] allValues retry failed '
+          'error=$retryError using fillers',
+        );
+        allValuesFailed = true;
         allValues = List<ParameterValue>.generate(
           numParams,
-          (_) => ParameterValue.filler(),
+          (param) => ParameterValue(
+            algorithmIndex: algorithmIndex,
+            parameterNumber: param,
+            value: 0,
+          ),
         );
+      }
+    }
+
+    if (pageResult.usedMetadataFallback && allValuesFailed) {
+      final metadataSlot = await _metadataBackedSlot(
+        algorithmIndex,
+        guid,
+        pages,
+        numParams,
+        allValues,
+      );
+      if (metadataSlot != null) {
+        _diag(
+          'fetchSlot[$algorithmIndex] metadata slot used '
+          'elapsed=${slotStopwatch.elapsedMilliseconds}ms',
+        );
+        return metadataSlot;
       }
     }
 
@@ -248,6 +320,8 @@ class _ParameterFetchDelegate {
       numParams,
       ParameterInfo.filler(),
     );
+    final infoStopwatch = Stopwatch()..start();
+    _diag('fetchSlot[$algorithmIndex] parameterInfo start count=$numParams');
     await _forEachLimited(Iterable<int>.generate(numParams), (param) async {
       try {
         final info = await disting.requestParameterInfo(algorithmIndex, param);
@@ -272,6 +346,10 @@ class _ParameterFetchDelegate {
         );
       }
     });
+    _diag(
+      'fetchSlot[$algorithmIndex] parameterInfo done '
+      'elapsed=${infoStopwatch.elapsedMilliseconds}ms',
+    );
 
     /* Pre-calculate which params are enumerated / mappable / string */
     bool isEnum(int i) => parameters[i].unit == 1;
@@ -301,6 +379,22 @@ class _ParameterFetchDelegate {
           param == 1;
     }
 
+    final enumCount = Iterable<int>.generate(numParams)
+        .where(
+          (i) => visible.contains(i) && isEnum(i) && !shouldSkipEnumStrings(i),
+        )
+        .length;
+    final mappingCount = Iterable<int>.generate(
+      numParams,
+    ).where((i) => visible.contains(i) && isMappable(i)).length;
+    final valueStringCount = Iterable<int>.generate(
+      numParams,
+    ).where((i) => visible.contains(i) && isString(i)).length;
+    final optionalStopwatch = Stopwatch()..start();
+    _diag(
+      'fetchSlot[$algorithmIndex] optionalDetails start '
+      'enums=$enumCount mappings=$mappingCount valueStrings=$valueStringCount',
+    );
     await Future.wait([
       // Enums
       _forEachLimited(
@@ -391,6 +485,10 @@ class _ParameterFetchDelegate {
         },
       ),
     ]);
+    _diag(
+      'fetchSlot[$algorithmIndex] optionalDetails done '
+      'elapsed=${optionalStopwatch.elapsedMilliseconds}ms',
+    );
 
     /* ------------------------------------------------------------------ *
    * 5. Assemble the Slot                                               *
@@ -417,6 +515,11 @@ class _ParameterFetchDelegate {
 
     final outputModeMap = <int, List<int>>{};
     if (outputModeParamNumbers.isNotEmpty) {
+      final outputUsageStopwatch = Stopwatch()..start();
+      _diag(
+        'fetchSlot[$algorithmIndex] outputModeUsage start '
+        'count=${outputModeParamNumbers.length}',
+      );
       await _forEachLimited(outputModeParamNumbers, (paramNumber) async {
         try {
           final outputModeUsage = await disting.requestOutputModeUsage(
@@ -431,6 +534,10 @@ class _ParameterFetchDelegate {
           // Output mode usage is optional; ignore failures.
         }
       });
+      _diag(
+        'fetchSlot[$algorithmIndex] outputModeUsage done '
+        'elapsed=${outputUsageStopwatch.elapsedMilliseconds}ms',
+      );
     }
 
     if (outputModeMap.isNotEmpty) {
@@ -441,6 +548,11 @@ class _ParameterFetchDelegate {
     }
 
     if (outputModeMap.isNotEmpty) {
+      final outputValuesStopwatch = Stopwatch()..start();
+      _diag(
+        'fetchSlot[$algorithmIndex] outputModeValues start '
+        'count=${outputModeMap.length}',
+      );
       await _forEachLimited(outputModeMap.keys, (paramNumber) async {
         if (paramNumber < 0 || paramNumber >= allValues.length) {
           return;
@@ -457,13 +569,17 @@ class _ParameterFetchDelegate {
           // Output mode values are optional; ignore failures.
         }
       });
+      _diag(
+        'fetchSlot[$algorithmIndex] outputModeValues done '
+        'elapsed=${outputValuesStopwatch.elapsedMilliseconds}ms',
+      );
     }
 
     final resolvedOutputModeMap = outputModeMap.isNotEmpty
         ? outputModeMap
         : _cubit._slotStateDelegate.outputModeMapForSlot(algorithmIndex);
 
-    return Slot(
+    final slot = Slot(
       algorithm:
           guid ??
           Algorithm(
@@ -480,6 +596,142 @@ class _ParameterFetchDelegate {
       routing: RoutingInfo.filler(), // unchanged – still skipped
       outputModeMap: resolvedOutputModeMap,
     );
+    _diag(
+      'fetchSlot[$algorithmIndex] done '
+      'elapsed=${slotStopwatch.elapsedMilliseconds}ms',
+    );
+    return slot;
+  }
+
+  Future<_ParameterPagesFetchResult> _fetchParameterPagesWithMetadataFallback(
+    IDistingMidiManager disting,
+    int algorithmIndex,
+    Algorithm? algorithm,
+  ) async {
+    try {
+      final pages = await disting.requestParameterPages(algorithmIndex);
+      if (pages != null) {
+        return _ParameterPagesFetchResult(pages, usedMetadataFallback: false);
+      }
+      _diag('fetchSlot[$algorithmIndex] pages returned null; using metadata');
+    } catch (e) {
+      _diag('fetchSlot[$algorithmIndex] pages failed error=$e using metadata');
+    }
+
+    final fallback = await _metadataPagesForAlgorithm(
+      algorithmIndex,
+      algorithm,
+    );
+    if (fallback != null) {
+      _diag(
+        'fetchSlot[$algorithmIndex] metadata pages used '
+        'guid=${algorithm?.guid ?? 'null'} pages=${fallback.pages.length}',
+      );
+      return _ParameterPagesFetchResult(fallback, usedMetadataFallback: true);
+    }
+
+    return _ParameterPagesFetchResult(
+      ParameterPages(algorithmIndex: algorithmIndex, pages: const []),
+      usedMetadataFallback: true,
+    );
+  }
+
+  Future<ParameterPages?> _metadataPagesForAlgorithm(
+    int algorithmIndex,
+    Algorithm? algorithm,
+  ) async {
+    final guid = algorithm?.guid;
+    if (guid == null || guid.isEmpty) return null;
+
+    final details = await _cubit._metadataDao.getFullAlgorithmDetails(guid);
+    if (details == null || details.parameterPages.isEmpty) return null;
+
+    return ParameterPages(
+      algorithmIndex: algorithmIndex,
+      pages: details.parameterPages.map((pageWithItems) {
+        return ParameterPage(
+          name: pageWithItems.page.name,
+          parameters: pageWithItems.parameterNumbers,
+        );
+      }).toList(),
+    );
+  }
+
+  Future<Slot?> _metadataBackedSlot(
+    int algorithmIndex,
+    Algorithm? algorithm,
+    ParameterPages pages,
+    int numParams,
+    List<ParameterValue> values,
+  ) async {
+    final details = await _fullMetadataForAlgorithm(algorithm);
+    if (details == null) return null;
+
+    final parameters = List<ParameterInfo>.filled(
+      numParams,
+      ParameterInfo.filler(),
+    );
+    for (final item in details.parameters) {
+      final entry = item.parameter;
+      if (entry.parameterNumber < 0 || entry.parameterNumber >= numParams) {
+        continue;
+      }
+      parameters[entry.parameterNumber] = ParameterInfo(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: entry.parameterNumber,
+        min: entry.minValue ?? 0,
+        max: entry.maxValue ?? 0,
+        defaultValue: entry.defaultValue ?? 0,
+        unit: entry.rawUnitIndex ?? 0,
+        name: entry.name,
+        powerOfTen: entry.powerOfTen ?? 0,
+        ioFlags: entry.ioFlags ?? 0,
+      );
+    }
+
+    final enums = List<ParameterEnumStrings>.filled(
+      numParams,
+      ParameterEnumStrings.filler(),
+    );
+    for (final MapEntry(key: parameterNumber, value: enumValues)
+        in details.enums.entries) {
+      if (parameterNumber < 0 || parameterNumber >= numParams) continue;
+      enums[parameterNumber] = ParameterEnumStrings(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: parameterNumber,
+        values: enumValues,
+      );
+    }
+
+    return Slot(
+      algorithm:
+          algorithm ??
+          Algorithm(
+            algorithmIndex: algorithmIndex,
+            guid: details.algorithm.guid,
+            name: details.algorithm.name,
+          ),
+      pages: pages,
+      parameters: parameters,
+      values: values,
+      enums: enums,
+      mappings: List<Mapping>.filled(numParams, Mapping.filler()),
+      valueStrings: List<ParameterValueString>.filled(
+        numParams,
+        ParameterValueString.filler(),
+      ),
+      routing: RoutingInfo.filler(),
+      outputModeMap: const {},
+    );
+  }
+
+  Future<FullAlgorithmDetails?> _fullMetadataForAlgorithm(
+    Algorithm? algorithm,
+  ) async {
+    final guid = algorithm?.guid;
+    if (guid == null || guid.isEmpty) return null;
+
+    return _cubit._metadataDao.getFullAlgorithmDetails(guid);
   }
 
   /* ---------------------------------------------------------------------- *
@@ -510,4 +762,36 @@ class _ParameterFetchDelegate {
       await Future.wait(batch); // wait for the batch to finish
     }
   }
+
+  Slot _errorSlot(int algorithmIndex) {
+    return Slot(
+      algorithm: Algorithm(
+        algorithmIndex: algorithmIndex,
+        guid: 'ERROR',
+        name: 'Error fetching Algorithm',
+      ),
+      pages: ParameterPages(algorithmIndex: algorithmIndex, pages: const []),
+      parameters: const [],
+      values: const [],
+      enums: const [],
+      mappings: const [],
+      valueStrings: const [],
+      routing: RoutingInfo.filler(),
+      outputModeMap: const {},
+    );
+  }
+
+  void _diag(String message) {
+    debugPrint('[NT_DIAG fetch ${DateTime.now().toIso8601String()}] $message');
+  }
+}
+
+class _ParameterPagesFetchResult {
+  final ParameterPages pages;
+  final bool usedMetadataFallback;
+
+  const _ParameterPagesFetchResult(
+    this.pages, {
+    required this.usedMetadataFallback,
+  });
 }

@@ -10,9 +10,27 @@ class _PerfPageDelegate {
     IDistingMidiManager disting,
   ) async {
     final items = <PerformancePageItem>[];
+    var consecutiveFailures = 0;
     for (var i = 0; i < 30; i++) {
-      final item = await disting.requestPerfPageItem(i);
-      items.add(item ?? PerformancePageItem.empty(i));
+      try {
+        final item = await disting.requestPerfPageItem(i);
+        if (item == null) {
+          consecutiveFailures++;
+        } else {
+          consecutiveFailures = 0;
+        }
+        items.add(item ?? PerformancePageItem.empty(i));
+      } catch (_) {
+        consecutiveFailures++;
+        items.add(PerformancePageItem.empty(i));
+      }
+
+      if (consecutiveFailures >= 3) {
+        for (var j = i + 1; j < 30; j++) {
+          items.add(PerformancePageItem.empty(j));
+        }
+        break;
+      }
     }
     return items;
   }
