@@ -2,11 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/ui/widgets/parameter_value_display.dart';
+import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(
     home: Scaffold(
       body: Center(child: SizedBox(width: 300, child: child)),
+    ),
+  );
+}
+
+Widget _wrapTraversal(List<Widget> children) {
+  return MaterialApp(
+    home: Scaffold(
+      body: ParameterValueEditTraversalScope(
+        child: Column(
+          children: [
+            for (final child in children) SizedBox(width: 300, child: child),
+          ],
+        ),
+      ),
     ),
   );
 }
@@ -416,6 +431,207 @@ void main() {
       await tester.pump();
 
       expect(submittedValue, -50);
+    });
+
+    testWidgets('16. Tab submits and edits next numeric value', (tester) async {
+      int? firstSubmitted;
+      int? secondSubmitted;
+
+      await tester.pumpWidget(
+        _wrapTraversal([
+          ParameterValueDisplay(
+            currentValue: 10,
+            min: 0,
+            max: 100,
+            name: 'Level A',
+            widescreen: false,
+            traversalId: 'a',
+            traversalOrder: 0,
+            onValueChanged: (v) => firstSubmitted = v,
+            onLongPress: () {},
+          ),
+          ParameterValueDisplay(
+            currentValue: 20,
+            min: 0,
+            max: 100,
+            name: 'Level B',
+            widescreen: false,
+            traversalId: 'b',
+            traversalOrder: 1,
+            onValueChanged: (v) => secondSubmitted = v,
+            onLongPress: () {},
+          ),
+        ]),
+      );
+
+      await _doubleTap(tester, find.text('10'));
+      await tester.enterText(find.byType(TextField), '15');
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+
+      expect(firstSubmitted, 15);
+      expect(secondSubmitted, isNull);
+      expect(find.byType(TextField), findsOneWidget);
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller!.text, '20');
+    });
+
+    testWidgets('17. Shift+Tab submits and edits previous numeric value', (
+      tester,
+    ) async {
+      int? firstSubmitted;
+      int? secondSubmitted;
+
+      await tester.pumpWidget(
+        _wrapTraversal([
+          ParameterValueDisplay(
+            currentValue: 10,
+            min: 0,
+            max: 100,
+            name: 'Level A',
+            widescreen: false,
+            traversalId: 'a',
+            traversalOrder: 0,
+            onValueChanged: (v) => firstSubmitted = v,
+            onLongPress: () {},
+          ),
+          ParameterValueDisplay(
+            currentValue: 20,
+            min: 0,
+            max: 100,
+            name: 'Level B',
+            widescreen: false,
+            traversalId: 'b',
+            traversalOrder: 1,
+            onValueChanged: (v) => secondSubmitted = v,
+            onLongPress: () {},
+          ),
+        ]),
+      );
+
+      await _doubleTap(tester, find.text('20'));
+      await tester.enterText(find.byType(TextField), '25');
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+
+      expect(firstSubmitted, isNull);
+      expect(secondSubmitted, 25);
+      expect(find.byType(TextField), findsOneWidget);
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller!.text, '10');
+    });
+
+    testWidgets('18. Invalid text plus Tab navigates without submitting', (
+      tester,
+    ) async {
+      int? submittedValue;
+
+      await tester.pumpWidget(
+        _wrapTraversal([
+          ParameterValueDisplay(
+            currentValue: 10,
+            min: 0,
+            max: 100,
+            name: 'Level A',
+            widescreen: false,
+            traversalId: 'a',
+            traversalOrder: 0,
+            onValueChanged: (v) => submittedValue = v,
+            onLongPress: () {},
+          ),
+          ParameterValueDisplay(
+            currentValue: 20,
+            min: 0,
+            max: 100,
+            name: 'Level B',
+            widescreen: false,
+            traversalId: 'b',
+            traversalOrder: 1,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
+        ]),
+      );
+
+      await _doubleTap(tester, find.text('10'));
+      await tester.enterText(find.byType(TextField), '-');
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+
+      expect(submittedValue, isNull);
+      expect(find.byType(TextField), findsOneWidget);
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller!.text, '20');
+    });
+
+    testWidgets('19. Traversal skips non-editable and disabled values', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapTraversal([
+          ParameterValueDisplay(
+            currentValue: 10,
+            min: 0,
+            max: 100,
+            name: 'Level A',
+            widescreen: false,
+            traversalId: 'a',
+            traversalOrder: 0,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
+          ParameterValueDisplay(
+            currentValue: 20,
+            min: 0,
+            max: 100,
+            name: 'Display Only',
+            displayString: 'Twenty',
+            widescreen: false,
+            traversalId: 'display-only',
+            traversalOrder: 1,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
+          ParameterValueDisplay(
+            currentValue: 30,
+            min: 0,
+            max: 100,
+            name: 'Disabled Level',
+            widescreen: false,
+            enabled: false,
+            traversalId: 'disabled',
+            traversalOrder: 2,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
+          ParameterValueDisplay(
+            currentValue: 40,
+            min: 0,
+            max: 100,
+            name: 'Level D',
+            widescreen: false,
+            traversalId: 'd',
+            traversalOrder: 3,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
+        ]),
+      );
+
+      await _doubleTap(tester, find.text('10'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller!.text, '40');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await _doubleTap(tester, find.text('30'));
+      expect(find.byType(TextField), findsNothing);
     });
   });
 }

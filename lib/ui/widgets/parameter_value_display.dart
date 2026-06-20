@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
 
 /// Widget that displays parameter values with appropriate formatting.
@@ -32,6 +33,9 @@ class ParameterValueDisplay extends StatefulWidget {
   final bool isBpmUnit;
   final bool hasFileEditor;
   final bool showAlternateEditor;
+  final bool enabled;
+  final Object? traversalId;
+  final double? traversalOrder;
   final Function(int) onValueChanged;
   final VoidCallback onLongPress;
 
@@ -50,6 +54,9 @@ class ParameterValueDisplay extends StatefulWidget {
     this.isBpmUnit = false,
     this.hasFileEditor = false,
     this.showAlternateEditor = false,
+    this.enabled = true,
+    this.traversalId,
+    this.traversalOrder,
     required this.onValueChanged,
     required this.onLongPress,
   });
@@ -62,6 +69,8 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
   bool _isEditing = false;
   late TextEditingController _textController;
   late FocusNode _focusNode;
+  ParameterValueEditTraversalScopeState? _traversalScope;
+  Object? _registeredTraversalId;
 
   @override
   void initState() {
@@ -77,13 +86,22 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
     if (_isEditing &&
         (oldWidget.name != widget.name ||
             oldWidget.min != widget.min ||
-            oldWidget.max != widget.max)) {
+            oldWidget.max != widget.max ||
+            !_isEditableNumeric)) {
       _cancelEdit();
     }
+    _updateTraversalRegistration();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateTraversalRegistration();
   }
 
   @override
   void dispose() {
+    _unregisterTraversal();
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     _textController.dispose();
@@ -91,6 +109,7 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
   }
 
   bool get _isEditableNumeric {
+    if (!widget.enabled) return false;
     if (widget.isBpmUnit || widget.hasFileEditor) return false;
     if (widget.isOnOff) return false;
     if (widget.dropdownItems != null) return false;
@@ -100,6 +119,42 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
     if (widget.name.toLowerCase().contains("midi channel")) return false;
     if (widget.displayString != null) return false;
     return true;
+  }
+
+  void _updateTraversalRegistration() {
+    final nextScope = ParameterValueEditTraversalScope.maybeOf(context);
+    final nextId = widget.traversalId;
+
+    if (_traversalScope != nextScope || _registeredTraversalId != nextId) {
+      _unregisterTraversal();
+    }
+
+    if (nextScope == null ||
+        nextId == null ||
+        widget.traversalOrder == null ||
+        !_isEditableNumeric) {
+      _unregisterTraversal();
+      return;
+    }
+
+    nextScope.register(
+      ParameterValueEditTraversalEntry(
+        id: nextId,
+        order: widget.traversalOrder!,
+        enterEditMode: _enterEditMode,
+      ),
+    );
+    _traversalScope = nextScope;
+    _registeredTraversalId = nextId;
+  }
+
+  void _unregisterTraversal() {
+    final registeredId = _registeredTraversalId;
+    if (registeredId != null) {
+      _traversalScope?.unregister(registeredId);
+    }
+    _traversalScope = null;
+    _registeredTraversalId = null;
   }
 
   String _formatDisplayValue() {
@@ -113,6 +168,7 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
   }
 
   void _enterEditMode() {
+    if (!_isEditableNumeric) return;
     setState(() {
       _isEditing = true;
       _textController.text = _formatDisplayValue();
@@ -138,6 +194,14 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
     });
   }
 
+  void _submitAndMove({required bool reverse}) {
+    final traversalId = widget.traversalId;
+    final traversalScope = _traversalScope;
+    _submitEdit();
+    if (traversalId == null || traversalScope == null) return;
+    traversalScope.moveFrom(traversalId, reverse: reverse);
+  }
+
   void _cancelEdit() {
     setState(() {
       _isEditing = false;
@@ -154,6 +218,15 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
       _cancelEdit();
+      return KeyEventResult.handled;
+    }
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.tab) {
+      final pressed = HardwareKeyboard.instance.logicalKeysPressed;
+      _submitAndMove(
+        reverse:
+            pressed.contains(LogicalKeyboardKey.shiftLeft) ||
+            pressed.contains(LogicalKeyboardKey.shiftRight),
+      );
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -193,26 +266,30 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
         ])
           SingleActivator(key): const DoNothingAndStopPropagationTextIntent(),
       },
-      child: TextField(
-        controller: _textController,
-        focusNode: _focusNode,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.numberWithOptions(
-          signed: allowNegative,
-          decimal: hasDecimal,
-        ),
-        style: textStyle,
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 8.0,
-            horizontal: 8.0,
+      child: Semantics(
+        label: 'Edit ${cleanTitle(widget.name)} value',
+        textField: true,
+        child: TextField(
+          controller: _textController,
+          focusNode: _focusNode,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.numberWithOptions(
+            signed: allowNegative,
+            decimal: hasDecimal,
           ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-          suffixText: hasSuffix ? unitText : null,
+          style: textStyle,
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 8.0,
+              horizontal: 8.0,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+            suffixText: hasSuffix ? unitText : null,
+          ),
+          onSubmitted: (_) => _submitEdit(),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(pattern))],
         ),
-        onSubmitted: (_) => _submitEdit(),
-        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(pattern))],
       ),
     );
   }

@@ -12,6 +12,9 @@ class ParameterEditorView extends StatelessWidget {
   final Mapping? mapping;
   final ParameterValueString valueString;
   final String? unit;
+  final Object? parameterValueTraversalId;
+  final double? parameterValueTraversalOrder;
+  final bool parameterValueEditingEnabled;
 
   const ParameterEditorView({
     super.key,
@@ -22,6 +25,9 @@ class ParameterEditorView extends StatelessWidget {
     required this.mapping,
     required this.valueString,
     this.unit,
+    this.parameterValueTraversalId,
+    this.parameterValueTraversalOrder,
+    this.parameterValueEditingEnabled = true,
   });
 
   @override
@@ -83,6 +89,10 @@ class ParameterEditorView extends StatelessWidget {
       mappingData: mapping?.packedMappingData,
       slot: slot,
       isDisabled: value.isDisabled,
+      parameterValueTraversalId: parameterValueTraversalId,
+      parameterValueTraversalOrder: parameterValueTraversalOrder,
+      parameterValueEditingEnabled:
+          parameterValueEditingEnabled && !value.isDisabled,
     );
   }
 }

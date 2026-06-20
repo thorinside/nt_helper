@@ -12,6 +12,7 @@ import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
+import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 
 class SectionParameterListView extends StatefulWidget {
@@ -229,6 +230,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   Widget _buildPerformanceParameterRow(
     int parameterNumber, {
     PerformancePageItem? perfItem,
+    required double traversalOrder,
   }) {
     final value = widget.slot.values.elementAtOrNull(parameterNumber);
     final enumStrings = widget.slot.enums.elementAtOrNull(parameterNumber);
@@ -276,6 +278,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               mapping: mapping,
               valueString: safeValueString,
               unit: unit,
+              parameterValueTraversalId:
+                  'performance-${widget.slotIndex}-$parameterNumber',
+              parameterValueTraversalOrder: traversalOrder,
             ),
           ),
           IconButton(
@@ -445,6 +450,11 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               mapping: mapping,
               valueString: valueString,
               unit: unit,
+              parameterValueTraversalId:
+                  'parameter-${widget.slotIndex}-$parameterNumber',
+              parameterValueTraversalOrder: _parameterTraversalOrder(
+                parameterNumber,
+              ),
             ),
           ),
           if (MediaQuery.of(context).size.width >= 600) ...[
@@ -518,180 +528,200 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 ),
               ),
             ]
-          : perfParams.map((paramIndex) {
-              PerformancePageItem? perfItem;
-              if (syncState != null) {
-                perfItem = _findPerfItem(
-                  syncState.perfPageItems,
-                  widget.slotIndex,
-                  paramIndex,
-                );
-              }
-              return _buildPerformanceParameterRow(
-                paramIndex,
-                perfItem: perfItem,
-              );
-            }).toList(),
+          : [
+              for (int i = 0; i < perfParams.length; i++)
+                _buildPerformanceParameterRow(
+                  perfParams[i],
+                  perfItem: syncState != null
+                      ? _findPerfItem(
+                          syncState.perfPageItems,
+                          widget.slotIndex,
+                          perfParams[i],
+                        )
+                      : null,
+                  traversalOrder: i.toDouble(),
+                ),
+            ],
     );
+  }
+
+  double _parameterTraversalOrder(int parameterNumber) {
+    for (
+      int pageIndex = 0;
+      pageIndex < widget.pages.pages.length;
+      pageIndex++
+    ) {
+      final parameters = widget.pages.pages[pageIndex].parameters;
+      final parameterIndex = parameters.indexOf(parameterNumber);
+      if (parameterIndex >= 0) {
+        return 10000 + pageIndex * 1000 + parameterIndex.toDouble();
+      }
+    }
+    return 10000 + parameterNumber.toDouble();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListTileTheme(
-      data: ListTileThemeData(
-        titleTextStyle: Theme.of(context).textTheme.titleLarge,
-      ),
-      child: ExpansionTileTheme(
-        data: const ExpansionTileThemeData(
-          shape: RoundedRectangleBorder(side: BorderSide.none),
+    return ParameterValueEditTraversalScope(
+      child: ListTileTheme(
+        data: ListTileThemeData(
+          titleTextStyle: Theme.of(context).textTheme.titleLarge,
         ),
-        child: ListView(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Tooltip(
-                    message: _isCollapsed ? 'Expand all' : 'Collapse all',
-                    child: IconButton.filledTonal(
-                      onPressed: () {
-                        _collapseAllTiles();
-                      },
-                      enableFeedback: true,
-                      icon: _isCollapsed
-                          ? const Icon(
-                              Icons.keyboard_double_arrow_down_sharp,
-                              semanticLabel: 'Expand all',
-                            )
-                          : const Icon(
-                              Icons.keyboard_double_arrow_up_sharp,
-                              semanticLabel: 'Collapse all',
-                            ),
+        child: ExpansionTileTheme(
+          data: const ExpansionTileThemeData(
+            shape: RoundedRectangleBorder(side: BorderSide.none),
+          ),
+          child: ListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Tooltip(
+                      message: _isCollapsed ? 'Expand all' : 'Collapse all',
+                      child: IconButton.filledTonal(
+                        onPressed: () {
+                          _collapseAllTiles();
+                        },
+                        enableFeedback: true,
+                        icon: _isCollapsed
+                            ? const Icon(
+                                Icons.keyboard_double_arrow_down_sharp,
+                                semanticLabel: 'Expand all',
+                              )
+                            : const Icon(
+                                Icons.keyboard_double_arrow_up_sharp,
+                                semanticLabel: 'Collapse all',
+                              ),
+                      ),
                     ),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(
-                      Icons.more_vert,
-                      semanticLabel: 'More options',
-                    ),
-                    itemBuilder: (context) {
-                      final metadata = AlgorithmMetadataService()
-                          .getAlgorithmByGuid(widget.slot.algorithm.guid);
-                      final bool isHelpAvailable = metadata != null;
+                    PopupMenuButton<String>(
+                      icon: const Icon(
+                        Icons.more_vert,
+                        semanticLabel: 'More options',
+                      ),
+                      itemBuilder: (context) {
+                        final metadata = AlgorithmMetadataService()
+                            .getAlgorithmByGuid(widget.slot.algorithm.guid);
+                        final bool isHelpAvailable = metadata != null;
 
-                      return <PopupMenuEntry<String>>[
-                        if (isHelpAvailable)
-                          PopupMenuItem(
-                            value: 'Show Help',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      AlgorithmDocumentationScreen(
-                                        metadata: metadata,
-                                      ),
-                                ),
-                              );
-                            },
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Show Help'),
-                                Icon(Icons.help_outline_rounded),
-                              ],
-                            ),
-                          ),
-                        if (isHelpAvailable) const PopupMenuDivider(),
-                        PopupMenuItem(
-                          value: 'Reset Outputs',
-                          onTap: () {
-                            showResetOutputsDialog(
-                              context: context,
-                              initialCvInput: 0,
-                              onReset: (outputIndex) {
-                                context.read<DistingCubit>().resetOutputs(
-                                  widget.slot,
-                                  outputIndex,
+                        return <PopupMenuEntry<String>>[
+                          if (isHelpAvailable)
+                            PopupMenuItem(
+                              value: 'Show Help',
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        AlgorithmDocumentationScreen(
+                                          metadata: metadata,
+                                        ),
+                                  ),
                                 );
                               },
-                            );
-                          },
-                          child: const Text('Reset Outputs'),
-                        ),
-                      ];
-                    },
-                  ),
-                ],
-              ),
-            ),
-            // Performance Parameters Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _buildPerformanceParametersSection(),
-            ),
-            // Regular parameter pages
-            ...widget.pages.pages.map((page) {
-              final index = widget.pages.pages.indexOf(page);
-              return Padding(
-                padding: const EdgeInsets.only(left: 8, right: 8),
-                child: ExpansionTile(
-                  initiallyExpanded: !_isCollapsed,
-                  controller: _tileControllers.elementAt(index),
-                  title: Text(page.name),
-                  children: page.parameters.map((parameterNumber) {
-                    // Use safe access with bounds checking
-                    final value = widget.slot.values.elementAtOrNull(
-                      parameterNumber,
-                    );
-                    final enumStrings = widget.slot.enums.elementAtOrNull(
-                      parameterNumber,
-                    );
-                    final mapping = widget.slot.mappings.elementAtOrNull(
-                      parameterNumber,
-                    );
-                    final valueString = widget.slot.valueStrings
-                        .elementAtOrNull(parameterNumber);
-                    var parameterInfo = widget.slot.parameters.elementAtOrNull(
-                      parameterNumber,
-                    );
-
-                    // Skip this parameter if we don't have essential data
-                    // Note: valueString and enumStrings can be empty/filler for many parameters
-                    if (value == null || parameterInfo == null) {
-                      return const SizedBox.shrink();
-                    }
-
-                    // Use filler/empty data if not available
-                    final safeEnumStrings =
-                        enumStrings ?? ParameterEnumStrings.filler();
-                    final safeValueString =
-                        valueString ?? ParameterValueString.filler();
-
-                    // For string-type parameters, don't show unit
-                    final shouldShowUnit =
-                        !ParameterEditorRegistry.isStringTypeUnit(
-                          parameterInfo.unit,
-                        );
-                    final unit = shouldShowUnit
-                        ? parameterInfo.getUnitString(widget.units)
-                        : null;
-
-                    return _buildParameterRowWithPageSelector(
-                      parameterNumber: parameterNumber,
-                      parameterInfo: parameterInfo,
-                      value: value,
-                      enumStrings: safeEnumStrings,
-                      mapping: mapping,
-                      valueString: safeValueString,
-                      unit: unit,
-                    );
-                  }).toList(),
+                              child: const Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Show Help'),
+                                  Icon(Icons.help_outline_rounded),
+                                ],
+                              ),
+                            ),
+                          if (isHelpAvailable) const PopupMenuDivider(),
+                          PopupMenuItem(
+                            value: 'Reset Outputs',
+                            onTap: () {
+                              showResetOutputsDialog(
+                                context: context,
+                                initialCvInput: 0,
+                                onReset: (outputIndex) {
+                                  context.read<DistingCubit>().resetOutputs(
+                                    widget.slot,
+                                    outputIndex,
+                                  );
+                                },
+                              );
+                            },
+                            child: const Text('Reset Outputs'),
+                          ),
+                        ];
+                      },
+                    ),
+                  ],
                 ),
-              );
-            }),
-            const SizedBox(height: 24), // Bottom padding
-          ],
+              ),
+              // Performance Parameters Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: _buildPerformanceParametersSection(),
+              ),
+              // Regular parameter pages
+              ...widget.pages.pages.map((page) {
+                final index = widget.pages.pages.indexOf(page);
+                return Padding(
+                  padding: const EdgeInsets.only(left: 8, right: 8),
+                  child: ExpansionTile(
+                    initiallyExpanded: !_isCollapsed,
+                    controller: _tileControllers.elementAt(index),
+                    title: Text(page.name),
+                    children: page.parameters.map((parameterNumber) {
+                      // Use safe access with bounds checking
+                      final value = widget.slot.values.elementAtOrNull(
+                        parameterNumber,
+                      );
+                      final enumStrings = widget.slot.enums.elementAtOrNull(
+                        parameterNumber,
+                      );
+                      final mapping = widget.slot.mappings.elementAtOrNull(
+                        parameterNumber,
+                      );
+                      final valueString = widget.slot.valueStrings
+                          .elementAtOrNull(parameterNumber);
+                      var parameterInfo = widget.slot.parameters
+                          .elementAtOrNull(parameterNumber);
+
+                      // Skip this parameter if we don't have essential data
+                      // Note: valueString and enumStrings can be empty/filler for many parameters
+                      if (value == null || parameterInfo == null) {
+                        return const SizedBox.shrink();
+                      }
+
+                      // Use filler/empty data if not available
+                      final safeEnumStrings =
+                          enumStrings ?? ParameterEnumStrings.filler();
+                      final safeValueString =
+                          valueString ?? ParameterValueString.filler();
+
+                      // For string-type parameters, don't show unit
+                      final shouldShowUnit =
+                          !ParameterEditorRegistry.isStringTypeUnit(
+                            parameterInfo.unit,
+                          );
+                      final unit = shouldShowUnit
+                          ? parameterInfo.getUnitString(widget.units)
+                          : null;
+
+                      return _buildParameterRowWithPageSelector(
+                        parameterNumber: parameterNumber,
+                        parameterInfo: parameterInfo,
+                        value: value,
+                        enumStrings: safeEnumStrings,
+                        mapping: mapping,
+                        valueString: safeValueString,
+                        unit: unit,
+                      );
+                    }).toList(),
+                  ),
+                );
+              }),
+              const SizedBox(height: 24), // Bottom padding
+            ],
+          ),
         ),
       ),
     );

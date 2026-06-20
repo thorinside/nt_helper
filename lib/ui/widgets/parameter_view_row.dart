@@ -33,6 +33,9 @@ class ParameterViewRow extends StatefulWidget {
   final Slot slot;
   final bool isDisabled;
   final int parameterUnit; // Integer unit type for registry-based detection
+  final Object? parameterValueTraversalId;
+  final double? parameterValueTraversalOrder;
+  final bool parameterValueEditingEnabled;
 
   const ParameterViewRow({
     super.key,
@@ -52,6 +55,9 @@ class ParameterViewRow extends StatefulWidget {
     required this.slot,
     this.isDisabled = false,
     this.parameterUnit = 0,
+    this.parameterValueTraversalId,
+    this.parameterValueTraversalOrder,
+    this.parameterValueEditingEnabled = true,
   });
 
   @override
@@ -412,6 +418,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                 isBpmUnit: isBpmUnit,
                 hasFileEditor: fileEditor != null,
                 showAlternateEditor: _showAlternateEditor,
+                enabled: widget.parameterValueEditingEnabled,
+                traversalId: widget.parameterValueTraversalId,
+                traversalOrder: widget.parameterValueTraversalOrder,
                 onValueChanged: (newValue) {
                   setState(() {
                     currentValue = newValue;

@@ -160,6 +160,40 @@ void main() {
 
         semanticsHandle.dispose();
       });
+
+      testWidgets('labels inline numeric edit fields', (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ParameterValueDisplay(
+                currentValue: 50,
+                min: 0,
+                max: 100,
+                name: 'Frequency',
+                unit: 'Hz',
+                widescreen: false,
+                onValueChanged: _noopOnValueChanged,
+                onLongPress: _noopOnLongPress,
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('50 Hz'));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(find.text('50 Hz'));
+        await tester.pumpAndSettle();
+
+        final editSemantics = tester
+            .widgetList<Semantics>(find.byType(Semantics))
+            .map((widget) => widget.properties.label)
+            .whereType<String>();
+        expect(editSemantics, contains('Edit Frequency value'));
+
+        semanticsHandle.dispose();
+      });
     });
   });
 }

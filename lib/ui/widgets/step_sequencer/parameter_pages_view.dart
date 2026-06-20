@@ -4,6 +4,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
+import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
 import 'package:nt_helper/util/parameter_page_assigner.dart';
 
 /// Parameter Pages view for Step Sequencer
@@ -272,54 +273,61 @@ class _ParameterPageContent extends StatelessWidget {
         final unitStrings = data.$2;
 
         // Use the familiar parameter editor UI
-        return ListView.builder(
-          // ignore: deprecated_member_use
-          cacheExtent: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-          itemCount: parameterNumbers.length,
-          itemBuilder: (context, index) {
-            final paramNum = parameterNumbers[index];
-            final parameter = currentSlot.parameters.elementAtOrNull(paramNum);
+        return ParameterValueEditTraversalScope(
+          child: ListView.builder(
+            // ignore: deprecated_member_use
+            cacheExtent: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            itemCount: parameterNumbers.length,
+            itemBuilder: (context, index) {
+              final paramNum = parameterNumbers[index];
+              final parameter = currentSlot.parameters.elementAtOrNull(
+                paramNum,
+              );
 
-            // Use safe access with bounds checking (like ParameterListView does)
-            final value = currentSlot.values.elementAtOrNull(paramNum);
-            final enumStrings = currentSlot.enums.elementAtOrNull(paramNum);
-            final mapping = currentSlot.mappings.elementAtOrNull(paramNum);
-            final valueString = currentSlot.valueStrings.elementAtOrNull(
-              paramNum,
-            );
+              // Use safe access with bounds checking (like ParameterListView does)
+              final value = currentSlot.values.elementAtOrNull(paramNum);
+              final enumStrings = currentSlot.enums.elementAtOrNull(paramNum);
+              final mapping = currentSlot.mappings.elementAtOrNull(paramNum);
+              final valueString = currentSlot.valueStrings.elementAtOrNull(
+                paramNum,
+              );
 
-            // Skip if we don't have essential data
-            if (parameter == null || value == null) {
-              return const SizedBox.shrink();
-            }
+              // Skip if we don't have essential data
+              if (parameter == null || value == null) {
+                return const SizedBox.shrink();
+              }
 
-            // Use filler/empty data if not available
-            final safeEnumStrings =
-                enumStrings ?? ParameterEnumStrings.filler();
-            final safeValueString =
-                valueString ?? ParameterValueString.filler();
+              // Use filler/empty data if not available
+              final safeEnumStrings =
+                  enumStrings ?? ParameterEnumStrings.filler();
+              final safeValueString =
+                  valueString ?? ParameterValueString.filler();
 
-            // For string-type parameters, don't fetch unit - they use value strings
-            // The registry handles firmware version differences automatically
-            final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
-              parameter.unit,
-            );
-            final unit = shouldShowUnit
-                ? parameter.getUnitString(unitStrings)
-                : null;
+              // For string-type parameters, don't fetch unit - they use value strings
+              // The registry handles firmware version differences automatically
+              final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
+                parameter.unit,
+              );
+              final unit = shouldShowUnit
+                  ? parameter.getUnitString(unitStrings)
+                  : null;
 
-            // Use the familiar ParameterEditorView widget
-            return ParameterEditorView(
-              slot: currentSlot,
-              parameterInfo: parameter,
-              value: value,
-              enumStrings: safeEnumStrings,
-              mapping: mapping,
-              valueString: safeValueString,
-              unit: unit,
-            );
-          },
+              // Use the familiar ParameterEditorView widget
+              return ParameterEditorView(
+                slot: currentSlot,
+                parameterInfo: parameter,
+                value: value,
+                enumStrings: safeEnumStrings,
+                mapping: mapping,
+                valueString: safeValueString,
+                unit: unit,
+                parameterValueTraversalId:
+                    'step-sequencer-$slotIndex-$paramNum',
+                parameterValueTraversalOrder: index.toDouble(),
+              );
+            },
+          ),
         );
       },
     );
