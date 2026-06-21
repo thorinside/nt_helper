@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
-import 'package:nt_helper/ui/widgets/parameter_spreadsheet_view.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_list_view.dart';
 
@@ -13,6 +12,8 @@ class SlotDetailView extends StatefulWidget {
   final FirmwareVersion firmwareVersion;
   final SectionParameterController? sectionController;
   final bool spreadsheetEditingMode;
+  final VoidCallback? onToggleSpreadsheetEditingMode;
+  final bool spreadsheetToggleEnabled;
 
   const SlotDetailView({
     super.key,
@@ -22,6 +23,8 @@ class SlotDetailView extends StatefulWidget {
     required this.firmwareVersion,
     this.sectionController,
     this.spreadsheetEditingMode = false,
+    this.onToggleSpreadsheetEditingMode,
+    this.spreadsheetToggleEnabled = true,
   });
 
   @override
@@ -37,22 +40,15 @@ class _SlotDetailViewState extends State<SlotDetailView>
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (widget.spreadsheetEditingMode) {
-      return ParameterSpreadsheetView(
-        slot: widget.slot,
-        slotIndex: widget.slotIndex,
-        units: widget.units,
-        pages: widget.slot.pages,
-      );
-    }
-
     // Provide a full replacement view
-    final view = AlgorithmViewRegistry.findViewFor(
-      widget.slot,
-      widget.slotIndex,
-      widget.firmwareVersion,
-    );
-    if (view != null) return view;
+    if (!widget.spreadsheetEditingMode) {
+      final view = AlgorithmViewRegistry.findViewFor(
+        widget.slot,
+        widget.slotIndex,
+        widget.firmwareVersion,
+      );
+      if (view != null) return view;
+    }
 
     // Create a set of list sections for the parameters of the
     // algorithm initially based off Os' organization on the module firmware.
@@ -64,6 +60,9 @@ class _SlotDetailViewState extends State<SlotDetailView>
         units: widget.units,
         pages: widget.slot.pages,
         sectionController: widget.sectionController,
+        spreadsheetEditingMode: widget.spreadsheetEditingMode,
+        onToggleSpreadsheetEditingMode: widget.onToggleSpreadsheetEditingMode,
+        spreadsheetToggleEnabled: widget.spreadsheetToggleEnabled,
       ),
     );
   }

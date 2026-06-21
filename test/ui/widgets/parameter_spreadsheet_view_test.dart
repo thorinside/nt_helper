@@ -500,7 +500,7 @@ void main() {
   });
 
   group('SynchronizedScreen spreadsheet toggle', () {
-    testWidgets('top-right toggle switches the current slot body', (
+    testWidgets('secondary action bar toggle switches the current slot body', (
       tester,
     ) async {
       final platformService = MockPlatformInteractionService();
@@ -539,6 +539,14 @@ void main() {
 
       expect(find.byType(ParameterSpreadsheetView), findsNothing);
       expect(find.byTooltip('Spreadsheet parameter editor'), findsOneWidget);
+      expect(find.byTooltip('Collapse all'), findsOneWidget);
+
+      final spreadsheetCenter = tester.getCenter(
+        find.byTooltip('Spreadsheet parameter editor'),
+      );
+      final collapseCenter = tester.getCenter(find.byTooltip('Collapse all'));
+      expect(spreadsheetCenter.dx, lessThan(collapseCenter.dx));
+      expect((spreadsheetCenter.dy - collapseCenter.dy).abs(), lessThan(2));
 
       await tester.tap(find.byTooltip('Spreadsheet parameter editor'));
       await tester.pumpAndSettle();

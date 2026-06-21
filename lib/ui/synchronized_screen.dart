@@ -971,6 +971,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       firmwareVersion: widget.firmwareVersion,
                       sectionController: _sectionController,
                       spreadsheetEditingMode: _showParameterSpreadsheet,
+                      onToggleSpreadsheetEditingMode:
+                          _toggleParameterSpreadsheet,
+                      spreadsheetToggleEnabled: !widget.loading,
                     );
                   }).toList(),
                 )
@@ -1728,6 +1731,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             firmwareVersion: widget.firmwareVersion,
             sectionController: _sectionController,
             spreadsheetEditingMode: _showParameterSpreadsheet,
+            onToggleSpreadsheetEditingMode: _toggleParameterSpreadsheet,
+            spreadsheetToggleEnabled: !widget.loading,
           );
         }).toList(),
       );
@@ -1828,47 +1833,21 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
   }
 
-  List<Widget> _buildParameterModeActions(DistingCubit cubit) {
-    void toggleParameterSpreadsheet() {
-      setState(() {
-        _showParameterSpreadsheet = !_showParameterSpreadsheet;
-      });
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        _showParameterSpreadsheet
-            ? 'Spreadsheet parameter editor shown'
-            : 'Standard parameter editor shown',
-        Directionality.of(context),
-      );
-    }
+  void _toggleParameterSpreadsheet() {
+    setState(() {
+      _showParameterSpreadsheet = !_showParameterSpreadsheet;
+    });
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      _showParameterSpreadsheet
+          ? 'Spreadsheet parameter editor shown'
+          : 'Standard parameter editor shown',
+      Directionality.of(context),
+    );
+  }
 
+  List<Widget> _buildParameterModeActions(DistingCubit cubit) {
     return [
-      Semantics(
-        container: true,
-        button: true,
-        toggled: _showParameterSpreadsheet,
-        label: _showParameterSpreadsheet
-            ? 'Show standard parameter editor'
-            : 'Show spreadsheet parameter editor',
-        hint: _showParameterSpreadsheet
-            ? 'Returns to the full parameter controls'
-            : 'Shows numeric parameter names and value cells',
-        onTap: widget.loading ? null : toggleParameterSpreadsheet,
-        child: ExcludeSemantics(
-          child: IconButton(
-            icon: Icon(
-              _showParameterSpreadsheet
-                  ? Icons.view_list_rounded
-                  : Icons.table_rows_rounded,
-            ),
-            tooltip: _showParameterSpreadsheet
-                ? 'Standard parameter editor'
-                : 'Spreadsheet parameter editor',
-            isSelected: _showParameterSpreadsheet,
-            onPressed: widget.loading ? null : toggleParameterSpreadsheet,
-          ),
-        ),
-      ),
       // Move Up
       Builder(
         builder: (ctx) {
