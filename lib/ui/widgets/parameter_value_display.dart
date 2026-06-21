@@ -1,8 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:nt_helper/ui/widgets/parameter_numeric_editing.dart';
 import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
 
@@ -109,16 +108,16 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
   }
 
   bool get _isEditableNumeric {
-    if (!widget.enabled) return false;
-    if (widget.isBpmUnit || widget.hasFileEditor) return false;
-    if (widget.isOnOff) return false;
-    if (widget.dropdownItems != null) return false;
-    if (widget.name.toLowerCase().contains("note") && widget.unit != "%") {
-      return false;
-    }
-    if (widget.name.toLowerCase().contains("midi channel")) return false;
-    if (widget.displayString != null) return false;
-    return true;
+    return isEditableNumericParameterValue(
+      enabled: widget.enabled,
+      name: widget.name,
+      unit: widget.unit,
+      displayString: widget.displayString,
+      dropdownItems: widget.dropdownItems,
+      isOnOff: widget.isOnOff,
+      isBpmUnit: widget.isBpmUnit,
+      hasFileEditor: widget.hasFileEditor,
+    );
   }
 
   void _updateTraversalRegistration() {
@@ -158,13 +157,7 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
   }
 
   String _formatDisplayValue() {
-    if (widget.powerOfTen < 0) {
-      final scaled = widget.currentValue * pow(10, widget.powerOfTen);
-      return scaled.toStringAsFixed(widget.powerOfTen.abs());
-    }
-    return (widget.currentValue * pow(10, widget.powerOfTen))
-        .round()
-        .toString();
+    return formatEditableNumericValue(widget.currentValue, widget.powerOfTen);
   }
 
   void _enterEditMode() {
@@ -183,10 +176,13 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
   void _submitEdit() {
     if (!_isEditing) return;
     final text = _textController.text.trim();
-    final parsed = double.tryParse(text);
-    if (parsed != null) {
-      final raw = (parsed / pow(10, widget.powerOfTen)).round();
-      final clamped = raw.clamp(widget.min, widget.max);
+    final clamped = parseEditableNumericValue(
+      text: text,
+      min: widget.min,
+      max: widget.max,
+      powerOfTen: widget.powerOfTen,
+    );
+    if (clamped != null) {
       widget.onValueChanged(clamped);
     }
     setState(() {
@@ -235,17 +231,10 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
   Widget _buildTextField(TextStyle? textStyle) {
     final hasDecimal = widget.powerOfTen < 0;
     final allowNegative = widget.min < 0;
-
-    String pattern;
-    if (allowNegative && hasDecimal) {
-      pattern = r'[-\d.]';
-    } else if (allowNegative) {
-      pattern = r'[-\d]';
-    } else if (hasDecimal) {
-      pattern = r'[\d.]';
-    } else {
-      pattern = r'\d';
-    }
+    final pattern = editableNumericInputPattern(
+      min: widget.min,
+      powerOfTen: widget.powerOfTen,
+    );
 
     final unitText = widget.unit?.trim();
     final hasSuffix = unitText != null && unitText.isNotEmpty;
@@ -288,7 +277,7 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
             suffixText: hasSuffix ? unitText : null,
           ),
           onSubmitted: (_) => _submitEdit(),
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(pattern))],
+          inputFormatters: [FilteringTextInputFormatter.allow(pattern)],
         ),
       ),
     );

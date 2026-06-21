@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
+import 'package:nt_helper/ui/widgets/parameter_spreadsheet_view.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_list_view.dart';
 
@@ -11,6 +12,7 @@ class SlotDetailView extends StatefulWidget {
   final List<String> units;
   final FirmwareVersion firmwareVersion;
   final SectionParameterController? sectionController;
+  final bool spreadsheetEditingMode;
 
   const SlotDetailView({
     super.key,
@@ -19,6 +21,7 @@ class SlotDetailView extends StatefulWidget {
     required this.units,
     required this.firmwareVersion,
     this.sectionController,
+    this.spreadsheetEditingMode = false,
   });
 
   @override
@@ -33,6 +36,15 @@ class _SlotDetailViewState extends State<SlotDetailView>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
+    if (widget.spreadsheetEditingMode) {
+      return ParameterSpreadsheetView(
+        slot: widget.slot,
+        slotIndex: widget.slotIndex,
+        units: widget.units,
+        pages: widget.slot.pages,
+      );
+    }
 
     // Provide a full replacement view
     final view = AlgorithmViewRegistry.findViewFor(

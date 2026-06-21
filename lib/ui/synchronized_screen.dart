@@ -117,6 +117,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   double _splitDividerPosition = SettingsService.defaultSplitDividerPosition;
   bool _showDebugPanel = true;
   bool _showContextualHelp = true;
+  bool _showParameterSpreadsheet = false;
   String? _contextualHelpText;
   AppRelease? _availableAppUpdate;
   AppUpdateService? _appUpdateService;
@@ -379,6 +380,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
+    if (_isTextEditingFocused()) return KeyEventResult.ignored;
+
     // Only handle bare digit keys (no modifiers held)
     final pressed = HardwareKeyboard.instance.logicalKeysPressed;
     final hasModifier = pressed.any(
@@ -399,6 +402,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
 
     return KeyEventResult.ignored;
+  }
+
+  bool _isTextEditingFocused() {
+    final focusContext = FocusManager.instance.primaryFocus?.context;
+    if (focusContext == null) return false;
+    return focusContext.widget is EditableText ||
+        focusContext.findAncestorWidgetOfExactType<EditableText>() != null;
   }
 
   void _syncSelectionToRouting(int slotIndex) {
@@ -960,6 +970,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       units: widget.units,
                       firmwareVersion: widget.firmwareVersion,
                       sectionController: _sectionController,
+                      spreadsheetEditingMode: _showParameterSpreadsheet,
                     );
                   }).toList(),
                 )
@@ -1716,6 +1727,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             units: widget.units,
             firmwareVersion: widget.firmwareVersion,
             sectionController: _sectionController,
+            spreadsheetEditingMode: _showParameterSpreadsheet,
           );
         }).toList(),
       );
@@ -1817,7 +1829,46 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   List<Widget> _buildParameterModeActions(DistingCubit cubit) {
+    void toggleParameterSpreadsheet() {
+      setState(() {
+        _showParameterSpreadsheet = !_showParameterSpreadsheet;
+      });
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        _showParameterSpreadsheet
+            ? 'Spreadsheet parameter editor shown'
+            : 'Standard parameter editor shown',
+        Directionality.of(context),
+      );
+    }
+
     return [
+      Semantics(
+        container: true,
+        button: true,
+        toggled: _showParameterSpreadsheet,
+        label: _showParameterSpreadsheet
+            ? 'Show standard parameter editor'
+            : 'Show spreadsheet parameter editor',
+        hint: _showParameterSpreadsheet
+            ? 'Returns to the full parameter controls'
+            : 'Shows numeric parameter names and value cells',
+        onTap: widget.loading ? null : toggleParameterSpreadsheet,
+        child: ExcludeSemantics(
+          child: IconButton(
+            icon: Icon(
+              _showParameterSpreadsheet
+                  ? Icons.view_list_rounded
+                  : Icons.table_rows_rounded,
+            ),
+            tooltip: _showParameterSpreadsheet
+                ? 'Standard parameter editor'
+                : 'Spreadsheet parameter editor',
+            isSelected: _showParameterSpreadsheet,
+            onPressed: widget.loading ? null : toggleParameterSpreadsheet,
+          ),
+        ),
+      ),
       // Move Up
       Builder(
         builder: (ctx) {
