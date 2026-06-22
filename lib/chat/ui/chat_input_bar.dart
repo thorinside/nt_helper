@@ -117,7 +117,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 
   Future<void> _attachImages() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.image,
       allowMultiple: true,
       withData: true,
@@ -131,7 +131,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 
   Future<void> _attachFiles() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       allowMultiple: true,
       withData: true,
     );

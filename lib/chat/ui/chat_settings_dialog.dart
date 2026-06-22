@@ -138,7 +138,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   }
 
   Future<void> _chooseLocalDirectory() async {
-    final selected = await FilePicker.platform.getDirectoryPath(
+    final selected = await FilePicker.getDirectoryPath(
       dialogTitle: 'Choose Chat Local Directory',
       initialDirectory: _localDirectoryController.text.trim().isEmpty
           ? null
