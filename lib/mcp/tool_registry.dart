@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:mcp_dart/mcp_dart.dart';
+import 'package:nt_helper/chat/services/local_file_tools.dart';
 import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/chat/services/memory_tools.dart';
 import 'package:nt_helper/chat/utils/image_result_detector.dart';
@@ -36,6 +37,7 @@ class ToolRegistry {
     'memory_append_daily',
     'memory_read_daily',
   };
+  static const _chatOnlyToolNames = {..._memoryToolNames, ...localFileToolNames};
 
   final List<ToolRegistryEntry> _entries = [];
   late final DistingController _controller;
@@ -49,6 +51,7 @@ class ToolRegistry {
     _registerAll();
     if (memoryService != null) {
       registerMemoryTools(_entries, memoryService);
+      registerLocalFileTools(_entries);
     }
   }
 
@@ -65,7 +68,7 @@ class ToolRegistry {
   /// Memory tools are excluded — they are for the in-app chat only.
   void applyToMcpServer(McpServer server) {
     for (final entry in _entries) {
-      if (_memoryToolNames.contains(entry.name)) continue;
+      if (_chatOnlyToolNames.contains(entry.name)) continue;
       server.registerTool(
         entry.name,
         description: entry.description,

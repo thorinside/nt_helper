@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/chat/services/codex_auth_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -33,6 +34,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   late final TextEditingController _openaiModelController;
   late final TextEditingController _openaiSubscriptionModelController;
   late final TextEditingController _openaiBaseUrlController;
+  late final TextEditingController _localDirectoryController;
   bool _showAdvanced = false;
   bool? _codexAuthFound;
   String? _codexAuthError;
@@ -78,6 +80,9 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     _openaiBaseUrlController = TextEditingController(
       text: _settings.openaiBaseUrl,
     );
+    _localDirectoryController = TextEditingController(
+      text: _settings.chatLocalDirectory,
+    );
     _showAdvanced =
         _settings.openaiBaseUrl != null && _settings.openaiBaseUrl!.isNotEmpty;
     if (_isOpenaiSubscription) {
@@ -93,6 +98,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     _openaiModelController.dispose();
     _openaiSubscriptionModelController.dispose();
     _openaiBaseUrlController.dispose();
+    _localDirectoryController.dispose();
     _codexAuthService.dispose();
     super.dispose();
   }
@@ -125,7 +131,21 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
           ? _openaiBaseUrlController.text.trim()
           : '',
     );
+    await _settings.setChatLocalDirectory(
+      _localDirectoryController.text.trim(),
+    );
     if (mounted) Navigator.of(context).pop(true);
+  }
+
+  Future<void> _chooseLocalDirectory() async {
+    final selected = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Choose Chat Local Directory',
+      initialDirectory: _localDirectoryController.text.trim().isEmpty
+          ? null
+          : _localDirectoryController.text.trim(),
+    );
+    if (selected == null || !mounted) return;
+    setState(() => _localDirectoryController.text = selected);
   }
 
   Future<void> _validateCodexAuth() async {
@@ -190,7 +210,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       title: Semantics(header: true, child: const Text('Chat Settings')),
       content: SizedBox(
         width: 400,
-        height: 460,
+        height: 520,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -214,6 +234,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
               ),
               if (_isOpenAI) ..._buildOpenAISettings(theme),
               if (!_isOpenAI) ..._buildAnthropicSettings(theme),
+              ..._buildLocalContextSettings(theme),
               const SizedBox(height: 16),
               Text(
                 _isOpenaiSubscription
@@ -460,5 +481,45 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
         ),
       ),
     ],
+  ];
+
+  List<Widget> _buildLocalContextSettings(ThemeData theme) => [
+    const SizedBox(height: 20),
+    Text('Local Context', style: theme.textTheme.titleSmall),
+    const SizedBox(height: 8),
+    Row(
+      children: [
+        Expanded(
+          child: DigitShortcutBlocker(
+            child: TextField(
+              controller: _localDirectoryController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Local directory for chat tools',
+                isDense: true,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          tooltip: 'Choose directory',
+          icon: const Icon(Icons.folder_open),
+          onPressed: _chooseLocalDirectory,
+        ),
+        IconButton(
+          tooltip: 'Clear directory',
+          icon: const Icon(Icons.clear),
+          onPressed: () => setState(_localDirectoryController.clear),
+        ),
+      ],
+    ),
+    const SizedBox(height: 4),
+    Text(
+      'The chat assistant can list, read, and search files under this folder.',
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    ),
   ];
 }

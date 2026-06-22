@@ -110,7 +110,7 @@ class _ChatPanelState extends State<ChatPanel> {
         const Expanded(child: _EmptyState()),
         ChatInputBar(
           isProcessing: false,
-          onSend: (text) => _send(context, text),
+          onSend: (text, images, files) => _send(context, text, images, files),
           onCancel: () {},
           onSettings: () => _openSettings(context),
           focusNode: _inputFocusNode,
@@ -214,7 +214,7 @@ class _ChatPanelState extends State<ChatPanel> {
           ),
         ChatInputBar(
           isProcessing: state.isProcessing,
-          onSend: (text) => _send(context, text),
+          onSend: (text, images, files) => _send(context, text, images, files),
           onCancel: () => context.read<ChatCubit>().cancelProcessing(),
           onSettings: () => _openSettings(context),
           focusNode: _inputFocusNode,
@@ -253,9 +253,19 @@ class _ChatPanelState extends State<ChatPanel> {
     );
   }
 
-  void _send(BuildContext context, String text) {
+  void _send(
+    BuildContext context,
+    String text,
+    List<ChatImageAttachment> imageAttachments,
+    List<ChatFileAttachment> fileAttachments,
+  ) {
     final settings = _loadSettings();
-    context.read<ChatCubit>().sendMessage(text, settings);
+    context.read<ChatCubit>().sendMessage(
+      text,
+      settings,
+      imageAttachments: imageAttachments,
+      fileAttachments: fileAttachments,
+    );
   }
 
   void _openSettings(BuildContext context) {

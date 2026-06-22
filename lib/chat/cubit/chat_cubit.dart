@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +18,8 @@ import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/chat/services/system_prompt.dart';
 import 'package:nt_helper/chat/services/tool_bridge_service.dart';
 import 'package:nt_helper/mcp/tool_registry.dart';
+import 'package:nt_helper/services/settings_service.dart';
+import 'package:path/path.dart' as path;
 
 typedef LlmProviderFactory = LlmProvider Function(ChatSettings settings);
 
@@ -60,14 +63,25 @@ class ChatCubit extends Cubit<ChatState> {
        _providerFactory = providerFactory,
        super(const ChatReady());
 
-  Future<void> sendMessage(String text, ChatSettings settings) async {
-    if (text.trim().isEmpty) return;
+  Future<void> sendMessage(
+    String text,
+    ChatSettings settings, {
+    List<ChatImageAttachment> imageAttachments = const [],
+    List<ChatFileAttachment> fileAttachments = const [],
+  }) async {
+    if (text.trim().isEmpty &&
+        imageAttachments.isEmpty &&
+        fileAttachments.isEmpty) {
+      return;
+    }
 
     final currentState = state;
     if (currentState is! ChatReady || currentState.isProcessing) return;
 
     // Handle /context command locally — no API call needed
-    if (text.trim().toLowerCase() == '/context') {
+    if (text.trim().toLowerCase() == '/context' &&
+        imageAttachments.isEmpty &&
+        fileAttachments.isEmpty) {
       _handleContextCommand(currentState);
       return;
     }
@@ -82,7 +96,14 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     // Show processing state immediately
-    final userMessage = ChatMessage.user(text.trim());
+    final messageText = text.trim().isEmpty
+        ? _defaultAttachmentMessage(imageAttachments, fileAttachments)
+        : text.trim();
+    final userMessage = ChatMessage.user(
+      messageText,
+      imageAttachments: imageAttachments,
+      fileAttachments: fileAttachments,
+    );
     final messages = [...currentState.messages, userMessage];
     emit(currentState.copyWith(messages: messages, isProcessing: true));
 
@@ -108,9 +129,43 @@ class ChatCubit extends Cubit<ChatState> {
         await _performCompaction(settings);
       }
 
+      final uploadedPaths = await _saveAttachmentsToUploads(
+        imageAttachments,
+        fileAttachments,
+      );
+      final llmMessageText = uploadedPaths.isEmpty
+          ? messageText
+          : _messageWithUploadedPaths(messageText, uploadedPaths);
+
       // Add to LLM history
       _historyLengthBeforeLoop = _llmHistory.length;
-      _llmHistory.add(LlmMessage.user(text.trim()));
+      final llmImageAttachments = imageAttachments
+          .map(
+            (image) => LlmImageAttachment(
+              data: image.data,
+              mimeType: image.mimeType,
+              name: image.name,
+            ),
+          )
+          .toList();
+      final llmFileAttachments = fileAttachments
+          .map(
+            (file) => LlmFileAttachment(
+              name: file.name,
+              data: file.data,
+              mimeType: file.mimeType,
+              sizeBytes: file.sizeBytes,
+              textContent: file.textContent,
+            ),
+          )
+          .toList();
+      _llmHistory.add(
+        LlmMessage.user(
+          _messageWithFileAttachments(llmMessageText, fileAttachments),
+          imageAttachments: llmImageAttachments,
+          fileAttachments: llmFileAttachments,
+        ),
+      );
 
       // Create provider (disposing the previous one first)
       _activeProvider?.dispose();
@@ -167,6 +222,109 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
       }
+    }
+  }
+
+  String _defaultAttachmentMessage(
+    List<ChatImageAttachment> imageAttachments,
+    List<ChatFileAttachment> fileAttachments,
+  ) {
+    if (imageAttachments.isNotEmpty && fileAttachments.isNotEmpty) {
+      return 'Attached images and files.';
+    }
+    if (imageAttachments.isNotEmpty) return 'Attached image.';
+    return 'Attached file.';
+  }
+
+  String _messageWithFileAttachments(
+    String messageText,
+    List<ChatFileAttachment> fileAttachments,
+  ) {
+    final buffer = StringBuffer(messageText);
+    for (final file in fileAttachments) {
+      if (file.textContent == null) continue;
+      buffer
+        ..writeln()
+        ..writeln()
+        ..writeln(
+          '--- Attached file: ${file.name} (${file.sizeBytes} bytes) ---',
+        )
+        ..writeln(file.textContent)
+        ..writeln('--- End attached file: ${file.name} ---');
+    }
+    return buffer.toString();
+  }
+
+  String _messageWithUploadedPaths(String messageText, List<String> paths) {
+    final buffer = StringBuffer(messageText)
+      ..writeln()
+      ..writeln()
+      ..writeln('Uploaded files saved in the chat workspace:');
+    for (final uploadedPath in paths) {
+      buffer.writeln('- $uploadedPath');
+    }
+    return buffer.toString();
+  }
+
+  Future<List<String>> _saveAttachmentsToUploads(
+    List<ChatImageAttachment> imageAttachments,
+    List<ChatFileAttachment> fileAttachments,
+  ) async {
+    final root = SettingsService().chatLocalDirectory?.trim();
+    if (root == null || root.isEmpty) return const [];
+
+    try {
+      final uploadsDir = Directory(path.join(root, 'uploads'));
+      await uploadsDir.create(recursive: true);
+      final saved = <String>[];
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      for (var i = 0; i < imageAttachments.length; i++) {
+        final image = imageAttachments[i];
+        final name = _safeUploadName(
+          image.name ?? 'image_$i${_extensionForMime(image.mimeType)}',
+        );
+        final relativePath = path.join('uploads', '${timestamp}_$name');
+        await File(path.join(root, relativePath)).writeAsBytes(
+          base64Decode(image.data),
+        );
+        saved.add(relativePath);
+      }
+
+      for (var i = 0; i < fileAttachments.length; i++) {
+        final file = fileAttachments[i];
+        final name = _safeUploadName(file.name);
+        final relativePath = path.join('uploads', '${timestamp}_$name');
+        await File(path.join(root, relativePath)).writeAsBytes(
+          base64Decode(file.data),
+        );
+        saved.add(relativePath);
+      }
+
+      return saved;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  String _safeUploadName(String name) {
+    final baseName = path.basename(name).replaceAll(
+      RegExp(r'[^A-Za-z0-9._-]+'),
+      '_',
+    );
+    return baseName.isEmpty ? 'attachment' : baseName;
+  }
+
+  String _extensionForMime(String mimeType) {
+    switch (mimeType) {
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/webp':
+        return '.webp';
+      case 'image/gif':
+        return '.gif';
+      default:
+        return '.png';
     }
   }
 

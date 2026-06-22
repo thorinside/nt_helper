@@ -96,6 +96,18 @@ class OpenAISubscriptionProvider implements LlmProvider {
             'role': 'user',
             'content': [
               {'type': 'input_text', 'text': msg.content ?? ''},
+              for (final image in msg.imageAttachments)
+                {
+                  'type': 'input_image',
+                  'image_url': 'data:${image.mimeType};base64,${image.data}',
+                },
+              for (final file in msg.fileAttachments)
+                if (_isCodexFileInput(file.mimeType))
+                  {
+                    'type': 'input_file',
+                    'filename': file.name,
+                    'file_data': 'data:${file.mimeType};base64,${file.data}',
+                  },
             ],
           });
           break;
@@ -161,6 +173,12 @@ class OpenAISubscriptionProvider implements LlmProvider {
           },
         )
         .toList();
+  }
+
+  bool _isCodexFileInput(String mimeType) {
+    return mimeType == 'application/pdf' ||
+        mimeType == 'application/json' ||
+        mimeType.startsWith('text/');
   }
 
   Future<LlmResponse> _parseEventStream(Stream<List<int>> stream) async {

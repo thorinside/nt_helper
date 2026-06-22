@@ -67,6 +67,7 @@ class SettingsService {
   static const String _openaiSubscriptionModelKey = 'openai_subscription_model';
   static const String _openaiBaseUrlKey = 'openai_base_url';
   static const String _allowCodexAuthRefreshKey = 'allow_codex_auth_refresh';
+  static const String _chatLocalDirectoryKey = 'chat_local_directory';
   static const String _uiScaleKey = 'ui_scale';
   static const String _autoCenterOnSelectionKey = 'auto_center_on_selection';
   static const String _showBackwardConnectionsKey = 'show_backward_connections';
@@ -107,6 +108,7 @@ class SettingsService {
     _openaiSubscriptionModelKey,
     _openaiBaseUrlKey,
     _allowCodexAuthRefreshKey,
+    _chatLocalDirectoryKey,
     _uiScaleKey,
     _autoCenterOnSelectionKey,
     _showBackwardConnectionsKey,
@@ -506,6 +508,18 @@ class SettingsService {
   /// Set whether nt_helper may refresh Codex ChatGPT auth.
   Future<bool> setAllowCodexAuthRefresh(bool value) async {
     return await _prefs?.setBool(_allowCodexAuthRefreshKey, value) ?? false;
+  }
+
+  /// Local directory the chat assistant may access through chat-only tools.
+  String? get chatLocalDirectory => _prefs?.getString(_chatLocalDirectoryKey);
+
+  /// Set the local directory the chat assistant may access.
+  Future<bool> setChatLocalDirectory(String value) async {
+    if (value.trim().isEmpty) {
+      return await _prefs?.remove(_chatLocalDirectoryKey) ?? false;
+    }
+    return await _prefs?.setString(_chatLocalDirectoryKey, value.trim()) ??
+        false;
   }
 
   /// Get the OpenAI base URL (for LM Studio, OpenRouter, etc.)

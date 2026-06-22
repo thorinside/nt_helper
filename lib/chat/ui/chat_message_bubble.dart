@@ -66,11 +66,33 @@ class _UserBubbleState extends State<_UserBubble> {
               ),
               child: Semantics(
                 label: 'You said: ${widget.message.content}',
-                child: Text(
-                  widget.message.content,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.message.hasImageAttachments) ...[
+                      _MessageImageGrid(
+                        attachments: widget.message.imageAttachments,
+                      ),
+                      if (widget.message.content.isNotEmpty ||
+                          widget.message.hasFileAttachments)
+                        const SizedBox(height: 8),
+                    ],
+                    if (widget.message.hasFileAttachments) ...[
+                      _MessageFileChips(
+                        attachments: widget.message.fileAttachments,
+                      ),
+                      if (widget.message.content.isNotEmpty)
+                        const SizedBox(height: 8),
+                    ],
+                    if (widget.message.content.isNotEmpty)
+                      Text(
+                        widget.message.content,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -83,6 +105,71 @@ class _UserBubbleState extends State<_UserBubble> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MessageFileChips extends StatelessWidget {
+  final List<ChatFileAttachment> attachments;
+
+  const _MessageFileChips({required this.attachments});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      alignment: WrapAlignment.end,
+      children: [
+        for (final attachment in attachments)
+          Chip(
+            avatar: Icon(
+              attachment.mimeType == 'application/pdf'
+                  ? Icons.picture_as_pdf
+                  : Icons.description_outlined,
+              size: 16,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+            label: Text(
+              attachment.name,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            backgroundColor: theme.colorScheme.primaryContainer,
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+            visualDensity: VisualDensity.compact,
+          ),
+      ],
+    );
+  }
+}
+
+class _MessageImageGrid extends StatelessWidget {
+  final List<ChatImageAttachment> attachments;
+
+  const _MessageImageGrid({required this.attachments});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      alignment: WrapAlignment.end,
+      children: [
+        for (final attachment in attachments)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.memory(
+              base64Decode(attachment.data),
+              width: 140,
+              height: 100,
+              fit: BoxFit.cover,
+            ),
+          ),
+      ],
     );
   }
 }

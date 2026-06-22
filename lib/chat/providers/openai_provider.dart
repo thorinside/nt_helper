@@ -110,7 +110,23 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
     for (final msg in messages) {
       switch (msg.role) {
         case LlmRole.user:
-          result.add({'role': 'user', 'content': msg.content!});
+          if (msg.hasImageAttachments) {
+            result.add({
+              'role': 'user',
+              'content': <dynamic>[
+                {'type': 'text', 'text': msg.content ?? ''},
+                for (final image in msg.imageAttachments)
+                  {
+                    'type': 'image_url',
+                    'image_url': {
+                      'url': 'data:${image.mimeType};base64,${image.data}',
+                    },
+                  },
+              ],
+            });
+          } else {
+            result.add({'role': 'user', 'content': msg.content!});
+          }
         case LlmRole.assistant:
           if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) {
             final apiMsg = <String, dynamic>{'role': 'assistant'};

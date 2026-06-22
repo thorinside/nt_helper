@@ -1,5 +1,16 @@
 # nt_helper
 
+## Fork Note: Chat Attachments + Local Workspace Access
+
+This fork is experimenting with two chat-focused additions:
+
+- Paste or attach images directly into the in-app chat so the assistant can inspect screenshots, patch diagrams, reference images, and other visual context.
+- Attach files the chat/Codex path can understand, including PDFs, TXT/Markdown/JSON/code files, Disting NT preset files, and algorithm/plugin-related files.
+- Save selected attachments into an `uploads/` folder under a user-selected chat workspace.
+- Grant the in-app chat scoped workspace tools for listing, reading, writing, and searching files without exposing arbitrary filesystem paths.
+
+The goal is to test these features in the fork first, then discuss merging them upstream if they work well.
+
 A cross-platform Flutter application designed for editing presets on the Expert Sleepers Disting NT module. It provides an intuitive interface for managing algorithms, parameters, and mappings on your Disting NT device.
 
 ## Core Features
