@@ -157,6 +157,73 @@ void main() {
       );
       expect(client.requests.last.headers['Authorization'], 'Bearer new-token');
     });
+
+    test(
+      'sends PDFs as input files but leaves text attachments inline',
+      () async {
+        final auth = _FakeAuthService(
+          const CodexAuthSnapshot(
+            accessToken: 'token',
+            refreshToken: 'refresh',
+            accountId: 'account',
+          ),
+        );
+        final client = _QueueClient([
+          (_) => _sseResponse([
+            {'type': 'response.output_text.delta', 'delta': 'ok'},
+          ]),
+        ]);
+        final provider = OpenAISubscriptionProvider(
+          model: 'gpt-5.4-mini',
+          allowAuthRefresh: false,
+          authService: auth,
+          client: client,
+        );
+        addTearDown(provider.dispose);
+
+        await provider.sendMessages(
+          messages: [
+            LlmMessage.user(
+              '--- Attached file: notes.txt ---\nhello',
+              fileAttachments: const [
+                LlmFileAttachment(
+                  name: 'notes.txt',
+                  data: 'aGVsbG8=',
+                  mimeType: 'text/plain',
+                  sizeBytes: 5,
+                  textContent: 'hello',
+                ),
+                LlmFileAttachment(
+                  name: 'manual.pdf',
+                  data: 'JVBERi0xLjQ=',
+                  mimeType: 'application/pdf',
+                  sizeBytes: 8,
+                ),
+              ],
+            ),
+          ],
+          tools: const [],
+        );
+
+        final body =
+            jsonDecode(client.requests.single.body) as Map<String, dynamic>;
+        final input = body['input'] as List<dynamic>;
+        final content = input.single['content'] as List<dynamic>;
+        final inputFiles = content
+            .whereType<Map<String, dynamic>>()
+            .where((part) => part['type'] == 'input_file')
+            .toList();
+
+        expect(inputFiles, hasLength(1));
+        expect(inputFiles.single['filename'], 'manual.pdf');
+        expect(
+          content.whereType<Map<String, dynamic>>().singleWhere(
+            (part) => part['type'] == 'input_text',
+          )['text'],
+          contains('notes.txt'),
+        );
+      },
+    );
   });
 }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,8 @@ import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/mcp/tool_registry.dart';
+import 'package:nt_helper/services/settings_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockToolRegistry extends Mock implements ToolRegistry {}
 
@@ -24,6 +27,12 @@ const _settings = ChatSettings(
   provider: LlmProviderType.anthropic,
   anthropicApiKey: 'test-key',
   anthropicModel: 'claude-haiku-4-5-20251001',
+);
+
+const _openAiSettings = ChatSettings(
+  provider: LlmProviderType.openai,
+  openaiApiKey: 'test-key',
+  openaiModel: 'gpt-5-nano',
 );
 
 void main() {
@@ -47,6 +56,151 @@ void main() {
     when(
       () => memoryService.saveSessionSnapshot(any()),
     ).thenAnswer((_) async {});
+  });
+
+  group('Attachment validation', () {
+    blocTest<ChatCubit, ChatState>(
+      'rejects provider-unsupported binary file attachments before sending',
+      build: () {
+        return ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => throw StateError('provider should not run'),
+        );
+      },
+      act: (cubit) async {
+        await cubit.sendMessage(
+          'read this',
+          _openAiSettings,
+          fileAttachments: const [
+            ChatFileAttachment(
+              name: 'manual.pdf',
+              data: 'JVBERi0xLjQ=',
+              mimeType: 'application/pdf',
+              sizeBytes: 8,
+            ),
+          ],
+        );
+      },
+      expect: () => [
+        isA<ChatReady>()
+            .having((s) => s.isProcessing, 'isProcessing', true)
+            .having((s) => s.messages, 'messages', hasLength(1))
+            .having(
+              (s) => s.messages.single.fileAttachments.single.name,
+              'file attachment',
+              'manual.pdf',
+            ),
+        isA<ChatReady>()
+            .having((s) => s.isProcessing, 'isProcessing', false)
+            .having((s) => s.messages, 'messages', hasLength(2))
+            .having(
+              (s) => s.messages.last.content,
+              'validation message',
+              contains('Unsupported attachment for OpenAI API: manual.pdf'),
+            ),
+      ],
+    );
+
+    test('does not persist attachments into a legacy uploads folder', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'nt_helper_chat_uploads_',
+      );
+      try {
+        SharedPreferences.setMockInitialValues({
+          'chat_local_directory': tempDir.path,
+        });
+        await SettingsService().init();
+        final provider = MockLlmProvider();
+        when(() => provider.dispose()).thenReturn(null);
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer(
+          (_) async => const LlmResponse(content: 'ok', isComplete: true),
+        );
+        final cubit = ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => provider,
+        );
+
+        await cubit.sendMessage(
+          'look',
+          _settings,
+          imageAttachments: const [
+            ChatImageAttachment(
+              data: 'AQID',
+              mimeType: 'image/png',
+              name: 'clip.png',
+            ),
+          ],
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(await Directory('${tempDir.path}/uploads').exists(), isFalse);
+      } finally {
+        if (await tempDir.exists()) {
+          await tempDir.delete(recursive: true);
+        }
+      }
+    });
+
+    blocTest<ChatCubit, ChatState>(
+      'uses plural placeholder text for multiple image-only attachments',
+      build: () {
+        final provider = MockLlmProvider();
+        when(() => provider.dispose()).thenReturn(null);
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer(
+          (_) async => const LlmResponse(content: 'ok', isComplete: true),
+        );
+        return ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => provider,
+        );
+      },
+      act: (cubit) async {
+        await cubit.sendMessage(
+          '',
+          _settings,
+          imageAttachments: const [
+            ChatImageAttachment(
+              data: 'AQID',
+              mimeType: 'image/png',
+              name: 'one.png',
+            ),
+            ChatImageAttachment(
+              data: 'BAUG',
+              mimeType: 'image/png',
+              name: 'two.png',
+            ),
+          ],
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      },
+      expect: () => [
+        isA<ChatReady>()
+            .having((s) => s.isProcessing, 'isProcessing', true)
+            .having(
+              (s) => s.messages.single.content,
+              'content',
+              'Attached images.',
+            ),
+        isA<ChatReady>()
+            .having((s) => s.isProcessing, 'isProcessing', false)
+            .having((s) => s.messages.last.content, 'assistant response', 'ok'),
+      ],
+    );
   });
 
   group('Bug 1: permanent thinking spinner — onDone without isFinal', () {

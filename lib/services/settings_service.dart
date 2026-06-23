@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:nt_helper/chat/models/allowed_file_root.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
@@ -7,7 +11,6 @@ import 'package:nt_helper/services/database_integrity_service.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/rtt_stats_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io';
 
 /// Application theme with Material 3 enabled
 ThemeData appTheme() {
@@ -67,6 +70,8 @@ class SettingsService {
   static const String _openaiSubscriptionModelKey = 'openai_subscription_model';
   static const String _openaiBaseUrlKey = 'openai_base_url';
   static const String _allowCodexAuthRefreshKey = 'allow_codex_auth_refresh';
+  static const String _chatLocalDirectoryKey = 'chat_local_directory';
+  static const String _allowedFileRootsKey = 'allowed_file_roots';
   static const String _uiScaleKey = 'ui_scale';
   static const String _autoCenterOnSelectionKey = 'auto_center_on_selection';
   static const String _showBackwardConnectionsKey = 'show_backward_connections';
@@ -107,6 +112,8 @@ class SettingsService {
     _openaiSubscriptionModelKey,
     _openaiBaseUrlKey,
     _allowCodexAuthRefreshKey,
+    _chatLocalDirectoryKey,
+    _allowedFileRootsKey,
     _uiScaleKey,
     _autoCenterOnSelectionKey,
     _showBackwardConnectionsKey,
@@ -207,6 +214,23 @@ class SettingsService {
   double _clampUiScale(double value) {
     final clamped = value.clamp(minUiScale, maxUiScale);
     return (clamped * 10).roundToDouble() / 10;
+  }
+
+  Map<String, dynamic> _deepStringMap(Map value) {
+    return value.map((key, entryValue) {
+      if (entryValue is Map) {
+        return MapEntry(key.toString(), _deepStringMap(entryValue));
+      }
+      if (entryValue is List) {
+        return MapEntry(
+          key.toString(),
+          entryValue
+              .map((item) => item is Map ? _deepStringMap(item) : item)
+              .toList(),
+        );
+      }
+      return MapEntry(key.toString(), entryValue);
+    });
   }
 
   /// Get the request timeout in milliseconds
@@ -506,6 +530,67 @@ class SettingsService {
   /// Set whether nt_helper may refresh Codex ChatGPT auth.
   Future<bool> setAllowCodexAuthRefresh(bool value) async {
     return await _prefs?.setBool(_allowCodexAuthRefreshKey, value) ?? false;
+  }
+
+  /// Local directory the chat assistant may access through chat-only tools.
+  String? get chatLocalDirectory => _prefs?.getString(_chatLocalDirectoryKey);
+
+  /// Set the local directory the chat assistant may access.
+  Future<bool> setChatLocalDirectory(String value) async {
+    if (value.trim().isEmpty) {
+      return await _prefs?.remove(_chatLocalDirectoryKey) ?? false;
+    }
+    return await _prefs?.setString(_chatLocalDirectoryKey, value.trim()) ??
+        false;
+  }
+
+  /// Named filesystem roots available to chat and/or MCP tools.
+  List<AllowedFileRoot> get allowedFileRoots {
+    final raw = _prefs?.getString(_allowedFileRootsKey);
+    if (raw != null && raw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          final roots = decoded
+              .whereType<Map>()
+              .map((item) => AllowedFileRoot.fromJson(_deepStringMap(item)))
+              .where((root) => root.isValid)
+              .toList(growable: false);
+          return List.unmodifiable(roots);
+        }
+      } on Object {
+        return const [];
+      }
+    }
+
+    final legacyDirectory = chatLocalDirectory?.trim();
+    if (legacyDirectory == null || legacyDirectory.isEmpty) {
+      return const [];
+    }
+    return [
+      AllowedFileRoot.chatReadSearch(
+        id: 'local_context',
+        label: 'Local Context',
+        path: legacyDirectory,
+      ),
+    ];
+  }
+
+  /// Persist named filesystem roots available to chat and/or MCP tools.
+  Future<bool> setAllowedFileRoots(List<AllowedFileRoot> roots) async {
+    final normalized = roots
+        .where((root) => root.isValid)
+        .map((root) => root.toJson())
+        .toList(growable: false);
+    await _prefs?.remove(_chatLocalDirectoryKey);
+    if (normalized.isEmpty) {
+      return await _prefs?.remove(_allowedFileRootsKey) ?? false;
+    }
+    return await _prefs?.setString(
+          _allowedFileRootsKey,
+          jsonEncode(normalized),
+        ) ??
+        false;
   }
 
   /// Get the OpenAI base URL (for LM Studio, OpenRouter, etc.)

@@ -13,6 +13,34 @@ enum ChatMessageRole {
   compaction,
 }
 
+class ChatImageAttachment {
+  final String data;
+  final String mimeType;
+  final String? name;
+
+  const ChatImageAttachment({
+    required this.data,
+    required this.mimeType,
+    this.name,
+  });
+}
+
+class ChatFileAttachment {
+  final String name;
+  final String data;
+  final String mimeType;
+  final int sizeBytes;
+  final String? textContent;
+
+  const ChatFileAttachment({
+    required this.name,
+    required this.data,
+    required this.mimeType,
+    required this.sizeBytes,
+    this.textContent,
+  });
+}
+
 class ChatMessage {
   final String id;
   final ChatMessageRole role;
@@ -22,6 +50,8 @@ class ChatMessage {
   final Map<String, dynamic>? toolArguments;
   final String? imageBase64;
   final String? imageMimeType;
+  final List<ChatImageAttachment> imageAttachments;
+  final List<ChatFileAttachment> fileAttachments;
   final DateTime timestamp;
 
   const ChatMessage({
@@ -33,15 +63,25 @@ class ChatMessage {
     this.toolArguments,
     this.imageBase64,
     this.imageMimeType,
+    this.imageAttachments = const [],
+    this.fileAttachments = const [],
     required this.timestamp,
   });
 
   bool get hasImage => imageBase64 != null && imageMimeType != null;
+  bool get hasImageAttachments => imageAttachments.isNotEmpty;
+  bool get hasFileAttachments => fileAttachments.isNotEmpty;
 
-  factory ChatMessage.user(String content) => ChatMessage(
+  factory ChatMessage.user(
+    String content, {
+    List<ChatImageAttachment> imageAttachments = const [],
+    List<ChatFileAttachment> fileAttachments = const [],
+  }) => ChatMessage(
     id: _generateId(),
     role: ChatMessageRole.user,
     content: content,
+    imageAttachments: imageAttachments,
+    fileAttachments: fileAttachments,
     timestamp: DateTime.now(),
   );
 

@@ -60,14 +60,25 @@ class ChatCubit extends Cubit<ChatState> {
        _providerFactory = providerFactory,
        super(const ChatReady());
 
-  Future<void> sendMessage(String text, ChatSettings settings) async {
-    if (text.trim().isEmpty) return;
+  Future<void> sendMessage(
+    String text,
+    ChatSettings settings, {
+    List<ChatImageAttachment> imageAttachments = const [],
+    List<ChatFileAttachment> fileAttachments = const [],
+  }) async {
+    if (text.trim().isEmpty &&
+        imageAttachments.isEmpty &&
+        fileAttachments.isEmpty) {
+      return;
+    }
 
     final currentState = state;
     if (currentState is! ChatReady || currentState.isProcessing) return;
 
     // Handle /context command locally — no API call needed
-    if (text.trim().toLowerCase() == '/context') {
+    if (text.trim().toLowerCase() == '/context' &&
+        imageAttachments.isEmpty &&
+        fileAttachments.isEmpty) {
       _handleContextCommand(currentState);
       return;
     }
@@ -82,11 +93,40 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     // Show processing state immediately
-    final userMessage = ChatMessage.user(text.trim());
+    final messageText = text.trim().isEmpty
+        ? _defaultAttachmentMessage(imageAttachments, fileAttachments)
+        : text.trim();
+    final userMessage = ChatMessage.user(
+      messageText,
+      imageAttachments: imageAttachments,
+      fileAttachments: fileAttachments,
+    );
     final messages = [...currentState.messages, userMessage];
     emit(currentState.copyWith(messages: messages, isProcessing: true));
 
     try {
+      final unsupportedFiles = _unsupportedFilesForProvider(
+        settings.provider,
+        fileAttachments,
+      );
+      if (unsupportedFiles.isNotEmpty) {
+        emit(
+          currentState.copyWith(
+            messages: [
+              ...messages,
+              ChatMessage.assistant(
+                _unsupportedAttachmentMessage(
+                  settings.provider,
+                  unsupportedFiles,
+                ),
+              ),
+            ],
+            isProcessing: false,
+          ),
+        );
+        return;
+      }
+
       // Bootstrap memory on first send
       if (!_bootstrapped) {
         _memoryContent = await _memoryService.readMemory();
@@ -110,7 +150,33 @@ class ChatCubit extends Cubit<ChatState> {
 
       // Add to LLM history
       _historyLengthBeforeLoop = _llmHistory.length;
-      _llmHistory.add(LlmMessage.user(text.trim()));
+      final llmImageAttachments = imageAttachments
+          .map(
+            (image) => LlmImageAttachment(
+              data: image.data,
+              mimeType: image.mimeType,
+              name: image.name,
+            ),
+          )
+          .toList();
+      final llmFileAttachments = fileAttachments
+          .map(
+            (file) => LlmFileAttachment(
+              name: file.name,
+              data: file.data,
+              mimeType: file.mimeType,
+              sizeBytes: file.sizeBytes,
+              textContent: file.textContent,
+            ),
+          )
+          .toList();
+      _llmHistory.add(
+        LlmMessage.user(
+          _messageWithFileAttachments(messageText, fileAttachments),
+          imageAttachments: llmImageAttachments,
+          fileAttachments: llmFileAttachments,
+        ),
+      );
 
       // Create provider (disposing the previous one first)
       _activeProvider?.dispose();
@@ -168,6 +234,78 @@ class ChatCubit extends Cubit<ChatState> {
         );
       }
     }
+  }
+
+  String _defaultAttachmentMessage(
+    List<ChatImageAttachment> imageAttachments,
+    List<ChatFileAttachment> fileAttachments,
+  ) {
+    if (imageAttachments.isNotEmpty && fileAttachments.isNotEmpty) {
+      return 'Attached images and files.';
+    }
+    if (imageAttachments.isNotEmpty) {
+      return imageAttachments.length == 1
+          ? 'Attached image.'
+          : 'Attached images.';
+    }
+    return fileAttachments.length == 1 ? 'Attached file.' : 'Attached files.';
+  }
+
+  String _messageWithFileAttachments(
+    String messageText,
+    List<ChatFileAttachment> fileAttachments,
+  ) {
+    final buffer = StringBuffer(messageText);
+    for (final file in fileAttachments) {
+      if (file.textContent == null) continue;
+      buffer
+        ..writeln()
+        ..writeln()
+        ..writeln(
+          '--- Attached file: ${file.name} (${file.sizeBytes} bytes) ---',
+        )
+        ..writeln(file.textContent)
+        ..writeln('--- End attached file: ${file.name} ---');
+    }
+    return buffer.toString();
+  }
+
+  List<ChatFileAttachment> _unsupportedFilesForProvider(
+    LlmProviderType provider,
+    List<ChatFileAttachment> fileAttachments,
+  ) {
+    return fileAttachments
+        .where((file) => !_providerSupportsFileAttachment(provider, file))
+        .toList();
+  }
+
+  bool _providerSupportsFileAttachment(
+    LlmProviderType provider,
+    ChatFileAttachment file,
+  ) {
+    if (file.textContent != null) return true;
+    return switch (provider) {
+      LlmProviderType.anthropic || LlmProviderType.anthropicSubscription =>
+        file.mimeType == 'application/pdf',
+      LlmProviderType.openaiSubscription => file.mimeType == 'application/pdf',
+      LlmProviderType.openai => false,
+    };
+  }
+
+  String _unsupportedAttachmentMessage(
+    LlmProviderType provider,
+    List<ChatFileAttachment> unsupportedFiles,
+  ) {
+    final names = unsupportedFiles.map((file) => file.name).join(', ');
+    final providerName = switch (provider) {
+      LlmProviderType.anthropic => 'Anthropic API',
+      LlmProviderType.anthropicSubscription => 'Anthropic subscription',
+      LlmProviderType.openai => 'OpenAI API',
+      LlmProviderType.openaiSubscription => 'OpenAI subscription',
+    };
+    return 'Unsupported attachment for $providerName: $names. '
+        'Use images, UTF-8 text/JSON files, or switch to a provider that '
+        'supports this file type.';
   }
 
   void _handleLoopEvent(ChatLoopEvent event) {

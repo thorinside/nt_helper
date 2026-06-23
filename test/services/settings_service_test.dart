@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nt_helper/chat/models/allowed_file_root.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,6 +40,9 @@ const Map<String, Object> _nonDefaultSeeds = {
   'openai_subscription_model': 'fake-openai-subscription-model',
   'openai_base_url': 'https://example.invalid/v1',
   'allow_codex_auth_refresh': true,
+  'chat_local_directory': '/tmp/nt-helper-chat-workspace',
+  'allowed_file_roots':
+      '[{"id":"seed","label":"Seed","path":"/tmp/seed","acl":{"chat":["read"],"mcp":["search"]}}]',
   'ui_scale': 1.4,
   'auto_center_on_selection': false,
   'show_backward_connections': false,
@@ -104,6 +108,8 @@ void main() {
           settings.allowCodexAuthRefresh,
           isNot(SettingsService.defaultAllowCodexAuthRefresh),
         );
+        expect(settings.chatLocalDirectory, isNotNull);
+        expect(settings.allowedFileRoots, isNotEmpty);
 
         await settings.resetToDefaults();
 
@@ -176,6 +182,8 @@ void main() {
           settings.allowCodexAuthRefresh,
           SettingsService.defaultAllowCodexAuthRefresh,
         );
+        expect(settings.chatLocalDirectory, isNull);
+        expect(settings.allowedFileRoots, isEmpty);
         expect(settings.dismissedUpdateVersion, isNull);
         expect(settings.lastUpdateCheckTimestamp, isNull);
         expect(settings.uiScale, SettingsService.defaultUiScale);
@@ -221,6 +229,91 @@ void main() {
         expect(settings.uiScaleNotifier.value, SettingsService.defaultUiScale);
       },
     );
+  });
+
+  group('SettingsService.allowedFileRoots', () {
+    late SettingsService settings;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      settings = SettingsService();
+      await settings.init();
+    });
+
+    test('migrates legacy chat local directory as chat read/search', () async {
+      SharedPreferences.setMockInitialValues({
+        'chat_local_directory': '/Volumes/DistingSD',
+      });
+      await settings.init();
+
+      final roots = settings.allowedFileRoots;
+
+      expect(roots, hasLength(1));
+      expect(roots.single.id, 'local_context');
+      expect(roots.single.label, 'Local Context');
+      expect(roots.single.path, '/Volumes/DistingSD');
+      expect(
+        roots.single.permissionsFor(FileRootActor.chat),
+        containsAll({FileRootPermission.read, FileRootPermission.search}),
+      );
+      expect(roots.single.permissionsFor(FileRootActor.mcp), isEmpty);
+    });
+
+    test('saves and loads ACL permissions', () async {
+      await settings.setAllowedFileRoots([
+        const AllowedFileRoot(
+          id: 'sd',
+          label: 'SD Card',
+          path: '/Volumes/DistingSD',
+          acl: {
+            FileRootActor.chat: {
+              FileRootPermission.read,
+              FileRootPermission.search,
+            },
+            FileRootActor.mcp: {FileRootPermission.read},
+          },
+        ),
+      ]);
+
+      final roots = settings.allowedFileRoots;
+
+      expect(roots, hasLength(1));
+      expect(roots.single.id, 'sd');
+      expect(
+        roots.single.permissionsFor(FileRootActor.chat),
+        containsAll({FileRootPermission.read, FileRootPermission.search}),
+      );
+      expect(roots.single.permissionsFor(FileRootActor.mcp), {
+        FileRootPermission.read,
+      });
+    });
+
+    test('saving allowed roots clears the legacy directory key', () async {
+      SharedPreferences.setMockInitialValues({
+        'chat_local_directory': '/Volumes/DistingSD',
+      });
+      await settings.init();
+      expect(settings.allowedFileRoots, isNotEmpty);
+
+      await settings.setAllowedFileRoots(const []);
+
+      expect(settings.chatLocalDirectory, isNull);
+      expect(settings.allowedFileRoots, isEmpty);
+    });
+
+    test('malformed stored root entries are ignored safely', () async {
+      SharedPreferences.setMockInitialValues({
+        'allowed_file_roots':
+            '[{"id":7,"label":"Bad","path":"/tmp/bad","acl":{"chat":["read"]}},'
+            '{"id":"ok","label":"OK","path":"/tmp/ok","acl":{"chat":["read"]}}]',
+      });
+      await settings.init();
+
+      final roots = settings.allowedFileRoots;
+
+      expect(roots, hasLength(1));
+      expect(roots.single.id, 'ok');
+    });
   });
 
   group('SettingsDialog routing visibility settings', () {

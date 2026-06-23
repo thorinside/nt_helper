@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:mcp_dart/mcp_dart.dart';
+import 'package:nt_helper/chat/models/allowed_file_root.dart';
+import 'package:nt_helper/chat/services/local_file_tools.dart';
 import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/chat/services/memory_tools.dart';
 import 'package:nt_helper/chat/utils/image_result_detector.dart';
@@ -36,6 +38,10 @@ class ToolRegistry {
     'memory_append_daily',
     'memory_read_daily',
   };
+  static const _chatOnlyToolNames = {
+    ..._memoryToolNames,
+    ...localFileToolNames,
+  };
 
   final List<ToolRegistryEntry> _entries = [];
   late final DistingController _controller;
@@ -49,6 +55,7 @@ class ToolRegistry {
     _registerAll();
     if (memoryService != null) {
       registerMemoryTools(_entries, memoryService);
+      registerLocalFileTools(_entries, actor: FileRootActor.chat);
     }
   }
 
@@ -65,50 +72,60 @@ class ToolRegistry {
   /// Memory tools are excluded — they are for the in-app chat only.
   void applyToMcpServer(McpServer server) {
     for (final entry in _entries) {
-      if (_memoryToolNames.contains(entry.name)) continue;
-      server.registerTool(
-        entry.name,
-        description: entry.description,
-        inputSchema: ToolInputSchema.fromJson(
-          _deepCastMap({
-            'type': 'object',
-            'properties': entry.inputSchema['properties'] ?? {},
-            if (entry.inputSchema['required'] != null)
-              'required': entry.inputSchema['required'],
-          }),
-        ),
-        callback: (args, extra) async {
-          try {
-            final resultJson = await entry
-                .handler(args)
-                .timeout(
-                  entry.timeout,
-                  onTimeout: () => jsonEncode({
-                    'success': false,
-                    'error':
-                        'Tool execution timed out after ${entry.timeout.inSeconds} seconds',
-                  }),
-                );
-            final image = tryParseImageResult(resultJson);
-            if (image != null) {
-              return CallToolResult.fromContent([
-                ImageContent(data: image.data, mimeType: image.mimeType),
-              ]);
-            }
-            return CallToolResult.fromContent([TextContent(text: resultJson)]);
-          } catch (e) {
-            return CallToolResult.fromContent([
-              TextContent(
-                text: jsonEncode({
+      if (_chatOnlyToolNames.contains(entry.name)) continue;
+      _registerMcpEntry(server, entry);
+    }
+
+    final mcpFileEntries = <ToolRegistryEntry>[];
+    registerLocalFileTools(mcpFileEntries, actor: FileRootActor.mcp);
+    for (final entry in mcpFileEntries) {
+      _registerMcpEntry(server, entry);
+    }
+  }
+
+  void _registerMcpEntry(McpServer server, ToolRegistryEntry entry) {
+    server.registerTool(
+      entry.name,
+      description: entry.description,
+      inputSchema: ToolInputSchema.fromJson(
+        _deepCastMap({
+          'type': 'object',
+          'properties': entry.inputSchema['properties'] ?? {},
+          if (entry.inputSchema['required'] != null)
+            'required': entry.inputSchema['required'],
+        }),
+      ),
+      callback: (args, extra) async {
+        try {
+          final resultJson = await entry
+              .handler(args)
+              .timeout(
+                entry.timeout,
+                onTimeout: () => jsonEncode({
                   'success': false,
-                  'error': 'Tool execution failed: ${e.toString()}',
+                  'error':
+                      'Tool execution timed out after ${entry.timeout.inSeconds} seconds',
                 }),
-              ),
+              );
+          final image = tryParseImageResult(resultJson);
+          if (image != null) {
+            return CallToolResult.fromContent([
+              ImageContent(data: image.data, mimeType: image.mimeType),
             ]);
           }
-        },
-      );
-    }
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
+          ]);
+        }
+      },
+    );
   }
 
   /// Recursively cast Map literals to `Map<String, dynamic>` for mcp_dart.

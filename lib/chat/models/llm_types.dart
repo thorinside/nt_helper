@@ -5,6 +5,34 @@
 
 enum LlmRole { user, assistant, tool }
 
+class LlmImageAttachment {
+  final String data;
+  final String mimeType;
+  final String? name;
+
+  const LlmImageAttachment({
+    required this.data,
+    required this.mimeType,
+    this.name,
+  });
+}
+
+class LlmFileAttachment {
+  final String name;
+  final String data;
+  final String mimeType;
+  final int sizeBytes;
+  final String? textContent;
+
+  const LlmFileAttachment({
+    required this.name,
+    required this.data,
+    required this.mimeType,
+    required this.sizeBytes,
+    this.textContent,
+  });
+}
+
 /// A message in the LLM conversation.
 class LlmMessage {
   final LlmRole role;
@@ -14,6 +42,8 @@ class LlmMessage {
   final String? toolName;
   final String? imageBase64;
   final String? imageMimeType;
+  final List<LlmImageAttachment> imageAttachments;
+  final List<LlmFileAttachment> fileAttachments;
 
   const LlmMessage({
     required this.role,
@@ -23,12 +53,24 @@ class LlmMessage {
     this.toolName,
     this.imageBase64,
     this.imageMimeType,
+    this.imageAttachments = const [],
+    this.fileAttachments = const [],
   });
 
   bool get hasImage => imageBase64 != null && imageMimeType != null;
+  bool get hasImageAttachments => imageAttachments.isNotEmpty;
+  bool get hasFileAttachments => fileAttachments.isNotEmpty;
 
-  factory LlmMessage.user(String content) =>
-      LlmMessage(role: LlmRole.user, content: content);
+  factory LlmMessage.user(
+    String content, {
+    List<LlmImageAttachment> imageAttachments = const [],
+    List<LlmFileAttachment> fileAttachments = const [],
+  }) => LlmMessage(
+    role: LlmRole.user,
+    content: content,
+    imageAttachments: imageAttachments,
+    fileAttachments: fileAttachments,
+  );
 
   factory LlmMessage.assistant(String content) =>
       LlmMessage(role: LlmRole.assistant, content: content);

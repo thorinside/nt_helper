@@ -98,7 +98,36 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
     for (final msg in messages) {
       switch (msg.role) {
         case LlmRole.user:
-          result.add({'role': 'user', 'content': msg.content!});
+          if (msg.hasImageAttachments || msg.hasFileAttachments) {
+            result.add({
+              'role': 'user',
+              'content': <dynamic>[
+                {'type': 'text', 'text': msg.content ?? ''},
+                for (final image in msg.imageAttachments)
+                  {
+                    'type': 'image',
+                    'source': {
+                      'type': 'base64',
+                      'media_type': image.mimeType,
+                      'data': image.data,
+                    },
+                  },
+                for (final file in msg.fileAttachments)
+                  if (file.mimeType == 'application/pdf')
+                    {
+                      'type': 'document',
+                      'source': {
+                        'type': 'base64',
+                        'media_type': file.mimeType,
+                        'data': file.data,
+                      },
+                      'title': file.name,
+                    },
+              ],
+            });
+          } else {
+            result.add({'role': 'user', 'content': msg.content!});
+          }
         case LlmRole.assistant:
           if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) {
             final content = <Map<String, dynamic>>[];
