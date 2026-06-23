@@ -535,7 +535,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   ];
 
   List<Widget> _buildLocalContextSettings(ThemeData theme) => [
-    const SizedBox(height: 20),
+    const SizedBox(height: 24),
     Semantics(
       header: true,
       child: Text('Allowed File Roots', style: theme.textTheme.titleSmall),
@@ -550,7 +550,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       ),
     for (var i = 0; i < _allowedRoots.length; i++) ...[
       _buildAllowedRootEditor(theme, i),
-      const SizedBox(height: 12),
+      const SizedBox(height: 16),
     ],
     OutlinedButton.icon(
       onPressed: _addAllowedRoot,
@@ -569,7 +569,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   Widget _buildAllowedRootEditor(ThemeData theme, int index) {
     final root = _allowedRoots[index];
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(8),
@@ -629,27 +629,50 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          _buildPermissionRow(theme, index, FileRootActor.chat, 'Chat'),
-          _buildPermissionRow(theme, index, FileRootActor.mcp, 'MCP'),
+          const SizedBox(height: 16),
+          _buildPermissionTable(theme, index),
         ],
       ),
     );
   }
 
-  Widget _buildPermissionRow(
+  Widget _buildPermissionTable(ThemeData theme, int index) {
+    final headerStyle = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return Table(
+      columnWidths: const {
+        0: FixedColumnWidth(64),
+        1: FixedColumnWidth(72),
+        2: FixedColumnWidth(72),
+        3: FixedColumnWidth(80),
+      },
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(
+          children: [
+            const SizedBox.shrink(),
+            _permissionHeader('Read', headerStyle),
+            _permissionHeader('Write', headerStyle),
+            _permissionHeader('Search', headerStyle),
+          ],
+        ),
+        _permissionTableRow(theme, index, FileRootActor.chat, 'Chat'),
+        _permissionTableRow(theme, index, FileRootActor.mcp, 'MCP'),
+      ],
+    );
+  }
+
+  TableRow _permissionTableRow(
     ThemeData theme,
     int index,
     FileRootActor actor,
     String label,
   ) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 0,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return TableRow(
       children: [
-        SizedBox(
-          width: 44,
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Text(label, style: theme.textTheme.bodySmall),
         ),
         _buildPermissionCheckbox(index, actor, FileRootPermission.read, 'Read'),
@@ -669,6 +692,13 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     );
   }
 
+  Widget _permissionHeader(String label, TextStyle? style) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Center(child: Text(label, style: style)),
+    );
+  }
+
   Widget _buildPermissionCheckbox(
     int index,
     FileRootActor actor,
@@ -679,11 +709,14 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     return Semantics(
       label: '${actor.storageKey} ${permission.storageKey} permission',
       checked: checked,
-      child: FilterChip(
-        label: Text(label),
-        selected: checked,
-        onSelected: (value) => _setPermission(index, actor, permission, value),
-        visualDensity: VisualDensity.compact,
+      button: true,
+      child: Center(
+        child: Checkbox(
+          value: checked,
+          onChanged: (value) =>
+              _setPermission(index, actor, permission, value ?? false),
+          semanticLabel: '$label permission for ${actor.storageKey}',
+        ),
       ),
     );
   }
