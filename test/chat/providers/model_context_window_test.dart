@@ -6,7 +6,6 @@ import 'package:http/testing.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart';
 import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/chat/providers/openai_provider.dart';
-import 'package:nt_helper/chat/providers/openai_subscription_provider.dart';
 
 void main() {
   group('Model context window resolution', () {
@@ -39,14 +38,47 @@ void main() {
       },
     );
 
-    test('OpenAI subscription provider infers known model families', () async {
-      final provider = OpenAISubscriptionProvider(
-        model: 'gpt-5.4-mini',
-        allowAuthRefresh: false,
-      );
+    test('OpenAI subscription resolver uses Codex model metadata', () async {
+      late http.Request capturedRequest;
+      final contextWindow =
+          await OpenAIContextWindowResolver.resolveSubscription(
+            model: 'gpt-5.5',
+            headers: const {
+              'Authorization': 'Bearer token',
+              'ChatGPT-Account-ID': 'account',
+              'version': '0.135.0',
+            },
+            client: MockClient((request) async {
+              capturedRequest = request;
+              return http.Response(
+                jsonEncode({
+                  'models': [
+                    {'slug': 'gpt-5.5', 'context_window': 272000},
+                  ],
+                }),
+                200,
+              );
+            }),
+            clientVersion: '0.135.0',
+            baseUrl: 'https://example.test/backend-api/codex/responses',
+          );
 
-      expect(await provider.resolveContextWindowTokens(), 400000);
-      provider.dispose();
+      expect(contextWindow, 272000);
+      expect(capturedRequest.method, 'GET');
+      expect(
+        capturedRequest.url.toString(),
+        'https://example.test/backend-api/codex/models?model=gpt-5.5&client_version=0.135.0',
+      );
+      expect(capturedRequest.headers['Authorization'], 'Bearer token');
+      expect(capturedRequest.headers['ChatGPT-Account-ID'], 'account');
+    });
+
+    test('OpenAI subscription resolver falls back by product model family', () {
+      expect(OpenAIContextWindowResolver.inferSubscription('gpt-5.5'), 272000);
+      expect(
+        OpenAIContextWindowResolver.inferSubscription('gpt-5.4-mini'),
+        400000,
+      );
     });
 
     test('Anthropic provider uses Models API max input tokens', () async {

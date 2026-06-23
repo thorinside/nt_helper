@@ -32,7 +32,18 @@ class OpenAISubscriptionProvider implements LlmProvider {
 
   @override
   Future<int?> resolveContextWindowTokens() async {
-    return OpenAIContextWindowResolver.infer(model);
+    try {
+      final auth = await authService.loadAuth();
+      return OpenAIContextWindowResolver.resolveSubscription(
+        model: model,
+        headers: {'version': _clientVersion, ...auth.authHeaders},
+        client: _client,
+        clientVersion: _clientVersion,
+        baseUrl: _baseUrl,
+      );
+    } on Object {
+      return OpenAIContextWindowResolver.inferSubscription(model);
+    }
   }
 
   @override
