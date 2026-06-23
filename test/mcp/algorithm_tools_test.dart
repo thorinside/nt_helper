@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
+import 'package:nt_helper/mcp/tool_registry.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/metadata_import_service.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
@@ -66,6 +67,24 @@ void main() {
     });
 
     group('getAlgorithmDetails', () {
+      test('algorithmInfo accepts public guid argument', () async {
+        final result = await tools.algorithmInfo({'guid': 'clck'});
+
+        final decoded = jsonDecode(result);
+        expect(decoded['guid'], equals('clck'));
+        expect(decoded['name'], equals('Clock'));
+        expect(decoded['description'], isNotEmpty);
+        expect(decoded['parameters'], isList);
+      });
+
+      test('algorithmInfo accepts public name argument', () async {
+        final result = await tools.algorithmInfo({'name': 'Clock'});
+
+        final decoded = jsonDecode(result);
+        expect(decoded['guid'], equals('clck'));
+        expect(decoded['name'], equals('Clock'));
+      });
+
       test('should return algorithm details for valid GUID', () async {
         final result = await tools.getAlgorithmDetails({
           'algorithm_guid': 'clck',
@@ -157,6 +176,22 @@ void main() {
         } else {
           expect(decoded['guid'], equals('clck'));
         }
+      });
+    });
+
+    group('ToolRegistry algorithm_info', () {
+      test('registers shared chat and MCP tool entry', () async {
+        final registry = ToolRegistry(distingCubit);
+        final entry = registry.findByName('algorithm_info');
+
+        expect(entry, isNotNull);
+        expect(entry!.description, contains('Help screen'));
+        expect(entry.inputSchema['properties'], contains('guid'));
+        expect(entry.inputSchema['properties'], contains('name'));
+
+        final decoded = jsonDecode(await entry.handler({'guid': 'clck'}));
+        expect(decoded['guid'], equals('clck'));
+        expect(decoded['name'], equals('Clock'));
       });
     });
 

@@ -137,6 +137,20 @@ class MCPAlgorithmTools {
     }
   }
 
+  /// MCP Tool: Retrieves documentation-style metadata for a specific algorithm.
+  ///
+  /// This is the public, compact tool shape for the same data used by
+  /// [getAlgorithmDetails]. It accepts short parameter names that fit the
+  /// simplified MCP/chat tool set, then delegates to the existing metadata
+  /// implementation used by the algorithm documentation UI.
+  Future<String> algorithmInfo(Map<String, dynamic> params) {
+    return getAlgorithmDetails({
+      'algorithm_guid': params['guid'] ?? params['algorithm_guid'],
+      'algorithm_name': params['name'] ?? params['algorithm_name'],
+      'expand_features': params['expand_features'] ?? false,
+    });
+  }
+
   /// MCP Tool: Lists algorithms, optionally filtered by category or a text query.
   /// Parameters:
   ///   - category (string, optional): Filter by category.
@@ -349,7 +363,7 @@ class MCPAlgorithmTools {
           'message':
               'No algorithms found matching "$query". Try searching by algorithm name or category.',
           'suggestions':
-              'Use `list_algorithms` to browse by category or `get_algorithm_details` for specific algorithms.',
+              'Use `search_algorithms` with a broader query or `algorithm_info` for specific algorithms.',
         }),
       );
     }

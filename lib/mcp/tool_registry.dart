@@ -173,6 +173,33 @@ class ToolRegistry {
 
     _entries.add(
       ToolRegistryEntry(
+        name: 'algorithm_info',
+        description:
+            'Show documentation-style metadata for an algorithm, matching the parameter editor Help screen: description, categories, ports, specifications, parameters, and features. Requires either guid or name.',
+        inputSchema: {
+          'properties': {
+            'guid': {
+              'type': 'string',
+              'description': 'Algorithm GUID, for example "clck".',
+            },
+            'name': {
+              'type': 'string',
+              'description': 'Algorithm name. Used if guid is omitted.',
+            },
+            'expand_features': {
+              'type': 'boolean',
+              'description':
+                  'If true, expand feature-provided parameters into the parameter list. Default: false.',
+            },
+          },
+        },
+        handler: (args) => _algoTools.algorithmInfo(args),
+        timeout: const Duration(seconds: 5),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
         name: 'search_parameters',
         description:
             'Search for parameters by name within the current preset or a specific slot. Uses exact or partial name matching.',

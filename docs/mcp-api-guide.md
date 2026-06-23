@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Disting NT MCP (Model Context Protocol) API provides 15 individual, well-named tools for interacting with your hardware. Each tool does one thing with a flat parameter structure, making it easy for any LLM to use correctly.
+The Disting NT MCP (Model Context Protocol) API provides 16 individual, well-named tools for interacting with your hardware. Each tool does one thing with a flat parameter structure, making it easy for any LLM to use correctly.
 
 ### Design Philosophy
 
-- **15 individual tools**: Each tool has a single purpose with simple parameters
+- **16 individual tools**: Each tool has a single purpose with simple parameters
 - **No multiplexing**: No `target` parameters to route behavior — tool name says what it does
 - **Flat schemas**: Parameters are top-level, not nested inside `data` objects
 - **Mapping support**: Full CV/MIDI/i2c/performance page mapping for parameter control
@@ -101,6 +101,29 @@ Search for algorithms by name, category, description, use cases, parameter names
 
 ```json
 {"tool": "search_algorithms", "arguments": {"query": "pitch shifting"}}
+```
+
+---
+
+#### algorithm_info
+
+Show documentation-style metadata for a specific algorithm. This uses the same metadata source as the app's algorithm Help screen.
+
+**Parameters**:
+- `guid` (optional, string): Algorithm GUID, for example `"clck"`.
+- `name` (optional, string): Algorithm name. Used if `guid` is omitted.
+- `expand_features` (optional, boolean): If true, expands feature-provided parameters into the parameter list. Default: false.
+
+Provide either `guid` or `name`.
+
+**Returns**: Description, categories, ports, specifications, parameters, and features.
+
+```json
+{"tool": "algorithm_info", "arguments": {"guid": "clck"}}
+```
+
+```json
+{"tool": "algorithm_info", "arguments": {"name": "Clock", "expand_features": true}}
 ```
 
 ---
