@@ -55,14 +55,22 @@ class ParameterEditorView extends StatelessWidget {
     // Determine the display string to use
     // For partial enums (like unit 16 file/folder), prefer enum string over valueString,
     // but only if the enum string is non-empty
-    // For unit 16: only use valueString if value is 0 (the only value with a valid string "Off")
-    // Otherwise show raw integer for values 1-6
+    // Unit 16 is also used by parameters whose firmware value string carries
+    // the useful display unit (for example Looper envelope times). Some ES-5
+    // output parameters can return a stale "Off" string after moving away from
+    // value 0, so suppress only that known stale case.
+    final unit16ValueString =
+        valueString.value.isNotEmpty &&
+            !(parameterInfo.unit == 16 &&
+                value.value != 0 &&
+                valueString.value == 'Off')
+        ? valueString.value
+        : null;
+
     final effectiveDisplayString = currentValueHasEnumString
         ? enumStrings.values[value.value]
         : (parameterInfo.unit == 16
-              ? (value.value == 0 && valueString.value.isNotEmpty
-                    ? valueString.value
-                    : null)
+              ? unit16ValueString
               : (valueString.value.isNotEmpty ? valueString.value : null));
 
     return ParameterViewRow(
