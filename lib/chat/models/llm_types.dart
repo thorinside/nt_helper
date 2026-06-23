@@ -160,5 +160,7 @@ class LlmUsage {
   });
 
   int get totalTokens => inputTokens + outputTokens;
-  int get contextInputTokens => peakInputTokens ?? inputTokens;
+  int get contextInputTokens =>
+      peakInputTokens ??
+      inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
 }

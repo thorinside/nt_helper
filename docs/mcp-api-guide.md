@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Disting NT MCP (Model Context Protocol) API provides 16 individual, well-named tools for interacting with your hardware. Each tool does one thing with a flat parameter structure, making it easy for any LLM to use correctly.
+The Disting NT MCP (Model Context Protocol) API provides 18 individual, well-named tools for interacting with your hardware. Each tool does one thing with a flat parameter structure, making it easy for any LLM to use correctly.
 
 ### Design Philosophy
 
-- **16 individual tools**: Each tool has a single purpose with simple parameters
+- **18 individual tools**: Each tool has a single purpose with simple parameters
 - **No multiplexing**: No `target` parameters to route behavior — tool name says what it does
 - **Flat schemas**: Parameters are top-level, not nested inside `data` objects
 - **Mapping support**: Full CV/MIDI/i2c/performance page mapping for parameter control
@@ -20,6 +20,40 @@ The Disting NT MCP (Model Context Protocol) API provides 16 individual, well-nam
 - Incorrect: `midiChannel`, `isMidiEnabled`, `cvInput`
 
 ## Tool Reference
+
+### Reference Tools
+
+Any tool can return a `tool_reference` instead of a large payload. Use these tools to read or search the referenced result.
+
+#### read_reference
+
+Read a page from a large tool result reference.
+
+**Parameters**:
+- `reference_id` (required, string): Reference ID returned by a previous tool result.
+- `offset` (optional, integer): Character offset to start reading from. Default: 0.
+- `limit` (optional, integer): Maximum characters to return. Default: 8000, max: 16000.
+
+```json
+{"tool": "read_reference", "arguments": {"reference_id": "ref_123", "offset": 0, "limit": 8000}}
+```
+
+#### search_reference
+
+Search inside a large tool result reference and return matching snippets with offsets.
+
+**Parameters**:
+- `reference_id` (required, string): Reference ID returned by a previous tool result.
+- `query` (required, string): Case-insensitive text to search for.
+- `start_offset` (optional, integer): Character offset to begin searching from. Default: 0.
+- `limit` (optional, integer): Maximum matches to return. Default: 20, max: 50.
+- `context_chars` (optional, integer): Context characters around each match. Default: 120, max: 500.
+
+```json
+{"tool": "search_reference", "arguments": {"reference_id": "ref_123", "query": "cutoff"}}
+```
+
+---
 
 ### Template Tools
 
@@ -177,19 +211,13 @@ Show a compact preset overview: preset name and slot list with algorithm names a
 
 #### show_slot
 
-Show a slot with paginated parameter summaries. Each parameter shows its name, current value, and range (for numerics). Does NOT include enum value lists or full mapping detail — use `show_parameter` for those.
+Show a slot with parameter summaries. Each parameter shows its name, current value, and range (for numerics). Does NOT include enum value lists or full mapping detail — use `show_parameter` for those. Large results may be returned as a `tool_reference`.
 
 **Parameters**:
 - `slot_index` (required, integer): Slot index (0-31)
-- `offset` (optional, integer): Start at this parameter index (default: 0)
-- `limit` (optional, integer): Max parameters to return (default: 10, max: 100)
 
 ```json
 {"tool": "show_slot", "arguments": {"slot_index": 0}}
-```
-
-```json
-{"tool": "show_slot", "arguments": {"slot_index": 0, "offset": 10, "limit": 10}}
 ```
 
 **Example response**:
@@ -198,9 +226,6 @@ Show a slot with paginated parameter summaries. Each parameter shows its name, c
   "slot_index": 0,
   "algorithm": {"guid": "vcod", "name": "Dual VCO"},
   "parameter_count": 18,
-  "offset": 0,
-  "limit": 10,
-  "has_more": true,
   "parameters": [
     {"parameter_number": 0, "parameter_name": "Pitch", "is_disabled": false, "value": 60, "min": 0, "max": 127},
     {"parameter_number": 1, "parameter_name": "Waveform", "is_disabled": false, "is_enum": true, "value": "Sawtooth", "has_mapping": true, "performance_page": 1}
@@ -655,10 +680,7 @@ Returns algorithm names and parameter counts per slot. No parameters fetched.
 ```json
 {"tool": "show_slot", "arguments": {"slot_index": 0}}
 ```
-Returns first 10 parameter summaries (name, current value, range). If `has_more` is true, page through:
-```json
-{"tool": "show_slot", "arguments": {"slot_index": 0, "offset": 10}}
-```
+Returns parameter summaries (name, current value, range). If the result is large, it returns a `tool_reference`; use `read_reference` or `search_reference` to inspect it.
 
 ### Step 3: Inspect a specific parameter before editing
 ```json

@@ -103,6 +103,8 @@ class ChatService {
     // final one.
     int totalInputTokens = 0;
     int totalOutputTokens = 0;
+    int totalCacheCreationInputTokens = 0;
+    int totalCacheReadInputTokens = 0;
     int peakInputTokens = 0;
 
     for (int i = 0; i < _maxIterations; i++) {
@@ -148,9 +150,12 @@ class ChatService {
 
       // Accumulate usage from every API call
       if (response.usage != null) {
-        totalInputTokens += response.usage!.inputTokens;
-        totalOutputTokens += response.usage!.outputTokens;
-        peakInputTokens = max(peakInputTokens, response.usage!.inputTokens);
+        final usage = response.usage!;
+        totalInputTokens += usage.inputTokens;
+        totalOutputTokens += usage.outputTokens;
+        totalCacheCreationInputTokens += usage.cacheCreationInputTokens;
+        totalCacheReadInputTokens += usage.cacheReadInputTokens;
+        peakInputTokens = max(peakInputTokens, usage.contextInputTokens);
       }
 
       if (response.hasToolCalls) {
@@ -219,6 +224,8 @@ class ChatService {
         usage: LlmUsage(
           inputTokens: totalInputTokens,
           outputTokens: totalOutputTokens,
+          cacheCreationInputTokens: totalCacheCreationInputTokens,
+          cacheReadInputTokens: totalCacheReadInputTokens,
           peakInputTokens: peakInputTokens,
         ),
         isFinal: true,

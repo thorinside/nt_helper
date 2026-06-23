@@ -27,6 +27,7 @@ class ChatCubit extends Cubit<ChatState> {
   StreamSubscription<dynamic>? _loopSubscription;
   LlmProvider? _activeProvider;
   Future<void>? _summarizationFuture;
+  Future<void>? _memoryRefreshFuture;
   bool _compacting = false;
 
   // Accumulated LLM message history for the agentic loop
@@ -41,7 +42,9 @@ class ChatCubit extends Cubit<ChatState> {
   String? _memoryContent;
   String? _dailyLogs;
   int _currentContextWindowTokens = LlmProvider.defaultContextWindowTokens;
+  int _lastContextInputTokens = 0;
   bool _needsCompaction = false;
+  Object? _memoryRefreshError;
 
   static const _compactionThresholdPercent = 85;
 
@@ -128,11 +131,16 @@ class ChatCubit extends Cubit<ChatState> {
         _bootstrapped = true;
       }
 
+      await _waitForMemoryRefresh();
+
       // Wait for any in-flight summarization before compaction/provider reset.
       if (_summarizationFuture != null) {
         await _summarizationFuture;
         _summarizationFuture = null;
       }
+
+      await _resetActiveProvider(settings);
+      _recomputeCompactionNeedForCurrentWindow();
 
       // Handle compaction if needed
       if (_needsCompaction) {
@@ -169,20 +177,7 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
 
-      // Create provider (disposing the previous one first)
-      _activeProvider?.dispose();
-      _activeProvider = _createProvider(settings);
-      _currentContextWindowTokens = await _resolveContextWindow(
-        _activeProvider!,
-      );
-      final resolvedContextState = state;
-      if (resolvedContextState is ChatReady) {
-        emit(
-          resolvedContextState.copyWith(
-            contextWindowTokens: _currentContextWindowTokens,
-          ),
-        );
-      }
+      _activeProvider ??= _createProvider(settings);
       final toolBridge = ToolBridgeService(_toolRegistry);
       final chatService = ChatService(
         provider: _activeProvider!,
@@ -351,9 +346,9 @@ class ChatCubit extends Cubit<ChatState> {
         );
         // Keep cached memory context in sync for subsequent turns.
         if (name == 'memory_write') {
-          _refreshMemory();
+          _queueMemoryRefresh(_refreshMemory);
         } else if (name == 'memory_append_daily') {
-          _refreshDailyLogs();
+          _queueMemoryRefresh(_refreshDailyLogs);
         }
       case ChatLoopAssistantMessage(
         content: final content,
@@ -375,6 +370,7 @@ class ChatCubit extends Cubit<ChatState> {
           _llmHistory.clear();
           _llmHistory.addAll(newHistory);
           _historyLengthBeforeLoop = _llmHistory.length;
+          _lastContextInputTokens = contextInput;
 
           // Summarize large tool results in background
           _summarizationFuture = _summarizeLargeToolResults();
@@ -382,9 +378,7 @@ class ChatCubit extends Cubit<ChatState> {
           // Check if compaction is needed
           final compactAt =
               _currentContextWindowTokens * _compactionThresholdPercent ~/ 100;
-          if (contextInput > compactAt) {
-            _needsCompaction = true;
-          }
+          _needsCompaction = contextInput > compactAt;
         }
 
         emit(
@@ -428,6 +422,48 @@ class ChatCubit extends Cubit<ChatState> {
 
   Future<void> _refreshDailyLogs() async {
     _dailyLogs = await _memoryService.readDailyLogs();
+  }
+
+  void _queueMemoryRefresh(Future<void> Function() refresh) {
+    _memoryRefreshFuture = (_memoryRefreshFuture ?? Future<void>.value())
+        .then((_) => refresh())
+        .catchError((Object error) {
+          _memoryRefreshError ??= error;
+        });
+  }
+
+  Future<void> _waitForMemoryRefresh({bool reportErrors = true}) async {
+    final future = _memoryRefreshFuture;
+    if (future == null) return;
+    await future;
+    _memoryRefreshFuture = null;
+    final error = _memoryRefreshError;
+    _memoryRefreshError = null;
+    if (reportErrors && error != null) {
+      throw StateError('Failed to refresh chat memory context: $error');
+    }
+  }
+
+  Future<void> _resetActiveProvider(ChatSettings settings) async {
+    _activeProvider?.dispose();
+    _activeProvider = _createProvider(settings);
+    _currentContextWindowTokens = await _resolveContextWindow(_activeProvider!);
+    final currentState = state;
+    if (currentState is ChatReady) {
+      emit(
+        currentState.copyWith(contextWindowTokens: _currentContextWindowTokens),
+      );
+    }
+  }
+
+  void _recomputeCompactionNeedForCurrentWindow() {
+    if (_llmHistory.isEmpty || _lastContextInputTokens <= 0) {
+      _needsCompaction = false;
+      return;
+    }
+    final compactAt =
+        _currentContextWindowTokens * _compactionThresholdPercent ~/ 100;
+    _needsCompaction = _lastContextInputTokens > compactAt;
   }
 
   Future<void> _summarizeLargeToolResults() async {
@@ -482,6 +518,12 @@ class ChatCubit extends Cubit<ChatState> {
     await _memoryService.saveSessionSnapshot(_llmHistory);
     if (!_compacting) return;
 
+    if (_activeProvider == null) {
+      await _resetActiveProvider(settings);
+    }
+
+    final historyLengthBeforeCompaction = _llmHistory.length;
+
     // Inject compaction request
     _llmHistory.add(
       LlmMessage.user(
@@ -491,9 +533,6 @@ class ChatCubit extends Cubit<ChatState> {
     );
 
     // Run one agentic loop turn for the LLM to save context
-    _activeProvider?.dispose();
-    _activeProvider = _createProvider(settings);
-    _currentContextWindowTokens = await _resolveContextWindow(_activeProvider!);
     final toolBridge = ToolBridgeService(_toolRegistry);
     final chatService = ChatService(
       provider: _activeProvider!,
@@ -505,24 +544,46 @@ class ChatCubit extends Cubit<ChatState> {
     );
 
     final completer = Completer<void>();
+    var completed = false;
+    String? failure;
     final sub = chatService
         .runAgenticLoop(_llmHistory)
         .listen(
           (event) {
             if (event is ChatLoopAssistantMessage && event.isFinal) {
+              completed = true;
               if (event.finalHistory != null) {
                 _llmHistory.clear();
                 _llmHistory.addAll(event.finalHistory!);
               }
+            } else if (event is ChatLoopError) {
+              failure = event.message;
             }
           },
-          onDone: () => completer.complete(),
-          onError: (e) => completer.complete(),
+          onDone: () {
+            if (!completer.isCompleted) completer.complete();
+          },
+          onError: (Object error) {
+            failure = error.toString();
+            if (!completer.isCompleted) completer.complete();
+          },
         );
 
     await completer.future;
     await sub.cancel();
     if (!_compacting) return;
+
+    if (!completed) {
+      if (historyLengthBeforeCompaction <= _llmHistory.length) {
+        _llmHistory.removeRange(
+          historyLengthBeforeCompaction,
+          _llmHistory.length,
+        );
+      }
+      _needsCompaction = true;
+      _compacting = false;
+      throw StateError('Compaction failed: ${failure ?? 'no final response'}');
+    }
 
     // Trim to ~last 10 messages, ensuring we start on a user message so that
     // tool/assistant ordering is valid for all providers.
@@ -543,6 +604,7 @@ class ChatCubit extends Cubit<ChatState> {
     // Reset compaction state and token counters
     _needsCompaction = false;
     _compacting = false;
+    _lastContextInputTokens = 0;
 
     // Add compaction notice to UI
     final currentState = state;
@@ -624,12 +686,14 @@ class ChatCubit extends Cubit<ChatState> {
       await _summarizationFuture;
       _summarizationFuture = null;
     }
+    await _waitForMemoryRefresh(reportErrors: false);
     if (_llmHistory.isNotEmpty) {
       await _memoryService.saveSessionSnapshot(_llmHistory.toList());
     }
     _llmHistory.clear();
     _bootstrapped = false;
     _needsCompaction = false;
+    _lastContextInputTokens = 0;
     emit(const ChatReady());
   }
 
@@ -662,10 +726,12 @@ class ChatCubit extends Cubit<ChatState> {
         _dailyLogs = await _memoryService.readDailyLogs();
         _bootstrapped = true;
       }
+      await _waitForMemoryRefresh();
       if (_summarizationFuture != null) {
         await _summarizationFuture;
         _summarizationFuture = null;
       }
+      await _resetActiveProvider(settings);
       await _performCompaction(settings);
       final doneState = state;
       if (doneState is ChatReady) {
@@ -701,6 +767,8 @@ class ChatCubit extends Cubit<ChatState> {
 
   void dismissError() {
     _llmHistory.clear();
+    _needsCompaction = false;
+    _lastContextInputTokens = 0;
     emit(const ChatReady());
   }
 
@@ -787,6 +855,7 @@ class ChatCubit extends Cubit<ChatState> {
       await _summarizationFuture;
       _summarizationFuture = null;
     }
+    await _waitForMemoryRefresh(reportErrors: false);
     if (_llmHistory.isNotEmpty) {
       await _memoryService.saveSessionSnapshot(_llmHistory.toList());
     }

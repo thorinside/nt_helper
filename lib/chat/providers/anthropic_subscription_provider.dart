@@ -129,6 +129,7 @@ class AnthropicSubscriptionProvider
 
   @override
   void dispose() {
+    _delegate.dispose();
     _client.close();
   }
 }

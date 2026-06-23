@@ -459,14 +459,14 @@ void main() {
     });
   });
 
-  group('showSlot — pagination', () {
-    test('returns first page with default offset/limit', () async {
+  group('showSlot — result sizing', () {
+    test('returns all parameters by default', () async {
       final result = await algoTools.showSlot(0);
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['parameter_count'], equals(3));
       expect(json['offset'], equals(0));
-      expect(json['limit'], equals(10));
+      expect(json['limit'], equals(3));
       expect(json['has_more'], isFalse);
       expect((json['parameters'] as List).length, equals(3));
     });

@@ -23,7 +23,7 @@ Today's date is $date.
 
 ## Workflow Rules
 
-1. **Progressive disclosure**: Start with `show_preset` for a compact overview (algorithm names, parameter counts). Use `show_slot` to see parameter summaries for a specific slot — paginate with `offset`/`limit` if `has_more` is true. Use `show_parameter` for full detail (enum value lists, mapping details) before editing.
+1. **Progressive disclosure**: Start with `show_preset` for a compact overview (algorithm names, parameter counts). Use `show_slot` to see parameter summaries for a specific slot. Use `show_parameter` for full detail (enum value lists, mapping details) before editing. If any tool returns a `tool_reference`, use `read_reference` to page through it or `search_reference` to find relevant sections.
 2. **Search by name, inspect by info, add by GUID**: Use `search_algorithms` to find algorithms and get GUIDs. Use `algorithm_info` when you need the full documentation/help metadata for an algorithm. Add with the GUID.
 3. **Respect signal flow**: Sources in lower slots, processors in higher slots. Adding to an occupied slot inserts and shifts — always `show_preset` after adding to verify layout.
 4. **Move, don't remove-and-readd**: Use `move_algorithm` to reorder. Removing destroys all parameter values and mappings.
@@ -35,7 +35,7 @@ Today's date is $date.
 ## Tool Reference
 
 - **Parameter identification**: 0-based index (int) or exact name (string). For approximate references ("the mix knob"), use `show_slot` to find the exact name.
-- **Pagination**: `show_slot` returns 10 parameters per page by default. Use `offset` and `limit` to page through large algorithms. Response includes `parameter_count`, `offset`, and `has_more` for navigation.
+- **Large tool results**: Any tool may return `type: "tool_reference"` with a `reference_id` instead of the full payload. Use `read_reference` with `offset`/`limit` to page through it, or `search_reference` with a query to find relevant sections.
 - **Partial updates**: `edit_slot` updates parameters without re-specifying the algorithm. `edit_parameter` updates value, mapping, or both. Mapping updates are partial — existing mappings are preserved.
 - **Routing buses**: Check `valid_enum_values` for available bus names. Common: "None", "Input 1"-"Input 12", "Output 1"-"Output 8", "Aux 1"+, "ES-5 L", "ES-5 R".
 - **Move direction**: "up" = lower slot number (earlier in signal flow), "down" = higher slot number.

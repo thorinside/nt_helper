@@ -7,6 +7,7 @@ import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/chat/services/memory_tools.dart';
 import 'package:nt_helper/chat/utils/image_result_detector.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/mcp/tool_reference_store.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/services/disting_controller.dart';
@@ -44,15 +45,22 @@ class ToolRegistry {
   };
 
   final List<ToolRegistryEntry> _entries = [];
+  final ToolReferenceStore _referenceStore;
   late final DistingController _controller;
   late final MCPAlgorithmTools _algoTools;
   late final DistingTools _distingTools;
 
-  ToolRegistry(DistingCubit distingCubit, {MemoryService? memoryService}) {
+  ToolRegistry(
+    DistingCubit distingCubit, {
+    MemoryService? memoryService,
+    List<ToolRegistryEntry> extraEntries = const [],
+    ToolReferenceStore? referenceStore,
+  }) : _referenceStore = referenceStore ?? ToolReferenceStore() {
     _controller = DistingControllerImpl(distingCubit);
     _algoTools = MCPAlgorithmTools(_controller, distingCubit);
     _distingTools = DistingTools(_controller, distingCubit);
     _registerAll();
+    _entries.addAll(extraEntries);
     if (memoryService != null) {
       registerMemoryTools(_entries, memoryService);
       registerLocalFileTools(_entries, actor: FileRootActor.chat);
@@ -66,6 +74,44 @@ class ToolRegistry {
       if (entry.name == name) return entry;
     }
     return null;
+  }
+
+  Future<String> executeTool(
+    String name,
+    Map<String, dynamic> arguments,
+  ) async {
+    final entry = findByName(name);
+    if (entry == null) {
+      return jsonEncode({'success': false, 'error': 'Unknown tool: $name'});
+    }
+    return _executeEntry(entry, arguments);
+  }
+
+  Future<String> _executeEntry(
+    ToolRegistryEntry entry,
+    Map<String, dynamic> arguments,
+  ) async {
+    try {
+      final resultJson = await entry
+          .handler(arguments)
+          .timeout(
+            entry.timeout,
+            onTimeout: () => jsonEncode({
+              'success': false,
+              'error':
+                  'Tool execution timed out after ${entry.timeout.inSeconds} seconds',
+            }),
+          );
+      return _referenceStore.storeIfLarge(
+        toolName: entry.name,
+        result: resultJson,
+      );
+    } catch (e) {
+      return jsonEncode({
+        'success': false,
+        'error': 'Tool execution failed: ${e.toString()}',
+      });
+    }
   }
 
   /// Apply all registered tools to an MCP server instance.
@@ -96,34 +142,14 @@ class ToolRegistry {
         }),
       ),
       callback: (args, extra) async {
-        try {
-          final resultJson = await entry
-              .handler(args)
-              .timeout(
-                entry.timeout,
-                onTimeout: () => jsonEncode({
-                  'success': false,
-                  'error':
-                      'Tool execution timed out after ${entry.timeout.inSeconds} seconds',
-                }),
-              );
-          final image = tryParseImageResult(resultJson);
-          if (image != null) {
-            return CallToolResult.fromContent([
-              ImageContent(data: image.data, mimeType: image.mimeType),
-            ]);
-          }
-          return CallToolResult.fromContent([TextContent(text: resultJson)]);
-        } catch (e) {
+        final resultJson = await _executeEntry(entry, args);
+        final image = tryParseImageResult(resultJson);
+        if (image != null) {
           return CallToolResult.fromContent([
-            TextContent(
-              text: jsonEncode({
-                'success': false,
-                'error': 'Tool execution failed: ${e.toString()}',
-              }),
-            ),
+            ImageContent(data: image.data, mimeType: image.mimeType),
           ]);
         }
+        return CallToolResult.fromContent([TextContent(text: resultJson)]);
       },
     );
   }
@@ -144,10 +170,87 @@ class ToolRegistry {
   }
 
   void _registerAll() {
+    _registerReferenceTools();
     _registerSearchTools();
     _registerShowTools();
     _registerEditTools();
     _registerPresetTools();
+  }
+
+  void _registerReferenceTools() {
+    _entries.add(
+      ToolRegistryEntry(
+        name: ToolReferenceStore.readToolName,
+        description:
+            'Read a page from a large tool result reference returned by any tool.',
+        inputSchema: {
+          'properties': {
+            'reference_id': {
+              'type': 'string',
+              'description': 'Reference ID returned by a previous tool result.',
+            },
+            'offset': {
+              'type': 'integer',
+              'minimum': 0,
+              'description':
+                  'Character offset to start reading from. Default: 0.',
+            },
+            'limit': {
+              'type': 'integer',
+              'minimum': 1,
+              'maximum': ToolReferenceStore.maxReadLimitChars,
+              'description':
+                  'Maximum characters to return. Default: 8000, max: 16000.',
+            },
+          },
+          'required': ['reference_id'],
+        },
+        handler: _referenceStore.readReference,
+        timeout: const Duration(seconds: 5),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
+        name: ToolReferenceStore.searchToolName,
+        description:
+            'Search within a large tool result reference returned by any tool.',
+        inputSchema: {
+          'properties': {
+            'reference_id': {
+              'type': 'string',
+              'description': 'Reference ID returned by a previous tool result.',
+            },
+            'query': {
+              'type': 'string',
+              'description': 'Case-insensitive text to search for.',
+            },
+            'start_offset': {
+              'type': 'integer',
+              'minimum': 0,
+              'description':
+                  'Character offset to begin searching from. Default: 0.',
+            },
+            'limit': {
+              'type': 'integer',
+              'minimum': 1,
+              'maximum': ToolReferenceStore.maxSearchLimit,
+              'description': 'Maximum matches to return. Default: 20, max: 50.',
+            },
+            'context_chars': {
+              'type': 'integer',
+              'minimum': 0,
+              'maximum': ToolReferenceStore.maxSearchContextChars,
+              'description':
+                  'Context characters around each match. Default: 120, max: 500.',
+            },
+          },
+          'required': ['reference_id', 'query'],
+        },
+        handler: _referenceStore.searchReference,
+        timeout: const Duration(seconds: 5),
+      ),
+    );
   }
 
   void _registerSearchTools() {
@@ -250,9 +353,9 @@ class ToolRegistry {
       ToolRegistryEntry(
         name: 'show_slot',
         description:
-            'Show a slot with its algorithm info and a page of parameter summaries (name, current value, range). '
+            'Show a slot with its algorithm info and parameter summaries (name, current value, range). '
             'Does NOT include enum value lists or full mapping details — use show_parameter for those. '
-            'Parameters with mappings show has_mapping: true. Supports pagination via offset/limit.',
+            'Parameters with mappings show has_mapping: true. Large results are returned as references that can be read or searched.',
         inputSchema: {
           'properties': {
             'slot_index': {
@@ -261,26 +364,10 @@ class ToolRegistry {
               'maximum': 31,
               'description': 'Slot index (0-31).',
             },
-            'offset': {
-              'type': 'integer',
-              'minimum': 0,
-              'description': 'Parameter offset for pagination (default: 0).',
-            },
-            'limit': {
-              'type': 'integer',
-              'minimum': 1,
-              'maximum': 100,
-              'description':
-                  'Max parameters to return (default: 10, max: 100).',
-            },
           },
           'required': ['slot_index'],
         },
-        handler: (args) => _algoTools.showSlot(
-          args['slot_index'],
-          offset: (args['offset'] as int?) ?? 0,
-          limit: (args['limit'] as int?) ?? 10,
-        ),
+        handler: (args) => _algoTools.showSlot(args['slot_index']),
       ),
     );
 
