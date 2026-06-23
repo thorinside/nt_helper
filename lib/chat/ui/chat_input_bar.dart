@@ -125,26 +125,6 @@ class _ChatInputBarState extends State<ChatInputBar> {
     _focusNode.requestFocus();
   }
 
-  Future<void> _attachImages() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.image,
-      allowMultiple: true,
-      withData: false,
-    );
-    if (result == null || !mounted) return;
-    for (final file in result.files) {
-      if (!_canAddAttachment()) break;
-      if (file.size > _maxImageBytes) {
-        _showAttachmentError('${file.name} is larger than 10 MB.');
-        continue;
-      }
-      final bytes = file.bytes ?? await _readFileBytes(file.path);
-      if (bytes == null) continue;
-      if (!mounted) return;
-      _addImage(bytes, name: file.name);
-    }
-  }
-
   Future<void> _attachFiles() async {
     final result = await FilePicker.pickFiles(
       allowMultiple: true,
@@ -183,13 +163,6 @@ class _ChatInputBarState extends State<ChatInputBar> {
       if (!mounted) return;
       _addFile(bytes, name: file.name, mimeType: mimeType);
     }
-  }
-
-  Future<void> _pasteImage() async {
-    final bytes = await Pasteboard.image;
-    if (!mounted || bytes == null || bytes.isEmpty) return;
-    if (!_canAddAttachment()) return;
-    _addImage(bytes, name: 'clipboard.png');
   }
 
   Future<void> _handlePasteShortcut() async {
@@ -417,7 +390,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 4 // SizedBox before send button
                 -
                 48; // send/cancel IconButton width
-            _availableWidth -= 120; // attach file/image and paste IconButtons
+            _availableWidth -= 40; // attachment IconButton width
             if (!_isExpanded) {
               _availableWidth -= 40; // settings IconButton width
             }
@@ -440,32 +413,12 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         ),
                 ),
                 Semantics(
-                  label: 'Attach file',
+                  label: 'Attach image or file',
                   button: true,
                   child: IconButton(
                     icon: const Icon(Icons.attach_file, size: 20),
-                    tooltip: 'Attach file',
+                    tooltip: 'Attach image or file',
                     onPressed: widget.isProcessing ? null : _attachFiles,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                Semantics(
-                  label: 'Attach image',
-                  button: true,
-                  child: IconButton(
-                    icon: const Icon(Icons.image_outlined, size: 20),
-                    tooltip: 'Attach image',
-                    onPressed: widget.isProcessing ? null : _attachImages,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                Semantics(
-                  label: 'Paste image',
-                  button: true,
-                  child: IconButton(
-                    icon: const Icon(Icons.content_paste, size: 20),
-                    tooltip: 'Paste image',
-                    onPressed: widget.isProcessing ? null : _pasteImage,
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
