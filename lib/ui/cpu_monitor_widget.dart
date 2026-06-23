@@ -8,7 +8,11 @@ import 'package:nt_helper/services/settings_service.dart';
 /// Shows the two main CPU usage numbers with a tooltip containing slot breakdown.
 /// Automatically pauses CPU monitoring when not visible and resumes when visible.
 class CpuMonitorWidget extends StatefulWidget {
-  const CpuMonitorWidget({super.key});
+  const CpuMonitorWidget({super.key, this.paused = false});
+
+  /// Temporarily hides the widget and pauses polling while another workflow
+  /// owns the same device communication path.
+  final bool paused;
 
   @override
   State<CpuMonitorWidget> createState() => _CpuMonitorWidgetState();
@@ -17,6 +21,7 @@ class CpuMonitorWidget extends StatefulWidget {
 class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
   late DistingCubit _distingCubit;
   bool _isVisible = false;
+  CpuUsage? _lastCpuUsage;
 
   @override
   void didChangeDependencies() {
@@ -42,7 +47,7 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
       valueListenable: SettingsService().cpuMonitorEnabledNotifier,
       builder: (context, cpuMonitorEnabled, _) {
         // Check if CPU monitor is disabled in settings
-        if (!cpuMonitorEnabled) {
+        if (!cpuMonitorEnabled || widget.paused) {
           _updateVisibility(false);
           return const SizedBox.shrink();
         }
@@ -78,24 +83,18 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
             return StreamBuilder<CpuUsage?>(
               stream: _distingCubit.cpuUsageStream,
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  // Show placeholder while loading
-                  return _buildCpuDisplay(
-                    context: context,
-                    cpu1: null,
-                    cpu2: null,
-                    slotUsages: [],
-                    isLoading: true,
-                  );
+                final currentCpuUsage = snapshot.data;
+                if (currentCpuUsage != null) {
+                  _lastCpuUsage = currentCpuUsage;
                 }
 
-                final cpuUsage = snapshot.data;
+                final cpuUsage = currentCpuUsage ?? _lastCpuUsage;
                 return _buildCpuDisplay(
                   context: context,
                   cpu1: cpuUsage?.cpu1,
                   cpu2: cpuUsage?.cpu2,
                   slotUsages: cpuUsage?.slotUsages ?? [],
-                  isLoading: false,
+                  isWaitingForSample: cpuUsage == null,
                 );
               },
             );
@@ -117,7 +116,7 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
     required int? cpu1,
     required int? cpu2,
     required List<int> slotUsages,
-    required bool isLoading,
+    required bool isWaitingForSample,
   }) {
     final theme = Theme.of(context);
 
@@ -137,11 +136,11 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
       cpu1: cpu1,
       cpu2: cpu2,
       slotUsages: slotUsages,
-      isLoading: isLoading,
+      isWaitingForSample: isWaitingForSample,
     );
 
-    final semanticLabel = isLoading
-        ? 'CPU monitor: loading'
+    final semanticLabel = isWaitingForSample
+        ? 'CPU monitor: waiting for usage sample'
         : 'CPU usage: Core 1 ${cpu1 ?? 0}%, Core 2 ${cpu2 ?? 0}%${isHighUsage ? ', warning: high usage' : ''}';
 
     return Semantics(
@@ -169,17 +168,12 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
                     : theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 4),
-              if (isLoading)
-                SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                )
-              else
-                Text('${cpu1 ?? 0}% | ${cpu2 ?? 0}%', style: textStyle),
+              Text(
+                isWaitingForSample
+                    ? '--% | --%'
+                    : '${cpu1 ?? 0}% | ${cpu2 ?? 0}%',
+                style: textStyle,
+              ),
             ],
           ),
         ),
@@ -192,10 +186,10 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
     required int? cpu1,
     required int? cpu2,
     required List<int> slotUsages,
-    required bool isLoading,
+    required bool isWaitingForSample,
   }) {
-    if (isLoading) {
-      return 'Loading CPU usage...';
+    if (isWaitingForSample) {
+      return 'Waiting for CPU usage sample...';
     }
 
     final buffer = StringBuffer();

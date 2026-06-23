@@ -23,8 +23,8 @@ Today's date is $date.
 
 ## Workflow Rules
 
-1. **Progressive disclosure**: Start with `show_preset` for a compact overview (algorithm names, parameter counts). Use `show_slot` to see parameter summaries for a specific slot — paginate with `offset`/`limit` if `has_more` is true. Use `show_parameter` for full detail (enum value lists, mapping details) before editing.
-2. **Search by name, add by GUID**: Use `search_algorithms` to find algorithms and get GUIDs. Add with the GUID.
+1. **Progressive disclosure**: Start with `show_preset` for a compact overview (algorithm names, parameter counts). Use `show_slot` to see parameter summaries for a specific slot. Use `show_parameter` for full detail (enum value lists, mapping details) before editing. If any tool returns a `tool_reference`, use `read_reference` to page through it or `search_reference` to find relevant sections.
+2. **Search by name, inspect by info, add by GUID**: Use `search_algorithms` to find algorithms and get GUIDs. Use `algorithm_info` when you need the full documentation/help metadata for an algorithm. Add with the GUID.
 3. **Respect signal flow**: Sources in lower slots, processors in higher slots. Adding to an occupied slot inserts and shifts — always `show_preset` after adding to verify layout.
 4. **Move, don't remove-and-readd**: Use `move_algorithm` to reorder. Removing destroys all parameter values and mappings.
 5. **Never guess enum values**: Always `show_parameter` first to see exact `valid_enum_values` before setting an enum parameter. `show_slot` tells you which parameters are enums (`is_enum: true`) but does NOT include the values list. For numeric parameters, `show_slot` gives you the range.
@@ -35,7 +35,7 @@ Today's date is $date.
 ## Tool Reference
 
 - **Parameter identification**: 0-based index (int) or exact name (string). For approximate references ("the mix knob"), use `show_slot` to find the exact name.
-- **Pagination**: `show_slot` returns 10 parameters per page by default. Use `offset` and `limit` to page through large algorithms. Response includes `parameter_count`, `offset`, and `has_more` for navigation.
+- **Large tool results**: Any tool may return `type: "tool_reference"` with a `reference_id` instead of the full payload. Use `read_reference` with `offset`/`limit` to page through it, or `search_reference` with a query to find relevant sections.
 - **Partial updates**: `edit_slot` updates parameters without re-specifying the algorithm. `edit_parameter` updates value, mapping, or both. Mapping updates are partial — existing mappings are preserved.
 - **Routing buses**: Check `valid_enum_values` for available bus names. Common: "None", "Input 1"-"Input 12", "Output 1"-"Output 8", "Aux 1"+, "ES-5 L", "ES-5 R".
 - **Move direction**: "up" = lower slot number (earlier in signal flow), "down" = higher slot number.
@@ -46,6 +46,7 @@ Today's date is $date.
   - `i2c`: `is_i2c_enabled`, `i2c_cc` (0-255), `is_i2c_symmetric`, `i2c_min`, `i2c_max`. I2C *sets* the parameter value directly.
   - `performance_page`: 0-30.
 - **Search**: Results sorted by relevance. Use first match unless ambiguous — then present top results and ask.
+- **Algorithm help**: `algorithm_info` returns the same metadata source as the app's algorithm Help screen: description, categories, ports, specifications, parameters, and features.
 
 ## Response Style
 

@@ -189,6 +189,42 @@ void main() {
       expect(parameterViewRow.displayString, isNull);
     });
 
+    testWidgets('Looper decay time keeps unit 16 firmware ms value string', (
+      tester,
+    ) async {
+      final slot = createTestSlot(
+        algorithmIndex: 0,
+        unit: ParameterUnits.modernHasStrings,
+        currentValue: 500,
+        valueString: '500 ms',
+        enumValues: [],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ParameterEditorView(
+              slot: slot,
+              parameterInfo: slot.parameters[0],
+              value: slot.values[0],
+              enumStrings: slot.enums[0],
+              mapping: slot.mappings[0],
+              valueString: slot.valueStrings[0],
+              unit: null,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final parameterViewRow = tester.widget<ParameterViewRow>(
+        find.byType(ParameterViewRow),
+      );
+      expect(parameterViewRow.displayString, equals('500 ms'));
+      expect(parameterViewRow.unit, isNull);
+    });
+
     testWidgets('Complete enum strings are passed as dropdown items', (
       tester,
     ) async {

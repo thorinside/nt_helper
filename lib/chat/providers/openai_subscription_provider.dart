@@ -6,6 +6,7 @@ import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart'
     show LlmApiException;
 import 'package:nt_helper/chat/providers/llm_provider.dart';
+import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/chat/services/codex_auth_service.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
@@ -28,6 +29,22 @@ class OpenAISubscriptionProvider implements LlmProvider {
 
   @override
   String get displayName => 'OpenAI Subscription ($model)';
+
+  @override
+  Future<int?> resolveContextWindowTokens() async {
+    try {
+      final auth = await authService.loadAuth();
+      return OpenAIContextWindowResolver.resolveSubscription(
+        model: model,
+        headers: {'version': _clientVersion, ...auth.authHeaders},
+        client: _client,
+        clientVersion: _clientVersion,
+        baseUrl: _baseUrl,
+      );
+    } on Object {
+      return OpenAIContextWindowResolver.inferSubscription(model);
+    }
+  }
 
   @override
   Future<LlmResponse> sendMessages({
@@ -96,6 +113,18 @@ class OpenAISubscriptionProvider implements LlmProvider {
             'role': 'user',
             'content': [
               {'type': 'input_text', 'text': msg.content ?? ''},
+              for (final image in msg.imageAttachments)
+                {
+                  'type': 'input_image',
+                  'image_url': 'data:${image.mimeType};base64,${image.data}',
+                },
+              for (final file in msg.fileAttachments)
+                if (_isCodexFileInput(file.mimeType))
+                  {
+                    'type': 'input_file',
+                    'filename': file.name,
+                    'file_data': 'data:${file.mimeType};base64,${file.data}',
+                  },
             ],
           });
           break;
@@ -161,6 +190,10 @@ class OpenAISubscriptionProvider implements LlmProvider {
           },
         )
         .toList();
+  }
+
+  bool _isCodexFileInput(String mimeType) {
+    return mimeType == 'application/pdf';
   }
 
   Future<LlmResponse> _parseEventStream(Stream<List<int>> stream) async {

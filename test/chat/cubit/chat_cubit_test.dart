@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,8 @@ import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/mcp/tool_registry.dart';
+import 'package:nt_helper/services/settings_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockToolRegistry extends Mock implements ToolRegistry {}
 
@@ -24,6 +27,12 @@ const _settings = ChatSettings(
   provider: LlmProviderType.anthropic,
   anthropicApiKey: 'test-key',
   anthropicModel: 'claude-haiku-4-5-20251001',
+);
+
+const _openAiSettings = ChatSettings(
+  provider: LlmProviderType.openai,
+  openaiApiKey: 'test-key',
+  openaiModel: 'gpt-5-nano',
 );
 
 void main() {
@@ -42,11 +51,159 @@ void main() {
 
     when(() => toolRegistry.entries).thenReturn(const []);
     when(() => toolRegistry.findByName(any())).thenReturn(null);
+    when(
+      () => toolRegistry.executeTool(any(), any()),
+    ).thenAnswer((_) async => '{"success":true}');
     when(() => memoryService.readMemory()).thenAnswer((_) async => '');
     when(() => memoryService.readDailyLogs()).thenAnswer((_) async => '');
     when(
       () => memoryService.saveSessionSnapshot(any()),
     ).thenAnswer((_) async {});
+  });
+
+  group('Attachment validation', () {
+    blocTest<ChatCubit, ChatState>(
+      'rejects provider-unsupported binary file attachments before sending',
+      build: () {
+        return ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => throw StateError('provider should not run'),
+        );
+      },
+      act: (cubit) async {
+        await cubit.sendMessage(
+          'read this',
+          _openAiSettings,
+          fileAttachments: const [
+            ChatFileAttachment(
+              name: 'manual.pdf',
+              data: 'JVBERi0xLjQ=',
+              mimeType: 'application/pdf',
+              sizeBytes: 8,
+            ),
+          ],
+        );
+      },
+      expect: () => [
+        isA<ChatReady>()
+            .having((s) => s.isProcessing, 'isProcessing', true)
+            .having((s) => s.messages, 'messages', hasLength(1))
+            .having(
+              (s) => s.messages.single.fileAttachments.single.name,
+              'file attachment',
+              'manual.pdf',
+            ),
+        isA<ChatReady>()
+            .having((s) => s.isProcessing, 'isProcessing', false)
+            .having((s) => s.messages, 'messages', hasLength(2))
+            .having(
+              (s) => s.messages.last.content,
+              'validation message',
+              contains('Unsupported attachment for OpenAI API: manual.pdf'),
+            ),
+      ],
+    );
+
+    test('does not persist attachments into a legacy uploads folder', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'nt_helper_chat_uploads_',
+      );
+      try {
+        SharedPreferences.setMockInitialValues({
+          'chat_local_directory': tempDir.path,
+        });
+        await SettingsService().init();
+        final provider = MockLlmProvider();
+        when(() => provider.dispose()).thenReturn(null);
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer(
+          (_) async => const LlmResponse(content: 'ok', isComplete: true),
+        );
+        final cubit = ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => provider,
+        );
+
+        await cubit.sendMessage(
+          'look',
+          _settings,
+          imageAttachments: const [
+            ChatImageAttachment(
+              data: 'AQID',
+              mimeType: 'image/png',
+              name: 'clip.png',
+            ),
+          ],
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(await Directory('${tempDir.path}/uploads').exists(), isFalse);
+      } finally {
+        if (await tempDir.exists()) {
+          await tempDir.delete(recursive: true);
+        }
+      }
+    });
+
+    blocTest<ChatCubit, ChatState>(
+      'uses plural placeholder text for multiple image-only attachments',
+      build: () {
+        final provider = MockLlmProvider();
+        when(() => provider.dispose()).thenReturn(null);
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer(
+          (_) async => const LlmResponse(content: 'ok', isComplete: true),
+        );
+        return ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => provider,
+        );
+      },
+      act: (cubit) async {
+        await cubit.sendMessage(
+          '',
+          _settings,
+          imageAttachments: const [
+            ChatImageAttachment(
+              data: 'AQID',
+              mimeType: 'image/png',
+              name: 'one.png',
+            ),
+            ChatImageAttachment(
+              data: 'BAUG',
+              mimeType: 'image/png',
+              name: 'two.png',
+            ),
+          ],
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      },
+      expect: () => [
+        isA<ChatReady>()
+            .having((s) => s.isProcessing, 'isProcessing', true)
+            .having(
+              (s) => s.messages.single.content,
+              'content',
+              'Attached images.',
+            ),
+        isA<ChatReady>()
+            .having((s) => s.isProcessing, 'isProcessing', false)
+            .having((s) => s.messages.last.content, 'assistant response', 'ok'),
+      ],
+    );
   });
 
   group('Bug 1: permanent thinking spinner — onDone without isFinal', () {
@@ -413,6 +570,9 @@ void main() {
       final provider = MockLlmProvider();
       when(() => provider.dispose()).thenReturn(null);
       when(
+        () => provider.resolveContextWindowTokens(),
+      ).thenAnswer((_) async => 200000);
+      when(
         () => provider.sendMessages(
           messages: any(named: 'messages'),
           tools: any(named: 'tools'),
@@ -443,11 +603,11 @@ void main() {
             );
           case 3:
             // Turn 1, iteration 3: final response with high tokens to trigger
-            // compaction (limit/2 = 100000 for haiku's 200000).
+            // compaction (85% of the provider's 200000 token window).
             return const LlmResponse(
               content: 'Done with tools.',
               isComplete: true,
-              usage: LlmUsage(inputTokens: 110000, outputTokens: 500),
+              usage: LlmUsage(inputTokens: 171000, outputTokens: 500),
             );
           case 4:
             // Compaction loop: simple final response
@@ -506,5 +666,228 @@ void main() {
             'Got: ${lastMessages.map((m) => m.role.name).join(', ')}',
       );
     });
+
+    test(
+      'recomputes compaction need after resolving the next provider window',
+      () async {
+        final firstProvider = MockLlmProvider();
+        final secondProvider = MockLlmProvider();
+        when(() => firstProvider.dispose()).thenReturn(null);
+        when(() => secondProvider.dispose()).thenReturn(null);
+        when(
+          () => firstProvider.resolveContextWindowTokens(),
+        ).thenAnswer((_) async => 1000);
+        when(
+          () => secondProvider.resolveContextWindowTokens(),
+        ).thenAnswer((_) async => 2000);
+        when(
+          () => firstProvider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer(
+          (_) async => const LlmResponse(
+            content: 'near the small window',
+            isComplete: true,
+            usage: LlmUsage(inputTokens: 900, outputTokens: 10),
+          ),
+        );
+        when(
+          () => secondProvider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer(
+          (_) async => const LlmResponse(
+            content: 'fits the larger window',
+            isComplete: true,
+            usage: LlmUsage(inputTokens: 950, outputTokens: 10),
+          ),
+        );
+
+        final providers = [firstProvider, secondProvider];
+        var providerIndex = 0;
+        final cubit = ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => providers[providerIndex++],
+        );
+        addTearDown(cubit.close);
+
+        await cubit.sendMessage('first', _settings);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect((cubit.state as ChatReady).isProcessing, isFalse);
+
+        await cubit.sendMessage('second', _settings);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        verify(
+          () => secondProvider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).called(1);
+        expect((cubit.state as ChatReady).contextWindowTokens, 2000);
+      },
+    );
+
+    test('keeps existing history when automatic compaction fails', () async {
+      final firstProvider = MockLlmProvider();
+      final compactionProvider = MockLlmProvider();
+      when(() => firstProvider.dispose()).thenReturn(null);
+      when(() => compactionProvider.dispose()).thenReturn(null);
+      when(
+        () => firstProvider.resolveContextWindowTokens(),
+      ).thenAnswer((_) async => 1000);
+      when(
+        () => compactionProvider.resolveContextWindowTokens(),
+      ).thenAnswer((_) async => 1000);
+      when(
+        () => firstProvider.sendMessages(
+          messages: any(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).thenAnswer(
+        (_) async => const LlmResponse(
+          content: 'near the limit',
+          isComplete: true,
+          usage: LlmUsage(inputTokens: 900, outputTokens: 10),
+        ),
+      );
+      when(
+        () => compactionProvider.sendMessages(
+          messages: any(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).thenThrow(Exception('compaction API down'));
+
+      final providers = [firstProvider, compactionProvider];
+      var providerIndex = 0;
+      final cubit = ChatCubit(
+        toolRegistry: toolRegistry,
+        memoryService: memoryService,
+        providerFactory: (_) => providers[providerIndex++],
+      );
+      addTearDown(cubit.close);
+
+      await cubit.sendMessage('first', _settings);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.contextSummary.messageCount, 2);
+
+      await cubit.sendMessage('second', _settings);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final state = cubit.state as ChatReady;
+      expect(state.isProcessing, isFalse);
+      expect(state.messages.last.content, contains('Compaction failed'));
+      expect(cubit.contextSummary.messageCount, 2);
+    });
+  });
+
+  group('Memory cache coherence', () {
+    test(
+      'waits for memory_write refresh before building next system prompt',
+      () async {
+        final refreshCompleter = Completer<String>();
+        var readMemoryCalls = 0;
+        when(() => memoryService.readMemory()).thenAnswer((_) {
+          readMemoryCalls++;
+          if (readMemoryCalls == 1) {
+            return Future.value('old memory');
+          }
+          return refreshCompleter.future;
+        });
+
+        final memoryWriteTool = ToolRegistryEntry(
+          name: 'memory_write',
+          description: 'Write memory.',
+          inputSchema: const {'properties': {}},
+          handler: (_) async => '{"success":true}',
+        );
+        when(() => toolRegistry.entries).thenReturn([memoryWriteTool]);
+        when(
+          () => toolRegistry.executeTool('memory_write', any()),
+        ).thenAnswer((_) async => '{"success":true}');
+
+        var providerCallCount = 0;
+        String? secondTurnSystemPrompt;
+        final provider = MockLlmProvider();
+        when(() => provider.dispose()).thenReturn(null);
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer((invocation) async {
+          providerCallCount++;
+          switch (providerCallCount) {
+            case 1:
+              return const LlmResponse(
+                isComplete: false,
+                toolCalls: [
+                  LlmToolCall(
+                    id: 'memory_call',
+                    name: 'memory_write',
+                    arguments: {'content': 'updated memory'},
+                  ),
+                ],
+              );
+            case 2:
+              return const LlmResponse(
+                content: 'saved',
+                isComplete: true,
+                usage: LlmUsage(inputTokens: 10, outputTokens: 5),
+              );
+            default:
+              secondTurnSystemPrompt =
+                  invocation.namedArguments[#systemPrompt] as String?;
+              return const LlmResponse(
+                content: 'using memory',
+                isComplete: true,
+                usage: LlmUsage(inputTokens: 10, outputTokens: 5),
+              );
+          }
+        });
+
+        final cubit = ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => provider,
+        );
+        addTearDown(cubit.close);
+
+        await cubit.sendMessage('remember this', _settings);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(providerCallCount, 2);
+        expect(readMemoryCalls, 2);
+
+        final secondSend = cubit.sendMessage(
+          'what do you remember?',
+          _settings,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(
+          providerCallCount,
+          2,
+          reason:
+              'Second turn should wait for the queued memory refresh before '
+              'calling the provider.',
+        );
+
+        refreshCompleter.complete('updated memory');
+        await secondSend;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(providerCallCount, 3);
+        expect(secondTurnSystemPrompt, contains('updated memory'));
+        expect(secondTurnSystemPrompt, isNot(contains('old memory')));
+      },
+    );
   });
 }

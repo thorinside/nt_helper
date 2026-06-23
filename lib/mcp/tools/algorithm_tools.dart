@@ -137,6 +137,20 @@ class MCPAlgorithmTools {
     }
   }
 
+  /// MCP Tool: Retrieves documentation-style metadata for a specific algorithm.
+  ///
+  /// This is the public, compact tool shape for the same data used by
+  /// [getAlgorithmDetails]. It accepts short parameter names that fit the
+  /// simplified MCP/chat tool set, then delegates to the existing metadata
+  /// implementation used by the algorithm documentation UI.
+  Future<String> algorithmInfo(Map<String, dynamic> params) {
+    return getAlgorithmDetails({
+      'algorithm_guid': params['guid'] ?? params['algorithm_guid'],
+      'algorithm_name': params['name'] ?? params['algorithm_name'],
+      'expand_features': params['expand_features'] ?? false,
+    });
+  }
+
   /// MCP Tool: Lists algorithms, optionally filtered by category or a text query.
   /// Parameters:
   ///   - category (string, optional): Filter by category.
@@ -349,7 +363,7 @@ class MCPAlgorithmTools {
           'message':
               'No algorithms found matching "$query". Try searching by algorithm name or category.',
           'suggestions':
-              'Use `list_algorithms` to browse by category or `get_algorithm_details` for specific algorithms.',
+              'Use `search_algorithms` with a broader query or `algorithm_info` for specific algorithms.',
         }),
       );
     }
@@ -620,12 +634,12 @@ class MCPAlgorithmTools {
     );
   }
 
-  /// Show a slot with paginated parameter summaries.
+  /// Show a slot with parameter summaries.
   /// Use show_parameter for full detail (enum value lists, mapping details).
   Future<String> showSlot(
     dynamic identifier, {
     int offset = 0,
-    int limit = 10,
+    int? limit,
   }) async {
     if (identifier == null) {
       return jsonEncode(
@@ -678,7 +692,7 @@ class MCPAlgorithmTools {
           'algorithm': {'guid': '', 'name': ''},
           'parameter_count': 0,
           'offset': 0,
-          'limit': limit,
+          'limit': 0,
           'has_more': false,
           'parameters': <dynamic>[],
         }),
@@ -695,7 +709,8 @@ class MCPAlgorithmTools {
 
     final totalCount = parameters.length;
     final clampedOffset = offset.clamp(0, totalCount);
-    final endIndex = (clampedOffset + limit).clamp(0, totalCount);
+    final effectiveLimit = limit ?? (totalCount - clampedOffset);
+    final endIndex = (clampedOffset + effectiveLimit).clamp(0, totalCount);
     final hasMore = endIndex < totalCount;
 
     final parametersJson = <Map<String, dynamic>>[];
@@ -716,7 +731,7 @@ class MCPAlgorithmTools {
         'algorithm': {'guid': algorithm.guid, 'name': algorithm.name},
         'parameter_count': totalCount,
         'offset': clampedOffset,
-        'limit': limit,
+        'limit': effectiveLimit,
         'has_more': hasMore,
         'parameters': parametersJson,
       }),

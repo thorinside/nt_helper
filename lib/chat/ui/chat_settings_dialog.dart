@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:nt_helper/chat/models/allowed_file_root.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/chat/services/codex_auth_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
+import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 class ChatSettingsDialog extends StatefulWidget {
   const ChatSettingsDialog({super.key});
@@ -23,10 +27,12 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
 
   final _settings = SettingsService();
   final _codexAuthService = CodexAuthService();
+  final _uuid = const Uuid();
   late LlmProviderType _provider;
   late bool _useAnthropicSubscription;
   late bool _useOpenaiSubscription;
   late bool _allowCodexAuthRefresh;
+  late List<AllowedFileRoot> _allowedRoots;
   late final TextEditingController _anthropicKeyController;
   late final TextEditingController _openaiKeyController;
   late final TextEditingController _anthropicModelController;
@@ -78,6 +84,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     _openaiBaseUrlController = TextEditingController(
       text: _settings.openaiBaseUrl,
     );
+    _allowedRoots = _settings.allowedFileRoots.toList();
     _showAdvanced =
         _settings.openaiBaseUrl != null && _settings.openaiBaseUrl!.isNotEmpty;
     if (_isOpenaiSubscription) {
@@ -125,7 +132,71 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
           ? _openaiBaseUrlController.text.trim()
           : '',
     );
+    await _settings.setAllowedFileRoots(_allowedRoots);
     if (mounted) Navigator.of(context).pop(true);
+  }
+
+  Future<void> _addAllowedRoot() async {
+    final selected = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Choose Allowed Root',
+    );
+    if (selected == null || !mounted) return;
+    final baseName = path.basename(selected);
+    setState(() {
+      _allowedRoots = [
+        ..._allowedRoots,
+        AllowedFileRoot.chatReadSearch(
+          id: _uuid.v4(),
+          label: baseName.isEmpty ? 'Allowed Root' : baseName,
+          path: selected,
+        ),
+      ];
+    });
+  }
+
+  Future<void> _chooseAllowedRootDirectory(int index) async {
+    final current = _allowedRoots[index];
+    final selected = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Choose Allowed Root',
+      initialDirectory: current.path.trim().isEmpty ? null : current.path,
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _allowedRoots[index] = current.copyWith(path: selected);
+    });
+  }
+
+  void _updateRoot(int index, AllowedFileRoot root) {
+    setState(() => _allowedRoots[index] = root);
+  }
+
+  void _removeRoot(int index) {
+    setState(() {
+      _allowedRoots = [
+        ..._allowedRoots.take(index),
+        ..._allowedRoots.skip(index + 1),
+      ];
+    });
+  }
+
+  void _setPermission(
+    int index,
+    FileRootActor actor,
+    FileRootPermission permission,
+    bool enabled,
+  ) {
+    final root = _allowedRoots[index];
+    final permissions = {...root.permissionsFor(actor)};
+    if (enabled) {
+      permissions.add(permission);
+    } else {
+      permissions.remove(permission);
+    }
+    final acl = {
+      for (final entry in root.acl.entries) entry.key: {...entry.value},
+      actor: permissions,
+    };
+    _updateRoot(index, root.copyWith(acl: acl));
   }
 
   Future<void> _validateCodexAuth() async {
@@ -190,7 +261,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       title: Semantics(header: true, child: const Text('Chat Settings')),
       content: SizedBox(
         width: 400,
-        height: 460,
+        height: 520,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -214,6 +285,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
               ),
               if (_isOpenAI) ..._buildOpenAISettings(theme),
               if (!_isOpenAI) ..._buildAnthropicSettings(theme),
+              ..._buildLocalContextSettings(theme),
               const SizedBox(height: 16),
               Text(
                 _isOpenaiSubscription
@@ -461,4 +533,191 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       ),
     ],
   ];
+
+  List<Widget> _buildLocalContextSettings(ThemeData theme) => [
+    const SizedBox(height: 24),
+    Semantics(
+      header: true,
+      child: Text('Allowed File Roots', style: theme.textTheme.titleSmall),
+    ),
+    const SizedBox(height: 8),
+    if (_allowedRoots.isEmpty)
+      Text(
+        'No folders are available to chat or MCP file tools.',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    for (var i = 0; i < _allowedRoots.length; i++) ...[
+      _buildAllowedRootEditor(theme, i),
+      const SizedBox(height: 16),
+    ],
+    OutlinedButton.icon(
+      onPressed: _addAllowedRoot,
+      icon: const Icon(Icons.create_new_folder_outlined),
+      label: const Text('Add Folder'),
+    ),
+    const SizedBox(height: 4),
+    Text(
+      'Each folder grants separate read, write, and search permissions for chat and external MCP.',
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    ),
+  ];
+
+  Widget _buildAllowedRootEditor(ThemeData theme, int index) {
+    final root = _allowedRoots[index];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: DigitShortcutBlocker(
+                  child: TextFormField(
+                    key: ValueKey('file_root_label_${root.id}'),
+                    initialValue: root.label,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Label',
+                      isDense: true,
+                    ),
+                    onChanged: (value) =>
+                        _updateRoot(index, root.copyWith(label: value.trim())),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Remove allowed root',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _removeRoot(index),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DigitShortcutBlocker(
+                  child: TextFormField(
+                    key: ValueKey('file_root_path_${root.id}'),
+                    initialValue: root.path,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Path',
+                      isDense: true,
+                    ),
+                    onChanged: (value) =>
+                        _updateRoot(index, root.copyWith(path: value.trim())),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Choose folder',
+                icon: const Icon(Icons.folder_open),
+                onPressed: () => _chooseAllowedRootDirectory(index),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildPermissionTable(theme, index),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionTable(ThemeData theme, int index) {
+    final headerStyle = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return Table(
+      columnWidths: const {
+        0: FixedColumnWidth(64),
+        1: FixedColumnWidth(72),
+        2: FixedColumnWidth(72),
+        3: FixedColumnWidth(80),
+      },
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(
+          children: [
+            const SizedBox.shrink(),
+            _permissionHeader('Read', headerStyle),
+            _permissionHeader('Write', headerStyle),
+            _permissionHeader('Search', headerStyle),
+          ],
+        ),
+        _permissionTableRow(theme, index, FileRootActor.chat, 'Chat'),
+        _permissionTableRow(theme, index, FileRootActor.mcp, 'MCP'),
+      ],
+    );
+  }
+
+  TableRow _permissionTableRow(
+    ThemeData theme,
+    int index,
+    FileRootActor actor,
+    String label,
+  ) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(label, style: theme.textTheme.bodySmall),
+        ),
+        _buildPermissionCheckbox(index, actor, FileRootPermission.read, 'Read'),
+        _buildPermissionCheckbox(
+          index,
+          actor,
+          FileRootPermission.write,
+          'Write',
+        ),
+        _buildPermissionCheckbox(
+          index,
+          actor,
+          FileRootPermission.search,
+          'Search',
+        ),
+      ],
+    );
+  }
+
+  Widget _permissionHeader(String label, TextStyle? style) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Center(child: Text(label, style: style)),
+    );
+  }
+
+  Widget _buildPermissionCheckbox(
+    int index,
+    FileRootActor actor,
+    FileRootPermission permission,
+    String label,
+  ) {
+    final checked = _allowedRoots[index].allows(actor, permission);
+    return Semantics(
+      label: '${actor.storageKey} ${permission.storageKey} permission',
+      checked: checked,
+      button: true,
+      child: Center(
+        child: Checkbox(
+          value: checked,
+          onChanged: (value) =>
+              _setPermission(index, actor, permission, value ?? false),
+          semanticLabel: '$label permission for ${actor.storageKey}',
+        ),
+      ),
+    );
+  }
 }

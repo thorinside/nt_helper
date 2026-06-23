@@ -6,6 +6,7 @@ import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart'
     show LlmApiException;
 import 'package:nt_helper/chat/providers/llm_error_handling.dart';
+import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 /// OpenAI Chat Completions API provider.
@@ -27,6 +28,16 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
 
   @override
   String get displayName => 'OpenAI ($model)';
+
+  @override
+  Future<int?> resolveContextWindowTokens() {
+    return OpenAIContextWindowResolver.resolve(
+      model: model,
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      client: _client,
+    );
+  }
 
   @override
   Future<LlmResponse> sendMessages({
@@ -110,7 +121,23 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
     for (final msg in messages) {
       switch (msg.role) {
         case LlmRole.user:
-          result.add({'role': 'user', 'content': msg.content!});
+          if (msg.hasImageAttachments) {
+            result.add({
+              'role': 'user',
+              'content': <dynamic>[
+                {'type': 'text', 'text': msg.content ?? ''},
+                for (final image in msg.imageAttachments)
+                  {
+                    'type': 'image_url',
+                    'image_url': {
+                      'url': 'data:${image.mimeType};base64,${image.data}',
+                    },
+                  },
+              ],
+            });
+          } else {
+            result.add({'role': 'user', 'content': msg.content!});
+          }
         case LlmRole.assistant:
           if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) {
             final apiMsg = <String, dynamic>{'role': 'assistant'};

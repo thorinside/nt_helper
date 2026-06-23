@@ -46,6 +46,41 @@ class _QueueClient extends http.BaseClient {
 
 void main() {
   group('OpenAISubscriptionProvider', () {
+    test('resolves context window from Codex models endpoint', () async {
+      final auth = _FakeAuthService(
+        const CodexAuthSnapshot(
+          accessToken: 'token',
+          refreshToken: 'refresh',
+          accountId: 'account',
+        ),
+      );
+      final client = _QueueClient([
+        (_) => _jsonResponse({
+          'models': [
+            {'slug': 'gpt-5.5', 'context_window': 272000},
+          ],
+        }),
+      ]);
+      final provider = OpenAISubscriptionProvider(
+        model: 'gpt-5.5',
+        allowAuthRefresh: false,
+        authService: auth,
+        client: client,
+      );
+      addTearDown(provider.dispose);
+
+      final contextWindow = await provider.resolveContextWindowTokens();
+
+      expect(contextWindow, 272000);
+      expect(client.requests.single.method, 'GET');
+      expect(
+        client.requests.single.url.toString(),
+        'https://chatgpt.com/backend-api/codex/models?model=gpt-5.5&client_version=0.135.0',
+      );
+      expect(client.requests.single.headers['Authorization'], 'Bearer token');
+      expect(client.requests.single.headers['ChatGPT-Account-ID'], 'account');
+    });
+
     test('parses text, tool calls, and usage from Responses SSE', () async {
       final auth = _FakeAuthService(
         const CodexAuthSnapshot(
@@ -157,12 +192,87 @@ void main() {
       );
       expect(client.requests.last.headers['Authorization'], 'Bearer new-token');
     });
+
+    test(
+      'sends PDFs as input files but leaves text attachments inline',
+      () async {
+        final auth = _FakeAuthService(
+          const CodexAuthSnapshot(
+            accessToken: 'token',
+            refreshToken: 'refresh',
+            accountId: 'account',
+          ),
+        );
+        final client = _QueueClient([
+          (_) => _sseResponse([
+            {'type': 'response.output_text.delta', 'delta': 'ok'},
+          ]),
+        ]);
+        final provider = OpenAISubscriptionProvider(
+          model: 'gpt-5.4-mini',
+          allowAuthRefresh: false,
+          authService: auth,
+          client: client,
+        );
+        addTearDown(provider.dispose);
+
+        await provider.sendMessages(
+          messages: [
+            LlmMessage.user(
+              '--- Attached file: notes.txt ---\nhello',
+              fileAttachments: const [
+                LlmFileAttachment(
+                  name: 'notes.txt',
+                  data: 'aGVsbG8=',
+                  mimeType: 'text/plain',
+                  sizeBytes: 5,
+                  textContent: 'hello',
+                ),
+                LlmFileAttachment(
+                  name: 'manual.pdf',
+                  data: 'JVBERi0xLjQ=',
+                  mimeType: 'application/pdf',
+                  sizeBytes: 8,
+                ),
+              ],
+            ),
+          ],
+          tools: const [],
+        );
+
+        final body =
+            jsonDecode(client.requests.single.body) as Map<String, dynamic>;
+        final input = body['input'] as List<dynamic>;
+        final content = input.single['content'] as List<dynamic>;
+        final inputFiles = content
+            .whereType<Map<String, dynamic>>()
+            .where((part) => part['type'] == 'input_file')
+            .toList();
+
+        expect(inputFiles, hasLength(1));
+        expect(inputFiles.single['filename'], 'manual.pdf');
+        expect(
+          content.whereType<Map<String, dynamic>>().singleWhere(
+            (part) => part['type'] == 'input_text',
+          )['text'],
+          contains('notes.txt'),
+        );
+      },
+    );
   });
 }
 
 http.StreamedResponse _sseResponse(List<Map<String, dynamic>> events) {
   final body = events.map((e) => 'data: ${jsonEncode(e)}\n\n').join();
   return _textResponse(200, body);
+}
+
+http.StreamedResponse _jsonResponse(Map<String, dynamic> body) {
+  return http.StreamedResponse(
+    Stream.value(utf8.encode(jsonEncode(body))),
+    200,
+    headers: const {'content-type': 'application/json'},
+  );
 }
 
 http.StreamedResponse _textResponse(int statusCode, String body) {

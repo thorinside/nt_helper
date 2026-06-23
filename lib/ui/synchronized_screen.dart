@@ -1709,7 +1709,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           // CPU Monitor Widget - only in wide-screen mode
           if (isWideScreen) ...[
             const SizedBox(width: 16),
-            const CpuMonitorWidget(),
+            CpuMonitorWidget(paused: _showChatPanel),
           ],
           // Spacer for FAB so it doesn't cover the version/CPU info
           const SizedBox(width: 80),

@@ -14,6 +14,7 @@ class MockToolRegistry extends Mock implements ToolRegistry {}
 
 void main() {
   late MockLlmProvider provider;
+  late MockToolRegistry toolRegistry;
   late ToolBridgeService toolBridge;
   late ChatService chatService;
 
@@ -24,7 +25,7 @@ void main() {
 
   setUp(() {
     provider = MockLlmProvider();
-    final toolRegistry = MockToolRegistry();
+    toolRegistry = MockToolRegistry();
     when(() => toolRegistry.entries).thenReturn(const []);
     toolBridge = ToolBridgeService(toolRegistry);
     chatService = ChatService(
@@ -32,6 +33,127 @@ void main() {
       toolBridge: toolBridge,
       systemPrompt: 'test',
     );
+  });
+
+  group('Tool references', () {
+    test('large tool result reference is sent to the next model call', () async {
+      const referenceResult =
+          '{"success":true,"type":"tool_reference","reference_id":"ref_1","tool_name":"large_tool","total_chars":25004,"instructions":"Use read_reference or search_reference."}';
+      when(() => toolRegistry.entries).thenReturn([
+        ToolRegistryEntry(
+          name: 'large_tool',
+          description: 'Returns a large text payload.',
+          inputSchema: const {'properties': {}},
+          handler: (_) async => 'unused',
+        ),
+      ]);
+      when(
+        () => toolRegistry.executeTool('large_tool', any()),
+      ).thenAnswer((_) async => referenceResult);
+
+      var callCount = 0;
+      List<LlmMessage>? secondCallMessages;
+      when(
+        () => provider.sendMessages(
+          messages: any(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).thenAnswer((invocation) async {
+        callCount++;
+        if (callCount == 1) {
+          return const LlmResponse(
+            isComplete: false,
+            toolCalls: [
+              LlmToolCall(id: 'tc_large', name: 'large_tool', arguments: {}),
+            ],
+          );
+        }
+
+        secondCallMessages =
+            invocation.namedArguments[#messages] as List<LlmMessage>;
+        return const LlmResponse(content: 'done', isComplete: true);
+      });
+
+      final events = await chatService.runAgenticLoop([
+        LlmMessage.user('run the large tool'),
+      ]).toList();
+
+      expect(events.whereType<ChatLoopError>(), isEmpty);
+      expect(secondCallMessages, isNotNull);
+      final toolMessage = secondCallMessages!.singleWhere(
+        (message) => message.role == LlmRole.tool,
+      );
+
+      expect(toolMessage.content, referenceResult);
+      expect(toolMessage.content, contains('"type":"tool_reference"'));
+      expect(toolMessage.content, contains('"reference_id":"ref_1"'));
+    });
+  });
+
+  group('Usage accounting', () {
+    test('aggregates cache tokens into final usage and context peak', () async {
+      var callCount = 0;
+      when(
+        () => provider.sendMessages(
+          messages: any(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).thenAnswer((_) async {
+        callCount++;
+        return switch (callCount) {
+          1 => const LlmResponse(
+            isComplete: false,
+            toolCalls: [
+              LlmToolCall(id: 'tc_small', name: 'small_tool', arguments: {}),
+            ],
+            usage: LlmUsage(
+              inputTokens: 100,
+              outputTokens: 10,
+              cacheCreationInputTokens: 30,
+              cacheReadInputTokens: 20,
+            ),
+          ),
+          _ => const LlmResponse(
+            content: 'done',
+            isComplete: true,
+            usage: LlmUsage(
+              inputTokens: 50,
+              outputTokens: 5,
+              cacheReadInputTokens: 200,
+            ),
+          ),
+        };
+      });
+      when(() => toolRegistry.entries).thenReturn([
+        ToolRegistryEntry(
+          name: 'small_tool',
+          description: 'Returns a small payload.',
+          inputSchema: const {'properties': {}},
+          handler: (_) async => 'unused',
+        ),
+      ]);
+      when(
+        () => toolRegistry.executeTool('small_tool', any()),
+      ).thenAnswer((_) async => '{"success":true}');
+
+      final events = await chatService.runAgenticLoop([
+        LlmMessage.user('run the tool'),
+      ]).toList();
+
+      final finalMessage = events
+          .whereType<ChatLoopAssistantMessage>()
+          .singleWhere((event) => event.isFinal);
+      final usage = finalMessage.usage;
+
+      expect(usage, isNotNull);
+      expect(usage!.inputTokens, 150);
+      expect(usage.outputTokens, 15);
+      expect(usage.cacheCreationInputTokens, 30);
+      expect(usage.cacheReadInputTokens, 220);
+      expect(usage.contextInputTokens, 250);
+    });
   });
 
   group('Rate limit retry', () {

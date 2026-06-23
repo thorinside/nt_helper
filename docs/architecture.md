@@ -889,8 +889,8 @@ await McpServerService.instance.stop();
 ### MCP Tools
 
 **Algorithm Tools** (`lib/mcp/tools/algorithm_tools.dart`):
-- `list_algorithms` - Search/filter algorithms
-- `get_algorithm_details` - Full metadata with fuzzy name matching
+- `search_algorithms` - Search/filter algorithms
+- `algorithm_info` - Full documentation metadata with fuzzy name matching
 - `find_algorithm_in_preset` - Locate algorithm instances
 
 **Disting Tools** (`lib/mcp/tools/disting_tools.dart`):

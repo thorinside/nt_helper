@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/llm_error_handling.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
+import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 /// Anthropic Claude Messages API provider.
@@ -23,6 +24,16 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
 
   @override
   String get displayName => 'Claude ($model)';
+
+  @override
+  Future<int?> resolveContextWindowTokens() {
+    return AnthropicContextWindowResolver.resolveWithApiKey(
+      model: model,
+      apiKey: apiKey,
+      apiVersion: _apiVersion,
+      client: _client,
+    );
+  }
 
   @override
   Future<LlmResponse> sendMessages({
@@ -98,7 +109,36 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
     for (final msg in messages) {
       switch (msg.role) {
         case LlmRole.user:
-          result.add({'role': 'user', 'content': msg.content!});
+          if (msg.hasImageAttachments || msg.hasFileAttachments) {
+            result.add({
+              'role': 'user',
+              'content': <dynamic>[
+                {'type': 'text', 'text': msg.content ?? ''},
+                for (final image in msg.imageAttachments)
+                  {
+                    'type': 'image',
+                    'source': {
+                      'type': 'base64',
+                      'media_type': image.mimeType,
+                      'data': image.data,
+                    },
+                  },
+                for (final file in msg.fileAttachments)
+                  if (file.mimeType == 'application/pdf')
+                    {
+                      'type': 'document',
+                      'source': {
+                        'type': 'base64',
+                        'media_type': file.mimeType,
+                        'data': file.data,
+                      },
+                      'title': file.name,
+                    },
+              ],
+            });
+          } else {
+            result.add({'role': 'user', 'content': msg.content!});
+          }
         case LlmRole.assistant:
           if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) {
             final content = <Map<String, dynamic>>[];

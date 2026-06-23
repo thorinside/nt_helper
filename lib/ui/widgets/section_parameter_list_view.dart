@@ -635,6 +635,8 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 ),
               ),
             ),
+          if (widget.onToggleSpreadsheetEditingMode != null)
+            const SizedBox(width: 8),
           Tooltip(
             message: _isCollapsed ? 'Expand all' : 'Collapse all',
             child: IconButton.filledTonal(
