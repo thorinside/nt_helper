@@ -65,6 +65,42 @@ void main() {
       expect(readResult['content'], 'hello modular\n');
     });
 
+    test('omits missing roots from listing but keeps stale-id error', () async {
+      final missingPath = '${tempDir.path}/unmounted';
+      await _setRoots(settings, [
+        _root(
+          id: 'mounted',
+          label: 'Mounted',
+          path: tempDir.path,
+          chat: {FileRootPermission.read},
+        ),
+        _root(
+          id: 'stale',
+          label: 'Stale SD',
+          path: missingPath,
+          chat: {FileRootPermission.read},
+        ),
+      ]);
+      final entries = _entriesFor(FileRootActor.chat);
+
+      final rootsResult = await _call(entries, 'list_allowed_roots', {});
+      final listResult = await _call(entries, 'list_files', {
+        'root_id': 'stale',
+      });
+
+      expect(rootsResult['success'], isTrue);
+      expect(
+        (rootsResult['roots'] as List).map((entry) => entry['id']),
+        contains('mounted'),
+      );
+      expect(
+        (rootsResult['roots'] as List).map((entry) => entry['id']),
+        isNot(contains('stale')),
+      );
+      expect(listResult['success'], isFalse);
+      expect(listResult['error'], 'root_not_found_on_disk');
+    });
+
     test('enforces search permission separately from read', () async {
       await _setRoots(settings, [
         _root(path: tempDir.path, chat: {FileRootPermission.read}),
@@ -295,13 +331,15 @@ Future<void> _setRoots(
 }
 
 AllowedFileRoot _root({
+  String id = 'sd',
+  String label = 'SD Card',
   required String path,
   Set<FileRootPermission> chat = const {},
   Set<FileRootPermission> mcp = const {},
 }) {
   return AllowedFileRoot(
-    id: 'sd',
-    label: 'SD Card',
+    id: id,
+    label: label,
     path: path,
     acl: {FileRootActor.chat: chat, FileRootActor.mcp: mcp},
   );

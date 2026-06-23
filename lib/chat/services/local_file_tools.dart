@@ -177,6 +177,7 @@ class _LocalFileTools {
     for (final root in _settings.allowedFileRoots) {
       final permissions = root.permissionsFor(_actor);
       if (permissions.isEmpty) continue;
+      if (!await Directory(root.path).exists()) continue;
       roots.add({
         'id': root.id,
         'label': root.label,
