@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/llm_error_handling.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
+import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 /// Anthropic Claude Messages API provider.
@@ -23,6 +24,16 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
 
   @override
   String get displayName => 'Claude ($model)';
+
+  @override
+  Future<int?> resolveContextWindowTokens() {
+    return AnthropicContextWindowResolver.resolveWithApiKey(
+      model: model,
+      apiKey: apiKey,
+      apiVersion: _apiVersion,
+      client: _client,
+    );
+  }
 
   @override
   Future<LlmResponse> sendMessages({

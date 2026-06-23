@@ -40,16 +40,10 @@ class ChatCubit extends Cubit<ChatState> {
   bool _bootstrapped = false;
   String? _memoryContent;
   String? _dailyLogs;
-  String? _currentModel;
+  int _currentContextWindowTokens = LlmProvider.defaultContextWindowTokens;
   bool _needsCompaction = false;
 
-  static const _contextLimits = <String, int>{
-    'claude-haiku-4-5-20251001': 200000,
-    'claude-sonnet-4-5-20250514': 200000,
-    'gpt-5-nano': 128000,
-    'gpt-5.4-mini': 128000,
-  };
-  static const _defaultContextLimit = 100000;
+  static const _compactionThresholdPercent = 85;
 
   ChatCubit({
     required ToolRegistry toolRegistry,
@@ -134,9 +128,6 @@ class ChatCubit extends Cubit<ChatState> {
         _bootstrapped = true;
       }
 
-      // Track current model for context limits
-      _currentModel = _resolveModel(settings);
-
       // Wait for any in-flight summarization before compaction/provider reset.
       if (_summarizationFuture != null) {
         await _summarizationFuture;
@@ -181,6 +172,9 @@ class ChatCubit extends Cubit<ChatState> {
       // Create provider (disposing the previous one first)
       _activeProvider?.dispose();
       _activeProvider = _createProvider(settings);
+      _currentContextWindowTokens = await _resolveContextWindow(
+        _activeProvider!,
+      );
       final toolBridge = ToolBridgeService(_toolRegistry);
       final chatService = ChatService(
         provider: _activeProvider!,
@@ -375,8 +369,10 @@ class ChatCubit extends Cubit<ChatState> {
           // Check if compaction is needed
           final totalInput =
               currentState.totalInputTokens + (usage?.inputTokens ?? 0);
-          final limit = _contextLimits[_currentModel] ?? _defaultContextLimit;
-          if (totalInput > limit ~/ 2) {
+          final contextInput = usage?.contextInputTokens ?? totalInput;
+          final compactAt =
+              _currentContextWindowTokens * _compactionThresholdPercent ~/ 100;
+          if (contextInput > compactAt) {
             _needsCompaction = true;
           }
         }
@@ -487,6 +483,7 @@ class ChatCubit extends Cubit<ChatState> {
     // Run one agentic loop turn for the LLM to save context
     _activeProvider?.dispose();
     _activeProvider = _createProvider(settings);
+    _currentContextWindowTokens = await _resolveContextWindow(_activeProvider!);
     final toolBridge = ToolBridgeService(_toolRegistry);
     final chatService = ChatService(
       provider: _activeProvider!,
@@ -639,18 +636,6 @@ class ChatCubit extends Cubit<ChatState> {
     emit(const ChatReady());
   }
 
-  String _resolveModel(ChatSettings settings) {
-    switch (settings.provider) {
-      case LlmProviderType.anthropic:
-      case LlmProviderType.anthropicSubscription:
-        return settings.anthropicModel;
-      case LlmProviderType.openai:
-        return settings.openaiModel;
-      case LlmProviderType.openaiSubscription:
-        return settings.openaiSubscriptionModel;
-    }
-  }
-
   LlmProvider _createProvider(ChatSettings settings) {
     if (_providerFactory != null) return _providerFactory(settings);
     switch (settings.provider) {
@@ -676,6 +661,17 @@ class ChatCubit extends Cubit<ChatState> {
           allowAuthRefresh: settings.allowCodexAuthRefresh,
         );
     }
+  }
+
+  Future<int> _resolveContextWindow(LlmProvider provider) async {
+    try {
+      final resolved = await provider.resolveContextWindowTokens();
+      if (resolved != null && resolved > 0) return resolved;
+    } on Object {
+      // Context-window metadata is advisory. Keep chat usable if metadata
+      // lookup fails or a test double does not implement it.
+    }
+    return LlmProvider.defaultContextWindowTokens;
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart'
     show LlmApiException;
 import 'package:nt_helper/chat/providers/llm_provider.dart';
+import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/chat/services/codex_auth_service.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
@@ -28,6 +29,11 @@ class OpenAISubscriptionProvider implements LlmProvider {
 
   @override
   String get displayName => 'OpenAI Subscription ($model)';
+
+  @override
+  Future<int?> resolveContextWindowTokens() async {
+    return OpenAIContextWindowResolver.infer(model);
+  }
 
   @override
   Future<LlmResponse> sendMessages({

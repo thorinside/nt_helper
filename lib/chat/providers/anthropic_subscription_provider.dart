@@ -5,6 +5,7 @@ import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart';
 import 'package:nt_helper/chat/providers/llm_error_handling.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
+import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 /// Anthropic subscription auth provider using Claude Code OAuth tokens.
@@ -35,6 +36,17 @@ class AnthropicSubscriptionProvider
 
   @override
   String get displayName => 'Claude Subscription ($model)';
+
+  @override
+  Future<int?> resolveContextWindowTokens() {
+    return AnthropicContextWindowResolver.resolveWithBearerToken(
+      model: model,
+      token: token,
+      apiVersion: _apiVersion,
+      betaHeader: _betaHeader,
+      client: _client,
+    );
+  }
 
   // Reuse the same message conversion and response parsing from AnthropicProvider
   // by delegating to a temporary instance.

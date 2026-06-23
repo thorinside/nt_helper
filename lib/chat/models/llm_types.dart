@@ -149,13 +149,16 @@ class LlmUsage {
   final int outputTokens;
   final int cacheCreationInputTokens;
   final int cacheReadInputTokens;
+  final int? peakInputTokens;
 
   const LlmUsage({
     required this.inputTokens,
     required this.outputTokens,
     this.cacheCreationInputTokens = 0,
     this.cacheReadInputTokens = 0,
+    this.peakInputTokens,
   });
 
   int get totalTokens => inputTokens + outputTokens;
+  int get contextInputTokens => peakInputTokens ?? inputTokens;
 }

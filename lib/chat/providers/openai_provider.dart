@@ -6,6 +6,7 @@ import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart'
     show LlmApiException;
 import 'package:nt_helper/chat/providers/llm_error_handling.dart';
+import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 /// OpenAI Chat Completions API provider.
@@ -27,6 +28,16 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
 
   @override
   String get displayName => 'OpenAI ($model)';
+
+  @override
+  Future<int?> resolveContextWindowTokens() {
+    return OpenAIContextWindowResolver.resolve(
+      model: model,
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      client: _client,
+    );
+  }
 
   @override
   Future<LlmResponse> sendMessages({

@@ -567,6 +567,9 @@ void main() {
       final provider = MockLlmProvider();
       when(() => provider.dispose()).thenReturn(null);
       when(
+        () => provider.resolveContextWindowTokens(),
+      ).thenAnswer((_) async => 200000);
+      when(
         () => provider.sendMessages(
           messages: any(named: 'messages'),
           tools: any(named: 'tools'),
@@ -597,11 +600,11 @@ void main() {
             );
           case 3:
             // Turn 1, iteration 3: final response with high tokens to trigger
-            // compaction (limit/2 = 100000 for haiku's 200000).
+            // compaction (85% of the provider's 200000 token window).
             return const LlmResponse(
               content: 'Done with tools.',
               isComplete: true,
-              usage: LlmUsage(inputTokens: 110000, outputTokens: 500),
+              usage: LlmUsage(inputTokens: 171000, outputTokens: 500),
             );
           case 4:
             // Compaction loop: simple final response
