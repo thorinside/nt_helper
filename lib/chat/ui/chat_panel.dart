@@ -245,7 +245,12 @@ class _ChatPanelState extends State<ChatPanel> {
           const Spacer(),
           _ContextStatusButton(
             state: readyState,
-            onPressed: () => _openContextDetails(context, readyState),
+            summary: context.read<ChatCubit>().contextSummary,
+            settings: _loadSettings(),
+            onCompact: (settings) {
+              context.read<ChatCubit>().compactContext(settings);
+            },
+            onClearChat: () => _confirmClearChat(context),
           ),
         ],
       ),
@@ -274,69 +279,136 @@ class _ChatPanelState extends State<ChatPanel> {
     );
   }
 
-  void _openContextDetails(BuildContext context, ChatReady state) {
+  Future<void> _confirmClearChat(BuildContext context) async {
     final cubit = context.read<ChatCubit>();
-    final settings = _loadSettings();
-    final summary = cubit.contextSummary;
-    showDialog<void>(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Context'),
-        content: SizedBox(
-          width: 320,
-          child: _ContextDetails(state: state, summary: summary),
+        title: const Text('Clear chat?'),
+        content: const Text(
+          'This removes the visible conversation and current model context.',
         ),
         actions: [
           TextButton(
-            onPressed:
-                state.isProcessing || summary.isEmpty || !settings.hasApiKey
-                ? null
-                : () {
-                    Navigator.of(dialogContext).pop();
-                    cubit.compactContext(settings);
-                  },
-            child: const Text('Compact'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            child: const Text('Clear chat'),
           ),
-          TextButton(
-            onPressed: state.messages.isEmpty && summary.isEmpty
-                ? null
-                : () {
-                    Navigator.of(dialogContext).pop();
-                    cubit.clearChat();
-                  },
-            child: const Text('Clear'),
+          FilledButton(
+            autofocus: true,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true && context.mounted) {
+      cubit.clearChat();
+    }
   }
 }
 
+enum _ContextMenuAction { compact, clear }
+
 class _ContextStatusButton extends StatelessWidget {
   final ChatReady state;
-  final VoidCallback onPressed;
+  final ChatContextSummary summary;
+  final ChatSettings settings;
+  final ValueChanged<ChatSettings> onCompact;
+  final VoidCallback onClearChat;
 
-  const _ContextStatusButton({required this.state, required this.onPressed});
+  const _ContextStatusButton({
+    required this.state,
+    required this.summary,
+    required this.settings,
+    required this.onCompact,
+    required this.onClearChat,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final progress = _contextProgress(state);
     final percent = (progress * 100).round();
+    final canCompact =
+        !state.isProcessing && !summary.isEmpty && settings.hasApiKey;
+    final canClear = state.messages.isNotEmpty || !summary.isEmpty;
     return Semantics(
       label: 'Context status, $percent percent used',
       button: true,
-      child: IconButton(
+      child: PopupMenuButton<_ContextMenuAction>(
         tooltip: 'Context status',
-        visualDensity: VisualDensity.compact,
-        onPressed: onPressed,
+        position: PopupMenuPosition.under,
+        onSelected: (action) {
+          switch (action) {
+            case _ContextMenuAction.compact:
+              onCompact(settings);
+            case _ContextMenuAction.clear:
+              onClearChat();
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem<_ContextMenuAction>(
+            enabled: false,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: SizedBox(
+              width: 320,
+              child: Theme(
+                data: theme,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Context', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    _ContextDetails(state: state, summary: summary),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem<_ContextMenuAction>(
+            enabled: canCompact,
+            value: _ContextMenuAction.compact,
+            child: const Row(
+              children: [
+                Icon(Icons.compress, size: 18),
+                SizedBox(width: 12),
+                Text('Compact context'),
+              ],
+            ),
+          ),
+          PopupMenuItem<_ContextMenuAction>(
+            enabled: canClear,
+            value: _ContextMenuAction.clear,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: canClear ? theme.colorScheme.error : null,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Clear chat...',
+                  style: canClear
+                      ? TextStyle(color: theme.colorScheme.error)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ],
         icon: CustomPaint(
           size: const Size.square(22),
           painter: _ContextArcPainter(
             progress: progress,
-            color: _contextColor(Theme.of(context).colorScheme, progress),
-            trackColor: Theme.of(
-              context,
-            ).colorScheme.outlineVariant.withValues(alpha: 0.7),
+            color: _contextColor(theme.colorScheme, progress),
+            trackColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
           ),
         ),
       ),
