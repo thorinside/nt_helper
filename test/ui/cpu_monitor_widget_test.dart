@@ -98,4 +98,35 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('12% | 34%'), findsOneWidget);
   });
+
+  testWidgets('pauses and hides while chat panel is open', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BlocProvider<DistingCubit>.value(
+            value: cubit,
+            child: const CpuMonitorWidget(),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('--% | --%'), findsOneWidget);
+    verify(() => cubit.resumeCpuMonitoring()).called(1);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BlocProvider<DistingCubit>.value(
+            value: cubit,
+            child: const CpuMonitorWidget(paused: true),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('--% | --%'), findsNothing);
+    expect(find.byType(CpuMonitorWidget), findsOneWidget);
+    verify(() => cubit.pauseCpuMonitoring()).called(1);
+  });
 }

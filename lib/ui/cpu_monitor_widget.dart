@@ -8,7 +8,11 @@ import 'package:nt_helper/services/settings_service.dart';
 /// Shows the two main CPU usage numbers with a tooltip containing slot breakdown.
 /// Automatically pauses CPU monitoring when not visible and resumes when visible.
 class CpuMonitorWidget extends StatefulWidget {
-  const CpuMonitorWidget({super.key});
+  const CpuMonitorWidget({super.key, this.paused = false});
+
+  /// Temporarily hides the widget and pauses polling while another workflow
+  /// owns the same device communication path.
+  final bool paused;
 
   @override
   State<CpuMonitorWidget> createState() => _CpuMonitorWidgetState();
@@ -43,7 +47,7 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
       valueListenable: SettingsService().cpuMonitorEnabledNotifier,
       builder: (context, cpuMonitorEnabled, _) {
         // Check if CPU monitor is disabled in settings
-        if (!cpuMonitorEnabled) {
+        if (!cpuMonitorEnabled || widget.paused) {
           _updateVisibility(false);
           return const SizedBox.shrink();
         }
