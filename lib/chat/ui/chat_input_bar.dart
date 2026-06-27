@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:nt_helper/chat/models/chat_message.dart';
+import 'package:nt_helper/chat/utils/pdf_text_extractor.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:path/path.dart' as path;
@@ -43,6 +44,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   static const _maxImageBytes = 10 * 1024 * 1024;
   static const _maxPdfBytes = 20 * 1024 * 1024;
   static const _maxTextFileBytes = 2 * 1024 * 1024;
+  static const _maxPdfTextContentChars = 120000;
 
   final _controller = TextEditingController();
   FocusNode? _ownedFocusNode;
@@ -264,7 +266,15 @@ class _ChatInputBarState extends State<ChatInputBar> {
     required String mimeType,
   }) {
     String? textContent;
-    if (_isTextFileMime(mimeType)) {
+    if (mimeType == 'application/pdf') {
+      final extracted = extractPdfText(bytes).trim();
+      if (extracted.isNotEmpty) {
+        textContent = _truncateAttachmentText(
+          extracted,
+          _maxPdfTextContentChars,
+        );
+      }
+    } else if (_isTextFileMime(mimeType)) {
       try {
         textContent = utf8.decode(bytes);
       } on FormatException {
@@ -303,6 +313,11 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   int _maxBytesForMime(String mimeType) {
     return mimeType == 'application/pdf' ? _maxPdfBytes : _maxTextFileBytes;
+  }
+
+  String _truncateAttachmentText(String content, int maxChars) {
+    if (content.length <= maxChars) return content;
+    return '${content.substring(0, maxChars)}\n\n[truncated: ${content.length - maxChars} chars omitted; use local workspace search/read tools for targeted sections]';
   }
 
   ({List<int> bytes, String mimeType})? _normalizeImageBytes(List<int> bytes) {

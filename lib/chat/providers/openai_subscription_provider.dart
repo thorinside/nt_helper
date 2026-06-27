@@ -119,7 +119,8 @@ class OpenAISubscriptionProvider implements LlmProvider {
                   'image_url': 'data:${image.mimeType};base64,${image.data}',
                 },
               for (final file in msg.fileAttachments)
-                if (_isCodexFileInput(file.mimeType))
+                if (file.textContent == null &&
+                    _isCodexFileInput(file.mimeType))
                   {
                     'type': 'input_file',
                     'filename': file.name,

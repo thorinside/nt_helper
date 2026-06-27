@@ -124,7 +124,8 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
                     },
                   },
                 for (final file in msg.fileAttachments)
-                  if (file.mimeType == 'application/pdf')
+                  if (file.textContent == null &&
+                      file.mimeType == 'application/pdf')
                     {
                       'type': 'document',
                       'source': {
