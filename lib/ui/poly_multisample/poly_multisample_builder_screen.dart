@@ -2953,9 +2953,15 @@ class _WaveformPainter extends CustomPainter {
       size,
       markers.loopStartFrame,
       colorScheme.secondary,
-      'L',
+      'LS',
     );
-    _drawMarker(canvas, size, markers.loopEndFrame, colorScheme.secondary, 'R');
+    _drawMarker(
+      canvas,
+      size,
+      markers.loopEndFrame,
+      colorScheme.secondary,
+      'LE',
+    );
   }
 
   void _drawRange(Canvas canvas, Size size, int start, int end, Color color) {
@@ -2993,7 +2999,8 @@ class _WaveformPainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    painter.paint(canvas, Offset((x + 4).clamp(0, size.width - 14), 4));
+    final labelX = (x + 4).clamp(2.0, size.width - painter.width - 2);
+    painter.paint(canvas, Offset(labelX, 4));
   }
 
   double _frameX(int frame, double width) {
