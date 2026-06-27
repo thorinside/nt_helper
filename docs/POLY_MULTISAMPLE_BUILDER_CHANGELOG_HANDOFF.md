@@ -2,13 +2,13 @@
 
 Date: 2026-06-27
 Branch: `nymph-next-fix`
-Status: Experimental fork work, locally tested on Windows
+Status: Experimental fork work, locally tested on Windows, release packaged for fork testing
 
 ## Short Summary
 
 This fork adds an experimental Poly Multisample Builder workspace to NT Helper.
 
-The aim is to make Disting NT Poly Multisample sample-folder editing more visual and less error-prone. The current build focuses on reading and editing the WAV folder structure used by the Poly Multisample algorithm: root notes, key ranges, velocity layers, round robin tags, sample lists, and local WAV waveform/loop metadata previews.
+The aim is to make Disting NT Poly Multisample sample-folder editing more visual and less error-prone. The current build focuses on reading and editing the WAV folder structure used by the Poly Multisample algorithm: root notes, key ranges, velocity layers, round robin tags, sample lists, local WAV waveform previews, loop metadata, and first-pass destructive WAV edits for local/mounted files.
 
 It intentionally does not try to edit the live Poly Multisample algorithm parameters beyond opening the existing NT Helper parameter panel alongside the sample builder. The sample builder is currently scoped to the `/samples` folder/file naming workflow.
 
@@ -46,6 +46,19 @@ It intentionally does not try to edit the live Poly Multisample algorithm parame
 - Saves edited local/mounted loop start/end markers back into the WAV `smpl` chunk from the waveform sidebar.
 - Adds local/mounted WAV playback.
 - Adds continuous loop audition using the current loop marker draft.
+- Adds a first-pass local/mounted WAV editor with two clear modes:
+  - Metadata mode edits WAV `smpl` loop points only.
+  - Destructive mode rewrites audio.
+- Destructive mode supports:
+  - start/end trim range;
+  - fade in/out lengths;
+  - independent fade-in and fade-out curves;
+  - Linear, Equal Power, Exponential, and S-curve options;
+  - gain adjustment in dB;
+  - optional peak normalize target.
+- Destructive WAV edits can be saved in place with confirmation, or saved as a new WAV via `Save as`.
+- Exact destructive trim positions are preserved. Zero-crossing snapping is available via explicit `Zero` controls rather than hidden automatic snapping while dragging or sliding.
+- Manually setting a root note now clears stale `No root` warnings immediately.
 - For direct Disting NT SD samples, waveform preview is disabled for now. The user is told to mount or copy the SD folder locally to preview WAVs.
 
 ## Why Direct Disting SD Waveforms Are Limited
@@ -129,6 +142,10 @@ The builder can:
 - render waveform peaks;
 - read `smpl` loop start/end;
 - save edited `smpl` loop start/end;
+- preview and continuously audition loop marker drafts;
+- destructively render local WAV edits with trim/fades/gain/normalization;
+- save destructive WAV edits in place with confirmation;
+- save destructive WAV edits as a separate WAV file;
 - audition WAV files;
 - continuously audition the current loop marker draft;
 - apply mapping changes by renaming files back to that folder.
@@ -218,6 +235,8 @@ Built build\windows\x64\runner\Release\nt_helper.exe
 - Verified local WAV waveform preview.
 - Verified local WAV playback and loop audition controls build successfully.
 - Verified local WAV `smpl` loop metadata write coverage in tests.
+- Verified local WAV render coverage for exact trim start, loop adjustment, fades, gain, and normalize.
+- Verified manual root edits clear stale missing-root warnings.
 - Verified direct Disting NT SD waveform preview is disabled with a local/mounted-folder message.
 - Confirmed direct Disting NT SD full WAV waveform loading should not be exposed as a normal UI path with the current whole-file MIDI download path.
 
@@ -226,8 +245,10 @@ Built build\windows\x64\runner\Release\nt_helper.exe
 - The builder is experimental and has had heavy iteration around map/list sync behaviour.
 - Complex velocity and round-robin sets need more real-world testing.
 - Filename renaming is the current persistence model; this is appropriate for folder-structure editing but not a full algorithm parameter editor.
-- No destructive waveform trimming has been implemented.
 - Local/mounted loop marker edits can be saved to standard WAV `smpl` metadata from the waveform sidebar.
+- Local/mounted destructive WAV editing exists, including trim, fades, gain, normalize, save, and save-as.
+- Destructive save is intentionally local/mounted only and requires overwrite confirmation.
+- Drag/drop import, drag-to-key assignment, and generated rename workflows are not implemented yet.
 - Direct SD waveform and loop metadata are blocked by the whole-file download limitation described above.
 
 ## Proposed Next Steps
@@ -235,15 +256,12 @@ Built build\windows\x64\runner\Release\nt_helper.exe
 1. Keep the initial upstream review focused on the local/mounted sample-folder editor.
 2. Treat direct Disting NT SD waveform preview as future work unless the firmware/API gains ranged reads or WAV metadata summaries.
 3. Add broader parser tests from real factory/sample-library naming patterns.
-4. Decide whether saving should:
-   - rename files in place;
-   - copy/export into a new folder;
-   - or offer both, with clear destructive/non-destructive modes.
+4. Continue testing the save/apply split:
+   - filename/tag edits use the main builder Apply button;
+   - loop metadata edits use Save metadata in the waveform sidebar;
+   - destructive audio edits use Save or Save as in destructive mode.
 5. Add a non-destructive export workflow for imported Decent Sampler libraries.
-6. Later, consider destructive WAV editing:
-   - trim start/end;
-   - write `smpl` loop metadata;
-   - write converted copies rather than modifying originals by default.
+6. Later, consider drag/drop import and drag-to-key assignment once the manual list/map workflow has had more testing.
 
 ## Related Firmware/API Question
 

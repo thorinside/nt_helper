@@ -65,5 +65,17 @@ void main() {
       expect(region.rootMidi, isNull);
       expect(region.issues, contains(PolySampleIssue.missingRootNote));
     });
+
+    test('clears missing-root issue after manual root edit', () {
+      final region = PolyMultisampleParser.parseFile(
+        File('/samples/drums/kick.wav'),
+      );
+
+      final edited = region.copyWith(rootMidi: 59, rootName: 'B3');
+
+      expect(edited.rootName, 'B3');
+      expect(edited.currentIssues, isEmpty);
+      expect(edited.issues, isEmpty);
+    });
   });
 }

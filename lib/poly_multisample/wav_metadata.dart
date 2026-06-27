@@ -57,6 +57,30 @@ class WavPeak {
   final double max;
 }
 
+enum WavFadeCurve { linear, equalPower, exponential, sCurve }
+
+class WavRenderOptions {
+  const WavRenderOptions({
+    required this.trimStartFrame,
+    required this.trimEndFrame,
+    this.fadeInFrames = 0,
+    this.fadeOutFrames = 0,
+    this.fadeInCurve = WavFadeCurve.linear,
+    this.fadeOutCurve = WavFadeCurve.linear,
+    this.gainDb = 0,
+    this.normalizePeakDb,
+  });
+
+  final int trimStartFrame;
+  final int trimEndFrame;
+  final int fadeInFrames;
+  final int fadeOutFrames;
+  final WavFadeCurve fadeInCurve;
+  final WavFadeCurve fadeOutCurve;
+  final double gainDb;
+  final double? normalizePeakDb;
+}
+
 class WavMetadataReader {
   static WavOverview? parse(Uint8List bytes, {int peakCount = 360}) {
     if (bytes.length < 44) return null;
@@ -217,7 +241,286 @@ class WavMetadataReader {
   }
 }
 
+class WavAudioRenderer {
+  static Uint8List render(Uint8List bytes, WavRenderOptions options) {
+    if (bytes.length < 44) {
+      throw const FormatException('WAV file is too small.');
+    }
+    if (WavMetadataReader._tag(bytes, 0) != 'RIFF' ||
+        WavMetadataReader._tag(bytes, 8) != 'WAVE') {
+      throw const FormatException('Not a RIFF/WAVE file.');
+    }
+
+    final data = ByteData.sublistView(bytes);
+    final chunks = _readChunks(bytes, data);
+    _FmtChunk? fmt;
+    _DataChunk? audio;
+    _SampleLoop? loop;
+    for (final chunk in chunks) {
+      if (chunk.id == 'fmt ') {
+        fmt = WavMetadataReader._readFmt(data, chunk.start, chunk.size);
+      } else if (chunk.id == 'data') {
+        audio = _DataChunk(start: chunk.start, size: chunk.size);
+      } else if (chunk.id == 'smpl') {
+        loop = WavMetadataReader._readFirstSampleLoop(
+          data,
+          chunk.start,
+          chunk.size,
+        );
+      }
+    }
+    if (fmt == null || audio == null) {
+      throw const FormatException('WAV fmt/data chunks not found.');
+    }
+    if (!_isSupportedFormat(fmt)) {
+      throw FormatException(
+        'Unsupported WAV format ${fmt.format}/${fmt.bitsPerSample}.',
+      );
+    }
+
+    final bytesPerSample = (fmt.bitsPerSample / 8).ceil();
+    final bytesPerFrame = bytesPerSample * fmt.channels;
+    final frameCount = audio.size ~/ bytesPerFrame;
+    if (frameCount <= 0) {
+      throw const FormatException('WAV has no audio frames.');
+    }
+
+    final start = options.trimStartFrame.clamp(0, frameCount - 1).toInt();
+    final endInclusive = options.trimEndFrame
+        .clamp(start, frameCount - 1)
+        .toInt();
+    final renderedFrameCount = endInclusive - start + 1;
+    final renderedSamples = List<double>.filled(
+      renderedFrameCount * fmt.channels,
+      0,
+    );
+
+    final gain = math.pow(10, options.gainDb / 20).toDouble();
+    var peak = 0.0;
+    for (var frame = 0; frame < renderedFrameCount; frame++) {
+      final sourceFrame = start + frame;
+      final fade = _fadeGain(
+        frame: frame,
+        frameCount: renderedFrameCount,
+        fadeInFrames: options.fadeInFrames,
+        fadeOutFrames: options.fadeOutFrames,
+        fadeInCurve: options.fadeInCurve,
+        fadeOutCurve: options.fadeOutCurve,
+      );
+      for (var channel = 0; channel < fmt.channels; channel++) {
+        final sampleOffset =
+            audio.start +
+            sourceFrame * bytesPerFrame +
+            channel * bytesPerSample;
+        final sample =
+            WavMetadataReader._readSample(
+              data,
+              sampleOffset,
+              fmt.bitsPerSample,
+              fmt.format,
+            ) *
+            gain *
+            fade;
+        final index = frame * fmt.channels + channel;
+        renderedSamples[index] = sample;
+        peak = math.max(peak, sample.abs());
+      }
+    }
+
+    final normalizePeakDb = options.normalizePeakDb;
+    if (normalizePeakDb != null && peak > 0) {
+      final target = math.pow(10, normalizePeakDb / 20).toDouble();
+      final factor = target / peak;
+      for (var index = 0; index < renderedSamples.length; index++) {
+        renderedSamples[index] *= factor;
+      }
+    }
+
+    final renderedAudio = _encodeAudio(
+      renderedSamples,
+      fmt: fmt,
+      bytesPerSample: bytesPerSample,
+    );
+    final rebuilt = _rebuildWave(bytes, chunks, renderedAudio);
+    if (loop == null) {
+      return rebuilt;
+    }
+
+    final loopStart = (loop.start - start).clamp(0, renderedFrameCount - 1);
+    final loopEnd = (loop.end - start).clamp(loopStart, renderedFrameCount - 1);
+    return WavMetadataWriter.writeSmplLoop(
+      rebuilt,
+      loopStart: loopStart.toInt(),
+      loopEnd: loopEnd.toInt(),
+    );
+  }
+
+  static bool _isSupportedFormat(_FmtChunk fmt) {
+    if (fmt.channels <= 0) return false;
+    if (fmt.format == 3) return fmt.bitsPerSample == 32;
+    if (fmt.format != 1) return false;
+    return const {8, 16, 24, 32}.contains(fmt.bitsPerSample);
+  }
+
+  static List<_WaveChunk> _readChunks(Uint8List bytes, ByteData data) {
+    final chunks = <_WaveChunk>[];
+    var offset = 12;
+    while (offset + 8 <= bytes.length) {
+      final id = WavMetadataReader._tag(bytes, offset);
+      final size = data.getUint32(offset + 4, Endian.little);
+      final start = offset + 8;
+      final end = start + size;
+      if (end > bytes.length) break;
+      chunks.add(_WaveChunk(id: id, offset: offset, start: start, size: size));
+      offset = end + (size.isOdd ? 1 : 0);
+    }
+    return chunks;
+  }
+
+  static double _fadeGain({
+    required int frame,
+    required int frameCount,
+    required int fadeInFrames,
+    required int fadeOutFrames,
+    required WavFadeCurve fadeInCurve,
+    required WavFadeCurve fadeOutCurve,
+  }) {
+    var gain = 1.0;
+    if (fadeInFrames > 0 && frame < fadeInFrames) {
+      gain *= _curve(frame / fadeInFrames, fadeInCurve);
+    }
+    if (fadeOutFrames > 0 && frame >= frameCount - fadeOutFrames) {
+      final remaining = frameCount - 1 - frame;
+      gain *= _curve(remaining / fadeOutFrames, fadeOutCurve);
+    }
+    return gain.clamp(0.0, 1.0);
+  }
+
+  static double _curve(double value, WavFadeCurve curve) {
+    final x = value.clamp(0.0, 1.0);
+    return switch (curve) {
+      WavFadeCurve.linear => x,
+      WavFadeCurve.equalPower => math.sin(x * math.pi / 2),
+      WavFadeCurve.exponential => x * x,
+      WavFadeCurve.sCurve => x * x * (3 - 2 * x),
+    };
+  }
+
+  static Uint8List _encodeAudio(
+    List<double> samples, {
+    required _FmtChunk fmt,
+    required int bytesPerSample,
+  }) {
+    final out = Uint8List(samples.length * bytesPerSample);
+    final data = ByteData.sublistView(out);
+    for (var index = 0; index < samples.length; index++) {
+      final offset = index * bytesPerSample;
+      final sample = samples[index].clamp(-1.0, 1.0);
+      if (fmt.format == 3 && fmt.bitsPerSample == 32) {
+        data.setFloat32(offset, sample, Endian.little);
+        continue;
+      }
+      switch (fmt.bitsPerSample) {
+        case 8:
+          data.setUint8(offset, ((sample * 127) + 128).round().clamp(0, 255));
+          break;
+        case 16:
+          data.setInt16(
+            offset,
+            (sample * 32767).round().clamp(-32768, 32767),
+            Endian.little,
+          );
+          break;
+        case 24:
+          _writeInt24(data, offset, (sample * 8388607).round());
+          break;
+        case 32:
+          data.setInt32(
+            offset,
+            (sample * 2147483647).round().clamp(-2147483648, 2147483647),
+            Endian.little,
+          );
+          break;
+      }
+    }
+    return out;
+  }
+
+  static void _writeInt24(ByteData data, int offset, int value) {
+    final clamped = value.clamp(-8388608, 8388607);
+    final unsigned = clamped < 0 ? clamped + 0x1000000 : clamped;
+    data
+      ..setUint8(offset, unsigned & 0xff)
+      ..setUint8(offset + 1, (unsigned >> 8) & 0xff)
+      ..setUint8(offset + 2, (unsigned >> 16) & 0xff);
+  }
+
+  static Uint8List _rebuildWave(
+    Uint8List original,
+    List<_WaveChunk> chunks,
+    Uint8List renderedAudio,
+  ) {
+    final body = BytesBuilder(copy: false)..add(_ascii('WAVE'));
+    for (final chunk in chunks) {
+      if (chunk.id == 'data') {
+        body
+          ..add(_ascii('data'))
+          ..add(WavMetadataWriter._u32(renderedAudio.length))
+          ..add(renderedAudio);
+        if (renderedAudio.length.isOdd) body.addByte(0);
+      } else if (chunk.id != 'smpl') {
+        final paddedEnd = chunk.start + chunk.size + (chunk.size.isOdd ? 1 : 0);
+        body.add(original.sublist(chunk.offset, paddedEnd));
+      }
+    }
+    final bodyBytes = body.toBytes();
+    return (BytesBuilder(copy: false)
+          ..add(_ascii('RIFF'))
+          ..add(WavMetadataWriter._u32(bodyBytes.length))
+          ..add(bodyBytes))
+        .toBytes();
+  }
+
+  static Uint8List _ascii(String value) => Uint8List.fromList(value.codeUnits);
+}
+
 class WavMetadataWriter {
+  static Uint8List removeSmplLoop(Uint8List bytes) {
+    if (bytes.length < 44) {
+      throw const FormatException('WAV file is too small.');
+    }
+    if (WavMetadataReader._tag(bytes, 0) != 'RIFF' ||
+        WavMetadataReader._tag(bytes, 8) != 'WAVE') {
+      throw const FormatException('Not a RIFF/WAVE file.');
+    }
+
+    final data = ByteData.sublistView(bytes);
+    _ChunkBounds? smpl;
+    var offset = 12;
+    while (offset + 8 <= bytes.length) {
+      final id = WavMetadataReader._tag(bytes, offset);
+      final size = data.getUint32(offset + 4, Endian.little);
+      final start = offset + 8;
+      final end = start + size;
+      if (end > bytes.length) break;
+      if (id == 'smpl') {
+        smpl = _ChunkBounds(offset: offset, size: size);
+        break;
+      }
+      offset = end + (size.isOdd ? 1 : 0);
+    }
+
+    if (smpl == null) return bytes;
+    final chunkEnd = smpl.offset + 8 + smpl.size + (smpl.size.isOdd ? 1 : 0);
+    final builder = BytesBuilder(copy: false)
+      ..add(bytes.sublist(0, smpl.offset))
+      ..add(bytes.sublist(chunkEnd));
+    final updated = builder.toBytes();
+    final updatedData = ByteData.sublistView(updated);
+    updatedData.setUint32(4, updated.length - 8, Endian.little);
+    return updated;
+  }
+
   static Uint8List writeSmplLoop(
     Uint8List bytes, {
     required int loopStart,
@@ -316,6 +619,20 @@ class WavMetadataWriter {
     final data = ByteData(4)..setUint32(0, value, Endian.little);
     return data.buffer.asUint8List();
   }
+}
+
+class _WaveChunk {
+  const _WaveChunk({
+    required this.id,
+    required this.offset,
+    required this.start,
+    required this.size,
+  });
+
+  final String id;
+  final int offset;
+  final int start;
+  final int size;
 }
 
 class _FmtChunk {

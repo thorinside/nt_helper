@@ -63,6 +63,80 @@ void main() {
       expect(overview.loopEnd, 7);
       expect(overview.frameCount, 8);
     });
+
+    test('removes existing smpl loop metadata', () {
+      final bytes = _pcm16WavWithLoop(
+        samples: [-32768, -12000, 0, 12000, 32767, 12000, 0, -12000],
+        loopStart: 2,
+        loopEnd: 6,
+      );
+
+      final updated = WavMetadataWriter.removeSmplLoop(bytes);
+      final overview = WavMetadataReader.parse(updated);
+
+      expect(overview, isNotNull);
+      expect(overview!.loopStart, isNull);
+      expect(overview.loopEnd, isNull);
+      expect(overview.frameCount, 8);
+    });
+
+    test('renders trim and adjusts existing loop metadata', () {
+      final bytes = _pcm16WavWithLoop(
+        samples: [-10000, -8000, -6000, -4000, -2000, 0, 2000, 4000],
+        loopStart: 2,
+        loopEnd: 6,
+      );
+
+      final rendered = WavAudioRenderer.render(
+        bytes,
+        const WavRenderOptions(trimStartFrame: 2, trimEndFrame: 5),
+      );
+      final overview = WavMetadataReader.parse(rendered);
+
+      expect(overview, isNotNull);
+      expect(overview!.frameCount, 4);
+      expect(overview.loopStart, 0);
+      expect(overview.loopEnd, 3);
+      expect(_pcm16Samples(rendered), [-6000, -4000, -2000, 0]);
+    });
+
+    test('renders trim start at the exact requested frame', () {
+      final bytes = _pcm16Wav(samples: [100, 200, 300, 400, 500]);
+
+      final rendered = WavAudioRenderer.render(
+        bytes,
+        const WavRenderOptions(trimStartFrame: 1, trimEndFrame: 3),
+      );
+
+      expect(_pcm16Samples(rendered), [200, 300, 400]);
+    });
+
+    test('renders fades, gain, and normalize', () {
+      final bytes = _pcm16Wav(samples: [1000, 4000, 8000, 12000, 16000]);
+
+      final rendered = WavAudioRenderer.render(
+        bytes,
+        const WavRenderOptions(
+          trimStartFrame: 0,
+          trimEndFrame: 4,
+          fadeInFrames: 2,
+          fadeOutFrames: 2,
+          fadeInCurve: WavFadeCurve.linear,
+          fadeOutCurve: WavFadeCurve.linear,
+          gainDb: 6,
+          normalizePeakDb: -6,
+        ),
+      );
+      final samples = _pcm16Samples(rendered);
+
+      expect(samples, hasLength(5));
+      expect(samples.first.abs(), lessThan(samples[1].abs()));
+      expect(samples.last.abs(), lessThan(samples[3].abs()));
+      expect(
+        samples.map((sample) => sample.abs()).reduce((a, b) => a > b ? a : b),
+        closeTo(16422, 2),
+      );
+    });
   });
 }
 
@@ -159,6 +233,24 @@ Uint8List _pcm16WavWithLoop({
 }
 
 Uint8List _ascii(String value) => Uint8List.fromList(value.codeUnits);
+
+List<int> _pcm16Samples(Uint8List bytes) {
+  final data = ByteData.sublistView(bytes);
+  var offset = 12;
+  while (offset + 8 <= bytes.length) {
+    final id = String.fromCharCodes(bytes.sublist(offset, offset + 4));
+    final size = data.getUint32(offset + 4, Endian.little);
+    final start = offset + 8;
+    if (id == 'data') {
+      return [
+        for (var i = start; i < start + size; i += 2)
+          data.getInt16(i, Endian.little),
+      ];
+    }
+    offset = start + size + (size.isOdd ? 1 : 0);
+  }
+  return const [];
+}
 
 Uint8List _u16(int value) {
   final data = ByteData(2)..setUint16(0, value, Endian.little);

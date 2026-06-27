@@ -124,6 +124,9 @@ class _PolyMultisampleBuilderScreenState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final instrument = _instrument;
+    final sourcePath = instrument?.sourcePath;
+    final ntSdSelected = sourcePath != null && _isNtSdPath(sourcePath);
+    final localSelected = sourcePath != null && !ntSdSelected;
 
     return Column(
       children: [
@@ -156,16 +159,18 @@ class _PolyMultisampleBuilderScreenState
                     ],
                   ),
                 ),
-                FilledButton.icon(
+                _SourceButton(
+                  selected: ntSdSelected,
                   onPressed: _loading ? null : _chooseNtSdFolder,
-                  icon: const Icon(Icons.memory),
-                  label: const Text('NT SD'),
+                  icon: Icons.memory,
+                  label: 'NT SD',
                 ),
                 const SizedBox(width: 8),
-                OutlinedButton.icon(
+                _SourceButton(
+                  selected: localSelected,
                   onPressed: _loading ? null : _chooseFolder,
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text('Local'),
+                  icon: Icons.folder_open,
+                  label: 'Local',
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
@@ -197,12 +202,43 @@ class _PolyMultisampleBuilderScreenState
               : _InstrumentEditor(
                   instrument: instrument,
                   selectedRegion: _selectedRegion,
+                  onChooseFolder: _chooseFolder,
                   onSelectRegion: (region) {
                     setState(() => _selectedRegion = region);
                   },
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _SourceButton extends StatelessWidget {
+  const _SourceButton({
+    required this.selected,
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  final bool selected;
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    if (selected) {
+      return FilledButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+      );
+    }
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text(label),
     );
   }
 }
@@ -346,11 +382,13 @@ class _InstrumentEditor extends StatefulWidget {
   const _InstrumentEditor({
     required this.instrument,
     required this.selectedRegion,
+    required this.onChooseFolder,
     required this.onSelectRegion,
   });
 
   final PolySampleInstrument instrument;
   final PolySampleRegion? selectedRegion;
+  final Future<void> Function() onChooseFolder;
   final ValueChanged<PolySampleRegion> onSelectRegion;
 
   @override
@@ -365,18 +403,25 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
   late int _mapMaxMidi;
   final AudioPlayer _samplePlayer = AudioPlayer();
   final Map<String, WavOverview?> _waveformCache = {};
+  final Map<String, Future<WavOverview?>> _waveformFutures = {};
   final Map<String, _LoopMarkerDraft> _loopDrafts = {};
   final Map<String, _LoopMarkerDraft> _savedLoopDrafts = {};
+  final Map<String, bool> _loopMetadataPresent = {};
+  final Map<String, bool> _loopEnabledDrafts = {};
+  final Map<String, _WavEditDraft> _wavEditDrafts = {};
   StreamSubscription<PlayerState>? _playerStateSubscription;
   StreamSubscription<void>? _playerCompleteSubscription;
-  StreamSubscription<Duration>? _playerPositionSubscription;
   String? _selectedPath;
   String? _playingPath;
+  String? _loopPreviewFilePath;
   bool _playerPlaying = false;
   bool _loopPreviewEnabled = false;
-  bool _seekingLoop = false;
+  bool _restartingLoopPreview = false;
   bool _applying = false;
   bool _savingLoop = false;
+  bool _renderingWav = false;
+  bool _autoPreviewOnSelect = false;
+  _WaveformMode _waveformMode = _WaveformMode.metadata;
 
   @override
   void initState() {
@@ -388,23 +433,21 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
       if (!mounted) return;
       setState(() {
         _playerPlaying = state == PlayerState.playing;
-        if (state == PlayerState.stopped || state == PlayerState.completed) {
+        if (state == PlayerState.stopped) {
+          if (!_loopPreviewEnabled) {
+            _playingPath = null;
+          }
+        } else if (state == PlayerState.completed && !_loopPreviewEnabled) {
           _playingPath = null;
-          _loopPreviewEnabled = false;
         }
       });
+      if (state == PlayerState.completed && _loopPreviewEnabled) {
+        unawaited(_handlePlayerComplete());
+      }
     });
     _playerCompleteSubscription = _samplePlayer.onPlayerComplete.listen((_) {
-      if (!mounted) return;
-      setState(() {
-        _playingPath = null;
-        _playerPlaying = false;
-        _loopPreviewEnabled = false;
-      });
+      unawaited(_handlePlayerComplete());
     });
-    _playerPositionSubscription = _samplePlayer.onPositionChanged.listen(
-      _handlePlayerPosition,
-    );
   }
 
   @override
@@ -419,15 +462,19 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
   void dispose() {
     _playerStateSubscription?.cancel();
     _playerCompleteSubscription?.cancel();
-    _playerPositionSubscription?.cancel();
+    _clearLoopPreviewFile();
     _samplePlayer.dispose();
     super.dispose();
   }
 
   void _resetDraft() {
     _waveformCache.clear();
+    _waveformFutures.clear();
     _loopDrafts.clear();
     _savedLoopDrafts.clear();
+    _loopMetadataPresent.clear();
+    _loopEnabledDrafts.clear();
+    _wavEditDrafts.clear();
     _regions = _withExplicitSwitchPoints(widget.instrument.regions);
     _baselineRegions = List<PolySampleRegion>.of(_regions);
     _mapLanes = _sortedSampleLanes(_regions);
@@ -460,6 +507,9 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
   void _selectRegion(PolySampleRegion region) {
     setState(() => _selectedPath = region.path);
     widget.onSelectRegion(region);
+    if (_autoPreviewOnSelect && !_isNtSdPath(region.path)) {
+      unawaited(_playSamplePreview(region));
+    }
   }
 
   void _updateRegion(PolySampleRegion updated) {
@@ -485,8 +535,42 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
   void _updateLoopFor(PolySampleRegion region, _LoopMarkerDraft markers) {
     setState(() {
       _loopDrafts[region.path] = markers;
+      _loopEnabledDrafts[region.path] = true;
       _selectedPath = region.path;
     });
+    _refreshLoopPreviewFor(region);
+  }
+
+  void _setLoopEnabledFor(PolySampleRegion region, bool enabled) {
+    setState(() {
+      _loopEnabledDrafts[region.path] = enabled;
+      _selectedPath = region.path;
+      if (!enabled) {
+        _loopPreviewEnabled = false;
+      }
+    });
+    _refreshLoopPreviewFor(region);
+  }
+
+  void _updateWavEditFor(PolySampleRegion region, _WavEditDraft draft) {
+    setState(() {
+      _wavEditDrafts[region.path] = draft;
+      _selectedPath = region.path;
+    });
+    _syncPreviewGainFor(region.path);
+    _refreshLoopPreviewFor(region);
+  }
+
+  void _setWaveformMode(_WaveformMode mode) {
+    setState(() => _waveformMode = mode);
+    final path = _playingPath;
+    if (path != null) {
+      _syncPreviewGainFor(path);
+      final selected = _selectedRegion;
+      if (selected != null && selected.path == path) {
+        _refreshLoopPreviewFor(selected);
+      }
+    }
   }
 
   Future<WavOverview?> _loadWaveformFor(PolySampleRegion region) async {
@@ -504,6 +588,11 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
         final markers = _LoopMarkerDraft.fromWaveform(overview);
         _loopDrafts[region.path] = markers;
         _savedLoopDrafts[region.path] = markers;
+        final hasLoopMetadata =
+            overview.loopStart != null && overview.loopEnd != null;
+        _loopMetadataPresent[region.path] = hasLoopMetadata;
+        _loopEnabledDrafts[region.path] = hasLoopMetadata;
+        _wavEditDrafts[region.path] = _WavEditDraft.fromWaveform(overview);
       }
       return overview;
     } catch (_) {
@@ -511,17 +600,30 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
     }
   }
 
+  Future<WavOverview?> _waveformFutureFor(PolySampleRegion region) {
+    return _waveformFutures.putIfAbsent(
+      region.path,
+      () => _loadWaveformFor(region),
+    );
+  }
+
   bool _isLoopDirty(PolySampleRegion? region) {
     if (region == null || _isNtSdPath(region.path)) return false;
     final draft = _loopDrafts[region.path];
     final saved = _savedLoopDrafts[region.path];
-    return draft != null && saved != null && draft != saved;
+    final hasMetadata = _loopMetadataPresent[region.path] ?? false;
+    final loopEnabled = _loopEnabledDrafts[region.path] ?? hasMetadata;
+    if (loopEnabled != hasMetadata) return true;
+    return loopEnabled && draft != null && saved != null && draft != saved;
   }
 
   Future<void> _saveLoopFor(PolySampleRegion region) async {
     if (_savingLoop || _isNtSdPath(region.path)) return;
     final overview = await _loadWaveformFor(region);
     if (overview == null) return;
+    final loopEnabled =
+        _loopEnabledDrafts[region.path] ??
+        (overview.loopStart != null && overview.loopEnd != null);
     final markers =
         (_loopDrafts[region.path] ?? _LoopMarkerDraft.fromWaveform(overview))
             .clamped(overview.frameCount)
@@ -531,21 +633,31 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
     try {
       final file = File(region.path);
       final bytes = await file.readAsBytes();
-      final updated = WavMetadataWriter.writeSmplLoop(
-        bytes,
-        loopStart: markers.loopStartFrame,
-        loopEnd: markers.loopEndFrame,
-      );
+      final updated = loopEnabled
+          ? WavMetadataWriter.writeSmplLoop(
+              bytes,
+              loopStart: markers.loopStartFrame,
+              loopEnd: markers.loopEndFrame,
+            )
+          : WavMetadataWriter.removeSmplLoop(bytes);
       await file.writeAsBytes(updated, flush: true);
       final refreshed = WavMetadataReader.parse(updated);
       setState(() {
         _waveformCache[region.path] = refreshed ?? overview;
         _loopDrafts[region.path] = markers;
         _savedLoopDrafts[region.path] = markers;
+        _loopMetadataPresent[region.path] = loopEnabled;
+        _loopEnabledDrafts[region.path] = loopEnabled;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Saved loop points to WAV metadata.')),
+          SnackBar(
+            content: Text(
+              loopEnabled
+                  ? 'Saved loop points to WAV metadata.'
+                  : 'Removed loop metadata from WAV.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -561,6 +673,127 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
     }
   }
 
+  Future<void> _saveDestructiveWavFor(
+    PolySampleRegion region, {
+    required bool saveAs,
+  }) async {
+    if (_renderingWav || _isNtSdPath(region.path)) return;
+    final overview = await _loadWaveformFor(region);
+    if (overview == null) return;
+    final draft =
+        (_wavEditDrafts[region.path] ?? _WavEditDraft.fromWaveform(overview))
+            .clamped(overview);
+
+    String? targetPath;
+    if (saveAs) {
+      targetPath = await FilePicker.saveFile(
+        dialogTitle: 'Save edited WAV as',
+        fileName: p.basename(region.path),
+        type: FileType.custom,
+        allowedExtensions: const ['wav'],
+      );
+    } else {
+      final confirmed = await _confirmOverwriteWav(region);
+      if (!confirmed) return;
+      targetPath = region.path;
+    }
+    final target = targetPath;
+    if (target == null) return;
+
+    setState(() => _renderingWav = true);
+    try {
+      final bytes = await File(region.path).readAsBytes();
+      final rendered = WavAudioRenderer.render(
+        bytes,
+        draft.toRenderOptions(overview),
+      );
+      await File(target).writeAsBytes(rendered, flush: true);
+      final refreshed = WavMetadataReader.parse(rendered);
+      setState(() {
+        if (target == region.path) {
+          _waveformCache[region.path] = refreshed ?? overview;
+          _loopDrafts[region.path] = _LoopMarkerDraft.fromWaveform(
+            refreshed ?? overview,
+          );
+          _savedLoopDrafts[region.path] = _loopDrafts[region.path]!;
+          _loopMetadataPresent[region.path] =
+              (refreshed ?? overview).loopStart != null &&
+              (refreshed ?? overview).loopEnd != null;
+          _loopEnabledDrafts[region.path] =
+              _loopMetadataPresent[region.path] ?? false;
+          _wavEditDrafts[region.path] = _WavEditDraft.fromWaveform(
+            refreshed ?? overview,
+          );
+        } else {
+          final newRegion = PolyMultisampleParser.parseFile(
+            File(target),
+            basePath: widget.instrument.sourcePath,
+          );
+          _regions.add(newRegion);
+          PolyMultisampleFolderReader.sortRegions(_regions);
+          _baselineRegions.add(newRegion);
+          PolyMultisampleFolderReader.sortRegions(_baselineRegions);
+          _mapLanes = _sortedSampleLanes(_regions);
+          _mapMinMidi = _initialMapMinMidi(_regions);
+          _mapMaxMidi = _initialMapMaxMidi(_regions, _mapMinMidi);
+          _selectedPath = newRegion.path;
+          if (refreshed != null) {
+            _waveformCache[newRegion.path] = refreshed;
+            _loopDrafts[newRegion.path] = _LoopMarkerDraft.fromWaveform(
+              refreshed,
+            );
+            _savedLoopDrafts[newRegion.path] = _loopDrafts[newRegion.path]!;
+            _loopMetadataPresent[newRegion.path] =
+                refreshed.loopStart != null && refreshed.loopEnd != null;
+            _loopEnabledDrafts[newRegion.path] =
+                _loopMetadataPresent[newRegion.path] ?? false;
+            _wavEditDrafts[newRegion.path] = _WavEditDraft.fromWaveform(
+              refreshed,
+            );
+          }
+        }
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(saveAs ? 'Saved WAV as.' : 'Saved WAV.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('WAV save failed: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _renderingWav = false);
+      }
+    }
+  }
+
+  Future<bool> _confirmOverwriteWav(PolySampleRegion region) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Overwrite WAV?'),
+        content: Text(
+          'This will rewrite ${region.fileName}. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Overwrite'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   Future<Uint8List?> _readSampleBytes(PolySampleRegion region) async {
     if (region.path.startsWith('/')) {
       final manager = context.read<DistingCubit>().disting();
@@ -572,60 +805,200 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
   Future<void> _toggleSamplePlayback(PolySampleRegion region) async {
     if (_isNtSdPath(region.path)) return;
     if (_playingPath == region.path && _playerPlaying) {
+      await _samplePlayer.setReleaseMode(ReleaseMode.release);
       await _samplePlayer.stop();
+      _clearLoopPreviewFile();
       return;
     }
+    await _playSamplePreview(region);
+  }
+
+  Future<void> _playSamplePreview(PolySampleRegion region) async {
+    if (_isNtSdPath(region.path)) return;
     final overview = await _loadWaveformFor(region);
     if (overview == null) return;
     final markers =
         _loopDrafts[region.path] ?? _LoopMarkerDraft.fromWaveform(overview);
-    final position = _loopPreviewEnabled
-        ? _frameDuration(markers.loopStartFrame, overview.sampleRate)
-        : Duration.zero;
     await _samplePlayer.stop();
-    await _samplePlayer.play(DeviceFileSource(region.path), position: position);
+    _clearLoopPreviewFile();
+    await _samplePlayer.setVolume(_previewGainForPath(region.path));
+    var sourcePath = region.path;
+    if (_loopPreviewEnabled) {
+      final loopPath = _waveformMode == _WaveformMode.destructive
+          ? await _writeDestructivePreviewFile(region, overview)
+          : await _writeLoopPreviewFile(region, overview, markers);
+      if (loopPath != null) {
+        sourcePath = loopPath;
+        await _samplePlayer.setReleaseMode(ReleaseMode.loop);
+      } else {
+        await _samplePlayer.setReleaseMode(ReleaseMode.release);
+      }
+    } else {
+      await _samplePlayer.setReleaseMode(ReleaseMode.release);
+    }
+    await _samplePlayer.play(DeviceFileSource(sourcePath));
     if (!mounted) return;
-    setState(() => _playingPath = region.path);
+    setState(() {
+      _playingPath = region.path;
+      _playerPlaying = true;
+    });
+  }
+
+  void _syncPreviewGainFor(String path) {
+    if (_playingPath != path || !_playerPlaying) return;
+    unawaited(_samplePlayer.setVolume(_previewGainForPath(path)));
+  }
+
+  double _previewGainForPath(String path) {
+    if (_waveformMode != _WaveformMode.destructive) return 1;
+    final draft = _wavEditDrafts[path];
+    if (draft == null) return 1;
+    return _gainDbToLinear(draft.gainDb).clamp(0.0, 1.0);
   }
 
   Future<void> _setLoopPreview(bool enabled) async {
     final selected = _selectedRegion;
     setState(() => _loopPreviewEnabled = enabled);
-    if (!enabled || selected == null || _playingPath != selected.path) return;
-    final overview = await _loadWaveformFor(selected);
-    if (overview == null) return;
-    final markers =
-        _loopDrafts[selected.path] ?? _LoopMarkerDraft.fromWaveform(overview);
-    await _samplePlayer.seek(
-      _frameDuration(markers.loopStartFrame, overview.sampleRate),
-    );
+    if (!enabled) {
+      await _samplePlayer.setReleaseMode(ReleaseMode.release);
+      _clearLoopPreviewFile();
+      if (selected != null && _playingPath == selected.path && _playerPlaying) {
+        await _playSamplePreview(selected);
+      }
+      return;
+    }
+    if (selected == null || _playingPath != selected.path) return;
+    if (_playerPlaying) {
+      await _playSamplePreview(selected);
+    }
   }
 
-  Future<void> _handlePlayerPosition(Duration position) async {
-    if (!_loopPreviewEnabled || _seekingLoop) return;
-    final path = _playingPath;
-    if (path == null) return;
-    PolySampleRegion? region;
-    for (final candidate in _regions) {
-      if (candidate.path == path) {
-        region = candidate;
-        break;
-      }
+  void _refreshLoopPreviewFor(PolySampleRegion region) {
+    if (!_loopPreviewEnabled || _playingPath != region.path) {
+      return;
     }
-    if (region == null) return;
-    final overview = await _loadWaveformFor(region);
-    if (overview == null) return;
-    final markers =
-        _loopDrafts[path] ?? _LoopMarkerDraft.fromWaveform(overview);
-    final loopEnd = _frameDuration(markers.loopEndFrame, overview.sampleRate);
-    if (position < loopEnd) return;
-    _seekingLoop = true;
+    unawaited(_playSamplePreview(region));
+  }
+
+  Future<String?> _writeLoopPreviewFile(
+    PolySampleRegion region,
+    WavOverview overview,
+    _LoopMarkerDraft markers,
+  ) async {
+    final loop = markers.clamped(overview.frameCount);
+    if (loop.loopEndFrame <= loop.loopStartFrame) return null;
+    final bytes = await _readSampleBytes(region);
+    if (bytes == null) return null;
+    final rendered = WavAudioRenderer.render(
+      bytes,
+      WavRenderOptions(
+        trimStartFrame: loop.loopStartFrame,
+        trimEndFrame: loop.loopEndFrame,
+      ),
+    );
+    final dir = Directory(
+      p.join(Directory.systemTemp.path, 'nt_helper_loop_preview'),
+    );
+    await dir.create(recursive: true);
+    final safeName = p.basenameWithoutExtension(region.fileName);
+    final file = File(
+      p.join(
+        dir.path,
+        '${safeName}_${DateTime.now().microsecondsSinceEpoch}.wav',
+      ),
+    );
+    await file.writeAsBytes(rendered, flush: true);
+    _loopPreviewFilePath = file.path;
+    return file.path;
+  }
+
+  Future<String?> _writeDestructivePreviewFile(
+    PolySampleRegion region,
+    WavOverview overview,
+  ) async {
+    final bytes = await _readSampleBytes(region);
+    if (bytes == null) return null;
+    final draft =
+        (_wavEditDrafts[region.path] ?? _WavEditDraft.fromWaveform(overview))
+            .clamped(overview);
+    final rendered = WavAudioRenderer.render(
+      bytes,
+      draft.toRenderOptions(overview),
+    );
+    final dir = Directory(
+      p.join(Directory.systemTemp.path, 'nt_helper_loop_preview'),
+    );
+    await dir.create(recursive: true);
+    final safeName = p.basenameWithoutExtension(region.fileName);
+    final file = File(
+      p.join(
+        dir.path,
+        '${safeName}_destructive_${DateTime.now().microsecondsSinceEpoch}.wav',
+      ),
+    );
+    await file.writeAsBytes(rendered, flush: true);
+    _loopPreviewFilePath = file.path;
+    return file.path;
+  }
+
+  void _clearLoopPreviewFile() {
+    final path = _loopPreviewFilePath;
+    _loopPreviewFilePath = null;
+    if (path == null) return;
     try {
-      await _samplePlayer.seek(
-        _frameDuration(markers.loopStartFrame, overview.sampleRate),
-      );
+      File(path).deleteSync();
+    } catch (_) {
+      // Best-effort cleanup only.
+    }
+  }
+
+  Future<void> _openSampleFolder(PolySampleRegion region) async {
+    if (_isNtSdPath(region.path)) return;
+    final dir = p.dirname(region.path);
+    try {
+      if (Platform.isWindows) {
+        await Process.run('explorer.exe', [dir]);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', [dir]);
+      } else {
+        await Process.run('xdg-open', [dir]);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open folder: $e')));
+    }
+  }
+
+  Future<void> _handlePlayerComplete() async {
+    if (_restartingLoopPreview) return;
+    final path = _playingPath;
+    if (!_loopPreviewEnabled || path == null) {
+      if (!mounted) return;
+      setState(() {
+        _playingPath = null;
+        _playerPlaying = false;
+        _loopPreviewEnabled = false;
+      });
+      return;
+    }
+    _restartingLoopPreview = true;
+    PolySampleRegion? region;
+    try {
+      for (final candidate in _regions) {
+        if (candidate.path == path) {
+          region = candidate;
+          break;
+        }
+      }
+      if (region == null) return;
+      await _playSamplePreview(region);
     } finally {
-      _seekingLoop = false;
+      _restartingLoopPreview = false;
+      if (mounted && _loopPreviewEnabled && _playingPath == path) {
+        setState(() => _playerPlaying = true);
+      }
     }
   }
 
@@ -776,6 +1149,7 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
             change.source.path,
           );
         }
+        _waveformFutures.remove(change.source.path);
         if (_loopDrafts.containsKey(change.source.path)) {
           _loopDrafts[change.updated.path] = _loopDrafts.remove(
             change.source.path,
@@ -783,6 +1157,20 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
         }
         if (_savedLoopDrafts.containsKey(change.source.path)) {
           _savedLoopDrafts[change.updated.path] = _savedLoopDrafts.remove(
+            change.source.path,
+          )!;
+        }
+        if (_loopMetadataPresent.containsKey(change.source.path)) {
+          _loopMetadataPresent[change.updated.path] = _loopMetadataPresent
+              .remove(change.source.path)!;
+        }
+        if (_loopEnabledDrafts.containsKey(change.source.path)) {
+          _loopEnabledDrafts[change.updated.path] = _loopEnabledDrafts.remove(
+            change.source.path,
+          )!;
+        }
+        if (_wavEditDrafts.containsKey(change.source.path)) {
+          _wavEditDrafts[change.updated.path] = _wavEditDrafts.remove(
             change.source.path,
           )!;
         }
@@ -833,58 +1221,81 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Row(
-            children: [
-              _StatChip(
-                label: 'Files',
-                value: instrument.regions.length.toString(),
-              ),
-              const SizedBox(width: 8),
-              _StatChip(
-                label: 'Mapped',
-                value: instrument.mappedCount.toString(),
-              ),
-              const SizedBox(width: 8),
-              _StatChip(
-                label: 'Vel Layers',
-                value: instrument.velocityLayers.length.toString(),
-              ),
-              const SizedBox(width: 8),
-              _StatChip(
-                label: 'Warnings',
-                value: instrument.warningCount.toString(),
-                warning: instrument.warningCount > 0,
-              ),
-              const Spacer(),
-              _DraftStatusChip(dirty: _hasDraftChanges),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: _hasDraftChanges && !_applying
-                    ? _discardDraft
-                    : null,
-                icon: const Icon(Icons.undo, size: 18),
-                label: const Text('Discard'),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: _hasDraftChanges && !_applying ? _applyDraft : null,
-                icon: const Icon(Icons.save, size: 18),
-                label: Text(_applying ? 'Applying...' : 'Apply'),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                instrument.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall,
-              ),
-            ],
+        SizedBox(
+          height: 56,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _StatChip(
+                          label: 'Files',
+                          value: instrument.regions.length.toString(),
+                        ),
+                        const SizedBox(width: 8),
+                        _StatChip(
+                          label: 'Mapped',
+                          value: instrument.mappedCount.toString(),
+                        ),
+                        const SizedBox(width: 8),
+                        _StatChip(
+                          label: 'Vel Layers',
+                          value: instrument.velocityLayers.length.toString(),
+                        ),
+                        const SizedBox(width: 8),
+                        _StatChip(
+                          label: 'Warnings',
+                          value: instrument.warningCount.toString(),
+                          warning: instrument.warningCount > 0,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          instrument.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _DraftStatusChip(dirty: _hasDraftChanges),
+                const SizedBox(width: 8),
+                FilterChip(
+                  avatar: const Icon(Icons.volume_up, size: 16),
+                  label: const Text('Auto preview'),
+                  selected: _autoPreviewOnSelect,
+                  onSelected: (value) =>
+                      setState(() => _autoPreviewOnSelect = value),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _hasDraftChanges && !_applying
+                      ? _discardDraft
+                      : null,
+                  icon: const Icon(Icons.undo, size: 18),
+                  label: const Text('Discard'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: _hasDraftChanges && !_applying
+                      ? _applyDraft
+                      : null,
+                  icon: const Icon(Icons.save, size: 18),
+                  label: Text(_applying ? 'Applying...' : 'Apply'),
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: Padding(
@@ -924,7 +1335,10 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
                   regions: instrument.regions,
                   waveform: selected == null || _isNtSdPath(selected.path)
                       ? null
-                      : _loadWaveformFor(selected),
+                      : _waveformFutureFor(selected),
+                  cachedWaveform: selected == null
+                      ? null
+                      : _waveformCache[selected.path],
                   canPreviewAudio:
                       selected != null && !_isNtSdPath(selected.path),
                   isPreviewPlaying:
@@ -939,17 +1353,40 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
                   loopDraft: selected == null
                       ? null
                       : _loopDrafts[selected.path],
+                  loopEnabled: selected == null
+                      ? false
+                      : _loopEnabledDrafts[selected.path] ??
+                            (_loopMetadataPresent[selected.path] ?? false),
                   loopDirty: _isLoopDirty(selected),
                   savingLoop: _savingLoop,
+                  wavEditDraft: selected == null
+                      ? null
+                      : _wavEditDrafts[selected.path],
+                  waveformMode: _waveformMode,
+                  renderingWav: _renderingWav,
                   onChangeRegion: _updateSelectedRegion,
                   onChangeRoot: _updateRootFor,
                   onChangeVelocity: _updateVelocityFor,
                   onChangeLow: _updateRangeLowFor,
                   onChangeHigh: _updateRangeHighFor,
                   onChangeLoop: _updateLoopFor,
+                  onChangeLoopEnabled: _setLoopEnabledFor,
+                  onChangeWavEdit: _updateWavEditFor,
+                  onChangeWaveformMode: _setWaveformMode,
+                  onSelectRegion: _selectRegion,
+                  onChooseFolder: widget.onChooseFolder,
+                  onRevealFolder: selected == null || _isNtSdPath(selected.path)
+                      ? null
+                      : () => _openSampleFolder(selected),
                   onSaveLoop: selected == null
                       ? null
                       : () => _saveLoopFor(selected),
+                  onSaveWav: selected == null
+                      ? null
+                      : () => _saveDestructiveWavFor(selected, saveAs: false),
+                  onSaveWavAs: selected == null
+                      ? null
+                      : () => _saveDestructiveWavFor(selected, saveAs: true),
                   onTogglePreview: _toggleSamplePlayback,
                   onToggleLoopPreview: _setLoopPreview,
                 ),
@@ -963,11 +1400,6 @@ class _InstrumentEditorState extends State<_InstrumentEditor> {
 }
 
 bool _isNtSdPath(String path) => path.startsWith('/');
-
-Duration _frameDuration(int frame, int sampleRate) {
-  if (sampleRate <= 0) return Duration.zero;
-  return Duration(microseconds: ((frame / sampleRate) * 1000000).round());
-}
 
 class _RenameChange {
   const _RenameChange({
@@ -2169,12 +2601,13 @@ class _IssueLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (region.issues.isEmpty) {
+    final issues = region.currentIssues;
+    if (issues.isEmpty) {
       return const Text('OK');
     }
     final colorScheme = Theme.of(context).colorScheme;
     return Text(
-      region.issues.map(_issueText).join(', '),
+      issues.map(_issueText).join(', '),
       style: TextStyle(color: colorScheme.tertiary),
     );
   }
@@ -2192,20 +2625,33 @@ class _SampleInspector extends StatelessWidget {
     required this.region,
     required this.regions,
     required this.waveform,
+    required this.cachedWaveform,
     required this.canPreviewAudio,
     required this.isPreviewPlaying,
     required this.loopPreviewEnabled,
     required this.waveformMessage,
     required this.loopDraft,
+    required this.loopEnabled,
     required this.loopDirty,
     required this.savingLoop,
+    required this.wavEditDraft,
+    required this.waveformMode,
+    required this.renderingWav,
     required this.onChangeRegion,
     required this.onChangeRoot,
     required this.onChangeVelocity,
     required this.onChangeLow,
     required this.onChangeHigh,
     required this.onChangeLoop,
+    required this.onChangeLoopEnabled,
+    required this.onChangeWavEdit,
+    required this.onChangeWaveformMode,
+    required this.onSelectRegion,
+    required this.onChooseFolder,
+    required this.onRevealFolder,
     required this.onSaveLoop,
+    required this.onSaveWav,
+    required this.onSaveWavAs,
     required this.onTogglePreview,
     required this.onToggleLoopPreview,
   });
@@ -2213,13 +2659,18 @@ class _SampleInspector extends StatelessWidget {
   final PolySampleRegion? region;
   final List<PolySampleRegion> regions;
   final Future<WavOverview?>? waveform;
+  final WavOverview? cachedWaveform;
   final bool canPreviewAudio;
   final bool isPreviewPlaying;
   final bool loopPreviewEnabled;
   final String? waveformMessage;
   final _LoopMarkerDraft? loopDraft;
+  final bool loopEnabled;
   final bool loopDirty;
   final bool savingLoop;
+  final _WavEditDraft? wavEditDraft;
+  final _WaveformMode waveformMode;
+  final bool renderingWav;
   final ValueChanged<PolySampleRegion> onChangeRegion;
   final void Function(PolySampleRegion region, int value) onChangeRoot;
   final void Function(PolySampleRegion region, int value) onChangeVelocity;
@@ -2227,7 +2678,17 @@ class _SampleInspector extends StatelessWidget {
   final void Function(PolySampleRegion region, int value) onChangeHigh;
   final void Function(PolySampleRegion region, _LoopMarkerDraft markers)
   onChangeLoop;
+  final void Function(PolySampleRegion region, bool enabled)
+  onChangeLoopEnabled;
+  final void Function(PolySampleRegion region, _WavEditDraft draft)
+  onChangeWavEdit;
+  final ValueChanged<_WaveformMode> onChangeWaveformMode;
+  final ValueChanged<PolySampleRegion> onSelectRegion;
+  final Future<void> Function() onChooseFolder;
+  final VoidCallback? onRevealFolder;
   final Future<void> Function()? onSaveLoop;
+  final Future<void> Function()? onSaveWav;
+  final Future<void> Function()? onSaveWavAs;
   final Future<void> Function(PolySampleRegion region) onTogglePreview;
   final Future<void> Function(bool enabled) onToggleLoopPreview;
 
@@ -2240,13 +2701,42 @@ class _SampleInspector extends StatelessWidget {
       return const Center(child: Text('No sample selected'));
     }
     final range = _rangeBoundsForRegion(r, regions);
+    final sampleIndex = regions.indexWhere((region) => region.path == r.path);
+    final previous = sampleIndex > 0 ? regions[sampleIndex - 1] : null;
+    final next = sampleIndex >= 0 && sampleIndex < regions.length - 1
+        ? regions[sampleIndex + 1]
+        : null;
 
-    return Padding(
+    return SingleChildScrollView(
+      key: PageStorageKey('poly-sample-inspector-${r.path}'),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Sample', style: theme.textTheme.titleMedium),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Sample', style: theme.textTheme.titleMedium),
+              ),
+              IconButton(
+                tooltip: 'Previous sample',
+                onPressed: previous == null
+                    ? null
+                    : () => onSelectRegion(previous),
+                icon: const Icon(Icons.chevron_left),
+              ),
+              IconButton(
+                tooltip: 'Next sample',
+                onPressed: next == null ? null : () => onSelectRegion(next),
+                icon: const Icon(Icons.chevron_right),
+              ),
+              IconButton(
+                tooltip: 'Reveal selected sample in Explorer',
+                onPressed: onRevealFolder,
+                icon: const Icon(Icons.open_in_new),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           Text(
             r.fileName,
@@ -2255,6 +2745,12 @@ class _SampleInspector extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: onChooseFolder,
+            icon: const Icon(Icons.folder_open, size: 18),
+            label: const Text('Load folder'),
           ),
           const SizedBox(height: 16),
           _NoteStepper(
@@ -2298,19 +2794,29 @@ class _SampleInspector extends StatelessWidget {
           const SizedBox(height: 24),
           _WaveformSection(
             waveform: waveform,
+            cachedWaveform: cachedWaveform,
+            mode: waveformMode,
             canPreviewAudio: canPreviewAudio,
             isPreviewPlaying: isPreviewPlaying,
             loopPreviewEnabled: loopPreviewEnabled,
             unavailableMessage: waveformMessage,
             loopDraft: loopDraft,
+            loopEnabled: loopEnabled,
             loopDirty: loopDirty,
             savingLoop: savingLoop,
+            wavEditDraft: wavEditDraft,
+            renderingWav: renderingWav,
+            onChangeMode: onChangeWaveformMode,
             onChanged: (markers) => onChangeLoop(r, markers),
+            onChangeLoopEnabled: (enabled) => onChangeLoopEnabled(r, enabled),
+            onChangeWavEdit: (draft) => onChangeWavEdit(r, draft),
             onSaveLoop: onSaveLoop,
+            onSaveWav: onSaveWav,
+            onSaveWavAs: onSaveWavAs,
             onTogglePreview: () => onTogglePreview(r),
             onToggleLoopPreview: onToggleLoopPreview,
           ),
-          const Spacer(),
+          const SizedBox(height: 24),
           Text(
             r.path,
             maxLines: 3,
@@ -2444,32 +2950,141 @@ class _LoopMarkerDraft {
   int get hashCode => Object.hash(loopStartFrame, loopEndFrame);
 }
 
+enum _WaveformMode { metadata, destructive }
+
+class _WavEditDraft {
+  const _WavEditDraft({
+    required this.trimStartFrame,
+    required this.trimEndFrame,
+    this.fadeInMs = 0,
+    this.fadeOutMs = 0,
+    this.fadeInCurve = WavFadeCurve.linear,
+    this.fadeOutCurve = WavFadeCurve.linear,
+    this.gainDb = 0,
+    this.normalizePeakDb,
+  });
+
+  final int trimStartFrame;
+  final int trimEndFrame;
+  final int fadeInMs;
+  final int fadeOutMs;
+  final WavFadeCurve fadeInCurve;
+  final WavFadeCurve fadeOutCurve;
+  final double gainDb;
+  final double? normalizePeakDb;
+
+  factory _WavEditDraft.fromWaveform(WavOverview waveform) {
+    return _WavEditDraft(
+      trimStartFrame: 0,
+      trimEndFrame: math.max(0, waveform.frameCount - 1),
+    );
+  }
+
+  _WavEditDraft copyWith({
+    int? trimStartFrame,
+    int? trimEndFrame,
+    int? fadeInMs,
+    int? fadeOutMs,
+    WavFadeCurve? fadeInCurve,
+    WavFadeCurve? fadeOutCurve,
+    double? gainDb,
+    double? normalizePeakDb,
+    bool clearNormalize = false,
+  }) {
+    return _WavEditDraft(
+      trimStartFrame: trimStartFrame ?? this.trimStartFrame,
+      trimEndFrame: trimEndFrame ?? this.trimEndFrame,
+      fadeInMs: fadeInMs ?? this.fadeInMs,
+      fadeOutMs: fadeOutMs ?? this.fadeOutMs,
+      fadeInCurve: fadeInCurve ?? this.fadeInCurve,
+      fadeOutCurve: fadeOutCurve ?? this.fadeOutCurve,
+      gainDb: gainDb ?? this.gainDb,
+      normalizePeakDb: clearNormalize
+          ? null
+          : normalizePeakDb ?? this.normalizePeakDb,
+    );
+  }
+
+  _WavEditDraft clamped(WavOverview waveform) {
+    final maxFrame = math.max(0, waveform.frameCount - 1);
+    final start = trimStartFrame.clamp(0, maxFrame).toInt();
+    final end = trimEndFrame.clamp(start, maxFrame).toInt();
+    final maxMs = (waveform.durationSeconds * 1000).floor();
+    return copyWith(
+      trimStartFrame: start,
+      trimEndFrame: end,
+      fadeInMs: fadeInMs.clamp(0, maxMs).toInt(),
+      fadeOutMs: fadeOutMs.clamp(0, maxMs).toInt(),
+      gainDb: gainDb.clamp(-60.0, 24.0).toDouble(),
+    );
+  }
+
+  WavRenderOptions toRenderOptions(WavOverview waveform) {
+    final draft = clamped(waveform);
+    return WavRenderOptions(
+      trimStartFrame: draft.trimStartFrame,
+      trimEndFrame: draft.trimEndFrame,
+      fadeInFrames: _msToFrames(draft.fadeInMs, waveform.sampleRate),
+      fadeOutFrames: _msToFrames(draft.fadeOutMs, waveform.sampleRate),
+      fadeInCurve: draft.fadeInCurve,
+      fadeOutCurve: draft.fadeOutCurve,
+      gainDb: draft.gainDb,
+      normalizePeakDb: draft.normalizePeakDb,
+    );
+  }
+
+  static int _msToFrames(int ms, int sampleRate) {
+    if (ms <= 0 || sampleRate <= 0) return 0;
+    return ((ms / 1000) * sampleRate).round();
+  }
+}
+
 class _WaveformSection extends StatelessWidget {
   const _WaveformSection({
     required this.waveform,
+    required this.cachedWaveform,
+    required this.mode,
     required this.canPreviewAudio,
     required this.isPreviewPlaying,
     required this.loopPreviewEnabled,
     required this.unavailableMessage,
     required this.loopDraft,
+    required this.loopEnabled,
     required this.loopDirty,
     required this.savingLoop,
+    required this.wavEditDraft,
+    required this.renderingWav,
+    required this.onChangeMode,
     required this.onChanged,
+    required this.onChangeLoopEnabled,
+    required this.onChangeWavEdit,
     required this.onSaveLoop,
+    required this.onSaveWav,
+    required this.onSaveWavAs,
     required this.onTogglePreview,
     required this.onToggleLoopPreview,
   });
 
   final Future<WavOverview?>? waveform;
+  final WavOverview? cachedWaveform;
+  final _WaveformMode mode;
   final bool canPreviewAudio;
   final bool isPreviewPlaying;
   final bool loopPreviewEnabled;
   final String? unavailableMessage;
   final _LoopMarkerDraft? loopDraft;
+  final bool loopEnabled;
   final bool loopDirty;
   final bool savingLoop;
+  final _WavEditDraft? wavEditDraft;
+  final bool renderingWav;
+  final ValueChanged<_WaveformMode> onChangeMode;
   final ValueChanged<_LoopMarkerDraft> onChanged;
+  final ValueChanged<bool> onChangeLoopEnabled;
+  final ValueChanged<_WavEditDraft> onChangeWavEdit;
   final Future<void> Function()? onSaveLoop;
+  final Future<void> Function()? onSaveWav;
+  final Future<void> Function()? onSaveWavAs;
   final Future<void> Function() onTogglePreview;
   final Future<void> Function(bool enabled) onToggleLoopPreview;
 
@@ -2478,6 +3093,8 @@ class _WaveformSection extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final future = waveform;
+    final canLoopPreview =
+        canPreviewAudio && (mode == _WaveformMode.destructive || loopEnabled);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2487,20 +3104,6 @@ class _WaveformSection extends StatelessWidget {
               child: Text('Waveform', style: theme.textTheme.titleSmall),
             ),
             Tooltip(
-              message: loopDirty
-                  ? 'Save loop points to WAV metadata'
-                  : 'Loop points are unchanged',
-              child: OutlinedButton.icon(
-                onPressed: loopDirty && !savingLoop ? onSaveLoop : null,
-                icon: Icon(
-                  savingLoop ? Icons.hourglass_top : Icons.save,
-                  size: 16,
-                ),
-                label: Text(savingLoop ? 'Saving...' : 'Save loop'),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Tooltip(
               message: canPreviewAudio
                   ? (isPreviewPlaying ? 'Stop sample preview' : 'Play sample')
                   : 'Audio preview needs a local or mounted WAV',
@@ -2509,121 +3112,430 @@ class _WaveformSection extends StatelessWidget {
                 icon: Icon(isPreviewPlaying ? Icons.stop : Icons.play_arrow),
               ),
             ),
-            Tooltip(
-              message: canPreviewAudio
-                  ? 'Continuously audition current loop markers'
-                  : 'Loop preview needs a local or mounted WAV',
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Loop',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: canPreviewAudio
-                          ? colorScheme.onSurfaceVariant
-                          : colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.48,
-                            ),
+            SizedBox(
+              width: 132,
+              child: Tooltip(
+                message: canPreviewAudio
+                    ? 'Continuously audition current edit'
+                    : 'Loop preview needs a local or mounted WAV',
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Preview loop',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: canLoopPreview
+                              ? colorScheme.onSurfaceVariant
+                              : colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.48,
+                                ),
+                        ),
+                      ),
                     ),
-                  ),
-                  Switch(
-                    value: loopPreviewEnabled && canPreviewAudio,
-                    onChanged: canPreviewAudio ? onToggleLoopPreview : null,
-                  ),
-                ],
+                    Switch(
+                      value: canLoopPreview && loopPreviewEnabled,
+                      onChanged: canLoopPreview ? onToggleLoopPreview : null,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          height: 150,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.34,
-              ),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: colorScheme.outlineVariant),
+        SegmentedButton<_WaveformMode>(
+          segments: const [
+            ButtonSegment(
+              value: _WaveformMode.metadata,
+              label: Text('Metadata'),
+              icon: Icon(Icons.bookmark_border),
             ),
-            child: future == null
-                ? _WaveformMessage(
-                    text: unavailableMessage ?? 'No sample selected',
-                  )
-                : FutureBuilder<WavOverview?>(
-                    future: future,
-                    builder: (context, snapshot) {
-                      final overview = snapshot.data;
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Center(
-                          child: SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      }
-                      if (overview == null) {
-                        return const _WaveformMessage(
-                          text: 'Waveform unavailable for this sample',
-                        );
-                      }
-                      final markers =
-                          loopDraft ?? _LoopMarkerDraft.fromWaveform(overview);
-                      return _WaveformEditor(
-                        waveform: overview,
-                        markers: markers,
-                        colorScheme: colorScheme,
-                        onChanged: onChanged,
-                      );
-                    },
-                  ),
-          ),
+            ButtonSegment(
+              value: _WaveformMode.destructive,
+              label: Text('Destructive'),
+              icon: Icon(Icons.content_cut),
+            ),
+          ],
+          selected: {mode},
+          onSelectionChanged: (value) => onChangeMode(value.first),
         ),
         const SizedBox(height: 8),
         FutureBuilder<WavOverview?>(
           future: future,
+          initialData: cachedWaveform,
           builder: (context, snapshot) {
             final overview = snapshot.data;
-            if (overview == null) {
-              return const SizedBox.shrink();
+            if (future == null) {
+              return _WaveformUnavailable(
+                message: unavailableMessage ?? 'No sample selected',
+              );
             }
-            final markers =
+            if (overview == null &&
+                snapshot.connectionState != ConnectionState.done) {
+              return const SizedBox(
+                height: 170,
+                child: Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            }
+            if (overview == null) {
+              return const _WaveformUnavailable(
+                message: 'Waveform unavailable for this sample',
+              );
+            }
+            final loopMarkers =
                 loopDraft ?? _LoopMarkerDraft.fromWaveform(overview);
-            final maxFrame = math.max(1, overview.frameCount - 1).toDouble();
+            final editDraft =
+                (wavEditDraft ?? _WavEditDraft.fromWaveform(overview)).clamped(
+                  overview,
+                );
+            final editorMarkers = mode == _WaveformMode.metadata
+                ? loopMarkers
+                : _LoopMarkerDraft(
+                    loopStartFrame: editDraft.trimStartFrame,
+                    loopEndFrame: editDraft.trimEndFrame,
+                  );
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                RangeSlider(
-                  values: RangeValues(
-                    markers.loopStartFrame.clamp(0, maxFrame).toDouble(),
-                    markers.loopEndFrame.clamp(0, maxFrame).toDouble(),
-                  ),
-                  min: 0,
-                  max: maxFrame,
-                  onChanged: (values) => onChanged(
-                    _LoopMarkerDraft(
-                      loopStartFrame: values.start.round(),
-                      loopEndFrame: values.end.round(),
-                    ).snappedToZeroCrossings(overview),
+                SizedBox(
+                  height: 170,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.34,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: _WaveformEditor(
+                      waveform: overview,
+                      markers: editorMarkers,
+                      colorScheme: colorScheme,
+                      destructivePreview: mode == _WaveformMode.destructive
+                          ? editDraft
+                          : null,
+                      snapToZero: mode == _WaveformMode.metadata,
+                      startLabel: mode == _WaveformMode.metadata
+                          ? 'LS'
+                          : 'Start',
+                      endLabel: mode == _WaveformMode.metadata ? 'LE' : 'End',
+                      onChanged: (markers) {
+                        if (mode == _WaveformMode.metadata) {
+                          onChanged(markers);
+                        } else {
+                          onChangeWavEdit(
+                            editDraft.copyWith(
+                              trimStartFrame: markers.loopStartFrame,
+                              trimEndFrame: markers.loopEndFrame,
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ),
                 ),
-                _LoopFineControls(
-                  markers: markers,
-                  waveform: overview,
-                  onChanged: onChanged,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${overview.frameCount} frames, '
-                  '${overview.durationSeconds.toStringAsFixed(2)}s. '
-                  'Drag loop bars or nudge. Save loop writes WAV smpl metadata.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                const SizedBox(height: 8),
+                if (mode == _WaveformMode.metadata)
+                  _MetadataWaveformControls(
+                    overview: overview,
+                    markers: loopMarkers,
+                    loopEnabled: loopEnabled,
+                    loopDirty: loopDirty,
+                    savingLoop: savingLoop,
+                    onChanged: onChanged,
+                    onChangeLoopEnabled: onChangeLoopEnabled,
+                    onSaveLoop: onSaveLoop,
+                  )
+                else
+                  _DestructiveWaveformControls(
+                    overview: overview,
+                    draft: editDraft,
+                    renderingWav: renderingWav,
+                    onChanged: onChangeWavEdit,
+                    onSaveWav: onSaveWav,
+                    onSaveWavAs: onSaveWavAs,
                   ),
-                ),
               ],
             );
           },
+        ),
+      ],
+    );
+  }
+}
+
+class _WaveformUnavailable extends StatelessWidget {
+  const _WaveformUnavailable({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 170,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.34),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        child: _WaveformMessage(text: message),
+      ),
+    );
+  }
+}
+
+class _MetadataWaveformControls extends StatelessWidget {
+  const _MetadataWaveformControls({
+    required this.overview,
+    required this.markers,
+    required this.loopEnabled,
+    required this.loopDirty,
+    required this.savingLoop,
+    required this.onChanged,
+    required this.onChangeLoopEnabled,
+    required this.onSaveLoop,
+  });
+
+  final WavOverview overview;
+  final _LoopMarkerDraft markers;
+  final bool loopEnabled;
+  final bool loopDirty;
+  final bool savingLoop;
+  final ValueChanged<_LoopMarkerDraft> onChanged;
+  final ValueChanged<bool> onChangeLoopEnabled;
+  final Future<void> Function()? onSaveLoop;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final maxFrame = math.max(1, overview.frameCount - 1).toDouble();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Loop points',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Loop', style: theme.textTheme.labelMedium),
+                Switch(
+                  value: loopEnabled,
+                  onChanged: savingLoop ? null : onChangeLoopEnabled,
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        RangeSlider(
+          values: RangeValues(
+            markers.loopStartFrame.clamp(0, maxFrame).toDouble(),
+            markers.loopEndFrame.clamp(0, maxFrame).toDouble(),
+          ),
+          min: 0,
+          max: maxFrame,
+          onChanged: loopEnabled
+              ? (values) => onChanged(
+                  _LoopMarkerDraft(
+                    loopStartFrame: values.start.round(),
+                    loopEndFrame: values.end.round(),
+                  ).snappedToZeroCrossings(overview),
+                )
+              : null,
+        ),
+        if (loopEnabled)
+          _LoopFineControls(
+            startLabel: 'Loop start',
+            endLabel: 'Loop end',
+            markers: markers,
+            waveform: overview,
+            snapToZero: true,
+            onChanged: onChanged,
+          ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: savingLoop ? null : onSaveLoop,
+          icon: Icon(savingLoop ? Icons.hourglass_top : Icons.save, size: 16),
+          label: Text(savingLoop ? 'Saving metadata...' : 'Save metadata'),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${overview.frameCount} frames, '
+          '${overview.durationSeconds.toStringAsFixed(2)}s. '
+          'Metadata mode edits WAV smpl loop points only.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DestructiveWaveformControls extends StatelessWidget {
+  const _DestructiveWaveformControls({
+    required this.overview,
+    required this.draft,
+    required this.renderingWav,
+    required this.onChanged,
+    required this.onSaveWav,
+    required this.onSaveWavAs,
+  });
+
+  final WavOverview overview;
+  final _WavEditDraft draft;
+  final bool renderingWav;
+  final ValueChanged<_WavEditDraft> onChanged;
+  final Future<void> Function()? onSaveWav;
+  final Future<void> Function()? onSaveWavAs;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final maxFrame = math.max(1, overview.frameCount - 1).toDouble();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        RangeSlider(
+          values: RangeValues(
+            draft.trimStartFrame.clamp(0, maxFrame).toDouble(),
+            draft.trimEndFrame.clamp(0, maxFrame).toDouble(),
+          ),
+          min: 0,
+          max: maxFrame,
+          onChanged: (values) => onChanged(
+            draft.copyWith(
+              trimStartFrame: values.start.round(),
+              trimEndFrame: values.end.round(),
+            ),
+          ),
+        ),
+        _LoopFineControls(
+          startLabel: 'Start',
+          endLabel: 'End',
+          markers: _LoopMarkerDraft(
+            loopStartFrame: draft.trimStartFrame,
+            loopEndFrame: draft.trimEndFrame,
+          ),
+          waveform: overview,
+          snapToZero: true,
+          onChanged: (markers) => onChanged(
+            draft.copyWith(
+              trimStartFrame: markers.loopStartFrame,
+              trimEndFrame: markers.loopEndFrame,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _MsSlider(
+          label: 'Fade in',
+          overview: overview,
+          value: draft.fadeInMs,
+          onChanged: (value) => onChanged(draft.copyWith(fadeInMs: value)),
+        ),
+        _MsSlider(
+          label: 'Fade out',
+          overview: overview,
+          value: draft.fadeOutMs,
+          onChanged: (value) => onChanged(draft.copyWith(fadeOutMs: value)),
+        ),
+        const SizedBox(height: 8),
+        _FadeCurvePicker(
+          label: 'Fade in curve',
+          value: draft.fadeInCurve,
+          onChanged: (value) => onChanged(draft.copyWith(fadeInCurve: value)),
+        ),
+        const SizedBox(height: 8),
+        _FadeCurvePicker(
+          label: 'Fade out curve',
+          value: draft.fadeOutCurve,
+          onChanged: (value) => onChanged(draft.copyWith(fadeOutCurve: value)),
+        ),
+        const SizedBox(height: 12),
+        Text('Gain', style: theme.textTheme.labelMedium),
+        Slider(
+          value: _gainDbToLinear(draft.gainDb),
+          min: 0,
+          max: 2,
+          divisions: 200,
+          label: '${_gainDbToLinear(draft.gainDb).toStringAsFixed(2)}x',
+          onChanged: (value) =>
+              onChanged(draft.copyWith(gainDb: _linearGainToDb(value))),
+        ),
+        Row(
+          children: [
+            Text(
+              '${_gainDbToLinear(draft.gainDb).toStringAsFixed(2)}x '
+              '(${draft.gainDb.toStringAsFixed(1)} dB)',
+              style: theme.textTheme.bodySmall,
+            ),
+            const Spacer(),
+            FilterChip(
+              label: const Text('Normalize -1 dB'),
+              selected: draft.normalizePeakDb != null,
+              onSelected: (selected) => onChanged(
+                draft.copyWith(
+                  normalizePeakDb: selected ? -1 : null,
+                  clearNormalize: !selected,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: renderingWav ? null : onSaveWav,
+                icon: Icon(
+                  renderingWav ? Icons.hourglass_top : Icons.save,
+                  size: 16,
+                ),
+                label: Text(renderingWav ? 'Saving...' : 'Save'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: renderingWav ? null : onSaveWavAs,
+                icon: const Icon(Icons.save_as, size: 16),
+                label: const Text('Save as'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Destructive mode rewrites audio: trim start/end, fades, gain, and normalize.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -2666,12 +3578,20 @@ class _WaveformEditor extends StatefulWidget {
     required this.waveform,
     required this.markers,
     required this.colorScheme,
+    required this.destructivePreview,
+    required this.snapToZero,
+    required this.startLabel,
+    required this.endLabel,
     required this.onChanged,
   });
 
   final WavOverview waveform;
   final _LoopMarkerDraft markers;
   final ColorScheme colorScheme;
+  final _WavEditDraft? destructivePreview;
+  final bool snapToZero;
+  final String startLabel;
+  final String endLabel;
   final ValueChanged<_LoopMarkerDraft> onChanged;
 
   @override
@@ -2711,6 +3631,9 @@ class _WaveformEditorState extends State<_WaveformEditor> {
               waveform: widget.waveform,
               markers: widget.markers,
               colorScheme: widget.colorScheme,
+              destructivePreview: widget.destructivePreview,
+              startLabel: widget.startLabel,
+              endLabel: widget.endLabel,
             ),
             child: const SizedBox.expand(),
           ),
@@ -2728,7 +3651,8 @@ class _WaveformEditorState extends State<_WaveformEditor> {
   }
 
   void _moveHandle(_LoopHandle handle, double x, double width) {
-    final frame = _snapFrame(_frameFromX(x, width));
+    final rawFrame = _frameFromX(x, width);
+    final frame = widget.snapToZero ? _snapFrame(rawFrame) : rawFrame;
     final next = switch (handle) {
       _LoopHandle.start => widget.markers.copyWith(
         loopStartFrame: math.min(frame, widget.markers.loopEndFrame),
@@ -2761,13 +3685,19 @@ class _WaveformEditorState extends State<_WaveformEditor> {
 
 class _LoopFineControls extends StatelessWidget {
   const _LoopFineControls({
+    required this.startLabel,
+    required this.endLabel,
     required this.markers,
     required this.waveform,
+    required this.snapToZero,
     required this.onChanged,
   });
 
+  final String startLabel;
+  final String endLabel;
   final _LoopMarkerDraft markers;
   final WavOverview waveform;
+  final bool snapToZero;
   final ValueChanged<_LoopMarkerDraft> onChanged;
 
   @override
@@ -2775,16 +3705,16 @@ class _LoopFineControls extends StatelessWidget {
     return Column(
       children: [
         _LoopFineRow(
-          label: 'Start',
+          label: startLabel,
           value: markers.loopStartFrame,
           onNudge: (delta) => _changeStart(delta),
-          onSnap: () => _snapStart(),
+          onSnap: snapToZero ? () => _snapStart() : null,
         ),
         _LoopFineRow(
-          label: 'End',
+          label: endLabel,
           value: markers.loopEndFrame,
           onNudge: (delta) => _changeEnd(delta),
-          onSnap: () => _snapEnd(),
+          onSnap: snapToZero ? () => _snapEnd() : null,
         ),
       ],
     );
@@ -2832,13 +3762,13 @@ class _LoopFineRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onNudge,
-    required this.onSnap,
+    this.onSnap,
   });
 
   final String label;
   final int value;
   final ValueChanged<int> onNudge;
-  final VoidCallback onSnap;
+  final VoidCallback? onSnap;
 
   @override
   Widget build(BuildContext context) {
@@ -2872,6 +3802,211 @@ class _LoopFineRow extends StatelessWidget {
   }
 }
 
+class _MsSlider extends StatelessWidget {
+  const _MsSlider({
+    required this.label,
+    required this.overview,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final WavOverview overview;
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final maxMs = math.max(1, (overview.durationSeconds * 1000).round());
+    final sliderMax = math.min(maxMs, 10000).toDouble();
+    final clamped = value.clamp(0, sliderMax).toDouble();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(label, style: theme.textTheme.labelMedium),
+              const Spacer(),
+              Text(
+                '$value ms',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: clamped,
+            min: 0,
+            max: sliderMax,
+            divisions: sliderMax.round(),
+            label: '$value ms',
+            onChanged: (next) => onChanged(next.round()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FadeCurvePicker extends StatelessWidget {
+  const _FadeCurvePicker({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final WavFadeCurve value;
+  final ValueChanged<WavFadeCurve> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label, style: theme.textTheme.labelMedium),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final curve in WavFadeCurve.values)
+              _FadeCurveButton(
+                curve: curve,
+                selected: curve == value,
+                onTap: () => onChanged(curve),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _FadeCurveButton extends StatelessWidget {
+  const _FadeCurveButton({
+    required this.curve,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final WavFadeCurve curve;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        width: 72,
+        height: 54,
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: selected
+              ? colorScheme.primary.withValues(alpha: 0.18)
+              : Colors.transparent,
+          border: Border.all(
+            color: selected ? colorScheme.primary : colorScheme.outlineVariant,
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: CustomPaint(
+                painter: _FadeCurvePainter(
+                  curve: curve,
+                  color: selected
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              _fadeCurveLabel(curve),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+double _gainDbToLinear(double db) {
+  return math.pow(10, db / 20).toDouble().clamp(0.0, 2.0);
+}
+
+double _linearGainToDb(double gain) {
+  if (gain <= 0) return -60;
+  return (20 * math.log(gain) / math.ln10).clamp(-60.0, 24.0).toDouble();
+}
+
+class _FadeCurvePainter extends CustomPainter {
+  const _FadeCurvePainter({required this.curve, required this.color});
+
+  final WavFadeCurve curve;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    for (var i = 0; i <= 32; i++) {
+      final x = i / 32;
+      final y = _curveValue(x);
+      final point = Offset(x * size.width, (1 - y) * size.height);
+      if (i == 0) {
+        path.moveTo(point.dx, point.dy);
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke,
+    );
+  }
+
+  double _curveValue(double x) {
+    return switch (curve) {
+      WavFadeCurve.linear => x,
+      WavFadeCurve.equalPower => math.sin(x * math.pi / 2),
+      WavFadeCurve.exponential => x * x,
+      WavFadeCurve.sCurve => x * x * (3 - 2 * x),
+    };
+  }
+
+  @override
+  bool shouldRepaint(covariant _FadeCurvePainter oldDelegate) {
+    return oldDelegate.curve != curve || oldDelegate.color != color;
+  }
+}
+
+String _fadeCurveLabel(WavFadeCurve curve) {
+  return switch (curve) {
+    WavFadeCurve.linear => 'Linear',
+    WavFadeCurve.equalPower => 'Equal',
+    WavFadeCurve.exponential => 'Expo',
+    WavFadeCurve.sCurve => 'S',
+  };
+}
+
 class _TinyNudgeButton extends StatelessWidget {
   const _TinyNudgeButton({required this.label, required this.onPressed});
 
@@ -2900,11 +4035,17 @@ class _WaveformPainter extends CustomPainter {
     required this.waveform,
     required this.markers,
     required this.colorScheme,
+    required this.destructivePreview,
+    required this.startLabel,
+    required this.endLabel,
   });
 
   final WavOverview waveform;
   final _LoopMarkerDraft markers;
   final ColorScheme colorScheme;
+  final _WavEditDraft? destructivePreview;
+  final String startLabel;
+  final String endLabel;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -2941,6 +4082,11 @@ class _WaveformPainter extends CustomPainter {
       Paint()..color = colorScheme.primary.withValues(alpha: 0.56),
     );
 
+    final preview = destructivePreview;
+    if (preview != null) {
+      _drawDestructivePreview(canvas, size, preview);
+    }
+
     _drawRange(
       canvas,
       size,
@@ -2953,15 +4099,109 @@ class _WaveformPainter extends CustomPainter {
       size,
       markers.loopStartFrame,
       colorScheme.secondary,
-      'LS',
+      startLabel,
     );
     _drawMarker(
       canvas,
       size,
       markers.loopEndFrame,
       colorScheme.secondary,
-      'LE',
+      endLabel,
     );
+  }
+
+  void _drawDestructivePreview(Canvas canvas, Size size, _WavEditDraft draft) {
+    final startX = _frameX(draft.trimStartFrame, size.width);
+    final endX = _frameX(draft.trimEndFrame, size.width);
+    if (endX <= startX) return;
+    final fadeInFrames = _WavEditDraft._msToFrames(
+      draft.fadeInMs,
+      waveform.sampleRate,
+    );
+    final fadeOutFrames = _WavEditDraft._msToFrames(
+      draft.fadeOutMs,
+      waveform.sampleRate,
+    );
+    final fadeInX = _frameX(
+      draft.trimStartFrame + fadeInFrames,
+      size.width,
+    ).clamp(startX, endX);
+    final fadeOutX = _frameX(
+      draft.trimEndFrame - fadeOutFrames + 1,
+      size.width,
+    ).clamp(startX, endX);
+    final gain = math.pow(10, draft.gainDb / 20).toDouble().clamp(0.0, 2.0);
+    final baselineY = size.height - 10;
+    final gainY = (size.height / 2) * (1 - (gain / 2));
+
+    final fillPaint = Paint()
+      ..color = colorScheme.tertiary.withValues(alpha: 0.08)
+      ..style = PaintingStyle.fill;
+    canvas.drawRect(Rect.fromLTRB(startX, 0, endX, size.height), fillPaint);
+
+    final paint = Paint()
+      ..color = colorScheme.tertiary.withValues(alpha: 0.85)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    final path = Path()..moveTo(startX, baselineY);
+    _appendFadeCurve(
+      path,
+      startX: startX,
+      endX: fadeInX,
+      fromY: baselineY,
+      toY: gainY,
+      curve: draft.fadeInCurve,
+      reverse: false,
+    );
+    path.lineTo(fadeOutX, gainY);
+    _appendFadeCurve(
+      path,
+      startX: fadeOutX,
+      endX: endX,
+      fromY: gainY,
+      toY: baselineY,
+      curve: draft.fadeOutCurve,
+      reverse: true,
+    );
+    canvas.drawPath(path, paint);
+  }
+
+  void _appendFadeCurve(
+    Path path, {
+    required double startX,
+    required double endX,
+    required double fromY,
+    required double toY,
+    required WavFadeCurve curve,
+    required bool reverse,
+  }) {
+    if ((endX - startX).abs() < 0.5) {
+      path.lineTo(endX, toY);
+      return;
+    }
+    const steps = 24;
+    for (var step = 1; step <= steps; step++) {
+      final t = step / steps;
+      final shaped = _fadePreviewCurve(reverse ? 1 - t : t, curve);
+      final y = reverse
+          ? _lerpDouble(fromY, toY, 1 - shaped)
+          : _lerpDouble(fromY, toY, shaped);
+      path.lineTo(_lerpDouble(startX, endX, t), y);
+    }
+  }
+
+  double _fadePreviewCurve(double value, WavFadeCurve curve) {
+    final x = value.clamp(0.0, 1.0);
+    return switch (curve) {
+      WavFadeCurve.linear => x,
+      WavFadeCurve.equalPower => math.sin(x * math.pi / 2),
+      WavFadeCurve.exponential => x * x,
+      WavFadeCurve.sCurve => x * x * (3 - 2 * x),
+    };
+  }
+
+  double _lerpDouble(double a, double b, double t) {
+    return a + (b - a) * t;
   }
 
   void _drawRange(Canvas canvas, Size size, int start, int end, Color color) {
@@ -3012,7 +4252,10 @@ class _WaveformPainter extends CustomPainter {
   bool shouldRepaint(covariant _WaveformPainter oldDelegate) {
     return oldDelegate.waveform != waveform ||
         oldDelegate.markers != markers ||
-        oldDelegate.colorScheme != colorScheme;
+        oldDelegate.colorScheme != colorScheme ||
+        oldDelegate.destructivePreview != destructivePreview ||
+        oldDelegate.startLabel != startLabel ||
+        oldDelegate.endLabel != endLabel;
   }
 }
 

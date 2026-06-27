@@ -29,6 +29,18 @@ class PolySampleRegion {
   final int? loopEnd;
   final List<PolySampleIssue> issues;
 
+  List<PolySampleIssue> get currentIssues {
+    final current = <PolySampleIssue>[];
+    final supported = _isSupportedAudioName(fileName);
+    if (!supported || issues.contains(PolySampleIssue.unsupportedFileType)) {
+      current.add(PolySampleIssue.unsupportedFileType);
+    }
+    if (rootMidi == null && supported) {
+      current.add(PolySampleIssue.missingRootNote);
+    }
+    return current;
+  }
+
   bool get hasLoop => loopStart != null && loopEnd != null;
 
   bool get isMapped => rootMidi != null;
@@ -47,7 +59,7 @@ class PolySampleRegion {
     List<PolySampleIssue>? issues,
     bool clearSwitchPoint = false,
   }) {
-    return PolySampleRegion(
+    final next = PolySampleRegion(
       path: path ?? this.path,
       fileName: fileName ?? this.fileName,
       displayName: displayName ?? this.displayName,
@@ -59,6 +71,23 @@ class PolySampleRegion {
       loopStart: loopStart ?? this.loopStart,
       loopEnd: loopEnd ?? this.loopEnd,
       issues: issues ?? this.issues,
+    );
+    return next.copyWithIssues(next.currentIssues);
+  }
+
+  PolySampleRegion copyWithIssues(List<PolySampleIssue> issues) {
+    return PolySampleRegion(
+      path: path,
+      fileName: fileName,
+      displayName: displayName,
+      rootMidi: rootMidi,
+      rootName: rootName,
+      switchPoint: switchPoint,
+      velocityLayer: velocityLayer,
+      roundRobin: roundRobin,
+      loopStart: loopStart,
+      loopEnd: loopEnd,
+      issues: issues,
     );
   }
 }
@@ -77,7 +106,7 @@ class PolySampleInstrument {
   int get mappedCount => regions.where((region) => region.isMapped).length;
 
   int get warningCount =>
-      regions.where((region) => region.issues.isNotEmpty).length;
+      regions.where((region) => region.currentIssues.isNotEmpty).length;
 
   List<int> get velocityLayers {
     final layers = regions
@@ -107,4 +136,11 @@ class PolySampleInstrument {
         .where((s) => s.isNotEmpty)
         .last;
   }
+}
+
+bool _isSupportedAudioName(String fileName) {
+  final lower = fileName.toLowerCase();
+  return lower.endsWith('.wav') ||
+      lower.endsWith('.aif') ||
+      lower.endsWith('.aiff');
 }

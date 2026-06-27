@@ -47,6 +47,7 @@ The Disting NT does not need to be connected for the app window to open. After t
 
 ## Recent Updates
 
+- **Experimental fork test build**: The `nymph-next-fix` branch includes a Poly Multisample Builder test workspace for editing Disting NT sample-folder structures and local/mounted WAV loop/audio edits. See [docs/POLY_MULTISAMPLE_BUILDER_RELEASE_NOTES.md](docs/POLY_MULTISAMPLE_BUILDER_RELEASE_NOTES.md).
 - **v1.39.0+77**: Added incremental sync and improved algorithm rescan UX
 - **Drag & Drop Support**: Preset packages can now be installed via drag-and-drop on desktop platforms
 - **MCP Enhancements**: Simplified server implementation, improved connection stability, and added CPU usage monitoring
