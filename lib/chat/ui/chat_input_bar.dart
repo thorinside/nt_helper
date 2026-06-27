@@ -7,6 +7,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
 import 'package:nt_helper/chat/models/chat_message.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:pasteboard/pasteboard.dart';
@@ -40,8 +41,8 @@ class ChatInputBar extends StatefulWidget {
 class _ChatInputBarState extends State<ChatInputBar> {
   static const _maxAttachments = 6;
   static const _maxImageBytes = 10 * 1024 * 1024;
-  static const _maxPdfBytes = 5 * 1024 * 1024;
-  static const _maxTextFileBytes = 100 * 1024;
+  static const _maxPdfBytes = 20 * 1024 * 1024;
+  static const _maxTextFileBytes = 2 * 1024 * 1024;
 
   final _controller = TextEditingController();
   FocusNode? _ownedFocusNode;
@@ -239,13 +240,18 @@ class _ChatInputBarState extends State<ChatInputBar> {
       _showAttachmentError('${name ?? 'Image'} is larger than 10 MB.');
       return;
     }
-    final fileName = name ?? 'image.png';
-    final mimeType = _mimeTypeForName(fileName);
+    final normalized = _normalizeImageBytes(bytes);
+    if (normalized == null) {
+      _showAttachmentError('${name ?? 'Image'} is not a supported image.');
+      return;
+    }
+    final extension = _imageExtensionForMime(normalized.mimeType);
+    final fileName = _imageNameWithExtension(name ?? 'image$extension');
     setState(() {
       _imageAttachments.add(
         ChatImageAttachment(
-          data: base64Encode(bytes),
-          mimeType: mimeType,
+          data: base64Encode(normalized.bytes),
+          mimeType: normalized.mimeType,
           name: fileName,
         ),
       );
@@ -297,6 +303,78 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   int _maxBytesForMime(String mimeType) {
     return mimeType == 'application/pdf' ? _maxPdfBytes : _maxTextFileBytes;
+  }
+
+  ({List<int> bytes, String mimeType})? _normalizeImageBytes(List<int> bytes) {
+    final sniffed = _sniffImageMime(bytes);
+    if (sniffed != null) return (bytes: bytes, mimeType: sniffed);
+
+    final decoded = img.decodeImage(Uint8List.fromList(bytes));
+    if (decoded == null) return null;
+    final pngBytes = img.encodePng(decoded);
+    return (bytes: pngBytes, mimeType: 'image/png');
+  }
+
+  String? _sniffImageMime(List<int> bytes) {
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4e &&
+        bytes[3] == 0x47 &&
+        bytes[4] == 0x0d &&
+        bytes[5] == 0x0a &&
+        bytes[6] == 0x1a &&
+        bytes[7] == 0x0a) {
+      return 'image/png';
+    }
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xff &&
+        bytes[1] == 0xd8 &&
+        bytes[2] == 0xff) {
+      return 'image/jpeg';
+    }
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return 'image/webp';
+    }
+    if (bytes.length >= 6 &&
+        bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x38 &&
+        (bytes[4] == 0x37 || bytes[4] == 0x39) &&
+        bytes[5] == 0x61) {
+      return 'image/gif';
+    }
+    return null;
+  }
+
+  String _imageExtensionForMime(String mimeType) {
+    return switch (mimeType) {
+      'image/jpeg' => '.jpg',
+      'image/webp' => '.webp',
+      'image/gif' => '.gif',
+      _ => '.png',
+    };
+  }
+
+  String _imageNameWithExtension(String name) {
+    final ext = path.extension(name).toLowerCase();
+    if (ext == '.png' ||
+        ext == '.jpg' ||
+        ext == '.jpeg' ||
+        ext == '.webp' ||
+        ext == '.gif') {
+      return name;
+    }
+    return '$name.png';
   }
 
   String _formatBytes(int bytes) {
