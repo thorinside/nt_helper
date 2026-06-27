@@ -22,6 +22,7 @@ void main() {
       await File(
         '${tempDir.path}/nested/patch.txt',
       ).writeAsString('clock cv\n');
+      await File('${tempDir.path}/manual.pdf').writeAsString(_simplePdfText);
       SharedPreferences.setMockInitialValues({});
       settings = SettingsService();
       await settings.init();
@@ -63,6 +64,40 @@ void main() {
       );
       expect(readResult['success'], isTrue);
       expect(readResult['content'], 'hello modular\n');
+    });
+
+    test('reads text files larger than the old 200k ceiling', () async {
+      final content = '${List.filled(25000, '0123456789').join()}\n';
+      await File('${tempDir.path}/large.txt').writeAsString(content);
+      await _setRoots(settings, [
+        _root(path: tempDir.path, chat: {FileRootPermission.read}),
+      ]);
+
+      final readResult = await _call(
+        _entriesFor(FileRootActor.chat),
+        'read_file',
+        {'root_id': 'sd', 'path': 'large.txt'},
+      );
+
+      expect(readResult['success'], isTrue);
+      expect(readResult['encoding'], 'utf8');
+      expect(readResult['content'], content);
+    });
+
+    test('extracts readable text from PDFs', () async {
+      await _setRoots(settings, [
+        _root(path: tempDir.path, chat: {FileRootPermission.read}),
+      ]);
+
+      final readResult = await _call(
+        _entriesFor(FileRootActor.chat),
+        'read_file',
+        {'root_id': 'sd', 'path': 'manual.pdf'},
+      );
+
+      expect(readResult['success'], isTrue);
+      expect(readResult['encoding'], 'pdf_text');
+      expect(readResult['content'], contains('Disting NT manual'));
     });
 
     test('omits missing roots from listing but keeps stale-id error', () async {
@@ -306,6 +341,26 @@ void main() {
     });
   });
 }
+
+const _simplePdfText = '''
+%PDF-1.4
+1 0 obj
+<< /Type /Page /Contents 2 0 R >>
+endobj
+2 0 obj
+<< /Length 44 >>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+(Disting NT manual) Tj
+ET
+endstream
+endobj
+trailer
+<< /Root 1 0 R >>
+%%EOF
+''';
 
 List<ToolRegistryEntry> _entriesFor(FileRootActor actor) {
   final entries = <ToolRegistryEntry>[];
