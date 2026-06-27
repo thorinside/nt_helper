@@ -26,6 +26,7 @@ import 'package:nt_helper/ui/widgets/preset_browser_dialog.dart';
 import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 
 import 'package:nt_helper/ui/performance_screen.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_screen.dart';
 import 'package:nt_helper/ui/widgets/rename_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
 import 'package:nt_helper/ui/widgets/routing/consolidate_buses_dialog.dart';
@@ -68,7 +69,7 @@ import 'package:nt_helper/models/app_release.dart';
 import 'package:nt_helper/services/app_update_service.dart';
 import 'package:nt_helper/utils/build_config.dart';
 
-enum EditMode { parameters, routing, both }
+enum EditMode { parameters, routing, sampleBuilder, both }
 
 /// Help text for algorithm name interactions
 const String _algorithmNameHelpText =
@@ -118,18 +119,30 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   bool _showDebugPanel = true;
   bool _showContextualHelp = true;
   bool _showParameterSpreadsheet = false;
+  bool _showSampleParameterPanel = false;
   String? _contextualHelpText;
   AppRelease? _availableAppUpdate;
   AppUpdateService? _appUpdateService;
   RoutingEditorCubit? _routingEditorCubit;
   late final Widget _cachedRoutingCanvas = _buildRoutingCanvas();
+  final GlobalKey _sampleBuilderKey = GlobalKey();
 
   Widget _buildKeyedRoutingCanvas(RoutingEditorViewMode mode) {
-    return KeyedSubtree(
-      key: ValueKey(mode),
-      child: _cachedRoutingCanvas,
-    );
+    return KeyedSubtree(key: ValueKey(mode), child: _cachedRoutingCanvas);
   }
+
+  Widget _buildSampleBuilder() {
+    return PolyMultisampleBuilderScreen(key: _sampleBuilderKey);
+  }
+
+  int _workspaceIndex(EditMode mode) {
+    return switch (mode) {
+      EditMode.routing => 1,
+      EditMode.sampleBuilder => 2,
+      EditMode.parameters || EditMode.both => 0,
+    };
+  }
+
   StreamSubscription<RoutingEditorState>? _routingFocusSub;
   bool _isSyncingSelection = false;
   bool _isAddAlgorithmOpen = false;
@@ -452,10 +465,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               child: _currentMode == EditMode.both
                   ? _buildSplitView()
                   : IndexedStack(
-                      index: _currentMode == EditMode.routing ? 1 : 0,
+                      index: _workspaceIndex(_currentMode),
                       children: [
                         _buildWideScreenBody(),
                         _buildKeyedRoutingCanvas(effectiveRoutingViewMode),
+                        _buildSampleBuilderWorkspace(),
                       ],
                     ),
             ),
@@ -494,10 +508,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           children: [
             Expanded(
               child: IndexedStack(
-                index: _currentMode == EditMode.routing ? 1 : 0,
+                index: _workspaceIndex(_currentMode),
                 children: [
                   _buildBody(),
                   _buildKeyedRoutingCanvas(effectiveRoutingViewMode),
+                  _buildSampleBuilderWorkspace(),
                 ],
               ),
             ),
@@ -825,10 +840,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   Widget _buildSplitView() {
     const double dividerWidth = 8.0;
     const double minPaneWidth = 500.0;
-    final effectiveRoutingViewMode =
-        MediaQuery.of(context).accessibleNavigation
-            ? RoutingEditorViewMode.list
-            : _routingViewMode;
+    final effectiveRoutingViewMode = MediaQuery.of(context).accessibleNavigation
+        ? RoutingEditorViewMode.list
+        : _routingViewMode;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -988,6 +1002,31 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
   }
 
+  Widget _buildSampleBuilderWorkspace() {
+    final canShowParameters =
+        !_platformService.isMobilePlatform() &&
+        MediaQuery.of(context).size.width >= 1008 &&
+        widget.slots.isNotEmpty;
+    if (!_showSampleParameterPanel || !canShowParameters) {
+      return _buildSampleBuilder();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final parameterWidth = (constraints.maxWidth * 0.38)
+            .clamp(520.0, 720.0)
+            .toDouble();
+        return Row(
+          children: [
+            SizedBox(width: parameterWidth, child: _buildWideScreenBody()),
+            VerticalDivider(width: 1, color: Theme.of(context).dividerColor),
+            Expanded(child: _buildSampleBuilder()),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildFloatingActionButton() {
     return Builder(
       builder: (context) {
@@ -1053,8 +1092,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       : null;
                   final effectiveRoutingViewMode =
                       MediaQuery.of(context).accessibleNavigation
-                          ? RoutingEditorViewMode.list
-                          : _routingViewMode;
+                      ? RoutingEditorViewMode.list
+                      : _routingViewMode;
                   return Row(
                     children: [
                       // Zoom controls (canvas-only)
@@ -1302,9 +1341,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               auxBusUsage,
                               hasExtendedAuxBuses,
                             ) {
-                              final flowSolution =
-                                  BusFlowSolver.fromAlgorithms(algorithms)
-                                      .solve();
+                              final flowSolution = BusFlowSolver.fromAlgorithms(
+                                algorithms,
+                              ).solve();
                               if (effectiveRoutingViewMode !=
                                       RoutingEditorViewMode.busLanes ||
                                   !flowSolution.reorderNeeded) {
@@ -1320,8 +1359,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                       .read<RoutingEditorCubit>()
                                       .autoSolveFlow();
                                 },
-                                tooltip:
-                                    'Reorder algorithms to fix bus flow',
+                                tooltip: 'Reorder algorithms to fix bus flow',
                                 style: buttonStyle,
                               );
                             },
@@ -1472,14 +1510,37 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   ),
                   tooltip: 'Routing mode',
                 ),
+                ButtonSegment(
+                  value: EditMode.sampleBuilder,
+                  label: isWideScreen ? const Text('Samples') : null,
+                  icon: const Icon(
+                    Icons.audio_file,
+                    semanticLabel: 'Sample Builder',
+                  ),
+                  tooltip: 'Sample Builder',
+                ),
               ],
               selected: _currentMode == EditMode.both
                   ? {EditMode.parameters, EditMode.routing}
+                  : _currentMode == EditMode.sampleBuilder &&
+                        _showSampleParameterPanel &&
+                        _canShowSplitScreen(screenWidth)
+                  ? {EditMode.parameters, EditMode.sampleBuilder}
                   : {_currentMode},
               onSelectionChanged: (Set<EditMode> modes) {
                 setState(() {
-                  if (modes.length == 2 && _canShowSplitScreen(screenWidth)) {
+                  if (modes.contains(EditMode.sampleBuilder) &&
+                      modes.contains(EditMode.parameters) &&
+                      _canShowSplitScreen(screenWidth)) {
+                    _currentMode = EditMode.sampleBuilder;
+                    _showSampleParameterPanel = true;
+                  } else if (modes.contains(EditMode.sampleBuilder)) {
+                    _currentMode = EditMode.sampleBuilder;
+                    _showSampleParameterPanel = false;
+                  } else if (modes.length == 2 &&
+                      _canShowSplitScreen(screenWidth)) {
                     _currentMode = EditMode.both;
+                    _showSampleParameterPanel = false;
                   } else if (modes.length == 2) {
                     // Can't split - keep only the newly clicked one
                     final newMode = modes.firstWhere(
@@ -1491,8 +1552,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       orElse: () => modes.first,
                     );
                     _currentMode = newMode;
+                    _showSampleParameterPanel = false;
                   } else if (modes.length == 1) {
                     _currentMode = modes.first;
+                    _showSampleParameterPanel = false;
                   }
                 });
               },
@@ -1825,6 +1888,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       children: switch (_currentMode) {
         EditMode.parameters => _buildParameterModeActions(cubit),
         EditMode.routing => _buildRoutingModeActions(),
+        EditMode.sampleBuilder => _buildSampleBuilderModeActions(),
         EditMode.both => [
           ..._buildParameterModeActions(cubit),
           ..._buildRoutingModeActions(),
@@ -1924,6 +1988,33 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   List<Widget> _buildRoutingModeActions() {
     return [
       // Placeholder for future routing actions
+    ];
+  }
+
+  List<Widget> _buildSampleBuilderModeActions() {
+    final canShowParameters =
+        !_platformService.isMobilePlatform() &&
+        MediaQuery.of(context).size.width >= 1008 &&
+        widget.slots.isNotEmpty;
+    return [
+      IconButton(
+        icon: Icon(
+          _showSampleParameterPanel ? Icons.tune : Icons.tune_outlined,
+          semanticLabel: _showSampleParameterPanel
+              ? 'Hide parameters panel'
+              : 'Show parameters panel',
+        ),
+        tooltip: _showSampleParameterPanel
+            ? 'Hide parameters'
+            : 'Show parameters',
+        onPressed: canShowParameters
+            ? () {
+                setState(() {
+                  _showSampleParameterPanel = !_showSampleParameterPanel;
+                });
+              }
+            : null,
+      ),
     ];
   }
 
@@ -2120,6 +2211,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [Text('Perform'), Icon(Icons.library_music)],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'sample_builder',
+            onTap: () {
+              setState(() => _currentMode = EditMode.sampleBuilder);
+            },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Sample Builder'), Icon(Icons.audio_file)],
             ),
           ),
           // Plugin Manager: Always enabled (excluded from Play Store build)
