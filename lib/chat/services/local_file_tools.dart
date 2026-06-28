@@ -277,6 +277,7 @@ class _LocalFileTools {
       final bytes = await entity.readAsBytes();
       final extracted = extractPdfText(bytes);
       if (extracted.trim().isNotEmpty) {
+        final truncated = extracted.length > _maxPdfContentChars;
         final content = _truncateContent(extracted, _maxPdfContentChars);
         return _json({
           'success': true,
@@ -286,8 +287,8 @@ class _LocalFileTools {
           'encoding': 'pdf_text',
           'content': content,
           'content_chars': extracted.length,
-          'truncated': content.length < extracted.length,
-          if (content.length < extracted.length)
+          'truncated': truncated,
+          if (truncated)
             'message':
                 'PDF text was truncated to avoid filling the chat context. Use search_files for targeted sections.',
         });

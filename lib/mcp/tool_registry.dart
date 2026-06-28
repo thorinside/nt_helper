@@ -87,6 +87,13 @@ class ToolRegistry {
     return _executeEntry(entry, arguments);
   }
 
+  String storeReferenceIfLarge({
+    required String toolName,
+    required String result,
+  }) {
+    return _referenceStore.storeIfLarge(toolName: toolName, result: result);
+  }
+
   Future<String> _executeEntry(
     ToolRegistryEntry entry,
     Map<String, dynamic> arguments,

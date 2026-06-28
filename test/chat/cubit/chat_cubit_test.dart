@@ -54,6 +54,12 @@ void main() {
     when(
       () => toolRegistry.executeTool(any(), any()),
     ).thenAnswer((_) async => '{"success":true}');
+    when(
+      () => toolRegistry.storeReferenceIfLarge(
+        toolName: any(named: 'toolName'),
+        result: any(named: 'result'),
+      ),
+    ).thenAnswer((invocation) => invocation.namedArguments[#result] as String);
     when(() => memoryService.readMemory()).thenAnswer((_) async => '');
     when(() => memoryService.readDailyLogs()).thenAnswer((_) async => '');
     when(
@@ -204,6 +210,71 @@ void main() {
             .having((s) => s.messages.last.content, 'assistant response', 'ok'),
       ],
     );
+
+    test('stores large text attachments as searchable references', () async {
+      final provider = MockLlmProvider();
+      when(() => provider.dispose()).thenReturn(null);
+      when(
+        () => provider.sendMessages(
+          messages: any(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).thenAnswer(
+        (_) async => const LlmResponse(content: 'ok', isComplete: true),
+      );
+      when(
+        () => toolRegistry.storeReferenceIfLarge(
+          toolName: 'attachment:manual.pdf',
+          result: any(named: 'result'),
+        ),
+      ).thenReturn(
+        '{"success":true,"type":"tool_reference","reference_id":"ref_manual",'
+        '"tool_name":"attachment:manual.pdf","total_chars":25000,'
+        '"instructions":"Use read_reference or search_reference."}',
+      );
+      final cubit = ChatCubit(
+        toolRegistry: toolRegistry,
+        memoryService: memoryService,
+        providerFactory: (_) => provider,
+      );
+
+      await cubit.sendMessage(
+        'read this',
+        _settings,
+        fileAttachments: [
+          ChatFileAttachment(
+            name: 'manual.pdf',
+            data: 'JVBERi0xLjQ=',
+            mimeType: 'application/pdf',
+            sizeBytes: 8,
+            textContent: List.filled(25000, 'A').join(),
+          ),
+        ],
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final captured = verify(
+        () => provider.sendMessages(
+          messages: captureAny(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).captured;
+      final sentMessages = captured.last as List<LlmMessage>;
+      final userMessage = sentMessages.firstWhere(
+        (message) => message.role == LlmRole.user,
+      );
+      expect(userMessage.content, contains('"type":"tool_reference"'));
+      expect(userMessage.content, contains('"reference_id":"ref_manual"'));
+      expect(userMessage.content, isNot(contains('AAAAAAAAAA')));
+      verify(
+        () => toolRegistry.storeReferenceIfLarge(
+          toolName: 'attachment:manual.pdf',
+          result: any(named: 'result'),
+        ),
+      ).called(1);
+    });
   });
 
   group('Bug 1: permanent thinking spinner — onDone without isFinal', () {

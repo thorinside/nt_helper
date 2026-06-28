@@ -219,7 +219,8 @@ void main() {
         await provider.sendMessages(
           messages: [
             LlmMessage.user(
-              '--- Attached file: notes.txt ---\nhello',
+              '--- Attached file: notes.txt ---\nhello\n'
+              '--- Attached file: extracted.pdf ---\nmanual text',
               fileAttachments: const [
                 LlmFileAttachment(
                   name: 'notes.txt',
@@ -233,6 +234,13 @@ void main() {
                   data: 'JVBERi0xLjQ=',
                   mimeType: 'application/pdf',
                   sizeBytes: 8,
+                ),
+                LlmFileAttachment(
+                  name: 'extracted.pdf',
+                  data: 'JVBERi0xLjQ=',
+                  mimeType: 'application/pdf',
+                  sizeBytes: 8,
+                  textContent: 'manual text',
                 ),
               ],
             ),
@@ -251,6 +259,10 @@ void main() {
 
         expect(inputFiles, hasLength(1));
         expect(inputFiles.single['filename'], 'manual.pdf');
+        expect(
+          inputFiles.map((file) => file['filename']),
+          isNot(contains('extracted.pdf')),
+        );
         expect(
           content.whereType<Map<String, dynamic>>().singleWhere(
             (part) => part['type'] == 'input_text',

@@ -62,16 +62,20 @@ String _extractTextOperators(String contentStream) {
   }
 
   final tjArray = RegExp(r'\[(.*?)\]\s*TJ', dotAll: true);
-  final arrayLiteral = RegExp(r'\(((?:\\.|[^\\)])*)\)', dotAll: true);
-  final arrayHex = RegExp(r'<([0-9A-Fa-f\s]+)>', dotAll: true);
+  final arrayToken = RegExp(
+    r'\(((?:\\.|[^\\)])*)\)|<([0-9A-Fa-f\s]+)>',
+    dotAll: true,
+  );
   for (final match in tjArray.allMatches(contentStream)) {
     final body = match.group(1) ?? '';
     final text = StringBuffer();
-    for (final literal in arrayLiteral.allMatches(body)) {
-      text.write(_decodePdfLiteral(literal.group(1) ?? ''));
-    }
-    for (final hex in arrayHex.allMatches(body)) {
-      text.write(_decodePdfHex(hex.group(1) ?? ''));
+    for (final token in arrayToken.allMatches(body)) {
+      final literal = token.group(1);
+      if (literal != null) {
+        text.write(_decodePdfLiteral(literal));
+        continue;
+      }
+      text.write(_decodePdfHex(token.group(2) ?? ''));
     }
     if (text.isNotEmpty) chunks.add(text.toString());
   }

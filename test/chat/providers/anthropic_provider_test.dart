@@ -162,5 +162,64 @@ void main() {
 
       expect(capturedBody!.containsKey('tools'), isFalse);
     });
+
+    test(
+      'does not send PDFs as documents when text content is inlined',
+      () async {
+        Map<String, dynamic>? capturedBody;
+
+        final provider = AnthropicProvider(
+          apiKey: 'test-key',
+          model: 'claude-sonnet-4-20250514',
+          client: MockClient((request) async {
+            capturedBody = jsonDecode(request.body) as Map<String, dynamic>;
+            return http.Response(
+              jsonEncode({
+                'content': [
+                  {'type': 'text', 'text': 'OK'},
+                ],
+                'stop_reason': 'end_turn',
+                'usage': {'input_tokens': 10, 'output_tokens': 5},
+              }),
+              200,
+            );
+          }),
+        );
+
+        await provider.sendMessages(
+          messages: [
+            LlmMessage.user(
+              '--- Attached file: extracted.pdf ---\nmanual text',
+              fileAttachments: const [
+                LlmFileAttachment(
+                  name: 'extracted.pdf',
+                  data: 'JVBERi0xLjQ=',
+                  mimeType: 'application/pdf',
+                  sizeBytes: 8,
+                  textContent: 'manual text',
+                ),
+                LlmFileAttachment(
+                  name: 'binary.pdf',
+                  data: 'JVBERi0xLjQ=',
+                  mimeType: 'application/pdf',
+                  sizeBytes: 8,
+                ),
+              ],
+            ),
+          ],
+          tools: const [],
+        );
+
+        final messages = capturedBody!['messages'] as List<dynamic>;
+        final content = messages.single['content'] as List<dynamic>;
+        final documents = content
+            .whereType<Map<String, dynamic>>()
+            .where((part) => part['type'] == 'document')
+            .toList();
+
+        expect(documents, hasLength(1));
+        expect(documents.single['title'], 'binary.pdf');
+      },
+    );
   });
 }

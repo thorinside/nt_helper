@@ -100,6 +100,31 @@ void main() {
       expect(readResult['content'], contains('Disting NT manual'));
     });
 
+    test(
+      'reports truncated PDF text using original extracted length',
+      () async {
+        final longText = List.filled(120010, 'A').join();
+        await File(
+          '${tempDir.path}/large_manual.pdf',
+        ).writeAsString(_pdfWithLiteralText(longText));
+        await _setRoots(settings, [
+          _root(path: tempDir.path, chat: {FileRootPermission.read}),
+        ]);
+
+        final readResult = await _call(
+          _entriesFor(FileRootActor.chat),
+          'read_file',
+          {'root_id': 'sd', 'path': 'large_manual.pdf'},
+        );
+
+        expect(readResult['success'], isTrue);
+        expect(readResult['content_chars'], longText.length);
+        expect(readResult['truncated'], isTrue);
+        expect(readResult['message'], contains('PDF text was truncated'));
+        expect(readResult['content'], contains('[truncated:'));
+      },
+    );
+
     test('omits missing roots from listing but keeps stale-id error', () async {
       final missingPath = '${tempDir.path}/unmounted';
       await _setRoots(settings, [
@@ -354,6 +379,27 @@ BT
 /F1 12 Tf
 72 720 Td
 (Disting NT manual) Tj
+ET
+endstream
+endobj
+trailer
+<< /Root 1 0 R >>
+%%EOF
+''';
+
+String _pdfWithLiteralText(String text) =>
+    '''
+%PDF-1.4
+1 0 obj
+<< /Type /Page /Contents 2 0 R >>
+endobj
+2 0 obj
+<< /Length ${text.length + 32} >>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+($text) Tj
 ET
 endstream
 endobj

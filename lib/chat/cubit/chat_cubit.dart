@@ -255,13 +255,17 @@ class ChatCubit extends Cubit<ChatState> {
     final buffer = StringBuffer(messageText);
     for (final file in fileAttachments) {
       if (file.textContent == null) continue;
+      final content = _toolRegistry.storeReferenceIfLarge(
+        toolName: 'attachment:${file.name}',
+        result: file.textContent!,
+      );
       buffer
         ..writeln()
         ..writeln()
         ..writeln(
           '--- Attached file: ${file.name} (${file.sizeBytes} bytes) ---',
         )
-        ..writeln(file.textContent)
+        ..writeln(content)
         ..writeln('--- End attached file: ${file.name} ---');
     }
     return buffer.toString();
