@@ -124,15 +124,18 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   AppRelease? _availableAppUpdate;
   AppUpdateService? _appUpdateService;
   RoutingEditorCubit? _routingEditorCubit;
-  late final Widget _cachedRoutingCanvas = _buildRoutingCanvas();
   final GlobalKey _sampleBuilderKey = GlobalKey();
+  late final Widget _cachedRoutingCanvas = _buildRoutingCanvas();
+  late final Widget _cachedSampleBuilder = PolyMultisampleBuilderScreen(
+    key: _sampleBuilderKey,
+  );
 
   Widget _buildKeyedRoutingCanvas(RoutingEditorViewMode mode) {
     return KeyedSubtree(key: ValueKey(mode), child: _cachedRoutingCanvas);
   }
 
   Widget _buildSampleBuilder() {
-    return PolyMultisampleBuilderScreen(key: _sampleBuilderKey);
+    return _cachedSampleBuilder;
   }
 
   int _workspaceIndex(EditMode mode) {
@@ -1492,7 +1495,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: SegmentedButton<EditMode>(
-              multiSelectionEnabled: true,
+              multiSelectionEnabled: false,
               emptySelectionAllowed: false,
               segments: [
                 ButtonSegment(
@@ -1520,41 +1523,14 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   tooltip: 'Sample Builder',
                 ),
               ],
-              selected: _currentMode == EditMode.both
-                  ? {EditMode.parameters, EditMode.routing}
-                  : _currentMode == EditMode.sampleBuilder &&
-                        _showSampleParameterPanel &&
-                        _canShowSplitScreen(screenWidth)
-                  ? {EditMode.parameters, EditMode.sampleBuilder}
-                  : {_currentMode},
+              selected: {
+                _currentMode == EditMode.both ? EditMode.routing : _currentMode,
+              },
               onSelectionChanged: (Set<EditMode> modes) {
+                final selectedMode = modes.first;
                 setState(() {
-                  if (modes.contains(EditMode.sampleBuilder) &&
-                      modes.contains(EditMode.parameters) &&
-                      _canShowSplitScreen(screenWidth)) {
-                    _currentMode = EditMode.sampleBuilder;
-                    _showSampleParameterPanel = true;
-                  } else if (modes.contains(EditMode.sampleBuilder)) {
-                    _currentMode = EditMode.sampleBuilder;
-                    _showSampleParameterPanel = false;
-                  } else if (modes.length == 2 &&
-                      _canShowSplitScreen(screenWidth)) {
-                    _currentMode = EditMode.both;
-                    _showSampleParameterPanel = false;
-                  } else if (modes.length == 2) {
-                    // Can't split - keep only the newly clicked one
-                    final newMode = modes.firstWhere(
-                      (m) =>
-                          m !=
-                          (_currentMode == EditMode.both
-                              ? EditMode.parameters
-                              : _currentMode),
-                      orElse: () => modes.first,
-                    );
-                    _currentMode = newMode;
-                    _showSampleParameterPanel = false;
-                  } else if (modes.length == 1) {
-                    _currentMode = modes.first;
+                  _currentMode = selectedMode;
+                  if (selectedMode != EditMode.sampleBuilder) {
                     _showSampleParameterPanel = false;
                   }
                 });

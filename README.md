@@ -1,12 +1,22 @@
 # nt_helper
 
-## Poly Multisample Builder Test Release
+## Poly Multisample Builder Test Release Changelog
 
 Branch: `nymph-next-fix`
 Tag: `poly-multisample-builder-test-v1`
 Windows zip: `nt_helper-windows-poly-multisample-builder-test-v1.zip`
 
 This fork/branch contains an experimental Windows test build for a new Poly Multisample Builder in NT Helper.
+
+### 2026-06-28 Update
+
+- Fixed unreliable toggling between `Samples` and `Routing`.
+- Changed the bottom `Parameters / Routing / Samples` switcher to single-select so clicking `Routing` always leaves the sample page.
+- Kept the optional sample-side parameter panel on its own toolbar button instead of mixing it into the page switcher.
+- Cached the sample builder workspace so switching to Routing and back keeps the loaded sample folder/loadout.
+- Improves behavior when the chat panel is open, where the previous multi-select page state could feel sluggish or get stuck.
+
+### 2026-06-27 Test Release
 
 ### What It Adds
 
