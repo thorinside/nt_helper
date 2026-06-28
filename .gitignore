@@ -48,6 +48,11 @@ app.*.map.json
 
 .env
 
+# Local agent/project scratch files
+.agents/
+skills-lock.json
+.project
+
 # Added by Claude Task Master
 # Logs
 logs
