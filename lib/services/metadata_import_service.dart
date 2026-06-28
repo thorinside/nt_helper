@@ -281,13 +281,15 @@ class MetadataImportService {
     final entries = <ParameterOutputModeUsageCompanion>[];
 
     for (final usageData in usageList) {
+      final affectedOutputNumbers = (usageData['affectedOutputNumbers'] as List)
+          .map((value) => value as int)
+          .toList();
+
       entries.add(
         ParameterOutputModeUsageCompanion(
           algorithmGuid: Value(usageData['algorithmGuid'] as String),
           parameterNumber: Value(usageData['parameterNumber'] as int),
-          affectedOutputNumbers: Value(
-            usageData['affectedOutputNumbers'] as List<int>,
-          ),
+          affectedOutputNumbers: Value(affectedOutputNumbers),
         ),
       );
     }

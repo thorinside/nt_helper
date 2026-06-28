@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/services/algorithm_guid_utils.dart';
 
 class AlgorithmJsonExporter {
   final AppDatabase database;
@@ -16,8 +17,8 @@ class AlgorithmJsonExporter {
       final List<Map<String, dynamic>> exportData = [];
 
       for (final algorithm in algorithms) {
-        // Skip community plugins (uppercase GUIDs) — they don't have parameters
-        if (algorithm.guid != algorithm.guid.toLowerCase()) continue;
+        // Skip community plugins; the offline metadata bundle is factory-only.
+        if (!AlgorithmGuidUtils.isFactoryGuid(algorithm.guid)) continue;
 
         // Get full details including parameters
         final details = await dao.getFullAlgorithmDetails(algorithm.guid);
@@ -127,7 +128,7 @@ class AlgorithmJsonExporter {
       final algorithms = allAlgorithms
           .where(
             (a) =>
-                a.guid == a.guid.toLowerCase() &&
+                AlgorithmGuidUtils.isFactoryGuid(a.guid) &&
                 guidsWithParams.contains(a.guid),
           )
           .toList();
@@ -308,7 +309,7 @@ class AlgorithmJsonExporter {
       final algorithms = allAlgorithms
           .where(
             (a) =>
-                a.guid == a.guid.toLowerCase() &&
+                AlgorithmGuidUtils.isFactoryGuid(a.guid) &&
                 guidsWithParams.contains(a.guid),
           )
           .toList();

@@ -263,6 +263,39 @@ void main() {
       expect(param.ioFlags, 7);
     });
 
+    test('Import reads output mode usage affected outputs from JSON', () async {
+      final jsonString = json.encode({
+        'exportType': 'full_metadata',
+        'exportVersion': 2,
+        'tables': {
+          'algorithms': [
+            {
+              'guid': 'test',
+              'name': 'Test Algorithm',
+              'numSpecifications': 0,
+              'pluginFilePath': null,
+            },
+          ],
+          'parameterOutputModeUsage': [
+            {
+              'algorithmGuid': 'test',
+              'parameterNumber': 5,
+              'affectedOutputNumbers': [4, 7],
+            },
+          ],
+        },
+      });
+
+      final success = await importService.importFromJson(jsonString);
+      expect(success, isTrue);
+
+      final affectedOutputs = await database.metadataDao.getOutputModeUsage(
+        'test',
+        5,
+      );
+      expect(affectedOutputs, [4, 7]);
+    });
+
     test(
       'Export includes ioFlags field for parameters with non-null values',
       () async {
@@ -482,5 +515,106 @@ void main() {
       await importDb.close();
       tempDir.deleteSync(recursive: true);
     });
+
+    test(
+      'Export includes only factory algorithms with lowercase GUIDs',
+      () async {
+        await database.metadataDao.upsertAlgorithms([
+          const AlgorithmEntry(
+            guid: 'lfo ',
+            name: 'LFO',
+            numSpecifications: 1,
+            pluginFilePath: null,
+          ),
+          const AlgorithmEntry(
+            guid: 'env2',
+            name: 'Envelope',
+            numSpecifications: 0,
+            pluginFilePath: null,
+          ),
+          const AlgorithmEntry(
+            guid: 'PLUG',
+            name: 'Community Plugin',
+            numSpecifications: 0,
+            pluginFilePath: '/plugins/PLUG.o',
+          ),
+          const AlgorithmEntry(
+            guid: 'plug-in',
+            name: 'Lowercase Non-Factory Plugin',
+            numSpecifications: 0,
+            pluginFilePath: '/plugins/plug-in.o',
+          ),
+        ]);
+
+        await database.metadataDao.upsertParameters([
+          const ParameterEntry(
+            algorithmGuid: 'lfo ',
+            parameterNumber: 0,
+            name: 'Output',
+            minValue: 0,
+            maxValue: 64,
+            defaultValue: 13,
+            unitId: null,
+            powerOfTen: 0,
+            rawUnitIndex: 1,
+            ioFlags: 2,
+          ),
+          const ParameterEntry(
+            algorithmGuid: 'env2',
+            parameterNumber: 0,
+            name: 'Gate input',
+            minValue: 0,
+            maxValue: 64,
+            defaultValue: 1,
+            unitId: null,
+            powerOfTen: 0,
+            rawUnitIndex: 1,
+            ioFlags: 1,
+          ),
+          const ParameterEntry(
+            algorithmGuid: 'PLUG',
+            parameterNumber: 0,
+            name: 'Plugin input',
+            minValue: 0,
+            maxValue: 64,
+            defaultValue: 1,
+            unitId: null,
+            powerOfTen: 0,
+            rawUnitIndex: 1,
+            ioFlags: 1,
+          ),
+          const ParameterEntry(
+            algorithmGuid: 'plug-in',
+            parameterNumber: 0,
+            name: 'Plugin input',
+            minValue: 0,
+            maxValue: 64,
+            defaultValue: 1,
+            unitId: null,
+            powerOfTen: 0,
+            rawUnitIndex: 1,
+            ioFlags: 1,
+          ),
+        ]);
+
+        final exporter = AlgorithmJsonExporter(database);
+        final tempDir = Directory.systemTemp.createTempSync(
+          'factory_export_test',
+        );
+        final exportPath = '${tempDir.path}/export.json';
+
+        await exporter.exportFullMetadata(exportPath);
+
+        final exportJson = json.decode(await File(exportPath).readAsString());
+        final algorithms = exportJson['tables']['algorithms'] as List;
+        final exportedGuids = algorithms.map((a) => a['guid']).toSet();
+
+        expect(exportedGuids, containsAll(['lfo ', 'env2']));
+        expect(exportedGuids, isNot(contains('PLUG')));
+        expect(exportedGuids, isNot(contains('plug-in')));
+
+        tempDir.deleteSync(recursive: true);
+      },
+    );
   });
 }

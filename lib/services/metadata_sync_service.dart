@@ -10,6 +10,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/services/algorithm_guid_utils.dart';
 import 'package:nt_helper/services/elf_guid_extractor.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
 
@@ -19,11 +20,6 @@ class MetadataSyncService {
   final AppDatabase _database;
 
   MetadataSyncService(this._distingManager, this._database);
-
-  /// Factory GUIDs are lowercase alphanumeric, possibly space-padded to 4 chars
-  /// (e.g. `spcn`, `env2`, `lfo `). Community plugins use uppercase (e.g. `TEST`).
-  static bool _isFactoryGuid(String guid) =>
-      RegExp(r'^[a-z0-9 ]+$').hasMatch(guid);
 
   Future<FirmwareVersion> _requestFirmwareVersionSafe() async {
     try {
@@ -430,7 +426,7 @@ class MetadataSyncService {
       // Community plugins (uppercase GUIDs) cause memory issues during sync
       // and are skipped here — their basic info is already cached above.
       final orderedAlgorithms = allAlgorithmInfo
-          .where((a) => _isFactoryGuid(a.guid))
+          .where((a) => AlgorithmGuidUtils.isFactoryGuid(a.guid))
           .toList();
       totalAlgorithms = orderedAlgorithms.length;
 
