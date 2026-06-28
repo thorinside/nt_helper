@@ -40,6 +40,7 @@ class _BusLanesViewState extends State<BusLanesView> {
   final FocusNode _focusNode = FocusNode(debugLabel: 'BusLanes');
   String? _draggingId;
   double _dragDy = 0;
+  final Set<int> _canvasPanPointers = {};
 
   /// The currently selected junction (bead), if any. Delete/Backspace
   /// disconnects it.
@@ -100,9 +101,36 @@ class _BusLanesViewState extends State<BusLanesView> {
     _scroll(_v, -delta.dy);
   }
 
+  bool _isCanvasPanDown(PointerDownEvent event, _BusLanesData data) {
+    if (!_canvasPanDevices.contains(event.kind) ||
+        event.buttons != kPrimaryButton) {
+      return false;
+    }
+    final position = event.localPosition;
+    if (position.dx < BusLanesMetrics.gutterWidth) return false;
+    return !_isOnBead(position, data);
+  }
+
   bool _isCanvasPanMove(PointerMoveEvent event) {
-    return _canvasPanDevices.contains(event.kind) &&
+    return _canvasPanPointers.contains(event.pointer) &&
+        _canvasPanDevices.contains(event.kind) &&
         event.buttons == kPrimaryButton;
+  }
+
+  bool _isOnBead(Offset position, _BusLanesData data) {
+    final m = data.metrics;
+    for (var i = 0; i < data.cards.length; i++) {
+      final cardTop = m.cardTops[i];
+      for (final bead in data.cards[i].beads) {
+        final beadRect = Rect.fromCenter(
+          center: Offset(bead.x, cardTop + bead.y),
+          width: 26,
+          height: 26,
+        );
+        if (beadRect.contains(position)) return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -194,13 +222,16 @@ class _BusLanesViewState extends State<BusLanesView> {
               child: Scrollbar(
                 controller: _v,
                 thumbVisibility: true,
-                child: SingleChildScrollView(
-                  controller: _v,
-                  physics: const NeverScrollableScrollPhysics(),
-                  child: Scrollbar(
-                    controller: _h,
-                    thumbVisibility: true,
-                    notificationPredicate: (n) => n.depth == 1,
+                notificationPredicate: (n) => n.metrics.axis == Axis.vertical,
+                child: Scrollbar(
+                  controller: _h,
+                  thumbVisibility: true,
+                  scrollbarOrientation: ScrollbarOrientation.bottom,
+                  notificationPredicate: (n) =>
+                      n.metrics.axis == Axis.horizontal,
+                  child: SingleChildScrollView(
+                    controller: _v,
+                    physics: const NeverScrollableScrollPhysics(),
                     child: SingleChildScrollView(
                       controller: _h,
                       scrollDirection: Axis.horizontal,
@@ -224,21 +255,13 @@ class _BusLanesViewState extends State<BusLanesView> {
                               child: Stack(
                                 children: [
                                   Positioned.fill(
-                                    child: Listener(
-                                      behavior: HitTestBehavior.opaque,
-                                      onPointerMove: (event) {
-                                        if (_isCanvasPanMove(event)) {
-                                          _panCanvasBy(event.delta);
-                                        }
-                                      },
-                                      child: CustomPaint(
-                                        painter: BusLanesPainter(
-                                          rails: data.rails,
-                                          metrics: m,
-                                          noneColor:
-                                              theme.colorScheme.outlineVariant,
-                                          separatorColor: theme.dividerColor,
-                                        ),
+                                    child: CustomPaint(
+                                      painter: BusLanesPainter(
+                                        rails: data.rails,
+                                        metrics: m,
+                                        noneColor:
+                                            theme.colorScheme.outlineVariant,
+                                        separatorColor: theme.dividerColor,
                                       ),
                                     ),
                                   ),
@@ -253,6 +276,31 @@ class _BusLanesViewState extends State<BusLanesView> {
                                         hover,
                                         state,
                                       ),
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: Listener(
+                                      behavior: HitTestBehavior.translucent,
+                                      onPointerDown: (event) {
+                                        if (_isCanvasPanDown(event, data)) {
+                                          _canvasPanPointers.add(event.pointer);
+                                        }
+                                      },
+                                      onPointerMove: (event) {
+                                        if (_isCanvasPanMove(event)) {
+                                          _panCanvasBy(event.delta);
+                                        }
+                                      },
+                                      onPointerUp: (event) {
+                                        _canvasPanPointers.remove(
+                                          event.pointer,
+                                        );
+                                      },
+                                      onPointerCancel: (event) {
+                                        _canvasPanPointers.remove(
+                                          event.pointer,
+                                        );
+                                      },
                                     ),
                                   ),
                                 ],

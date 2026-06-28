@@ -255,6 +255,65 @@ void main() {
     expect(vertical.offset, greaterThan(0));
   });
 
+  testWidgets('touch dragging painted lane content pans the view', (
+    tester,
+  ) async {
+    final (horizontal, vertical) = await pumpConstrainedOversizedPreset(tester);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.touch);
+    await gesture.down(const Offset(300, 73));
+    await gesture.moveBy(const Offset(-100, -60));
+    await gesture.up();
+    await tester.pump();
+
+    expect(horizontal.offset, greaterThan(0));
+    expect(vertical.offset, greaterThan(0));
+  });
+
+  testWidgets('mouse dragging painted lane content pans the view', (
+    tester,
+  ) async {
+    final (horizontal, vertical) = await pumpConstrainedOversizedPreset(tester);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.down(const Offset(300, 73));
+    await gesture.moveBy(const Offset(-100, -60));
+    await gesture.up();
+    await tester.pump();
+
+    expect(horizontal.offset, greaterThan(0));
+    expect(vertical.offset, greaterThan(0));
+  });
+
+  testWidgets('dragging a bead does not pan the canvas', (tester) async {
+    final (horizontal, vertical) = await pumpConstrainedOversizedPreset(tester);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.touch);
+    await gesture.down(const Offset(235, 73));
+    await gesture.moveBy(const Offset(-100, -60));
+    await gesture.up();
+    await tester.pump();
+
+    expect(horizontal.offset, 0);
+    expect(vertical.offset, 0);
+  });
+
+  testWidgets('scrollbars are laid out against the visible viewport', (
+    tester,
+  ) async {
+    final (horizontal, vertical) = await pumpConstrainedOversizedPreset(tester);
+
+    final horizontalScrollbar = find.byWidgetPredicate(
+      (widget) => widget is Scrollbar && widget.controller == horizontal,
+    );
+    final verticalScrollbar = find.byWidgetPredicate(
+      (widget) => widget is Scrollbar && widget.controller == vertical,
+    );
+
+    expect(tester.getSize(horizontalScrollbar), const Size(320, 220));
+    expect(tester.getSize(verticalScrollbar), const Size(320, 220));
+  });
+
   testWidgets('background pan does not trigger bus lane edit actions', (
     tester,
   ) async {
