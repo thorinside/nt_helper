@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,6 +26,14 @@ void main() {
         previousBusValue: 0,
         newBusValue: 0,
         reorder: null,
+      ),
+    );
+    provideDummy<ReorderResult>(
+      const ReorderResult(
+        previousOrder: [],
+        newOrder: [],
+        description: '',
+        changed: false,
       ),
     );
   });
@@ -95,6 +104,43 @@ void main() {
     ],
   );
 
+  List<state.RoutingAlgorithm> oversizedPreset() => [
+    for (var index = 0; index < 10; index++)
+      state.RoutingAlgorithm(
+        id: 'algo_$index',
+        index: index,
+        algorithm: Algorithm(
+          algorithmIndex: index,
+          guid: 'oversized_$index',
+          name: 'Algorithm $index',
+        ),
+        inputPorts: [
+          Port(
+            id: 'algo_${index}_in',
+            name: 'Input',
+            type: PortType.audio,
+            direction: PortDirection.input,
+            busValue: (index % 12) + 1,
+            parameterNumber: index * 2,
+            busParam: 'Input',
+          ),
+        ],
+        outputPorts: [
+          Port(
+            id: 'algo_${index}_out',
+            name: 'Output',
+            type: PortType.audio,
+            direction: PortDirection.output,
+            busValue: 13 + (index % 8),
+            outputMode: OutputMode.add,
+            parameterNumber: index * 2 + 1,
+            modeParameterNumber: 100 + index,
+            busParam: 'Output',
+          ),
+        ],
+      ),
+  ];
+
   // Only bus 13 is in use, so it's column 1: gutter 172 + 1*42 + 21 = 235.
   // Output row 0 center y = header 28 + portRowY(0) 45 = 73.
   const beadCenter = Offset(235, 73);
@@ -109,6 +155,67 @@ void main() {
       ),
     ),
   );
+
+  Widget constrainedHost(Size size) => MaterialApp(
+    home: Scaffold(
+      body: SizedBox(
+        width: size.width,
+        height: size.height,
+        child: BlocProvider<RoutingEditorCubit>.value(
+          value: cubit,
+          child: const BusLanesView(),
+        ),
+      ),
+    ),
+  );
+
+  List<ScrollController> scrollControllers(WidgetTester tester) {
+    return tester
+        .widgetList<SingleChildScrollView>(find.byType(SingleChildScrollView))
+        .map((view) => view.controller)
+        .whereType<ScrollController>()
+        .toList();
+  }
+
+  (ScrollController horizontal, ScrollController vertical) busLaneScrolls(
+    WidgetTester tester,
+  ) {
+    final controllers = scrollControllers(tester);
+    expect(controllers, hasLength(2));
+    final vertical = controllers.firstWhere(
+      (controller) => controller.position.axis == Axis.vertical,
+    );
+    final horizontal = controllers.firstWhere(
+      (controller) => controller.position.axis == Axis.horizontal,
+    );
+    expect(horizontal.position.maxScrollExtent, greaterThan(0));
+    expect(vertical.position.maxScrollExtent, greaterThan(0));
+    return (horizontal, vertical);
+  }
+
+  Future<(ScrollController horizontal, ScrollController vertical)>
+  pumpConstrainedOversizedPreset(WidgetTester tester) async {
+    when(cubit.state).thenReturn(loadedWith(oversizedPreset()));
+
+    await tester.pumpWidget(constrainedHost(const Size(320, 220)));
+    await tester.pump();
+
+    final scrolls = busLaneScrolls(tester);
+    expect(scrolls.$1.offset, 0);
+    expect(scrolls.$2.offset, 0);
+    return scrolls;
+  }
+
+  Future<void> dragEmptyCanvas(
+    WidgetTester tester, {
+    required PointerDeviceKind kind,
+  }) async {
+    final gesture = await tester.createGesture(kind: kind);
+    await gesture.down(const Offset(300, 18));
+    await gesture.moveBy(const Offset(-100, -80));
+    await gesture.up();
+    await tester.pump();
+  }
 
   testWidgets('shows empty message when there are no algorithms', (
     tester,
@@ -126,6 +233,82 @@ void main() {
     expect(find.byType(BusLanesView), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('touch dragging empty bus lanes canvas pans the view', (
+    tester,
+  ) async {
+    final (horizontal, vertical) = await pumpConstrainedOversizedPreset(tester);
+    await dragEmptyCanvas(tester, kind: PointerDeviceKind.touch);
+
+    expect(horizontal.offset, greaterThan(0));
+    expect(vertical.offset, greaterThan(0));
+  });
+
+  testWidgets('mouse dragging empty bus lanes canvas pans the view', (
+    tester,
+  ) async {
+    final (horizontal, vertical) = await pumpConstrainedOversizedPreset(tester);
+    await dragEmptyCanvas(tester, kind: PointerDeviceKind.mouse);
+
+    expect(horizontal.offset, greaterThan(0));
+    expect(vertical.offset, greaterThan(0));
+  });
+
+  testWidgets('background pan does not trigger bus lane edit actions', (
+    tester,
+  ) async {
+    await pumpConstrainedOversizedPreset(tester);
+
+    await dragEmptyCanvas(tester, kind: PointerDeviceKind.touch);
+
+    verifyNever(
+      cubit.assignBusAndSolve(
+        algorithmIndex: anyNamed('algorithmIndex'),
+        parameterNumber: anyNamed('parameterNumber'),
+        previousBusValue: anyNamed('previousBusValue'),
+        busValue: anyNamed('busValue'),
+      ),
+    );
+    verifyNever(cubit.togglePortOutputMode(portId: anyNamed('portId')));
+    verifyNever(cubit.applyReorder(any));
+  });
+
+  testWidgets('dragging the gutter still reorders algorithms', (tester) async {
+    when(cubit.state).thenReturn(loadedWith(oversizedPreset()));
+    when(cubit.applyReorder(any)).thenAnswer(
+      (_) async => const ReorderResult(
+        previousOrder: ['algo_0', 'algo_1'],
+        newOrder: ['algo_1', 'algo_0'],
+        description: 'Moved Algorithm 0 down',
+        changed: true,
+      ),
+    );
+
+    await tester.pumpWidget(constrainedHost(const Size(320, 220)));
+    await tester.pump();
+
+    await tester.dragFrom(const Offset(24, 40), const Offset(0, 160));
+    await tester.pumpAndSettle();
+
+    verify(cubit.applyReorder(any)).called(1);
+  });
+
+  testWidgets('bus lanes canvas exposes semantics label and hint', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    when(cubit.state).thenReturn(loadedWith([oscWithOutput()]));
+
+    await tester.pumpWidget(host());
+    await tester.pump();
+
+    expect(
+      find.bySemanticsLabel(RegExp(r'Bus lanes canvas with 1 algorithm block')),
+      findsOneWidget,
+    );
+
+    semantics.dispose();
   });
 
   testWidgets('double-tapping an output bead toggles the output mode', (

@@ -57,6 +57,10 @@ class _BusLanesViewState extends State<BusLanesView> {
   /// the drag-to-reorder gesture would capture every scroll over a block.
   static final Set<PointerDeviceKind> _reorderDevices =
       PointerDeviceKind.values.toSet()..remove(PointerDeviceKind.trackpad);
+  static const Set<PointerDeviceKind> _canvasPanDevices = {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+  };
 
   @override
   void dispose() {
@@ -89,6 +93,16 @@ class _BusLanesViewState extends State<BusLanesView> {
   void _scroll(ScrollController c, double delta) {
     if (!c.hasClients || delta == 0) return;
     c.jumpTo((c.offset + delta).clamp(0.0, c.position.maxScrollExtent));
+  }
+
+  void _panCanvasBy(Offset delta) {
+    _scroll(_h, -delta.dx);
+    _scroll(_v, -delta.dy);
+  }
+
+  bool _isCanvasPanMove(PointerMoveEvent event) {
+    return _canvasPanDevices.contains(event.kind) &&
+        event.buttons == kPrimaryButton;
   }
 
   @override
@@ -159,6 +173,8 @@ class _BusLanesViewState extends State<BusLanesView> {
               return ad - bd;
             });
             final tops = _displayTops(data);
+            final blockCount = data.cards.length;
+            final blockLabel = blockCount == 1 ? 'block' : 'blocks';
 
             return Listener(
               onPointerSignal: (event) {
@@ -193,39 +209,54 @@ class _BusLanesViewState extends State<BusLanesView> {
                         key: _contentKey,
                         width: m.contentWidth,
                         height: m.contentHeight,
-                        child: MouseRegion(
-                          onHover: (e) => _hover.value = e.localPosition,
-                          onExit: (_) => _hover.value = null,
-                          child: Focus(
-                            focusNode: _focusNode,
-                            onKeyEvent: _onKey,
-                            child: Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: BusLanesPainter(
-                                      rails: data.rails,
-                                      metrics: m,
-                                      noneColor:
-                                          theme.colorScheme.outlineVariant,
-                                      separatorColor: theme.dividerColor,
+                        child: Semantics(
+                          label:
+                              'Bus lanes canvas with $blockCount algorithm $blockLabel',
+                          hint:
+                              'Pan to navigate. Drag beads to reassign buses.',
+                          container: true,
+                          child: MouseRegion(
+                            onHover: (e) => _hover.value = e.localPosition,
+                            onExit: (_) => _hover.value = null,
+                            child: Focus(
+                              focusNode: _focusNode,
+                              onKeyEvent: _onKey,
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Listener(
+                                      behavior: HitTestBehavior.opaque,
+                                      onPointerMove: (event) {
+                                        if (_isCanvasPanMove(event)) {
+                                          _panCanvasBy(event.delta);
+                                        }
+                                      },
+                                      child: CustomPaint(
+                                        painter: BusLanesPainter(
+                                          rails: data.rails,
+                                          metrics: m,
+                                          noneColor:
+                                              theme.colorScheme.outlineVariant,
+                                          separatorColor: theme.dividerColor,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                for (final i in order)
-                                  _buildBlock(context, i, data, colors, tops),
-                                Positioned.fill(
-                                  child: ValueListenableBuilder<Offset?>(
-                                    valueListenable: _hover,
-                                    builder: (ctx, hover, _) => _buildGhosts(
-                                      context,
-                                      data,
-                                      hover,
-                                      state,
+                                  for (final i in order)
+                                    _buildBlock(context, i, data, colors, tops),
+                                  Positioned.fill(
+                                    child: ValueListenableBuilder<Offset?>(
+                                      valueListenable: _hover,
+                                      builder: (ctx, hover, _) => _buildGhosts(
+                                        context,
+                                        data,
+                                        hover,
+                                        state,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
