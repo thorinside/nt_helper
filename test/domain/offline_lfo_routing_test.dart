@@ -82,7 +82,7 @@ void main() {
       );
       expect(
         routing.outputPorts.map((port) => port.name),
-        contains('1:Output'),
+        containsAll(['1:Output', '2:Output']),
       );
       expect(
         routing.inputPorts.map((port) => port.name),
@@ -100,6 +100,11 @@ void main() {
         (port) => port.name == '1:Output',
       );
       expect(lfoOutput.modeParameterNumber, 5);
+
+      final secondLfoOutput = routing.outputPorts.singleWhere(
+        (port) => port.name == '2:Output',
+      );
+      expect(secondLfoOutput.modeParameterNumber, 22);
     });
   });
 }
