@@ -316,20 +316,51 @@ void main() {
       expect(mockManager.lastSpecifications, equals([5]));
     });
 
-    test('spec with in-range default 0 sends 0', () async {
+    test(
+      'channel-like spec with low default uses useful offline value',
+      () async {
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'test-zero',
+              name: 'Zero Default',
+              specifications: [
+                Specification(
+                  name: 'Aux Sends per Channel',
+                  min: 0,
+                  max: 10,
+                  defaultValue: 0,
+                  type: 0,
+                ),
+              ],
+              isPlugin: false,
+              isLoaded: true,
+            ),
+          ],
+        );
+
+        final service = MetadataSyncService(mockManager, database);
+        await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+
+        expect(mockManager.lastSpecifications, equals([2]));
+      },
+    );
+
+    test('non-channel zero default still sends safe default', () async {
       final mockManager = TestMockDistingMidiManager(
         testAlgorithms: [
           AlgorithmInfo(
             algorithmIndex: 0,
-            guid: 'test-zero',
-            name: 'Zero Default',
+            guid: 'test-record-time',
+            name: 'Record Time',
             specifications: [
               Specification(
-                name: 'Aux Sends per Channel',
+                name: 'Record time',
                 min: 0,
-                max: 10,
+                max: 60,
                 defaultValue: 0,
-                type: 0,
+                type: 1,
               ),
             ],
             isPlugin: false,
@@ -342,6 +373,34 @@ void main() {
       await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
 
       expect(mockManager.lastSpecifications, equals([0]));
+    });
+
+    test('stereo boolean spec is enabled for offline metadata scan', () async {
+      final mockManager = TestMockDistingMidiManager(
+        testAlgorithms: [
+          AlgorithmInfo(
+            algorithmIndex: 0,
+            guid: 'test-stereo',
+            name: 'Stereo Algorithm',
+            specifications: [
+              Specification(
+                name: 'Stereo',
+                min: 0,
+                max: 1,
+                defaultValue: 0,
+                type: 2,
+              ),
+            ],
+            isPlugin: false,
+            isLoaded: true,
+          ),
+        ],
+      );
+
+      final service = MetadataSyncService(mockManager, database);
+      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+
+      expect(mockManager.lastSpecifications, equals([1]));
     });
 
     test('spec with default 0 and max 0 sends 0 (clamped)', () async {
@@ -444,8 +503,8 @@ void main() {
 
       expect(
         mockManager.lastSpecifications,
-        equals([4, 0, 3]),
-      ); // 4 (non-zero default), 0 (in range), (2+5)~/2=3
+        equals([4, 2, 3]),
+      ); // 4 (useful default), 2 (small useful count), (2+5)~/2=3
     });
   });
 
