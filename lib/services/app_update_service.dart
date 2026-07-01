@@ -263,25 +263,35 @@ class AppUpdateService {
   }
 
   Future<InstallResult> _installWindows(Directory extractDir) async {
+    final releaseRoot = await findWindowsReleaseRoot(extractDir);
+    if (releaseRoot == null) {
+      return const InstallResult(
+        outcome: InstallOutcome.error,
+        message: 'Could not find nt_helper.exe in update archive',
+      );
+    }
+
     final exePath = Platform.resolvedExecutable;
     final appDir = path.dirname(exePath);
     final currentPid = pid;
 
-    final scriptContent =
-        '''
-Start-Sleep -Seconds 2
-try {
-  Wait-Process -Id $currentPid -Timeout 10 -ErrorAction SilentlyContinue
-} catch {}
-Copy-Item -Path "${extractDir.path}\\*" -Destination "$appDir" -Recurse -Force
-Start-Process "$exePath"
-''';
+    if (!_canWriteTo(appDir)) {
+      return _fallbackToDownloads(releaseRoot.path, 'nt_helper');
+    }
 
     final tempDir = await _getUpdateDirectory();
+    final logPath = path.join(tempDir.path, 'nt_helper_update.log');
     final scriptPath = path.join(tempDir.path, 'nt_helper_update.ps1');
+    final scriptContent = buildWindowsUpdateScript(
+      sourceDir: releaseRoot.path,
+      appDir: appDir,
+      exePath: exePath,
+      logPath: logPath,
+      currentPid: currentPid,
+    );
     await File(scriptPath).writeAsString(scriptContent);
 
-    await Process.start('powershell', [
+    await Process.start('powershell.exe', [
       '-ExecutionPolicy',
       'Bypass',
       '-File',
@@ -289,6 +299,97 @@ Start-Process "$exePath"
     ], mode: ProcessStartMode.detached);
 
     exit(0);
+  }
+
+  @visibleForTesting
+  static Future<Directory?> findWindowsReleaseRoot(Directory extractDir) async {
+    final rootExe = File(path.join(extractDir.path, 'nt_helper.exe'));
+    if (await rootExe.exists()) {
+      return extractDir;
+    }
+
+    await for (final entity in extractDir.list(recursive: true)) {
+      if (entity is File &&
+          path.basename(entity.path).toLowerCase() == 'nt_helper.exe') {
+        return entity.parent;
+      }
+    }
+
+    return null;
+  }
+
+  @visibleForTesting
+  static String buildWindowsUpdateScript({
+    required String sourceDir,
+    required String appDir,
+    required String exePath,
+    required String logPath,
+    required int currentPid,
+  }) {
+    final sourceDirLiteral = _powerShellSingleQuoted(sourceDir);
+    final appDirLiteral = _powerShellSingleQuoted(appDir);
+    final exePathLiteral = _powerShellSingleQuoted(exePath);
+    final logPathLiteral = _powerShellSingleQuoted(logPath);
+
+    return '''
+\$ErrorActionPreference = 'Stop'
+\$ProgressPreference = 'SilentlyContinue'
+\$sourceDir = $sourceDirLiteral
+\$appDir = $appDirLiteral
+\$exePath = $exePathLiteral
+\$logPath = $logPathLiteral
+\$currentPid = $currentPid
+
+function Write-UpdateLog {
+  param([string]\$Message)
+  \$timestamp = Get-Date -Format o
+  Add-Content -LiteralPath \$logPath -Value "\$timestamp \$Message"
+}
+
+function Copy-ReleaseFiles {
+  Get-ChildItem -LiteralPath \$sourceDir -Force | ForEach-Object {
+    Copy-Item -LiteralPath \$_.FullName -Destination \$appDir -Recurse -Force
+  }
+}
+
+try {
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent \$logPath) | Out-Null
+  Write-UpdateLog "Starting NT Helper update. source=\$sourceDir target=\$appDir pid=\$currentPid"
+
+  \$runningProcess = Get-Process -Id \$currentPid -ErrorAction SilentlyContinue
+  if (\$null -ne \$runningProcess) {
+    Wait-Process -Id \$currentPid -Timeout 30 -ErrorAction SilentlyContinue
+  }
+
+  \$deadline = (Get-Date).AddSeconds(45)
+  while (\$true) {
+    try {
+      Copy-ReleaseFiles
+      if (Test-Path -LiteralPath \$exePath) {
+        Get-ChildItem -LiteralPath \$appDir -Recurse -File -Force |
+          Unblock-File -ErrorAction SilentlyContinue
+        Write-UpdateLog 'Copy completed; relaunching NT Helper.'
+        Start-Process -FilePath \$exePath -WorkingDirectory \$appDir
+        exit 0
+      }
+      throw "Updated executable not found at \$exePath"
+    } catch {
+      Write-UpdateLog "Copy attempt failed: \$_"
+      if ((Get-Date) -ge \$deadline) {
+        throw "Timed out applying update: \$_"
+      }
+      Start-Sleep -Seconds 1
+    }
+  }
+} catch {
+  Write-UpdateLog "Update failed: \$_"
+  exit 1
+}
+''';
+  }
+
+  static String _powerShellSingleQuoted(String value) {
+    return "'${value.replaceAll("'", "''")}'";
   }
 
   Future<void> _removeQuarantineAttribute(String appPath) async {
@@ -335,14 +436,25 @@ Start-Process "$exePath"
       await existing.delete(recursive: true);
     }
 
-    final copyResult = Platform.isMacOS
-        ? await Process.run('ditto', [sourcePath, destPath])
-        : await Process.run('cp', ['-Rf', sourcePath, destPath]);
-    if (copyResult.exitCode != 0) {
-      return const InstallResult(
-        outcome: InstallOutcome.error,
-        message: 'Failed to copy update to Downloads.',
-      );
+    if (Platform.isWindows) {
+      try {
+        await _copyFileOrDirectory(sourcePath, destPath);
+      } catch (e) {
+        return InstallResult(
+          outcome: InstallOutcome.error,
+          message: 'Failed to copy update to Downloads: $e',
+        );
+      }
+    } else {
+      final copyResult = Platform.isMacOS
+          ? await Process.run('ditto', [sourcePath, destPath])
+          : await Process.run('cp', ['-Rf', sourcePath, destPath]);
+      if (copyResult.exitCode != 0) {
+        return const InstallResult(
+          outcome: InstallOutcome.error,
+          message: 'Failed to copy update to Downloads.',
+        );
+      }
     }
 
     if (Platform.isMacOS) {
@@ -355,6 +467,34 @@ Start-Process "$exePath"
           'Update saved to ~/Downloads/$name. Install it manually from there.',
       folderPath: downloadsDir.path,
     );
+  }
+
+  Future<void> _copyFileOrDirectory(String sourcePath, String destPath) async {
+    final sourceType = await FileSystemEntity.type(sourcePath);
+    if (sourceType == FileSystemEntityType.directory) {
+      await _copyDirectory(Directory(sourcePath), Directory(destPath));
+    } else if (sourceType == FileSystemEntityType.file) {
+      await File(destPath).parent.create(recursive: true);
+      await File(sourcePath).copy(destPath);
+    } else {
+      throw FileSystemException('Source does not exist', sourcePath);
+    }
+  }
+
+  Future<void> _copyDirectory(Directory source, Directory destination) async {
+    await destination.create(recursive: true);
+    await for (final entity in source.list(recursive: false)) {
+      final childDestination = path.join(
+        destination.path,
+        path.basename(entity.path),
+      );
+      if (entity is Directory) {
+        await _copyDirectory(entity, Directory(childDestination));
+      } else if (entity is File) {
+        await File(childDestination).parent.create(recursive: true);
+        await entity.copy(childDestination);
+      }
+    }
   }
 
   Future<Directory> _getUpdateDirectory() async {
