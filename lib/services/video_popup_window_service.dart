@@ -12,6 +12,7 @@ class VideoPopupWindowService {
   static final VideoPopupWindowService instance = VideoPopupWindowService._();
 
   static const windowType = 'video-popup';
+  static const raiseMethod = 'raiseVideoPopup';
   static const _channelName = 'nt_helper/video_popup';
   static const _channel = WindowMethodChannel(
     _channelName,
@@ -49,6 +50,11 @@ class VideoPopupWindowService {
     final existing = await _findExistingWindow();
     if (existing != null) {
       await existing.show();
+      try {
+        await existing.invokeMethod(raiseMethod);
+      } on MissingPluginException {
+        // Older running popup instances may not have the raise handler yet.
+      }
       return true;
     }
 

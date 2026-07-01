@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:nt_helper/cubit/video_frame_cubit.dart';
 import 'package:nt_helper/cubit/video_frame_state.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/video/usb_video_manager.dart';
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -59,6 +60,7 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
     _alwaysOnTop = _settings.videoPopupAlwaysOnTop;
     windowManager.addListener(this);
     unawaited(_configureWindow());
+    unawaited(_configureWindowController());
     unawaited(_startVideo());
     _startToolbarHideTimer();
   }
@@ -68,6 +70,23 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
       await windowManager.setPreventClose(true);
     }
     await windowManager.setAlwaysOnTop(_alwaysOnTop);
+  }
+
+  Future<void> _configureWindowController() async {
+    final controller = await WindowController.fromCurrentEngine();
+    await controller.setWindowMethodHandler(_handleWindowMethod);
+  }
+
+  Future<dynamic> _handleWindowMethod(MethodCall call) async {
+    switch (call.method) {
+      case VideoPopupWindowService.raiseMethod:
+        await raiseVideoPopupWindow(keepAlwaysOnTop: _alwaysOnTop);
+        return true;
+      default:
+        throw MissingPluginException(
+          'Unknown video popup method ${call.method}',
+        );
+    }
   }
 
   Future<void> _startVideo() async {
@@ -487,6 +506,22 @@ Future<void> configureVideoPopupWindow() async {
       await windowManager.setBounds(bounds);
     }
     await windowManager.show();
-    await windowManager.focus();
+    await raiseVideoPopupWindow(
+      keepAlwaysOnTop: settings.videoPopupAlwaysOnTop,
+    );
   });
+}
+
+Future<void> raiseVideoPopupWindow({required bool keepAlwaysOnTop}) async {
+  if (Platform.isWindows) {
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!keepAlwaysOnTop) {
+      await windowManager.setAlwaysOnTop(true);
+    }
+    await windowManager.focus();
+    if (!keepAlwaysOnTop) {
+      await windowManager.setAlwaysOnTop(false);
+    }
+  }
+  await windowManager.focus();
 }
