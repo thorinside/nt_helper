@@ -38,6 +38,7 @@ import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/services/video_popup_window_service.dart';
 
 import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
@@ -2664,7 +2665,39 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
   void _showScreenshotOverlay(BuildContext context) {
     final cubit = context.read<DistingCubit>();
+    final popupService = VideoPopupWindowService.instance;
+    if (popupService.isSupported &&
+        SettingsService().videoPopupNativeWindowEnabled) {
+      unawaited(_showVideoPopupOrFallback(context, cubit));
+      return;
+    }
 
+    _showInWindowVideoOverlay(context, cubit);
+  }
+
+  Future<void> _showVideoPopupOrFallback(
+    BuildContext context,
+    DistingCubit cubit,
+  ) async {
+    try {
+      final opened = await VideoPopupWindowService.instance.open(cubit);
+      if (opened) return;
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open video popup; using overlay instead.'),
+          ),
+        );
+      }
+    }
+
+    if (context.mounted) {
+      _showInWindowVideoOverlay(context, cubit);
+    }
+  }
+
+  void _showInWindowVideoOverlay(BuildContext context, DistingCubit cubit) {
     // Create a VideoFrameCubit for this overlay
     final videoFrameCubit = VideoFrameCubit();
 

@@ -14,7 +14,7 @@ import 'main.dart' as app;
 
 void main() {
   enableFlutterDriverExtension(handler: _handleDriverData);
-  app.main();
+  app.main(const []);
 }
 
 Future<String> _handleDriverData(String? message) async {

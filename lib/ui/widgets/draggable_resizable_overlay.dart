@@ -41,6 +41,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
   late double _y;
   bool _isDragging = false;
   bool _isResizing = false;
+  bool _isHovering = false;
   bool _controlsVisible = true;
   Timer? _hideTimer;
   final SettingsService _settings = SettingsService();
@@ -69,9 +70,10 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     super.dispose();
   }
 
-  void _startHideTimer() {
+  void _startHideTimer({Duration? delay}) {
+    if (_settings.videoToolbarAlwaysVisible || _isHovering) return;
     _hideTimer?.cancel();
-    _hideTimer = Timer(widget.controlsHideDelay, () {
+    _hideTimer = Timer(delay ?? widget.controlsHideDelay, () {
       if (mounted) {
         setState(() {
           _controlsVisible = false;
@@ -81,9 +83,12 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
   }
 
   void _showControls() {
-    setState(() {
-      _controlsVisible = true;
-    });
+    _hideTimer?.cancel();
+    if (!_controlsVisible) {
+      setState(() {
+        _controlsVisible = true;
+      });
+    }
     _startHideTimer();
   }
 
@@ -114,8 +119,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     });
   }
 
-  double get _totalHeight =>
-      _height + (widget.topBar != null ? widget.topBarHeight : 0);
+  double get _totalHeight => _height;
 
   void _constrainToScreen() {
     final screenSize = MediaQuery.of(context).size;
@@ -183,165 +187,197 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final isAccessible = MediaQuery.of(context).accessibleNavigation;
-    final showControls =
-        _controlsVisible || _isResizing || _isDragging || isAccessible;
+    return ValueListenableBuilder<bool>(
+      valueListenable: _settings.videoToolbarAlwaysVisibleNotifier,
+      builder: (context, alwaysShowToolbar, _) {
+        final isAccessible = MediaQuery.of(context).accessibleNavigation;
+        final showControls =
+            alwaysShowToolbar ||
+            _controlsVisible ||
+            _isResizing ||
+            _isDragging ||
+            isAccessible;
 
-    final hasTopBar = widget.topBar != null;
-    final barHeight = hasTopBar ? widget.topBarHeight : 0.0;
+        final hasTopBar = widget.topBar != null;
+        final barHeight = hasTopBar ? widget.topBarHeight : 0.0;
 
-    return Positioned(
-      left: _x,
-      top: _y,
-      child: SizedBox(
-        width: _width,
-        height: _totalHeight,
-        child: Stack(
-          children: [
-            // Top action bar with integrated close button
-            if (hasTopBar)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: barHeight,
-                child: AnimatedOpacity(
-                  opacity: showControls ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Row(
-                    children: [
-                      Expanded(child: widget.topBar!),
-                      Semantics(
-                        label: 'Close overlay',
-                        button: true,
-                        child: GestureDetector(
-                          onTap: () => widget.overlayEntry.remove(),
-                          child: Container(
-                            width: barHeight,
-                            height: barHeight,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.7),
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(6),
+        return Positioned(
+          left: _x,
+          top: _y,
+          child: MouseRegion(
+            onEnter: (_) {
+              _isHovering = true;
+              _showControls();
+            },
+            onExit: (_) {
+              _isHovering = false;
+              _startHideTimer(delay: const Duration(milliseconds: 350));
+            },
+            child: SizedBox(
+              width: _width,
+              height: _totalHeight,
+              child: Stack(
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  // Main content
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: _showControls,
+                      onPanStart: _onPanStart,
+                      onPanUpdate: _onPanUpdate,
+                      onPanEnd: _onPanEnd,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: _isDragging ? 0.3 : 0.2,
                               ),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.white,
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Opacity(
+                            opacity: _isDragging ? 0.8 : 1.0,
+                            child: widget.child,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Top action bar with integrated close button
+                  if (hasTopBar)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: barHeight,
+                      child: IgnorePointer(
+                        ignoring: !showControls,
+                        child: ClipRect(
+                          child: AnimatedSlide(
+                            offset: showControls
+                                ? Offset.zero
+                                : const Offset(0, -1),
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            child: Row(
+                              children: [
+                                Expanded(child: widget.topBar!),
+                                Semantics(
+                                  label: 'Close overlay',
+                                  button: true,
+                                  child: GestureDetector(
+                                    onTap: () => widget.overlayEntry.remove(),
+                                    child: Container(
+                                      width: barHeight,
+                                      height: barHeight,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        borderRadius: const BorderRadius.only(
+                                          topRight: Radius.circular(6),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                    ),
 
-            // Main content
-            Positioned(
-              top: barHeight,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: GestureDetector(
-                onTap: _showControls,
-                onPanStart: _onPanStart,
-                onPanUpdate: _onPanUpdate,
-                onPanEnd: _onPanEnd,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: _isDragging ? 0.3 : 0.2,
+                  // Close button (top-right corner) -- only when no top bar
+                  if (!hasTopBar)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: IgnorePointer(
+                        ignoring: !showControls,
+                        child: AnimatedOpacity(
+                          opacity: showControls ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 180),
+                          child: Semantics(
+                            label: 'Close overlay',
+                            button: true,
+                            child: GestureDetector(
+                              onTap: () {
+                                widget.overlayEntry.remove();
+                              },
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
                       ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Opacity(
-                      opacity: _isDragging ? 0.8 : 1.0,
-                      child: widget.child,
+                    ),
+
+                  // Resize handle (bottom-right corner)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      ignoring: !showControls,
+                      child: AnimatedOpacity(
+                        opacity: showControls ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 180),
+                        child: Semantics(
+                          label: 'Resize overlay',
+                          child: GestureDetector(
+                            onPanStart: _onResizeStart,
+                            onPanUpdate: _onResizeUpdate,
+                            onPanEnd: _onResizeEnd,
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.7),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(4),
+                                  bottomRight: Radius.circular(6),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.open_in_full,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
-
-            // Close button (top-right corner) — only when no top bar
-            if (!hasTopBar)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: AnimatedOpacity(
-                  opacity: showControls ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Semantics(
-                    label: 'Close overlay',
-                    button: true,
-                    child: GestureDetector(
-                      onTap: () {
-                        widget.overlayEntry.remove();
-                      },
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-            // Resize handle (bottom-right corner)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: AnimatedOpacity(
-                opacity: showControls ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Semantics(
-                  label: 'Resize overlay',
-                  child: GestureDetector(
-                    onPanStart: _onResizeStart,
-                    onPanUpdate: _onResizeUpdate,
-                    onPanEnd: _onResizeEnd,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(4),
-                          bottomRight: Radius.circular(6),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.open_in_full,
-                        size: 14,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

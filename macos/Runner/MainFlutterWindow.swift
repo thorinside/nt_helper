@@ -1,5 +1,6 @@
 import Cocoa
 import FlutterMacOS
+import desktop_multi_window
 import window_manager
 
 class MainFlutterWindow: NSWindow, NSWindowDelegate {
@@ -19,6 +20,10 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
 
     // Register custom plugins
     UsbVideoCapturePlugin.register(with: flutterViewController.registrar(forPlugin: "com.example.nt_helper.UsbVideoCapturePlugin"))
+    FlutterMultiWindowPlugin.setOnWindowCreatedCallback { registry in
+      RegisterGeneratedPlugins(registry: registry)
+      UsbVideoCapturePlugin.register(with: registry.registrar(forPlugin: "com.example.nt_helper.UsbVideoCapturePlugin"))
+    }
 
     // Initialize the MethodChannel
     let registrar = flutterViewController.registrar(forPlugin: "com.nt_helper.app.WindowStatePlugin")

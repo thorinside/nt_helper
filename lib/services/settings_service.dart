@@ -38,6 +38,11 @@ class SettingsService {
   /// Notifier for UI scale changes; listeners rebuild when scale updates.
   final uiScaleNotifier = ValueNotifier<double>(defaultUiScale);
 
+  /// Notifier for video toolbar visibility changes.
+  final videoToolbarAlwaysVisibleNotifier = ValueNotifier<bool>(
+    defaultVideoToolbarAlwaysVisible,
+  );
+
   // Keys for storing settings
   static const String _requestTimeoutKey = 'request_timeout_ms';
   static const String _interMessageDelayKey = 'inter_message_delay_ms';
@@ -51,6 +56,15 @@ class SettingsService {
   static const String _overlayPositionXKey = 'overlay_position_x';
   static const String _overlayPositionYKey = 'overlay_position_y';
   static const String _overlaySizeScaleKey = 'overlay_size_scale';
+  static const String _videoPopupNativeWindowEnabledKey =
+      'video_popup_native_window_enabled';
+  static const String _videoToolbarAlwaysVisibleKey =
+      'video_toolbar_always_visible';
+  static const String _videoPopupAlwaysOnTopKey = 'video_popup_always_on_top';
+  static const String _videoPopupBoundsXKey = 'video_popup_bounds_x';
+  static const String _videoPopupBoundsYKey = 'video_popup_bounds_y';
+  static const String _videoPopupBoundsWidthKey = 'video_popup_bounds_width';
+  static const String _videoPopupBoundsHeightKey = 'video_popup_bounds_height';
   static const String _showDebugPanelKey = 'show_debug_panel';
   static const String _showContextualHelpKey = 'show_contextual_help';
   static const String _algorithmCacheDaysKey = 'algorithm_cache_days';
@@ -94,6 +108,13 @@ class SettingsService {
     _overlayPositionXKey,
     _overlayPositionYKey,
     _overlaySizeScaleKey,
+    _videoPopupNativeWindowEnabledKey,
+    _videoToolbarAlwaysVisibleKey,
+    _videoPopupAlwaysOnTopKey,
+    _videoPopupBoundsXKey,
+    _videoPopupBoundsYKey,
+    _videoPopupBoundsWidthKey,
+    _videoPopupBoundsHeightKey,
     _showDebugPanelKey,
     _showContextualHelpKey,
     _algorithmCacheDaysKey,
@@ -140,6 +161,13 @@ class SettingsService {
   static const double defaultOverlayPositionY =
       -1.0; // -1 means use default positioning
   static const double defaultOverlaySizeScale = 1.0;
+  static const bool defaultVideoPopupNativeWindowEnabled = false;
+  static const bool defaultVideoToolbarAlwaysVisible = false;
+  static const bool defaultVideoPopupAlwaysOnTop = false;
+  static const double defaultVideoPopupBoundsX = -1.0;
+  static const double defaultVideoPopupBoundsY = -1.0;
+  static const double defaultVideoPopupBoundsWidth = 384.0;
+  static const double defaultVideoPopupBoundsHeight = 132.0;
   static const bool defaultShowDebugPanel = true;
   static const bool defaultShowContextualHelp = true;
   static const int defaultAlgorithmCacheDays = 2;
@@ -170,6 +198,7 @@ class SettingsService {
     // Initialize notifier with stored value
     cpuMonitorEnabledNotifier.value = cpuMonitorEnabled;
     uiScaleNotifier.value = uiScale;
+    videoToolbarAlwaysVisibleNotifier.value = videoToolbarAlwaysVisible;
     showBackwardConnectionsNotifier.value = showBackwardConnections;
   }
 
@@ -339,6 +368,68 @@ class SettingsService {
   /// Set the overlay size scale
   Future<bool> setOverlaySizeScale(double value) async {
     return await _prefs?.setDouble(_overlaySizeScaleKey, value) ?? false;
+  }
+
+  /// Check if desktop video should open in a separate native window.
+  bool get videoPopupNativeWindowEnabled =>
+      _prefs?.getBool(_videoPopupNativeWindowEnabledKey) ??
+      defaultVideoPopupNativeWindowEnabled;
+
+  /// Set whether desktop video should open in a separate native window.
+  Future<bool> setVideoPopupNativeWindowEnabled(bool value) async {
+    return await _prefs?.setBool(_videoPopupNativeWindowEnabledKey, value) ??
+        false;
+  }
+
+  /// Check if video toolbar controls should remain visible.
+  bool get videoToolbarAlwaysVisible =>
+      _prefs?.getBool(_videoToolbarAlwaysVisibleKey) ??
+      defaultVideoToolbarAlwaysVisible;
+
+  /// Set whether video toolbar controls should remain visible.
+  Future<bool> setVideoToolbarAlwaysVisible(bool value) async {
+    final result =
+        await _prefs?.setBool(_videoToolbarAlwaysVisibleKey, value) ?? false;
+    if (result) {
+      videoToolbarAlwaysVisibleNotifier.value = value;
+    }
+    return result;
+  }
+
+  /// Check if the native video popup should float above other windows.
+  bool get videoPopupAlwaysOnTop =>
+      _prefs?.getBool(_videoPopupAlwaysOnTopKey) ??
+      defaultVideoPopupAlwaysOnTop;
+
+  /// Set whether the native video popup should float above other windows.
+  Future<bool> setVideoPopupAlwaysOnTop(bool value) async {
+    return await _prefs?.setBool(_videoPopupAlwaysOnTopKey, value) ?? false;
+  }
+
+  double get videoPopupBoundsX =>
+      _prefs?.getDouble(_videoPopupBoundsXKey) ?? defaultVideoPopupBoundsX;
+
+  double get videoPopupBoundsY =>
+      _prefs?.getDouble(_videoPopupBoundsYKey) ?? defaultVideoPopupBoundsY;
+
+  double get videoPopupBoundsWidth =>
+      _prefs?.getDouble(_videoPopupBoundsWidthKey) ??
+      defaultVideoPopupBoundsWidth;
+
+  double get videoPopupBoundsHeight =>
+      _prefs?.getDouble(_videoPopupBoundsHeightKey) ??
+      defaultVideoPopupBoundsHeight;
+
+  Future<bool> setVideoPopupBounds(Rect bounds) async {
+    final prefs = _prefs;
+    if (prefs == null) return false;
+    final results = await Future.wait([
+      prefs.setDouble(_videoPopupBoundsXKey, bounds.left),
+      prefs.setDouble(_videoPopupBoundsYKey, bounds.top),
+      prefs.setDouble(_videoPopupBoundsWidthKey, bounds.width),
+      prefs.setDouble(_videoPopupBoundsHeightKey, bounds.height),
+    ]);
+    return results.every((result) => result);
   }
 
   /// Check if debug panel should be shown
@@ -640,6 +731,7 @@ class SettingsService {
     }
     cpuMonitorEnabledNotifier.value = defaultCpuMonitorEnabled;
     uiScaleNotifier.value = defaultUiScale;
+    videoToolbarAlwaysVisibleNotifier.value = defaultVideoToolbarAlwaysVisible;
     showBackwardConnectionsNotifier.value = defaultShowBackwardConnections;
   }
 }
@@ -676,6 +768,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _cpuMonitorEnabled;
   late bool _autoCenterOnSelection;
   late bool _showBackwardConnections;
+  late bool _videoPopupNativeWindowEnabled;
+  late bool _videoToolbarAlwaysVisible;
   late double _uiScale;
 
   @override
@@ -700,6 +794,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _cpuMonitorEnabled = settings.cpuMonitorEnabled;
       _autoCenterOnSelection = settings.autoCenterOnSelection;
       _showBackwardConnections = settings.showBackwardConnections;
+      _videoPopupNativeWindowEnabled = settings.videoPopupNativeWindowEnabled;
+      _videoToolbarAlwaysVisible = settings.videoToolbarAlwaysVisible;
       _uiScale = settings.uiScale;
     });
   }
@@ -726,6 +822,10 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setCpuMonitorEnabled(_cpuMonitorEnabled);
       await settings.setAutoCenterOnSelection(_autoCenterOnSelection);
       await settings.setShowBackwardConnections(_showBackwardConnections);
+      await settings.setVideoPopupNativeWindowEnabled(
+        _videoPopupNativeWindowEnabled,
+      );
+      await settings.setVideoToolbarAlwaysVisible(_videoToolbarAlwaysVisible);
       await settings.setUiScale(_uiScale);
 
       if (mounted) {
@@ -1052,6 +1152,43 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       onChanged: (value) {
                         setState(() {
                           _showBackwardConnections = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    if (Platform.isMacOS ||
+                        Platform.isWindows ||
+                        Platform.isLinux)
+                      SwitchListTile(
+                        title: Text(
+                          'Open Video in Separate Window',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        subtitle: const Text(
+                          'Use a native floating video window instead of the in-app overlay',
+                        ),
+                        value: _videoPopupNativeWindowEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            _videoPopupNativeWindowEnabled = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+
+                    SwitchListTile(
+                      title: Text(
+                        'Always Show Video Toolbar',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                        'Keep video controls visible instead of hiding them when not hovering',
+                      ),
+                      value: _videoToolbarAlwaysVisible,
+                      onChanged: (value) {
+                        setState(() {
+                          _videoToolbarAlwaysVisible = value;
                         });
                       },
                       contentPadding: EdgeInsets.zero,

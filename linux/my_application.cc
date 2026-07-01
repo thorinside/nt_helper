@@ -6,6 +6,7 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
+#include "desktop_multi_window/desktop_multi_window_plugin.h"
 
 // Declare the USB video capture plugin registration function
 extern "C" {
@@ -165,6 +166,13 @@ static void my_application_activate(GApplication* application) {
   g_autoptr(FlPluginRegistrar) usb_video_registrar =
       fl_plugin_registry_get_registrar_for_plugin(FL_PLUGIN_REGISTRY(view), "UsbVideoCapturePlugin");
   usb_video_capture_plugin_register_with_registrar(usb_video_registrar);
+
+  desktop_multi_window_plugin_set_window_created_callback([](FlPluginRegistry* registry) {
+    fl_register_plugins(registry);
+    g_autoptr(FlPluginRegistrar) child_usb_video_registrar =
+        fl_plugin_registry_get_registrar_for_plugin(registry, "UsbVideoCapturePlugin");
+    usb_video_capture_plugin_register_with_registrar(child_usb_video_registrar);
+  });
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

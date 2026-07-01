@@ -14,6 +14,7 @@ import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
@@ -37,6 +38,10 @@ class DistingApp extends StatefulWidget {
 
               // Create DistingCubit and pass the database instance
               final cubit = DistingCubit(database); // Pass database here
+              final videoPopupService = VideoPopupWindowService.instance;
+              if (videoPopupService.isSupported) {
+                unawaited(videoPopupService.registerMainCubit(cubit));
+              }
               cubit.initialize(); // Load settings and auto-connect if possible
               return cubit;
             },

@@ -7,6 +7,7 @@
 #include <pathcch.h> // Added for PathCchAppend
 
 #include "flutter/generated_plugin_registrant.h"
+#include "desktop_multi_window/desktop_multi_window_plugin.h"
 #include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
 #include "flutter/method_result.h"   // Changed from method_result_functions.h
 #include "utils.h"
@@ -282,6 +283,15 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
   UsbVideoCapturePluginRegisterWithRegistrar(
       flutter_controller_->engine()->GetRegistrarForPlugin("UsbVideoCapturePlugin"));
   StartupLog(L"USB video capture plugin registered");
+
+  DesktopMultiWindowSetWindowCreatedCallback([](void *controller) {
+    auto *flutter_view_controller =
+        reinterpret_cast<flutter::FlutterViewController *>(controller);
+    auto *registry = flutter_view_controller->engine();
+    RegisterPlugins(registry);
+    UsbVideoCapturePluginRegisterWithRegistrar(
+        registry->GetRegistrarForPlugin("UsbVideoCapturePlugin"));
+  });
 
   StartupLog(L"Attaching Flutter view native window");
   SetChildContent(flutter_controller_->view()->GetNativeWindow());

@@ -22,6 +22,13 @@ const Map<String, Object> _nonDefaultSeeds = {
   'overlay_position_x': 42.0,
   'overlay_position_y': 99.0,
   'overlay_size_scale': 2.5,
+  'video_popup_native_window_enabled': true,
+  'video_toolbar_always_visible': true,
+  'video_popup_always_on_top': true,
+  'video_popup_bounds_x': 10.0,
+  'video_popup_bounds_y': 20.0,
+  'video_popup_bounds_width': 640.0,
+  'video_popup_bounds_height': 180.0,
   'show_debug_panel': false,
   'show_contextual_help': false,
   'algorithm_cache_days': 17,
@@ -149,6 +156,34 @@ void main() {
           settings.overlaySizeScale,
           SettingsService.defaultOverlaySizeScale,
         );
+        expect(
+          settings.videoPopupNativeWindowEnabled,
+          SettingsService.defaultVideoPopupNativeWindowEnabled,
+        );
+        expect(
+          settings.videoToolbarAlwaysVisible,
+          SettingsService.defaultVideoToolbarAlwaysVisible,
+        );
+        expect(
+          settings.videoPopupAlwaysOnTop,
+          SettingsService.defaultVideoPopupAlwaysOnTop,
+        );
+        expect(
+          settings.videoPopupBoundsX,
+          SettingsService.defaultVideoPopupBoundsX,
+        );
+        expect(
+          settings.videoPopupBoundsY,
+          SettingsService.defaultVideoPopupBoundsY,
+        );
+        expect(
+          settings.videoPopupBoundsWidth,
+          SettingsService.defaultVideoPopupBoundsWidth,
+        );
+        expect(
+          settings.videoPopupBoundsHeight,
+          SettingsService.defaultVideoPopupBoundsHeight,
+        );
         expect(settings.showDebugPanel, SettingsService.defaultShowDebugPanel);
         expect(
           settings.showContextualHelp,
@@ -215,10 +250,12 @@ void main() {
         SharedPreferences.setMockInitialValues({
           'cpu_monitor_enabled': false,
           'ui_scale': 1.4,
+          'video_toolbar_always_visible': true,
         });
         await settings.init();
         expect(settings.cpuMonitorEnabledNotifier.value, isFalse);
         expect(settings.uiScaleNotifier.value, closeTo(1.4, 1e-9));
+        expect(settings.videoToolbarAlwaysVisibleNotifier.value, isTrue);
 
         await settings.resetToDefaults();
 
@@ -227,6 +264,10 @@ void main() {
           SettingsService.defaultCpuMonitorEnabled,
         );
         expect(settings.uiScaleNotifier.value, SettingsService.defaultUiScale);
+        expect(
+          settings.videoToolbarAlwaysVisibleNotifier.value,
+          SettingsService.defaultVideoToolbarAlwaysVisible,
+        );
       },
     );
   });
@@ -322,6 +363,8 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({
         'show_backward_connections': false,
+        'video_popup_native_window_enabled': false,
+        'video_toolbar_always_visible': false,
       });
       settings = SettingsService();
       await settings.init();
@@ -348,6 +391,53 @@ void main() {
 
       expect(settings.showBackwardConnections, isTrue);
       expect(settings.showBackwardConnectionsNotifier.value, isTrue);
+    });
+
+    testWidgets('loads and saves Open Video in Separate Window', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: SettingsDialog())),
+      );
+      await tester.pump();
+
+      final settingTitle = find.text('Open Video in Separate Window');
+      await tester.ensureVisible(settingTitle);
+      expect(settingTitle, findsOneWidget);
+      expect(settings.videoPopupNativeWindowEnabled, isFalse);
+
+      await tester.tap(settingTitle);
+      await tester.pump();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(settings.videoPopupNativeWindowEnabled, isTrue);
+    });
+
+    testWidgets('loads and saves Always Show Video Toolbar', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: SettingsDialog())),
+      );
+      await tester.pump();
+
+      final settingTitle = find.text('Always Show Video Toolbar');
+      await tester.ensureVisible(settingTitle);
+      expect(settingTitle, findsOneWidget);
+      expect(settings.videoToolbarAlwaysVisible, isFalse);
+
+      await tester.tap(settingTitle);
+      await tester.pump();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(settings.videoToolbarAlwaysVisible, isTrue);
+      expect(settings.videoToolbarAlwaysVisibleNotifier.value, isTrue);
     });
   });
 

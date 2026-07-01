@@ -291,28 +291,71 @@ class FloatingVideoContent extends StatelessWidget {
                     builder: (context, opacity, child) =>
                         Opacity(opacity: opacity, child: child),
                     child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.red),
-                          const SizedBox(height: 8),
-                          Text(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final retryButton = TextButton(
+                            onPressed: () => cubit.startVideoStream(),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(48, 28),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('Retry'),
+                          );
+
+                          final message = Text(
                             errorMessage,
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.white,
                             ),
+                            maxLines: constraints.maxHeight < 96 ? 2 : null,
+                            overflow: constraints.maxHeight < 96
+                                ? TextOverflow.ellipsis
+                                : null,
                             textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: () => cubit.startVideoStream(),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Retry'),
-                          ),
-                        ],
+                          );
+
+                          if (constraints.maxHeight < 96) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline,
+                                    color: Colors.red,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(child: message),
+                                  const SizedBox(width: 8),
+                                  retryButton,
+                                ],
+                              ),
+                            );
+                          }
+
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 8),
+                              message,
+                              const SizedBox(height: 8),
+                              retryButton,
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
