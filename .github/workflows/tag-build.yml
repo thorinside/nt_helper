@@ -27,7 +27,7 @@ jobs:
       tag: ${{ steps.get_version.outputs.tag }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Fetch all history and tags
 
@@ -54,7 +54,7 @@ jobs:
     if: github.event_name == 'push'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Fetch all history and tags for release notes
 
@@ -88,13 +88,13 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set Version
         run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -160,13 +160,13 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set Version
         run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -208,7 +208,7 @@ jobs:
         run: mv ./build/app/outputs/bundle/release/app-release.aab ./build/app/outputs/bundle/release/nt_helper-${VERSION}.aab
 
       - name: Save AAB as an artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nt_helper-${{ env.VERSION }}.aab
           path: ./build/app/outputs/bundle/release/nt_helper-${{ env.VERSION }}.aab
@@ -238,7 +238,7 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set Version
         shell: pwsh
@@ -291,7 +291,7 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set Version
         run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
@@ -354,7 +354,7 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set Version
         run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
@@ -475,7 +475,7 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set Version
         run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
@@ -691,7 +691,7 @@ jobs:
       )
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Select Xcode 26
         uses: maxim-lobanov/setup-xcode@v1
