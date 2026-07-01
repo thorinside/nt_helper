@@ -26,7 +26,12 @@ class AppRelease {
       if (name.contains('macos')) {
         platformAssets['macos'] = url;
       } else if (name.contains('windows')) {
-        platformAssets['windows'] = url;
+        final currentWindowsAsset = platformAssets['windows'];
+        if (currentWindowsAsset == null ||
+            _isWindowsInstallerAsset(name) ||
+            !_isWindowsInstallerAsset(currentWindowsAsset)) {
+          platformAssets['windows'] = url;
+        }
       } else if (name.contains('linux')) {
         platformAssets['linux'] = url;
       }
@@ -41,5 +46,9 @@ class AppRelease {
           DateTime.now(),
       platformAssets: platformAssets,
     );
+  }
+
+  static bool _isWindowsInstallerAsset(String value) {
+    return value.toLowerCase().endsWith('-windows-setup.exe');
   }
 }

@@ -295,6 +295,17 @@ jobs:
             Copy-Item -LiteralPath $source.FullName -Destination $releaseDir -Force
           }
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Windows Installer
+        shell: pwsh
+        run: |
+          $env:VERSION = "${env:VERSION}"
+          New-Item -ItemType Directory -Force -Path "build/windows/x64/installer" | Out-Null
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installers/windows/nt_helper.iss
+
       - name: Zip Windows App
         shell: pwsh
         run: |
@@ -302,7 +313,9 @@ jobs:
           Compress-Archive -Path * -DestinationPath "nt_helper-${env:VERSION}-windows.zip"
 
       - name: List build output (debug)
-        run: ls -R build/windows/x64/runner/Release
+        run: |
+          ls -R build/windows/x64/runner/Release
+          ls -R build/windows/x64/installer
 
       - name: Upload Windows Artifact to Release
         uses: ncipollo/release-action@v1
@@ -311,7 +324,7 @@ jobs:
           tag: ${{ needs.setup.outputs.tag }}
           allowUpdates: true
           omitBodyDuringUpdate: true
-          artifacts: "**/nt_helper-${{ env.VERSION }}-windows.zip"
+          artifacts: "**/nt_helper-${{ env.VERSION }}-windows.zip,**/nt_helper-${{ env.VERSION }}-windows-setup.exe"
 
   linux:
     name: Build Linux App

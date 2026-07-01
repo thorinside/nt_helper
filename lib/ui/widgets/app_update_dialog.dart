@@ -35,7 +35,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
     });
 
     try {
-      final zipPath = await widget.updateService.downloadUpdate(
+      final updatePath = await widget.updateService.downloadUpdate(
         widget.release,
         onProgress: (progress) {
           if (mounted) {
@@ -48,7 +48,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
 
       setState(() => _state = _UpdateState.installing);
 
-      final result = await widget.updateService.installUpdate(zipPath);
+      final result = await widget.updateService.installUpdate(updatePath);
 
       if (!mounted) return;
 

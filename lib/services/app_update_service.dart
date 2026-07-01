@@ -127,16 +127,21 @@ class AppUpdateService {
     }
 
     final tempDir = await _getUpdateDirectory();
-    final zipPath = path.join(
+    final downloadPath = path.join(
       tempDir.path,
-      'nt_helper_update_${release.version}.zip',
+      'nt_helper_update_${release.version}${_downloadExtension(url)}',
     );
-    await File(zipPath).writeAsBytes(bytes);
-    return zipPath;
+    await File(downloadPath).writeAsBytes(bytes);
+    return downloadPath;
   }
 
-  Future<InstallResult> installUpdate(String zipPath) async {
+  Future<InstallResult> installUpdate(String updatePath) async {
     try {
+      if (Platform.isWindows &&
+          path.extension(updatePath).toLowerCase() == '.exe') {
+        return await _installWindowsInstaller(updatePath);
+      }
+
       final tempDir = await _getUpdateDirectory();
       final extractDir = Directory(
         path.join(tempDir.path, 'nt_helper_update_extracted'),
@@ -152,7 +157,7 @@ class AppUpdateService {
         final result = await Process.run('ditto', [
           '-x',
           '-k',
-          zipPath,
+          updatePath,
           extractDir.path,
         ]);
         if (result.exitCode != 0) {
@@ -165,7 +170,7 @@ class AppUpdateService {
       }
 
       // Non-macOS: use Dart archive package
-      final zipBytes = await File(zipPath).readAsBytes();
+      final zipBytes = await File(updatePath).readAsBytes();
       final archive = ZipDecoder().decodeBytes(zipBytes);
 
       for (final file in archive) {
@@ -301,6 +306,27 @@ class AppUpdateService {
     exit(0);
   }
 
+  Future<InstallResult> _installWindowsInstaller(String installerPath) async {
+    await _unblockWindowsFile(installerPath);
+
+    final tempDir = await _getUpdateDirectory();
+    final logPath = path.join(tempDir.path, 'nt_helper_setup.log');
+    await Process.start(
+      installerPath,
+      buildWindowsInstallerArguments(logPath: logPath),
+      mode: ProcessStartMode.detached,
+    );
+
+    exit(0);
+  }
+
+  @visibleForTesting
+  static List<String> buildWindowsInstallerArguments({
+    required String logPath,
+  }) {
+    return ['/CURRENTUSER', '/CLOSEAPPLICATIONS', '/LOG=$logPath'];
+  }
+
   @visibleForTesting
   static Future<Directory?> findWindowsReleaseRoot(Directory extractDir) async {
     final rootExe = File(path.join(extractDir.path, 'nt_helper.exe'));
@@ -397,6 +423,20 @@ try {
       await Process.run('xattr', ['-rd', 'com.apple.quarantine', appPath]);
     } catch (e) {
       debugPrint('Warning: Failed to remove quarantine attribute: $e');
+    }
+  }
+
+  Future<void> _unblockWindowsFile(String filePath) async {
+    try {
+      await Process.run('powershell.exe', [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        'Unblock-File -LiteralPath ${_powerShellSingleQuoted(filePath)}',
+      ]);
+    } catch (e) {
+      debugPrint('Warning: Failed to unblock Windows file: $e');
     }
   }
 
@@ -569,5 +609,13 @@ Start-Process "$exePath"
     if (Platform.isWindows) return 'windows';
     if (Platform.isLinux) return 'linux';
     throw UnsupportedError('Platform not supported for app updates');
+  }
+
+  String _downloadExtension(String url) {
+    final uri = Uri.tryParse(url);
+    final filename = uri == null ? '' : path.basename(uri.path);
+    final extension = path.extension(filename).toLowerCase();
+    if (extension == '.exe') return '.exe';
+    return '.zip';
   }
 }

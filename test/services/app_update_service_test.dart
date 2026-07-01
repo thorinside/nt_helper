@@ -31,6 +31,11 @@ const _sampleRelease = {
       'browser_download_url':
           'https://github.com/thorinside/nt_helper/releases/download/v3.0.0/nt_helper-3.0.0-windows.zip',
     },
+    {
+      'name': 'nt_helper-3.0.0-windows-setup.exe',
+      'browser_download_url':
+          'https://github.com/thorinside/nt_helper/releases/download/v3.0.0/nt_helper-3.0.0-windows-setup.exe',
+    },
   ],
 };
 
@@ -78,7 +83,36 @@ void main() {
       expect(release.platformAssets, hasLength(3));
       expect(release.platformAssets['macos'], contains('macos.zip'));
       expect(release.platformAssets['linux'], contains('linux.zip'));
-      expect(release.platformAssets['windows'], contains('windows.zip'));
+      expect(release.platformAssets['windows'], contains('windows-setup.exe'));
+    });
+
+    test('prefers Windows installer asset regardless of asset order', () {
+      final zipFirst = Map<String, dynamic>.from(_sampleRelease);
+      final zipFirstRelease = AppRelease.fromGitHubJson(zipFirst);
+      expect(
+        zipFirstRelease.platformAssets['windows'],
+        contains('windows-setup.exe'),
+      );
+
+      final setupFirst = Map<String, dynamic>.from(_sampleRelease);
+      setupFirst['assets'] = [
+        {
+          'name': 'nt_helper-3.0.0-windows-setup.exe',
+          'browser_download_url':
+              'https://github.com/thorinside/nt_helper/releases/download/v3.0.0/nt_helper-3.0.0-windows-setup.exe',
+        },
+        {
+          'name': 'nt_helper-3.0.0-windows.zip',
+          'browser_download_url':
+              'https://github.com/thorinside/nt_helper/releases/download/v3.0.0/nt_helper-3.0.0-windows.zip',
+        },
+      ];
+
+      final setupFirstRelease = AppRelease.fromGitHubJson(setupFirst);
+      expect(
+        setupFirstRelease.platformAssets['windows'],
+        contains('windows-setup.exe'),
+      );
     });
 
     test('handles missing assets gracefully', () {
@@ -310,6 +344,19 @@ void main() {
 
       expect(script, contains(r"$sourceDir = 'C:\Users\Neal''s PC\update'"));
       expect(script, contains(r"$appDir = 'C:\Users\Neal''s PC\NT Helper'"));
+    });
+
+    test('buildWindowsInstallerArguments runs current-user installer', () {
+      final arguments = AppUpdateService.buildWindowsInstallerArguments(
+        logPath: r'C:\Users\neal\AppData\Roaming\nt_helper_setup.log',
+      );
+
+      expect(arguments, contains('/CURRENTUSER'));
+      expect(arguments, contains('/CLOSEAPPLICATIONS'));
+      expect(
+        arguments,
+        contains(r'/LOG=C:\Users\neal\AppData\Roaming\nt_helper_setup.log'),
+      );
     });
   });
 }
