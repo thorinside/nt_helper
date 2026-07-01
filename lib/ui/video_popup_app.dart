@@ -80,7 +80,7 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   Future<dynamic> _handleWindowMethod(MethodCall call) async {
     switch (call.method) {
       case VideoPopupWindowService.raiseMethod:
-        await raiseVideoPopupWindow(keepAlwaysOnTop: _alwaysOnTop);
+        await raiseVideoPopupWindow();
         return true;
       default:
         throw MissingPluginException(
@@ -506,22 +506,16 @@ Future<void> configureVideoPopupWindow() async {
       await windowManager.setBounds(bounds);
     }
     await windowManager.show();
-    await raiseVideoPopupWindow(
-      keepAlwaysOnTop: settings.videoPopupAlwaysOnTop,
-    );
+    await raiseVideoPopupWindow();
   });
 }
 
-Future<void> raiseVideoPopupWindow({required bool keepAlwaysOnTop}) async {
+Future<void> raiseVideoPopupWindow() async {
   if (Platform.isWindows) {
     await Future<void>.delayed(const Duration(milliseconds: 80));
-    if (!keepAlwaysOnTop) {
-      await windowManager.setAlwaysOnTop(true);
-    }
+    await windowManager.show();
     await windowManager.focus();
-    if (!keepAlwaysOnTop) {
-      await windowManager.setAlwaysOnTop(false);
-    }
+    await Future<void>.delayed(const Duration(milliseconds: 120));
   }
   await windowManager.focus();
 }
