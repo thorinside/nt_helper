@@ -127,11 +127,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   late final Widget _cachedRoutingCanvas = _buildRoutingCanvas();
 
   Widget _buildKeyedRoutingCanvas(RoutingEditorViewMode mode) {
-    return KeyedSubtree(
-      key: ValueKey(mode),
-      child: _cachedRoutingCanvas,
-    );
+    return KeyedSubtree(key: ValueKey(mode), child: _cachedRoutingCanvas);
   }
+
   StreamSubscription<RoutingEditorState>? _routingFocusSub;
   bool _isSyncingSelection = false;
   bool _isAddAlgorithmOpen = false;
@@ -228,10 +226,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     if (Platform.isWindows) {
       final mainWindowFocused = await windowManager.isFocused();
       if (!mainWindowFocused) {
-        debugPrint(
-          '[VIDEO_POPUP_DART] SynchronizedScreen focus reclaim skipped: '
-          'main window is not focused',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            '[VIDEO_POPUP_DART] SynchronizedScreen focus reclaim skipped: '
+            'main window is not focused',
+          );
+        }
         return;
       }
     }
@@ -844,10 +844,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   Widget _buildSplitView() {
     const double dividerWidth = 8.0;
     const double minPaneWidth = 500.0;
-    final effectiveRoutingViewMode =
-        MediaQuery.of(context).accessibleNavigation
-            ? RoutingEditorViewMode.list
-            : _routingViewMode;
+    final effectiveRoutingViewMode = MediaQuery.of(context).accessibleNavigation
+        ? RoutingEditorViewMode.list
+        : _routingViewMode;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1072,8 +1071,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       : null;
                   final effectiveRoutingViewMode =
                       MediaQuery.of(context).accessibleNavigation
-                          ? RoutingEditorViewMode.list
-                          : _routingViewMode;
+                      ? RoutingEditorViewMode.list
+                      : _routingViewMode;
                   return Row(
                     children: [
                       // Zoom controls (canvas-only)
@@ -1321,9 +1320,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               auxBusUsage,
                               hasExtendedAuxBuses,
                             ) {
-                              final flowSolution =
-                                  BusFlowSolver.fromAlgorithms(algorithms)
-                                      .solve();
+                              final flowSolution = BusFlowSolver.fromAlgorithms(
+                                algorithms,
+                              ).solve();
                               if (effectiveRoutingViewMode !=
                                       RoutingEditorViewMode.busLanes ||
                                   !flowSolution.reorderNeeded) {
@@ -1339,8 +1338,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                       .read<RoutingEditorCubit>()
                                       .autoSolveFlow();
                                 },
-                                tooltip:
-                                    'Reorder algorithms to fix bus flow',
+                                tooltip: 'Reorder algorithms to fix bus flow',
                                 style: buttonStyle,
                               );
                             },

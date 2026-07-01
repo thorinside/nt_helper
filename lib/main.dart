@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,6 +32,12 @@ const MethodChannel _windowEventsChannel = MethodChannel(
 const MethodChannel _zoomHotkeysChannel = MethodChannel(
   'com.nt_helper.app/zoom_hotkeys',
 );
+
+void _videoPopupDebugLog(String message) {
+  if (kDebugMode) {
+    debugPrint('[VIDEO_POPUP_DART] $message');
+  }
+}
 
 /// Manages window bounds persistence - saves on every move/resize
 class _WindowBoundsManager with WindowListener {
@@ -116,14 +123,12 @@ Future<void> _bootstrapApp(List<String> args) async {
   );
 
   if (Platform.isWindows) {
-    debugPrint('[VIDEO_POPUP_DART] main() Windows args=$args');
+    _videoPopupDebugLog('main() Windows args=$args');
   }
 
   if (Platform.isWindows &&
       VideoPopupWindowService.isWindowsNativeVideoPopupArguments(args)) {
-    debugPrint(
-      '[VIDEO_POPUP_DART] main(): detected Windows native video popup args',
-    );
+    _videoPopupDebugLog('main(): detected Windows native video popup args');
     await _bootstrapVideoPopupWindow();
     return;
   }
@@ -137,8 +142,8 @@ Future<void> _bootstrapApp(List<String> args) async {
       if (VideoPopupWindowService.isVideoPopupArguments(
         windowController.arguments,
       )) {
-        debugPrint(
-          '[VIDEO_POPUP_DART] main(): detected desktop_multi_window '
+        _videoPopupDebugLog(
+          'main(): detected desktop_multi_window '
           'video popup arguments=${windowController.arguments}',
         );
         await _bootstrapVideoPopupWindow();
@@ -328,9 +333,8 @@ Future<void> _bootstrapApp(List<String> args) async {
 }
 
 Future<void> _bootstrapVideoPopupWindow() async {
-  debugPrint(
-    '[VIDEO_POPUP_DART] _bootstrapVideoPopupWindow() '
-    'platform=${Platform.operatingSystem}',
+  _videoPopupDebugLog(
+    '_bootstrapVideoPopupWindow() platform=${Platform.operatingSystem}',
   );
   if (!Platform.isWindows) {
     await StartupLogService.traceAsync(
@@ -384,13 +388,13 @@ void _installGlobalErrorHandlers() {
 Future<void> _showDesktopWindow(String reason) async {
   try {
     if (Platform.isWindows) {
-      debugPrint('[VIDEO_POPUP_DART] _showDesktopWindow start reason=$reason');
+      _videoPopupDebugLog('_showDesktopWindow start reason=$reason');
     }
     await windowManager.ensureInitialized();
     await windowManager.show();
     await windowManager.focus();
     if (Platform.isWindows) {
-      debugPrint('[VIDEO_POPUP_DART] _showDesktopWindow done reason=$reason');
+      _videoPopupDebugLog('_showDesktopWindow done reason=$reason');
     }
     StartupLogService.log('Desktop window shown for $reason');
   } catch (error, stackTrace) {

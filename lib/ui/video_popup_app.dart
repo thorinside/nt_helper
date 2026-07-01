@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +21,9 @@ const _windowsVideoPopupChannel = MethodChannel(
 );
 
 void _videoPopupLog(String message) {
-  debugPrint('[VIDEO_POPUP_DART] $message');
+  if (kDebugMode) {
+    debugPrint('[VIDEO_POPUP_DART] $message');
+  }
 }
 
 class VideoPopupApp extends StatelessWidget {

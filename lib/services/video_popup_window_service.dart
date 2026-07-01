@@ -7,6 +7,12 @@ import 'package:flutter/services.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
+void _videoPopupDebugLog(String message) {
+  if (kDebugMode) {
+    debugPrint('[VIDEO_POPUP_DART] $message');
+  }
+}
+
 class VideoPopupWindowService {
   VideoPopupWindowService._();
 
@@ -59,21 +65,19 @@ class VideoPopupWindowService {
     await registerMainCubit(cubit);
 
     if (Platform.isWindows) {
-      debugPrint(
-        '[VIDEO_POPUP_DART] open(): using Windows native backend '
+      _videoPopupDebugLog(
+        'open(): using Windows native backend '
         'arguments=$windowArguments',
       );
       final opened = await _windowsNativeChannel.invokeMethod<bool>(
         'openOrFocus',
         {'arguments': windowArguments},
       );
-      debugPrint(
-        '[VIDEO_POPUP_DART] open(): Windows native openOrFocus result=$opened',
-      );
+      _videoPopupDebugLog('open(): Windows native openOrFocus result=$opened');
       return opened ?? true;
     }
 
-    debugPrint('[VIDEO_POPUP_DART] open(): using desktop_multi_window backend');
+    _videoPopupDebugLog('open(): using desktop_multi_window backend');
 
     final existing = await _findExistingWindow();
     if (existing != null) {
@@ -95,9 +99,7 @@ class VideoPopupWindowService {
   Future<void> _ensureHandlerRegistered() async {
     if (_handlerRegistered) return;
     if (Platform.isWindows) {
-      debugPrint(
-        '[VIDEO_POPUP_DART] registering Windows native method handler',
-      );
+      _videoPopupDebugLog('registering Windows native method handler');
       _windowsNativeChannel.setMethodCallHandler(_handleMethodCall);
     } else {
       await _channel.setMethodCallHandler(_handleMethodCall);
@@ -116,8 +118,8 @@ class VideoPopupWindowService {
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
-    debugPrint(
-      '[VIDEO_POPUP_DART] main handler received method=${call.method} '
+    _videoPopupDebugLog(
+      'main handler received method=${call.method} '
       'arguments=${call.arguments}',
     );
     switch (call.method) {

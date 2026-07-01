@@ -64,6 +64,9 @@ std::wstring ActivationStateString(WPARAM wparam) {
 }
 
 void VideoPopupDebugLog(const std::wstring& message) {
+#ifdef NDEBUG
+  (void)message;
+#else
   const std::wstring line = L"[VIDEO_POPUP_NATIVE] " + message;
   StartupLog(line);
 
@@ -81,6 +84,7 @@ void VideoPopupDebugLog(const std::wstring& message) {
   DWORD written = 0;
   WriteFile(output, utf8_line.data(), static_cast<DWORD>(utf8_line.size()),
             &written, nullptr);
+#endif
 }
 
 // Scale helper to convert logical scaler values to physical using passed in
