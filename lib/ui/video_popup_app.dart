@@ -15,6 +15,8 @@ import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:window_manager/window_manager.dart';
 
+const _windowsWindowControlChannel = MethodChannel('nt_helper/window_control');
+
 class VideoPopupApp extends StatelessWidget {
   const VideoPopupApp({super.key});
 
@@ -69,7 +71,9 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
     if (Platform.isLinux) {
       await windowManager.setPreventClose(true);
     }
-    await windowManager.setAlwaysOnTop(_alwaysOnTop);
+    if (!Platform.isWindows && _alwaysOnTop) {
+      await windowManager.setAlwaysOnTop(true);
+    }
   }
 
   Future<void> _configureWindowController() async {
@@ -124,7 +128,13 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
 
   Future<void> _toggleAlwaysOnTop() async {
     final next = !_alwaysOnTop;
-    await windowManager.setAlwaysOnTop(next);
+    if (Platform.isWindows) {
+      await _windowsWindowControlChannel.invokeMethod('setAlwaysOnTop', {
+        'alwaysOnTop': next,
+      });
+    } else {
+      await windowManager.setAlwaysOnTop(next);
+    }
     await _settings.setVideoPopupAlwaysOnTop(next);
     if (mounted) {
       setState(() {
@@ -140,7 +150,9 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   }
 
   Future<void> _saveBounds() async {
-    final bounds = await windowManager.getBounds();
+    final bounds = Platform.isWindows
+        ? await getWindowsVideoPopupBounds()
+        : await windowManager.getBounds();
     await _settings.setVideoPopupBounds(bounds);
   }
 
@@ -488,6 +500,19 @@ Future<void> configureVideoPopupWindow() async {
     bounds.height.clamp(minSize.height, 320).toDouble(),
   );
 
+  if (Platform.isWindows) {
+    await _windowsWindowControlChannel.invokeMethod('configureVideoPopup', {
+      'x': hasSavedPosition ? bounds.left : null,
+      'y': hasSavedPosition ? bounds.top : null,
+      'width': initialSize.width,
+      'height': initialSize.height,
+      'center': !hasSavedPosition,
+      'alwaysOnTop': settings.videoPopupAlwaysOnTop,
+      'title': 'Disting NT Video',
+    });
+    return;
+  }
+
   final options = WindowOptions(
     size: initialSize,
     minimumSize: minSize,
@@ -495,7 +520,7 @@ Future<void> configureVideoPopupWindow() async {
     backgroundColor: Colors.black,
     skipTaskbar: false,
     title: 'Disting NT Video',
-    alwaysOnTop: settings.videoPopupAlwaysOnTop,
+    alwaysOnTop: settings.videoPopupAlwaysOnTop ? true : null,
   );
 
   await windowManager.waitUntilReadyToShow(options, () async {
@@ -505,20 +530,29 @@ Future<void> configureVideoPopupWindow() async {
     if (hasSavedPosition) {
       await windowManager.setBounds(bounds);
     }
-    if (Platform.isWindows) {
-      await raiseVideoPopupWindow();
-    } else {
-      await windowManager.show();
-      await raiseVideoPopupWindow();
-    }
+    await windowManager.show();
+    await raiseVideoPopupWindow();
   });
 }
 
 Future<void> raiseVideoPopupWindow() async {
   if (Platform.isWindows) {
-    const channel = MethodChannel('nt_helper/window_control');
-    await channel.invokeMethod('raiseCurrentWindow');
+    await _windowsWindowControlChannel.invokeMethod('raiseCurrentWindow');
     return;
   }
   await windowManager.focus();
+}
+
+Future<Rect> getWindowsVideoPopupBounds() async {
+  final result = await _windowsWindowControlChannel
+      .invokeMapMethod<String, dynamic>('getBounds');
+  if (result == null) {
+    return Rect.zero;
+  }
+  return Rect.fromLTWH(
+    (result['x'] as num?)?.toDouble() ?? 0,
+    (result['y'] as num?)?.toDouble() ?? 0,
+    (result['width'] as num?)?.toDouble() ?? 0,
+    (result['height'] as num?)?.toDouble() ?? 0,
+  );
 }
