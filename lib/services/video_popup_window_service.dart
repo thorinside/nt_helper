@@ -12,11 +12,15 @@ class VideoPopupWindowService {
   static final VideoPopupWindowService instance = VideoPopupWindowService._();
 
   static const windowType = 'video-popup';
+  static const windowsNativeEntryPointArg = 'windows_video_popup';
   static const raiseMethod = 'raiseVideoPopup';
   static const _channelName = 'nt_helper/video_popup';
   static const _channel = WindowMethodChannel(
     _channelName,
     mode: ChannelMode.unidirectional,
+  );
+  static const _windowsNativeChannel = MethodChannel(
+    'nt_helper/windows_video_popup',
   );
 
   DistingCubit? _cubit;
@@ -34,6 +38,12 @@ class VideoPopupWindowService {
     }
   }
 
+  static bool isWindowsNativeVideoPopupArguments(List<String> args) {
+    return args.length >= 2 &&
+        args.first == windowsNativeEntryPointArg &&
+        isVideoPopupArguments(args[1]);
+  }
+
   bool get isSupported =>
       Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
@@ -46,6 +56,13 @@ class VideoPopupWindowService {
     if (!isSupported) return false;
 
     await registerMainCubit(cubit);
+
+    if (Platform.isWindows) {
+      await _windowsNativeChannel.invokeMethod('openOrFocus', {
+        'arguments': windowArguments,
+      });
+      return true;
+    }
 
     final existing = await _findExistingWindow();
     if (existing != null) {
@@ -66,7 +83,11 @@ class VideoPopupWindowService {
 
   Future<void> _ensureHandlerRegistered() async {
     if (_handlerRegistered) return;
-    await _channel.setMethodCallHandler(_handleMethodCall);
+    if (Platform.isWindows) {
+      _windowsNativeChannel.setMethodCallHandler(_handleMethodCall);
+    } else {
+      await _channel.setMethodCallHandler(_handleMethodCall);
+    }
     _handlerRegistered = true;
   }
 

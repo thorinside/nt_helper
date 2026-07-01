@@ -107,13 +107,19 @@ void main(List<String> args) {
   );
 }
 
-Future<void> _bootstrapApp(List<String> _) async {
+Future<void> _bootstrapApp(List<String> args) async {
   _installGlobalErrorHandlers();
 
   StartupLogService.traceSync(
     'WidgetsFlutterBinding.ensureInitialized',
     WidgetsFlutterBinding.ensureInitialized,
   );
+
+  if (Platform.isWindows &&
+      VideoPopupWindowService.isWindowsNativeVideoPopupArguments(args)) {
+    await _bootstrapVideoPopupWindow();
+    return;
+  }
 
   if (_isDesktop) {
     try {
@@ -311,10 +317,12 @@ Future<void> _bootstrapApp(List<String> _) async {
 }
 
 Future<void> _bootstrapVideoPopupWindow() async {
-  await StartupLogService.traceAsync(
-    'windowManager.ensureInitialized',
-    windowManager.ensureInitialized,
-  );
+  if (!Platform.isWindows) {
+    await StartupLogService.traceAsync(
+      'windowManager.ensureInitialized',
+      windowManager.ensureInitialized,
+    );
+  }
   await StartupLogService.traceAsync(
     'SettingsService.init',
     SettingsService().init,

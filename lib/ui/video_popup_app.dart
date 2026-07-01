@@ -15,7 +15,9 @@ import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:window_manager/window_manager.dart';
 
-const _windowsWindowControlChannel = MethodChannel('nt_helper/window_control');
+const _windowsVideoPopupChannel = MethodChannel(
+  'nt_helper/windows_video_popup',
+);
 
 class VideoPopupApp extends StatelessWidget {
   const VideoPopupApp({super.key});
@@ -60,7 +62,9 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   void initState() {
     super.initState();
     _alwaysOnTop = _settings.videoPopupAlwaysOnTop;
-    windowManager.addListener(this);
+    if (!Platform.isWindows) {
+      windowManager.addListener(this);
+    }
     unawaited(_configureWindow());
     unawaited(_configureWindowController());
     unawaited(_startVideo());
@@ -77,6 +81,10 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   }
 
   Future<void> _configureWindowController() async {
+    if (Platform.isWindows) {
+      _windowsVideoPopupChannel.setMethodCallHandler(_handleWindowsMethod);
+      return;
+    }
     final controller = await WindowController.fromCurrentEngine();
     await controller.setWindowMethodHandler(_handleWindowMethod);
   }
@@ -89,6 +97,21 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
       default:
         throw MissingPluginException(
           'Unknown video popup method ${call.method}',
+        );
+    }
+  }
+
+  Future<dynamic> _handleWindowsMethod(MethodCall call) async {
+    switch (call.method) {
+      case 'boundsChanged':
+        final bounds = _rectFromMap(call.arguments);
+        if (bounds != null) {
+          await _settings.setVideoPopupBounds(bounds);
+        }
+        return true;
+      default:
+        throw MissingPluginException(
+          'Unknown Windows video popup method ${call.method}',
         );
     }
   }
@@ -123,13 +146,17 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   }
 
   Future<void> _setDisplayMode(DisplayMode mode) async {
-    await _channel.invokeMethod('setDisplayMode', mode.name);
+    if (Platform.isWindows) {
+      await _windowsVideoPopupChannel.invokeMethod('setDisplayMode', mode.name);
+    } else {
+      await _channel.invokeMethod('setDisplayMode', mode.name);
+    }
   }
 
   Future<void> _toggleAlwaysOnTop() async {
     final next = !_alwaysOnTop;
     if (Platform.isWindows) {
-      await _windowsWindowControlChannel.invokeMethod('setAlwaysOnTop', {
+      await _windowsVideoPopupChannel.invokeMethod('setAlwaysOnTop', {
         'alwaysOnTop': next,
       });
     } else {
@@ -198,7 +225,11 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
 
   @override
   void dispose() {
-    windowManager.removeListener(this);
+    if (Platform.isWindows) {
+      _windowsVideoPopupChannel.setMethodCallHandler(null);
+    } else {
+      windowManager.removeListener(this);
+    }
     _toolbarHideTimer?.cancel();
     _videoStateSubscription?.cancel();
     _videoFrameCubit.disconnect();
@@ -501,7 +532,7 @@ Future<void> configureVideoPopupWindow() async {
   );
 
   if (Platform.isWindows) {
-    await _windowsWindowControlChannel.invokeMethod('configureVideoPopup', {
+    await _windowsVideoPopupChannel.invokeMethod('configureVideoPopup', {
       'x': hasSavedPosition ? bounds.left : null,
       'y': hasSavedPosition ? bounds.top : null,
       'width': initialSize.width,
@@ -537,22 +568,31 @@ Future<void> configureVideoPopupWindow() async {
 
 Future<void> raiseVideoPopupWindow() async {
   if (Platform.isWindows) {
-    await _windowsWindowControlChannel.invokeMethod('raiseCurrentWindow');
+    await _windowsVideoPopupChannel.invokeMethod('raiseCurrentWindow');
     return;
   }
   await windowManager.focus();
 }
 
 Future<Rect> getWindowsVideoPopupBounds() async {
-  final result = await _windowsWindowControlChannel
+  final result = await _windowsVideoPopupChannel
       .invokeMapMethod<String, dynamic>('getBounds');
-  if (result == null) {
-    return Rect.zero;
+  final bounds = _rectFromMap(result);
+  if (bounds != null) return bounds;
+  return Rect.zero;
+}
+
+Rect? _rectFromMap(Object? value) {
+  if (value is! Map) {
+    return null;
   }
-  return Rect.fromLTWH(
-    (result['x'] as num?)?.toDouble() ?? 0,
-    (result['y'] as num?)?.toDouble() ?? 0,
-    (result['width'] as num?)?.toDouble() ?? 0,
-    (result['height'] as num?)?.toDouble() ?? 0,
-  );
+
+  final x = (value['x'] as num?)?.toDouble();
+  final y = (value['y'] as num?)?.toDouble();
+  final width = (value['width'] as num?)?.toDouble();
+  final height = (value['height'] as num?)?.toDouble();
+  if (x == null || y == null || width == null || height == null) {
+    return null;
+  }
+  return Rect.fromLTWH(x, y, width, height);
 }

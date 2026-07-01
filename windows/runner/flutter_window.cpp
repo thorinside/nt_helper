@@ -1,7 +1,6 @@
 #include "flutter_window.h"
 
 #include <optional>
-#include <cmath>
 #include <fstream>   // Added for file operations
 #include <shlobj.h>  // Added for SHGetFolderPath
 #include <windows.h> // Already implicitly included, but good for clarity for SHGetKnownFolderPath
@@ -9,13 +8,10 @@
 
 #include "flutter/generated_plugin_registrant.h"
 #include "desktop_multi_window/desktop_multi_window_plugin.h"
-#include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
-#include "flutter/method_channel.h"
 #include "flutter/method_result.h"   // Changed from method_result_functions.h
-#include "flutter/plugin_registrar_windows.h"
-#include "flutter/standard_method_codec.h"
 #include <flutter_windows.h>
 #include "utils.h"
+#include "windows_video_popup_manager.h"
 
 // Forward declaration for USB video plugin registration
 extern void UsbVideoCapturePluginRegisterWithRegistrar(
@@ -26,320 +22,6 @@ extern void UsbVideoCapturePluginRegisterWithRegistrar(
 // Custom MethodResult for WM_CLOSE handling
 namespace
 {
-  const flutter::EncodableValue *MapValue(
-      const flutter::EncodableMap &map,
-      const char *key)
-  {
-    auto it = map.find(flutter::EncodableValue(key));
-    if (it == map.end())
-    {
-      return nullptr;
-    }
-    return &it->second;
-  }
-
-  std::optional<double> MapNumber(
-      const flutter::EncodableMap &map,
-      const char *key)
-  {
-    const auto *value = MapValue(map, key);
-    if (value == nullptr)
-    {
-      return std::nullopt;
-    }
-    if (const auto *double_value = std::get_if<double>(value))
-    {
-      return *double_value;
-    }
-    if (const auto *int_value = std::get_if<int>(value))
-    {
-      return static_cast<double>(*int_value);
-    }
-    return std::nullopt;
-  }
-
-  bool MapBool(
-      const flutter::EncodableMap &map,
-      const char *key,
-      bool default_value = false)
-  {
-    const auto *value = MapValue(map, key);
-    if (value == nullptr)
-    {
-      return default_value;
-    }
-    if (const auto *bool_value = std::get_if<bool>(value))
-    {
-      return *bool_value;
-    }
-    return default_value;
-  }
-
-  std::wstring MapWideString(
-      const flutter::EncodableMap &map,
-      const char *key,
-      const wchar_t *default_value)
-  {
-    const auto *value = MapValue(map, key);
-    if (value == nullptr)
-    {
-      return default_value;
-    }
-    const auto *string_value = std::get_if<std::string>(value);
-    if (string_value == nullptr)
-    {
-      return default_value;
-    }
-    if (string_value->empty())
-    {
-      return L"";
-    }
-    const int length = MultiByteToWideChar(
-        CP_UTF8, 0, string_value->c_str(), -1, nullptr, 0);
-    if (length <= 0)
-    {
-      return default_value;
-    }
-    std::wstring wide(length, L'\0');
-    MultiByteToWideChar(
-        CP_UTF8, 0, string_value->c_str(), -1, wide.data(), length);
-    if (!wide.empty() && wide.back() == L'\0')
-    {
-      wide.pop_back();
-    }
-    return wide;
-  }
-
-  class WindowControlPlugin : public flutter::Plugin
-  {
-  public:
-    static void RegisterWithRegistrar(FlutterDesktopPluginRegistrarRef registrar)
-    {
-      auto view = FlutterDesktopPluginRegistrarGetView(registrar);
-      HWND hwnd = view == nullptr ? nullptr : FlutterDesktopViewGetHWND(view);
-      HWND root_hwnd = hwnd == nullptr ? nullptr : GetAncestor(hwnd, GA_ROOT);
-      auto plugin_registrar =
-          flutter::PluginRegistrarManager::GetInstance()
-              ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar);
-
-      auto plugin = std::make_unique<WindowControlPlugin>(
-          plugin_registrar, root_hwnd);
-      plugin_registrar->AddPlugin(std::move(plugin));
-    }
-
-    WindowControlPlugin(
-        flutter::PluginRegistrarWindows *registrar,
-        HWND hwnd)
-        : hwnd_(hwnd)
-    {
-      channel_ =
-          std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-              registrar->messenger(),
-              "nt_helper/window_control",
-              &flutter::StandardMethodCodec::GetInstance());
-
-      channel_->SetMethodCallHandler(
-          [this](const auto &call, auto result)
-          {
-            if (call.method_name() == "raiseCurrentWindow")
-            {
-              RaiseCurrentWindow();
-              result->Success(flutter::EncodableValue(true));
-              return;
-            }
-            if (call.method_name() == "configureVideoPopup")
-            {
-              const auto *args = std::get_if<flutter::EncodableMap>(
-                  call.arguments());
-              if (args == nullptr)
-              {
-                result->Error("bad_args", "configureVideoPopup requires a map");
-                return;
-              }
-              ConfigureVideoPopup(*args);
-              result->Success(flutter::EncodableValue(true));
-              return;
-            }
-            if (call.method_name() == "setAlwaysOnTop")
-            {
-              const auto *args = std::get_if<flutter::EncodableMap>(
-                  call.arguments());
-              if (args == nullptr)
-              {
-                result->Error("bad_args", "setAlwaysOnTop requires a map");
-                return;
-              }
-              SetAlwaysOnTop(MapBool(*args, "alwaysOnTop"));
-              result->Success(flutter::EncodableValue(true));
-              return;
-            }
-            if (call.method_name() == "getBounds")
-            {
-              result->Success(flutter::EncodableValue(GetBounds()));
-              return;
-            }
-            result->NotImplemented();
-          });
-    }
-
-  private:
-    double ScaleFactor()
-    {
-      if (hwnd_ == nullptr)
-      {
-        return 1.0;
-      }
-      const HMODULE user32_module = LoadLibraryA("User32.dll");
-      if (user32_module)
-      {
-        typedef UINT(WINAPI * GetDpiForWindowProc)(HWND hwnd);
-        auto get_dpi_for_window =
-            reinterpret_cast<GetDpiForWindowProc>(
-                GetProcAddress(user32_module, "GetDpiForWindow"));
-        if (get_dpi_for_window != nullptr)
-        {
-          const UINT dpi = get_dpi_for_window(hwnd_);
-          FreeLibrary(user32_module);
-          if (dpi > 0)
-          {
-            return static_cast<double>(dpi) / 96.0;
-          }
-          return 1.0;
-        }
-        FreeLibrary(user32_module);
-      }
-      return 1.0;
-    }
-
-    int LogicalToPhysical(double value)
-    {
-      return static_cast<int>(std::round(value * ScaleFactor()));
-    }
-
-    double PhysicalToLogical(int value)
-    {
-      return static_cast<double>(value) / ScaleFactor();
-    }
-
-    void ConfigureVideoPopup(const flutter::EncodableMap &args)
-    {
-      if (hwnd_ == nullptr)
-      {
-        return;
-      }
-
-      const auto title = MapWideString(args, "title", L"Disting NT Video");
-      SetWindowText(hwnd_, title.c_str());
-
-      const int width = LogicalToPhysical(
-          MapNumber(args, "width").value_or(256.0));
-      const int height = LogicalToPhysical(
-          MapNumber(args, "height").value_or(100.0));
-      const auto x = MapNumber(args, "x");
-      const auto y = MapNumber(args, "y");
-
-      int left = x.has_value() ? LogicalToPhysical(*x) : 0;
-      int top = y.has_value() ? LogicalToPhysical(*y) : 0;
-      if (MapBool(args, "center", false))
-      {
-        HMONITOR monitor = MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST);
-        MONITORINFO monitor_info;
-        monitor_info.cbSize = sizeof(MONITORINFO);
-        if (GetMonitorInfo(monitor, &monitor_info))
-        {
-          const RECT work = monitor_info.rcWork;
-          left = work.left + ((work.right - work.left) - width) / 2;
-          top = work.top + ((work.bottom - work.top) - height) / 2;
-        }
-      }
-
-      SetWindowPos(
-          hwnd_, nullptr, left, top, width, height,
-          SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
-      SetAlwaysOnTop(MapBool(args, "alwaysOnTop", false));
-      RaiseCurrentWindow();
-    }
-
-    void SetAlwaysOnTop(bool always_on_top)
-    {
-      if (hwnd_ == nullptr)
-      {
-        return;
-      }
-      SetWindowPos(
-          hwnd_,
-          always_on_top ? HWND_TOPMOST : HWND_NOTOPMOST,
-          0,
-          0,
-          0,
-          0,
-          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    }
-
-    flutter::EncodableMap GetBounds()
-    {
-      flutter::EncodableMap result;
-      if (hwnd_ == nullptr)
-      {
-        return result;
-      }
-      RECT rect;
-      if (!GetWindowRect(hwnd_, &rect))
-      {
-        return result;
-      }
-      result[flutter::EncodableValue("x")] =
-          flutter::EncodableValue(PhysicalToLogical(rect.left));
-      result[flutter::EncodableValue("y")] =
-          flutter::EncodableValue(PhysicalToLogical(rect.top));
-      result[flutter::EncodableValue("width")] =
-          flutter::EncodableValue(PhysicalToLogical(rect.right - rect.left));
-      result[flutter::EncodableValue("height")] =
-          flutter::EncodableValue(PhysicalToLogical(rect.bottom - rect.top));
-      return result;
-    }
-
-    void RaiseCurrentWindow()
-    {
-      if (hwnd_ == nullptr)
-      {
-        return;
-      }
-
-      ShowWindow(hwnd_, SW_SHOWNORMAL);
-      SetWindowPos(
-          hwnd_, HWND_TOP, 0, 0, 0, 0,
-          SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-      BringWindowToTop(hwnd_);
-
-      HWND foreground_window = GetForegroundWindow();
-      DWORD foreground_thread_id =
-          foreground_window == nullptr
-              ? 0
-              : GetWindowThreadProcessId(foreground_window, nullptr);
-      DWORD current_thread_id = GetCurrentThreadId();
-      const bool attached =
-          foreground_thread_id != 0 && foreground_thread_id != current_thread_id &&
-          AttachThreadInput(foreground_thread_id, current_thread_id, TRUE);
-
-      SetForegroundWindow(hwnd_);
-      SetActiveWindow(hwnd_);
-      HWND child = GetWindow(hwnd_, GW_CHILD);
-      if (child != nullptr)
-      {
-        SetFocus(child);
-      }
-
-      if (attached)
-      {
-        AttachThreadInput(foreground_thread_id, current_thread_id, FALSE);
-      }
-    }
-
-    HWND hwnd_;
-    std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
-  };
-
   class WindowCloseResult : public flutter::MethodResult<flutter::EncodableValue>
   {
   public:
@@ -595,8 +277,8 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
 
   StartupLog(L"Registering Flutter plugins");
   RegisterPlugins(flutter_controller_->engine());
-  WindowControlPlugin::RegisterWithRegistrar(
-      flutter_controller_->engine()->GetRegistrarForPlugin("WindowControlPlugin"));
+  WindowsVideoPopupManager::Instance().RegisterMainEngine(
+      flutter_controller_->engine());
   StartupLog(L"Flutter plugins registered");
 
   // Register USB video capture plugin
@@ -610,8 +292,6 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
         reinterpret_cast<flutter::FlutterViewController *>(controller);
     auto *registry = flutter_view_controller->engine();
     RegisterPlugins(registry);
-    WindowControlPlugin::RegisterWithRegistrar(
-        registry->GetRegistrarForPlugin("WindowControlPlugin"));
     UsbVideoCapturePluginRegisterWithRegistrar(
         registry->GetRegistrarForPlugin("UsbVideoCapturePlugin"));
   });

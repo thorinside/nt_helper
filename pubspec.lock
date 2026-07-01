@@ -308,11 +308,10 @@ packages:
   desktop_multi_window:
     dependency: "direct main"
     description:
-      path: "packages/desktop_multi_window"
-      ref: "7f60a8177792238ced7c828c1403b5c9001522bb"
-      resolved-ref: "7f60a8177792238ced7c828c1403b5c9001522bb"
-      url: "https://github.com/MixinNetwork/flutter-plugins.git"
-    source: git
+      name: desktop_multi_window
+      sha256: "60ba38725b8887b60e44d15afdcf0c3813568b5da2ccaf1e7f6fd09a380a6e24"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.3.0"
   diff_match_patch:
     dependency: transitive
