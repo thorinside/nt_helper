@@ -14,7 +14,6 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:win32/win32.dart' as win32;
 
 class VideoPopupApp extends StatelessWidget {
   const VideoPopupApp({super.key});
@@ -506,25 +505,19 @@ Future<void> configureVideoPopupWindow() async {
     if (hasSavedPosition) {
       await windowManager.setBounds(bounds);
     }
-    await windowManager.show();
-    await raiseVideoPopupWindow();
+    if (Platform.isWindows) {
+      await raiseVideoPopupWindow();
+    } else {
+      await windowManager.show();
+      await raiseVideoPopupWindow();
+    }
   });
 }
 
 Future<void> raiseVideoPopupWindow() async {
   if (Platform.isWindows) {
-    final hwnd = await windowManager.getId();
-    win32.ShowWindow(hwnd, win32.SW_SHOWNORMAL);
-    win32.SetWindowPos(
-      hwnd,
-      win32.HWND_TOP,
-      0,
-      0,
-      0,
-      0,
-      win32.SWP_NOMOVE | win32.SWP_NOSIZE,
-    );
-    win32.SetForegroundWindow(hwnd);
+    const channel = MethodChannel('nt_helper/window_control');
+    await channel.invokeMethod('raiseCurrentWindow');
     return;
   }
   await windowManager.focus();

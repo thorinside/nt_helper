@@ -10,6 +10,8 @@
 #include "desktop_multi_window/desktop_multi_window_plugin.h"
 #include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
 #include "flutter/method_result.h"   // Changed from method_result_functions.h
+#include "flutter/plugin_registrar_windows.h"
+#include <flutter_windows.h>
 #include "utils.h"
 
 // Forward declaration for USB video plugin registration
@@ -21,6 +23,64 @@ extern void UsbVideoCapturePluginRegisterWithRegistrar(
 // Custom MethodResult for WM_CLOSE handling
 namespace
 {
+  class WindowControlPlugin : public flutter::Plugin
+  {
+  public:
+    static void RegisterWithRegistrar(FlutterDesktopPluginRegistrarRef registrar)
+    {
+      auto view = FlutterDesktopPluginRegistrarGetView(registrar);
+      HWND hwnd = view == nullptr ? nullptr : FlutterDesktopViewGetHWND(view);
+      HWND root_hwnd = hwnd == nullptr ? nullptr : GetAncestor(hwnd, GA_ROOT);
+      auto plugin_registrar =
+          flutter::PluginRegistrarManager::GetInstance()
+              ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar);
+
+      auto plugin = std::make_unique<WindowControlPlugin>(
+          plugin_registrar, root_hwnd);
+      plugin_registrar->AddPlugin(std::move(plugin));
+    }
+
+    WindowControlPlugin(
+        flutter::PluginRegistrarWindows *registrar,
+        HWND hwnd)
+        : hwnd_(hwnd)
+    {
+      channel_ =
+          std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+              registrar->messenger(),
+              "nt_helper/window_control",
+              &flutter::StandardMethodCodec::GetInstance());
+
+      channel_->SetMethodCallHandler(
+          [this](const auto &call, auto result)
+          {
+            if (call.method_name() == "raiseCurrentWindow")
+            {
+              RaiseCurrentWindow();
+              result->Success(flutter::EncodableValue(true));
+              return;
+            }
+            result->NotImplemented();
+          });
+    }
+
+  private:
+    void RaiseCurrentWindow()
+    {
+      if (hwnd_ == nullptr)
+      {
+        return;
+      }
+
+      ShowWindow(hwnd_, SW_SHOWNORMAL);
+      SetWindowPos(hwnd_, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+      SetForegroundWindow(hwnd_);
+    }
+
+    HWND hwnd_;
+    std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
+  };
+
   class WindowCloseResult : public flutter::MethodResult<flutter::EncodableValue>
   {
   public:
@@ -276,6 +336,8 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
 
   StartupLog(L"Registering Flutter plugins");
   RegisterPlugins(flutter_controller_->engine());
+  WindowControlPlugin::RegisterWithRegistrar(
+      flutter_controller_->engine()->GetRegistrarForPlugin("WindowControlPlugin"));
   StartupLog(L"Flutter plugins registered");
 
   // Register USB video capture plugin
@@ -289,6 +351,8 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
         reinterpret_cast<flutter::FlutterViewController *>(controller);
     auto *registry = flutter_view_controller->engine();
     RegisterPlugins(registry);
+    WindowControlPlugin::RegisterWithRegistrar(
+        registry->GetRegistrarForPlugin("WindowControlPlugin"));
     UsbVideoCapturePluginRegisterWithRegistrar(
         registry->GetRegistrarForPlugin("UsbVideoCapturePlugin"));
   });
