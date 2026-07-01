@@ -215,9 +215,6 @@ void FocusWindow(HWND hwnd) {
   SetForegroundWindow(hwnd);
   SetActiveWindow(hwnd);
   HWND child = GetWindow(hwnd, GW_CHILD);
-  if (child != nullptr) {
-    SetFocus(child);
-  }
 
   if (attached) {
     AttachThreadInput(foreground_thread_id, current_thread_id, FALSE);
@@ -240,6 +237,7 @@ class WindowsVideoPopupWindow : public Win32Window {
   bool CreatePopup() {
     PopupLog(L"CreatePopup requested");
     SetQuitOnClose(false);
+    SetFocusChildOnActivate(false);
     const bool created = Create(kDefaultTitle, Point(10, 10), Size(384, 132));
     PopupLog(L"CreatePopup result=" + BoolString(created) +
              L" hwnd=" + HwndString(GetHandle()));

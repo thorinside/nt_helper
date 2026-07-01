@@ -52,6 +52,9 @@ class Win32Window {
   // If true, closing this window will quit the application.
   void SetQuitOnClose(bool quit_on_close);
 
+  // If true, activating this window also focuses the hosted child HWND.
+  void SetFocusChildOnActivate(bool focus_child_on_activate);
+
   // Return a RECT representing the bounds of the current client area.
   RECT GetClientArea();
 
@@ -97,6 +100,8 @@ class Win32Window {
 
   // window handle for hosted content.
   HWND child_content_ = nullptr;
+
+  bool focus_child_on_activate_ = true;
 };
 
 #endif  // RUNNER_WIN32_WINDOW_H_

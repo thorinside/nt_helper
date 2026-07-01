@@ -276,11 +276,14 @@ Win32Window::MessageHandler(HWND hwnd,
                          L" child=" + HwndString(child_content_) +
                          L" focusBefore=" + HwndString(GetFocus()) +
                          L" foreground=" + HwndString(GetForegroundWindow()) +
+                         L" focusChildOnActivate=" +
+                         BoolString(focus_child_on_activate_) +
                          L" setChildFocus=" +
-                         BoolString(activating && child_content_ != nullptr));
+                         BoolString(focus_child_on_activate_ && activating &&
+                                    child_content_ != nullptr));
       // Focusing a child while deactivating can steal focus back from another
       // top-level Flutter window that is trying to activate.
-      if (activating && child_content_ != nullptr) {
+      if (focus_child_on_activate_ && activating && child_content_ != nullptr) {
         SetFocus(child_content_);
       }
       return 0;
@@ -341,6 +344,10 @@ HWND Win32Window::GetHandle() {
 
 void Win32Window::SetQuitOnClose(bool quit_on_close) {
   quit_on_close_ = quit_on_close;
+}
+
+void Win32Window::SetFocusChildOnActivate(bool focus_child_on_activate) {
+  focus_child_on_activate_ = focus_child_on_activate;
 }
 
 bool Win32Window::OnCreate() {
