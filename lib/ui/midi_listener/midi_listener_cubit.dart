@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../domain/midi_command_factory.dart';
 import '../../services/debug_service.dart';
 import 'midi_detection_engine.dart';
 
@@ -11,10 +12,10 @@ part 'midi_listener_cubit.freezed.dart';
 part 'midi_listener_state.dart';
 
 class MidiListenerCubit extends Cubit<MidiListenerState> {
-  final MidiCommand _midiCommand = MidiCommand();
+  final MidiCommand _midiCommand = createNativeMidiCommand();
   final DebugService _debugService = DebugService();
   StreamSubscription<MidiPacket>? _midiSubscription;
-  StreamSubscription<String>? _midiSetupSubscription;
+  StreamSubscription<MidiSetupChange>? _midiSetupSubscription;
 
   final MidiDetectionEngine _detectionEngine = MidiDetectionEngine();
   bool _isDetecting = false;
@@ -37,7 +38,6 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
   }
 
   Future<List<MidiDevice>?> discoverDevices() async {
-    await _midiCommand.startBluetoothCentral();
     final devices = await _midiCommand.devices;
 
     if (devices != null) {
@@ -126,9 +126,9 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     _midiCommand.disconnectDevice(device);
 
     // Subscribe to the broadcast stream before connecting (stream already exists)
-    final stream = _midiCommand.onMidiDataReceived;
+    final stream = _midiCommand.onMidiPacketReceived;
     _debugLog(
-      'onMidiDataReceived stream: ${stream == null ? "NULL" : "available"}',
+      'onMidiPacketReceived stream: ${stream == null ? "NULL" : "available"}',
     );
     _midiSubscription = stream?.listen(
       (packet) {

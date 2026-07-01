@@ -249,7 +249,7 @@ class DistingMessageScheduler {
        messageInterval = _normalizeDuration(messageInterval),
        defaultTimeout = _normalizeDuration(defaultTimeout),
        defaultRetryDelay = _normalizeDuration(defaultRetryDelay) {
-    _subscription = _midi.onMidiDataReceived?.listen(
+    _subscription = _midi.onMidiPacketReceived?.listen(
       _handleIncomingPacket,
       onError: _handleSubscriptionError,
       onDone: _handleSubscriptionDone,
@@ -453,7 +453,7 @@ class DistingMessageScheduler {
     _subscription?.cancel();
     _subscriptionActive = false;
 
-    _subscription = _midi.onMidiDataReceived?.listen(
+    _subscription = _midi.onMidiPacketReceived?.listen(
       _handleIncomingPacket,
       onError: _handleSubscriptionError,
       onDone: _handleSubscriptionDone,
@@ -481,7 +481,7 @@ class DistingMessageScheduler {
     _subscription?.cancel();
     _subscriptionActive = false;
 
-    _subscription = _midi.onMidiDataReceived?.listen(
+    _subscription = _midi.onMidiPacketReceived?.listen(
       _handleIncomingPacket,
       onError: _handleSubscriptionError,
       onDone: _handleSubscriptionDone,
@@ -553,7 +553,7 @@ class DistingMessageScheduler {
 
     // Re-establish subscription
     await Future.delayed(const Duration(milliseconds: 200));
-    _subscription = _midi.onMidiDataReceived?.listen(
+    _subscription = _midi.onMidiPacketReceived?.listen(
       _handleIncomingPacket,
       onError: _handleSubscriptionError,
       onDone: _handleSubscriptionDone,

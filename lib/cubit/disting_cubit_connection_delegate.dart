@@ -225,7 +225,7 @@ class _ConnectionDelegate {
     manager?.dispose();
 
     _cubit._midiCommand.dispose();
-    _cubit._midiCommand = MidiCommand();
+    _cubit._midiCommand = createNativeMidiCommand();
   }
 
   static const _syncTimeout = Duration(seconds: 60);

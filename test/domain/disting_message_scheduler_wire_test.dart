@@ -21,7 +21,7 @@ class MockMidiCommand extends Mock implements MidiCommand {}
 const int _testSysExId = 0x00;
 
 MidiDevice _makeDevice(String id) =>
-    MidiDevice(id, 'Test Device', 'native', true);
+    MidiDevice(id, 'Test Device', MidiDeviceType.serial, true);
 
 /// Builds a valid Disting NT SysEx response frame.
 Uint8List _buildSysEx(
@@ -107,7 +107,7 @@ _createScheduler({
   final incoming = StreamController<MidiPacket>.broadcast();
   final device = _makeDevice('test-device');
 
-  when(() => midi.onMidiDataReceived).thenAnswer((_) => incoming.stream);
+  when(() => midi.onMidiPacketReceived).thenAnswer((_) => incoming.stream);
   when(
     () => midi.sendData(any(), deviceId: any(named: 'deviceId')),
   ).thenAnswer((_) {});

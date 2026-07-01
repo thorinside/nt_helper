@@ -7,6 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
+import 'package:nt_helper/domain/midi_command_factory.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'dart:typed_data';
 
@@ -18,7 +19,7 @@ void main() {
       TestWidgetsFlutterBinding.ensureInitialized();
 
       // Initialize MIDI
-      final midiCommand = MidiCommand();
+      final midiCommand = createNativeMidiCommand();
 
       // Find connected devices
       final devices = await midiCommand.devices;
@@ -44,7 +45,7 @@ void main() {
       // Setup raw message capture
       final List<Uint8List> capturedMessages = [];
 
-      final subscription = midiCommand.onMidiDataReceived?.listen((packet) {
+      final subscription = midiCommand.onMidiPacketReceived?.listen((packet) {
         final data = packet.data;
         if (data.isNotEmpty && data[0] == 0xF0) {
           // SysEx message

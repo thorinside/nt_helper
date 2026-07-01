@@ -41,7 +41,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
-  flutter_midi_command: ^0.5.3
+  flutter_midi_command: ^1.0.2
   image: ^4.7.2
   shared_preferences: ^2.5.4
   package_info_plus: ^9.0.1
@@ -87,7 +87,6 @@ dependencies:
   pub_semver: ^2.2.0
   url_launcher: ^6.3.2
   share_plus: ^12.0.1
-  universal_ble: ^0.21.1
   vector_math: ^2.2.0
   webview_flutter: ^4.13.1
   uvccamera:
@@ -122,10 +121,6 @@ dev_dependencies:
   fake_async: ^1.3.3
 
 dependency_overrides:
-  flutter_midi_command_linux:
-    git: https://github.com/thorinside/flutter_midi_command_linux.git
-  flutter_midi_command_windows:
-    git: https://github.com/thorinside/flutter_midi_command_windows.git
   # Use forked dart_midi with fix for Linux shutdown hang (closes ALSA port before killing isolate)
   midi:
     git: https://github.com/thorinside/dart_midi.git
