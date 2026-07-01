@@ -53,6 +53,7 @@ import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/widgets/algorithm_list_view.dart';
 import 'package:nt_helper/ui/widgets/disting_version.dart';
@@ -205,21 +206,38 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   void _reclaimFocusIfLost() {
     if (!_screenFocusNode.hasFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_screenFocusNode.hasFocus) {
-          // Don't steal focus when a dialog/bottom sheet/pushed screen is active
-          final route = ModalRoute.of(context);
-          if (route != null && !route.isCurrent) return;
-
-          // Don't steal focus from text fields (e.g. in non-route overlays)
-          final primaryFocus = FocusManager.instance.primaryFocus;
-          if (primaryFocus?.context
-                  ?.findAncestorWidgetOfExactType<EditableText>() !=
-              null) {
-            return;
-          }
-          _screenFocusNode.requestFocus();
-        }
+        unawaited(_reclaimFocusAfterFrame());
       });
+    }
+  }
+
+  Future<void> _reclaimFocusAfterFrame() async {
+    if (!mounted || _screenFocusNode.hasFocus) return;
+
+    // Don't steal focus when a dialog/bottom sheet/pushed screen is active
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
+
+    // Don't steal focus from text fields (e.g. in non-route overlays)
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    if (primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() !=
+        null) {
+      return;
+    }
+
+    if (Platform.isWindows) {
+      final mainWindowFocused = await windowManager.isFocused();
+      if (!mainWindowFocused) {
+        debugPrint(
+          '[VIDEO_POPUP_DART] SynchronizedScreen focus reclaim skipped: '
+          'main window is not focused',
+        );
+        return;
+      }
+    }
+
+    if (mounted && !_screenFocusNode.hasFocus) {
+      _screenFocusNode.requestFocus();
     }
   }
 
