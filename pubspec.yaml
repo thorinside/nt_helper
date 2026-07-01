@@ -97,7 +97,11 @@ dependencies:
   html: ^0.15.6
   flutter_markdown: ^0.7.6
   flutter_svg: ^2.2.4
-  desktop_multi_window: ^0.3.0
+  desktop_multi_window:
+    git:
+      url: https://github.com/MixinNetwork/flutter-plugins.git
+      ref: 7f60a8177792238ced7c828c1403b5c9001522bb
+      path: packages/desktop_multi_window
 
 dev_dependencies:
   flutter_test:
