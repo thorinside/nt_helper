@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
@@ -63,6 +64,9 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   }
 
   Future<void> _configureWindow() async {
+    if (Platform.isLinux) {
+      await windowManager.setPreventClose(true);
+    }
     await windowManager.setAlwaysOnTop(_alwaysOnTop);
   }
 
@@ -126,6 +130,18 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
 
   @override
   void onWindowResized() => unawaited(_saveBounds());
+
+  @override
+  void onWindowClose() {
+    if (Platform.isLinux) {
+      unawaited(_hideLinuxPopup());
+    }
+  }
+
+  Future<void> _hideLinuxPopup() async {
+    await _saveBounds();
+    await windowManager.hide();
+  }
 
   void _startToolbarHideTimer({Duration? delay}) {
     if (_settings.videoToolbarAlwaysVisible || _toolbarHovering) return;
@@ -464,6 +480,9 @@ Future<void> configureVideoPopupWindow() async {
   );
 
   await windowManager.waitUntilReadyToShow(options, () async {
+    if (Platform.isLinux) {
+      await windowManager.setPreventClose(true);
+    }
     if (hasSavedPosition) {
       await windowManager.setBounds(bounds);
     }
