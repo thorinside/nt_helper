@@ -98,6 +98,7 @@ dependencies:
   flutter_markdown: ^0.7.6
   flutter_svg: ^2.2.4
   desktop_multi_window: ^0.3.0
+  win32: ^5.15.0
 
 dev_dependencies:
   flutter_test:
