@@ -135,6 +135,79 @@ void main() {
       expect(result!.version, '3.0.0');
     });
 
+    test('returns null when update lacks current platform asset', () async {
+      final windowsService = AppUpdateService(
+        httpClient: mockClient,
+        currentVersion: '2.0.0',
+        platformKey: 'windows',
+      );
+      final releaseWithoutWindows = Map<String, dynamic>.from(_sampleRelease);
+      releaseWithoutWindows['assets'] = [
+        {
+          'name': 'nt_helper-3.0.0-macos.zip',
+          'browser_download_url':
+              'https://github.com/thorinside/nt_helper/releases/download/v3.0.0/nt_helper-3.0.0-macos.zip',
+        },
+        {
+          'name': 'nt_helper-3.0.0-linux.zip',
+          'browser_download_url':
+              'https://github.com/thorinside/nt_helper/releases/download/v3.0.0/nt_helper-3.0.0-linux.zip',
+        },
+      ];
+
+      when(
+        () => mockClient.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer(
+        (_) async => http.Response(jsonEncode(releaseWithoutWindows), 200),
+      );
+
+      final result = await windowsService.checkForUpdate();
+      expect(result, isNull);
+    });
+
+    test('returns release when update has current platform asset', () async {
+      final linuxService = AppUpdateService(
+        httpClient: mockClient,
+        currentVersion: '2.0.0',
+        platformKey: 'linux',
+      );
+
+      when(
+        () => mockClient.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer((_) async => http.Response(jsonEncode(_sampleRelease), 200));
+
+      final result = await linuxService.checkForUpdate();
+      expect(result, isNotNull);
+      expect(result!.platformAssets, contains('linux'));
+    });
+
+    test('skipVersionCheck still requires current platform asset', () async {
+      final windowsService = AppUpdateService(
+        httpClient: mockClient,
+        currentVersion: '3.0.0',
+        platformKey: 'windows',
+      );
+      final releaseWithoutWindows = Map<String, dynamic>.from(_sampleRelease);
+      releaseWithoutWindows['assets'] = [
+        {
+          'name': 'nt_helper-3.0.0-macos.zip',
+          'browser_download_url':
+              'https://github.com/thorinside/nt_helper/releases/download/v3.0.0/nt_helper-3.0.0-macos.zip',
+        },
+      ];
+
+      when(
+        () => mockClient.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer(
+        (_) async => http.Response(jsonEncode(releaseWithoutWindows), 200),
+      );
+
+      final result = await windowsService.checkForUpdate(
+        skipVersionCheck: true,
+      );
+      expect(result, isNull);
+    });
+
     test('returns null when already up to date', () async {
       final upToDateService = AppUpdateService(
         httpClient: mockClient,

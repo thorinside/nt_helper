@@ -28,6 +28,7 @@ class InstallResult {
 class AppUpdateService {
   final http.Client _httpClient;
   final String? _currentVersionOverride;
+  final String? _platformKeyOverride;
   static const String _githubApiUrl =
       'https://api.github.com/repos/thorinside/nt_helper/releases/latest';
 
@@ -35,9 +36,13 @@ class AppUpdateService {
   DateTime? _lastCheckTime;
   static const _cacheDuration = Duration(hours: 1);
 
-  AppUpdateService({http.Client? httpClient, String? currentVersion})
-    : _httpClient = httpClient ?? http.Client(),
-      _currentVersionOverride = currentVersion;
+  AppUpdateService({
+    http.Client? httpClient,
+    String? currentVersion,
+    String? platformKey,
+  }) : _httpClient = httpClient ?? http.Client(),
+       _currentVersionOverride = currentVersion,
+       _platformKeyOverride = platformKey;
 
   bool get _isDesktop =>
       Platform.isMacOS || Platform.isLinux || Platform.isWindows;
@@ -73,8 +78,14 @@ class AppUpdateService {
 
       _lastCheckTime = DateTime.now();
 
-      if (skipVersionCheck ||
-          VersionComparisonService.hasUpdate(currentVersion, release.version)) {
+      final hasUpdate =
+          skipVersionCheck ||
+          VersionComparisonService.hasUpdate(currentVersion, release.version);
+      final hasPlatformAsset = release.platformAssets.containsKey(
+        _getPlatformKeyword(),
+      );
+
+      if (hasUpdate && hasPlatformAsset) {
         _cachedRelease = release;
         return release;
       }
@@ -413,6 +424,7 @@ Start-Process "$exePath"
   }
 
   String _getPlatformKeyword() {
+    if (_platformKeyOverride != null) return _platformKeyOverride;
     if (Platform.isMacOS) return 'macos';
     if (Platform.isWindows) return 'windows';
     if (Platform.isLinux) return 'linux';
