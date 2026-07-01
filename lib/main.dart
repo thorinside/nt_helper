@@ -383,9 +383,15 @@ void _installGlobalErrorHandlers() {
 
 Future<void> _showDesktopWindow(String reason) async {
   try {
+    if (Platform.isWindows) {
+      debugPrint('[VIDEO_POPUP_DART] _showDesktopWindow start reason=$reason');
+    }
     await windowManager.ensureInitialized();
     await windowManager.show();
     await windowManager.focus();
+    if (Platform.isWindows) {
+      debugPrint('[VIDEO_POPUP_DART] _showDesktopWindow done reason=$reason');
+    }
     StartupLogService.log('Desktop window shown for $reason');
   } catch (error, stackTrace) {
     StartupLogService.logError(

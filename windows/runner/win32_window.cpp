@@ -319,7 +319,14 @@ void Win32Window::SetChildContent(HWND content) {
   MoveWindow(content, frame.left, frame.top, frame.right - frame.left,
              frame.bottom - frame.top, true);
 
-  SetFocus(child_content_);
+  const bool visible = IsWindowVisible(window_handle_);
+  VideoPopupDebugLog(L"Win32Window SetChildContent hwnd=" +
+                     HwndString(window_handle_) +
+                     L" child=" + HwndString(child_content_) +
+                     L" visible=" + BoolString(visible));
+  if (visible) {
+    SetFocus(child_content_);
+  }
 }
 
 RECT Win32Window::GetClientArea() {
