@@ -14,6 +14,7 @@
 #include <chrono>
 #include <mutex>
 #include <queue>
+#include <map>
 #include <windows.h>
 #include <mfapi.h>
 #include <mfidl.h>
@@ -29,9 +30,6 @@
 #pragma comment(lib, "mf.lib")
 
 namespace {
-
-// Timer ID for frame polling - must be unique within the window
-static const UINT_PTR FRAME_TIMER_ID = 12345;
 
 class UsbVideoCapturePlugin : public flutter::Plugin {
  public:
@@ -50,6 +48,9 @@ class UsbVideoCapturePlugin : public flutter::Plugin {
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
   std::vector<flutter::EncodableMap> EnumerateVideoCaptureDevices();
+  std::optional<std::wstring> DecodeDeviceId(const std::string& deviceId);
+  bool CreateSourceReaderForDevice(const std::wstring& wideDeviceId,
+                                   CComPtr<IMFSourceReader>& sourceReader);
   bool StartVideoCapture(const std::string& deviceId);
   void StopVideoCapture();
   void CaptureThread();
@@ -60,11 +61,11 @@ class UsbVideoCapturePlugin : public flutter::Plugin {
   std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> debug_channel_;
   std::unique_ptr<flutter::EventSink<flutter::EncodableValue>> event_sink_;
 
-  CComPtr<IMFSourceReader> source_reader_;
   std::thread* capture_thread_ = nullptr;
   std::atomic<bool> capturing_{false};
   std::atomic<bool> stream_active_{false};
   bool mf_initialized_ = false;
+  std::string capture_device_id_;
 
   // Thread-safe frame queue for posting to platform thread
   std::mutex frame_queue_mutex_;
@@ -72,20 +73,38 @@ class UsbVideoCapturePlugin : public flutter::Plugin {
 
   // Timer-based polling (replaces broken message-only window approach)
   UINT_PTR timer_id_ = 0;
+  HWND timer_window_ = nullptr;
   static const UINT FRAME_TIMER_INTERVAL_MS = 16;  // ~60 Hz polling
 
-  // Static callback for timer - must use static to work with SetTimer TIMERPROC
+  // Static callback for timer - must use static to work with SetTimer TIMERPROC.
+  // Multiple Flutter engines can exist in this process when the Windows video
+  // popup is open, so route timer callbacks by timer id instead of using one
+  // global plugin pointer.
   static void CALLBACK TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
-  static UsbVideoCapturePlugin* s_instance_;  // For timer callback access
+  static std::mutex s_instances_mutex_;
+  static std::map<UINT_PTR, UsbVideoCapturePlugin*> s_instances_by_timer_;
 };
 
-// Static instance pointer for timer callback access
-UsbVideoCapturePlugin* UsbVideoCapturePlugin::s_instance_ = nullptr;
+std::mutex UsbVideoCapturePlugin::s_instances_mutex_;
+std::map<UINT_PTR, UsbVideoCapturePlugin*> UsbVideoCapturePlugin::s_instances_by_timer_;
 
 // Static timer callback - called directly by Windows, not through message loop
 void CALLBACK UsbVideoCapturePlugin::TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
-  if (idEvent == FRAME_TIMER_ID && s_instance_ != nullptr) {
-    s_instance_->ProcessPendingFrames();
+  if (idEvent == 0) {
+    return;
+  }
+
+  UsbVideoCapturePlugin* instance = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(s_instances_mutex_);
+    auto it = s_instances_by_timer_.find(idEvent);
+    if (it != s_instances_by_timer_.end()) {
+      instance = it->second;
+    }
+  }
+
+  if (instance != nullptr) {
+    instance->ProcessPendingFrames();
   }
 }
 
@@ -171,9 +190,6 @@ void UsbVideoCapturePlugin::ProcessPendingFrames() {
 
 UsbVideoCapturePlugin::UsbVideoCapturePlugin(flutter::PluginRegistrarWindows *registrar)
     : registrar_(registrar) {
-  // Set static instance for timer callback access
-  s_instance_ = this;
-
   // Initialize Media Foundation
   OutputDebugStringA("[USB_VIDEO_CPP] Initializing Media Foundation...\n");
   HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -194,10 +210,6 @@ UsbVideoCapturePlugin::UsbVideoCapturePlugin(flutter::PluginRegistrarWindows *re
 
 UsbVideoCapturePlugin::~UsbVideoCapturePlugin() {
   StopVideoCapture();
-  // Clear static instance pointer
-  if (s_instance_ == this) {
-    s_instance_ = nullptr;
-  }
   if (mf_initialized_) {
     MFShutdown();
     CoUninitialize();
@@ -293,22 +305,29 @@ std::vector<flutter::EncodableMap> UsbVideoCapturePlugin::EnumerateVideoCaptureD
   return devices;
 }
 
-bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
-  StopVideoCapture();
-
-  char debugMsg[512];
-  sprintf_s(debugMsg, "[USB_VIDEO_CPP] StartVideoCapture called with device: %s\n", deviceId.c_str());
-  OutputDebugStringA(debugMsg);
-
-  if (!mf_initialized_) {
-    OutputDebugStringA("[USB_VIDEO_CPP] Media Foundation not initialized\n");
-    return false;
+std::optional<std::wstring> UsbVideoCapturePlugin::DecodeDeviceId(const std::string& deviceId) {
+  if (deviceId.empty()) {
+    OutputDebugStringA("[USB_VIDEO_CPP] Empty device id\n");
+    return std::nullopt;
   }
 
-  // Convert device ID to wide string
   int size = MultiByteToWideChar(CP_UTF8, 0, deviceId.c_str(), -1, nullptr, 0);
+  if (size <= 1) {
+    OutputDebugStringA("[USB_VIDEO_CPP] Failed to convert device id to UTF-16\n");
+    return std::nullopt;
+  }
   std::wstring wideDeviceId(size - 1, 0);
-  MultiByteToWideChar(CP_UTF8, 0, deviceId.c_str(), -1, &wideDeviceId[0], size);
+  if (MultiByteToWideChar(CP_UTF8, 0, deviceId.c_str(), -1, &wideDeviceId[0], size) == 0) {
+    OutputDebugStringA("[USB_VIDEO_CPP] Failed to copy UTF-16 device id\n");
+    return std::nullopt;
+  }
+  return wideDeviceId;
+}
+
+bool UsbVideoCapturePlugin::CreateSourceReaderForDevice(
+    const std::wstring& wideDeviceId,
+    CComPtr<IMFSourceReader>& sourceReader) {
+  char debugMsg[512];
 
   CComPtr<IMFAttributes> attributes;
   HRESULT hr = MFCreateAttributes(&attributes, 2);
@@ -342,7 +361,7 @@ bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
     return false;
   }
 
-  hr = MFCreateSourceReaderFromMediaSource(source, nullptr, &source_reader_);
+  hr = MFCreateSourceReaderFromMediaSource(source, nullptr, &sourceReader);
   if (FAILED(hr)) {
     sprintf_s(debugMsg, "[USB_VIDEO_CPP] MFCreateSourceReaderFromMediaSource failed: 0x%08X\n", hr);
     OutputDebugStringA(debugMsg);
@@ -351,13 +370,13 @@ bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
 
   // First, try to get the native media type from the device
   CComPtr<IMFMediaType> nativeType;
-  hr = source_reader_->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &nativeType);
+  hr = sourceReader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &nativeType);
   if (SUCCEEDED(hr)) {
     OutputDebugStringA("[USB_VIDEO_CPP] Got native media type, attempting to use it\n");
 
     // Try to use the native format directly
-    hr = source_reader_->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-                                             nullptr, nativeType);
+    hr = sourceReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+                                           nullptr, nativeType);
     if (SUCCEEDED(hr)) {
       OutputDebugStringA("[USB_VIDEO_CPP] Using native media type succeeded\n");
     } else {
@@ -394,8 +413,8 @@ bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
       // Set resolution hint for Disting NT
       hr = MFSetAttributeSize(mediaType, MF_MT_FRAME_SIZE, 256, 64);
 
-      hr = source_reader_->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-                                               nullptr, mediaType);
+      hr = sourceReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+                                             nullptr, mediaType);
       if (SUCCEEDED(hr)) {
         sprintf_s(debugMsg, "[USB_VIDEO_CPP] Successfully set format index %d\n", i);
         OutputDebugStringA(debugMsg);
@@ -410,7 +429,28 @@ bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
     }
   }
 
-  OutputDebugStringA("[USB_VIDEO_CPP] Video capture initialized successfully, starting capture thread\n");
+  return true;
+}
+
+bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
+  StopVideoCapture();
+
+  char debugMsg[512];
+  sprintf_s(debugMsg, "[USB_VIDEO_CPP] StartVideoCapture called with device: %s\n", deviceId.c_str());
+  OutputDebugStringA(debugMsg);
+
+  if (!mf_initialized_) {
+    OutputDebugStringA("[USB_VIDEO_CPP] Media Foundation not initialized\n");
+    return false;
+  }
+
+  if (!DecodeDeviceId(deviceId).has_value()) {
+    return false;
+  }
+
+  capture_device_id_ = deviceId;
+
+  OutputDebugStringA("[USB_VIDEO_CPP] Starting capture thread\n");
 
   // Start the capture thread
   capturing_ = true;
@@ -421,11 +461,23 @@ bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
   HWND flutter_window = registrar_->GetView()->GetNativeWindow();
   if (flutter_window) {
     // Pass TimerCallback as TIMERPROC - Windows calls it directly, bypassing message queue
-    timer_id_ = SetTimer(flutter_window, FRAME_TIMER_ID, FRAME_TIMER_INTERVAL_MS, TimerCallback);
-    char timerMsg[256];
-    sprintf_s(timerMsg, "[USB_VIDEO_CPP] Started frame polling timer (id=%llu, interval=%dms)\n",
-              (unsigned long long)timer_id_, FRAME_TIMER_INTERVAL_MS);
-    OutputDebugStringA(timerMsg);
+    timer_id_ = reinterpret_cast<UINT_PTR>(this);
+    const UINT_PTR created_timer_id = SetTimer(flutter_window, timer_id_, FRAME_TIMER_INTERVAL_MS, TimerCallback);
+    if (created_timer_id != 0) {
+      timer_id_ = created_timer_id;
+      timer_window_ = flutter_window;
+      {
+        std::lock_guard<std::mutex> lock(s_instances_mutex_);
+        s_instances_by_timer_[timer_id_] = this;
+      }
+      char timerMsg[256];
+      sprintf_s(timerMsg, "[USB_VIDEO_CPP] Started frame polling timer (id=%llu, interval=%dms)\n",
+                (unsigned long long)timer_id_, FRAME_TIMER_INTERVAL_MS);
+      OutputDebugStringA(timerMsg);
+    } else {
+      timer_id_ = 0;
+      OutputDebugStringA("[USB_VIDEO_CPP] Warning: SetTimer failed\n");
+    }
   } else {
     OutputDebugStringA("[USB_VIDEO_CPP] Warning: Could not get Flutter window handle for timer\n");
   }
@@ -448,12 +500,17 @@ bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
 
 void UsbVideoCapturePlugin::StopVideoCapture() {
   // Stop the timer first
-  if (timer_id_ != 0) {
-    HWND flutter_window = registrar_->GetView()->GetNativeWindow();
-    if (flutter_window) {
-      KillTimer(flutter_window, timer_id_);
+  if (timer_id_ != 0 && timer_window_ != nullptr) {
+    {
+      std::lock_guard<std::mutex> lock(s_instances_mutex_);
+      auto it = s_instances_by_timer_.find(timer_id_);
+      if (it != s_instances_by_timer_.end() && it->second == this) {
+        s_instances_by_timer_.erase(it);
+      }
     }
+    KillTimer(timer_window_, timer_id_);
     timer_id_ = 0;
+    timer_window_ = nullptr;
     OutputDebugStringA("[USB_VIDEO_CPP] Stopped frame polling timer\n");
   }
 
@@ -465,28 +522,44 @@ void UsbVideoCapturePlugin::StopVideoCapture() {
       capture_thread_ = nullptr;
     }
   }
-
-  if (source_reader_) {
-    source_reader_.Release();
-  }
 }
 
 void UsbVideoCapturePlugin::CaptureThread() {
   OutputDebugStringA("[USB_VIDEO_CPP] Capture thread started\n");
 
+  HRESULT coHr = CoInitializeEx(nullptr, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
+  const bool com_initialized = SUCCEEDED(coHr);
+  if (FAILED(coHr) && coHr != RPC_E_CHANGED_MODE) {
+    char debugMsg[256];
+    sprintf_s(debugMsg, "[USB_VIDEO_CPP] Capture thread CoInitializeEx failed: 0x%08X\n", coHr);
+    OutputDebugStringA(debugMsg);
+    capturing_ = false;
+    return;
+  }
+
+  CComPtr<IMFSourceReader> source_reader;
+  if (mf_initialized_) {
+    auto wideDeviceId = DecodeDeviceId(capture_device_id_);
+    if (wideDeviceId.has_value()) {
+      if (CreateSourceReaderForDevice(*wideDeviceId, source_reader)) {
+        OutputDebugStringA("[USB_VIDEO_CPP] Video capture initialized successfully on capture thread\n");
+      }
+    }
+  }
+
   while (capturing_) {
-    if (!stream_active_ || !event_sink_) {
+    if (!stream_active_) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       continue;
     }
 
     // Try to read real video frames
-    if (source_reader_) {
+    if (source_reader) {
       DWORD streamIndex, flags;
       LONGLONG timestamp;
       CComPtr<IMFSample> sample;
 
-      HRESULT hr = source_reader_->ReadSample(
+      HRESULT hr = source_reader->ReadSample(
           (DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
           0, &streamIndex, &flags, &timestamp, &sample);
 
@@ -514,7 +587,7 @@ void UsbVideoCapturePlugin::CaptureThread() {
 
       // Get the actual media type to understand the format
       CComPtr<IMFMediaType> currentType;
-      hr = source_reader_->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, &currentType);
+      hr = source_reader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, &currentType);
 
       UINT32 width = 256, height = 64;  // Default to Disting NT dimensions
       GUID subtype = GUID_NULL;
@@ -621,6 +694,11 @@ void UsbVideoCapturePlugin::CaptureThread() {
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(33)); // ~30 FPS
+  }
+
+  source_reader.Release();
+  if (com_initialized) {
+    CoUninitialize();
   }
 
   OutputDebugStringA("[USB_VIDEO_CPP] Capture thread ending\n");

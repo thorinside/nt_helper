@@ -35,9 +35,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "..\..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\NT Helper"; Filename: "{app}\nt_helper.exe"
+Name: "{group}\NT Helper"; Filename: "{app}\nt_helper.exe"; WorkingDir: "{app}"
 Name: "{group}\Uninstall NT Helper"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\NT Helper"; Filename: "{app}\nt_helper.exe"; Tasks: desktopicon
+Name: "{autodesktop}\NT Helper"; Filename: "{app}\nt_helper.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\nt_helper.exe"; Description: "{cm:LaunchProgram,NT Helper}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\nt_helper.exe"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,NT Helper}"; Flags: nowait postinstall skipifsilent
