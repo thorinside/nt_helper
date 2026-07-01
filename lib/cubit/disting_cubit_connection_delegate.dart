@@ -224,8 +224,13 @@ class _ConnectionDelegate {
     // Now dispose the manager (safe since devices are already disconnected)
     manager?.dispose();
 
-    _cubit._midiCommand.dispose();
-    _cubit._midiCommand = createNativeMidiCommand();
+    // The Windows plugin owns a process-wide NativeCallable for WinMM input.
+    // Tearing MidiCommand down closes it, and later discovery reuses the closed
+    // callback address, leaving the device list empty until process restart.
+    if (!Platform.isWindows) {
+      _cubit._midiCommand.dispose();
+      _cubit._midiCommand = createNativeMidiCommand();
+    }
   }
 
   static const _syncTimeout = Duration(seconds: 60);
