@@ -40,4 +40,24 @@ Name: "{group}\Uninstall NT Helper"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\NT Helper"; Filename: "{app}\nt_helper.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\nt_helper.exe"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,NT Helper}"; Flags: nowait postinstall skipifsilent
+Filename: "https://aka.ms/vc14/vc_redist.x64.exe"; Description: "Open Microsoft Visual C++ Redistributable installer"; Flags: shellexec postinstall skipifsilent; Check: NeedsVcRuntime
+Filename: "{app}\nt_helper.exe"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram,NT Helper}"; Flags: nowait postinstall skipifsilent; Check: IsVcRuntimeInstalled
+
+[Code]
+function IsVcRuntimeInstalled(): Boolean;
+var
+  Installed: Cardinal;
+begin
+  Result :=
+    RegQueryDWordValue(
+      HKLM64,
+      'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64',
+      'Installed',
+      Installed) and
+    (Installed = 1);
+end;
+
+function NeedsVcRuntime(): Boolean;
+begin
+  Result := not IsVcRuntimeInstalled();
+end;
