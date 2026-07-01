@@ -257,42 +257,15 @@ jobs:
       - name: Build Windows
         run: flutter build windows
 
-      - name: Bundle Visual C++ runtime
+      - name: Verify Windows bundle omits VC++ runtime
         shell: pwsh
         run: |
           $releaseDir = "build/windows/x64/runner/Release"
-          $redistDlls = @()
-
-          if ($env:VCToolsRedistDir) {
-            $redistDlls = Get-ChildItem -Path (Join-Path $env:VCToolsRedistDir "x64") `
-              -Recurse `
-              -Filter "*.dll" `
-              -ErrorAction SilentlyContinue |
-              Where-Object { $_.DirectoryName -match "Microsoft\.VC\d+\.CRT$" }
-          }
-
-          if (-not $redistDlls) {
-            $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-            if (Test-Path $vswhere) {
-              $vsInstall = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-              if ($vsInstall) {
-                $redistRoot = Join-Path $vsInstall "VC\Redist\MSVC"
-                $redistDlls = Get-ChildItem -Path $redistRoot `
-                  -Recurse `
-                  -Filter "*.dll" `
-                  -ErrorAction SilentlyContinue |
-                  Where-Object { $_.FullName -match "\\x64\\Microsoft\.VC\d+\.CRT\\" }
-              }
+          $forbiddenDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+          foreach ($dllName in $forbiddenDlls) {
+            if (Test-Path (Join-Path $releaseDir $dllName)) {
+              throw "Windows release bundle must not include bundled VC++ runtime DLL: $dllName"
             }
-          }
-
-          $requiredDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
-          foreach ($dllName in $requiredDlls) {
-            $source = $redistDlls | Where-Object { $_.Name -ieq $dllName } | Select-Object -First 1
-            if (-not $source) {
-              throw "Could not find required Visual C++ runtime DLL: $dllName"
-            }
-            Copy-Item -LiteralPath $source.FullName -Destination $releaseDir -Force
           }
 
       - name: Install Inno Setup
