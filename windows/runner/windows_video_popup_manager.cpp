@@ -10,12 +10,15 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <iomanip>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "utils.h"
 #include "win32_window.h"
 
 extern void UsbVideoCapturePluginRegisterWithRegistrar(
@@ -26,6 +29,66 @@ namespace {
 constexpr char kChannelName[] = "nt_helper/windows_video_popup";
 constexpr char kEntryPointArg[] = "windows_video_popup";
 constexpr wchar_t kDefaultTitle[] = L"Disting NT Video";
+
+std::string WideToUtf8(const std::wstring& value) {
+  if (value.empty()) {
+    return std::string();
+  }
+  const int length =
+      WideCharToMultiByte(CP_UTF8, 0, value.c_str(), -1, nullptr, 0, nullptr,
+                          nullptr);
+  if (length <= 0) {
+    return std::string();
+  }
+  std::string utf8(length, '\0');
+  WideCharToMultiByte(CP_UTF8, 0, value.c_str(), -1, utf8.data(), length,
+                      nullptr, nullptr);
+  if (!utf8.empty() && utf8.back() == '\0') {
+    utf8.pop_back();
+  }
+  return utf8;
+}
+
+std::wstring HwndString(HWND hwnd) {
+  if (hwnd == nullptr) {
+    return L"null";
+  }
+  std::wstringstream stream;
+  stream << L"0x" << std::hex << std::uppercase
+         << reinterpret_cast<std::uintptr_t>(hwnd);
+  return stream.str();
+}
+
+std::wstring BoolString(bool value) {
+  return value ? L"true" : L"false";
+}
+
+std::wstring RectString(const RECT& rect) {
+  std::wstringstream stream;
+  stream << L"(" << rect.left << L"," << rect.top << L" "
+         << (rect.right - rect.left) << L"x" << (rect.bottom - rect.top)
+         << L")";
+  return stream.str();
+}
+
+void PopupLog(const std::wstring& message) {
+  const std::wstring line = L"[VIDEO_POPUP_NATIVE] " + message;
+  StartupLog(line);
+
+  const std::string utf8_line = WideToUtf8(line + L"\r\n");
+  if (utf8_line.empty()) {
+    return;
+  }
+
+  HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+  if (output == nullptr || output == INVALID_HANDLE_VALUE) {
+    return;
+  }
+
+  DWORD written = 0;
+  WriteFile(output, utf8_line.data(), static_cast<DWORD>(utf8_line.size()),
+            &written, nullptr);
+}
 
 const flutter::EncodableValue* MapValue(const flutter::EncodableMap& map,
                                         const char* key) {
@@ -129,6 +192,7 @@ double PhysicalToLogical(HWND hwnd, int value) {
 
 void FocusWindow(HWND hwnd) {
   if (hwnd == nullptr) {
+    PopupLog(L"FocusWindow skipped: hwnd=null");
     return;
   }
 
@@ -142,6 +206,12 @@ void FocusWindow(HWND hwnd) {
       foreground_thread_id != 0 && foreground_thread_id != current_thread_id &&
       AttachThreadInput(foreground_thread_id, current_thread_id, TRUE);
 
+  PopupLog(L"FocusWindow begin hwnd=" + HwndString(hwnd) +
+           L" foregroundBefore=" + HwndString(foreground_window) +
+           L" foregroundThread=" + std::to_wstring(foreground_thread_id) +
+           L" currentThread=" + std::to_wstring(current_thread_id) +
+           L" attached=" + BoolString(attached));
+
   SetForegroundWindow(hwnd);
   SetActiveWindow(hwnd);
   HWND child = GetWindow(hwnd, GW_CHILD);
@@ -152,6 +222,10 @@ void FocusWindow(HWND hwnd) {
   if (attached) {
     AttachThreadInput(foreground_thread_id, current_thread_id, FALSE);
   }
+
+  PopupLog(L"FocusWindow end hwnd=" + HwndString(hwnd) +
+           L" foregroundAfter=" + HwndString(GetForegroundWindow()) +
+           L" child=" + HwndString(child));
 }
 
 }  // namespace
@@ -164,8 +238,12 @@ class WindowsVideoPopupWindow : public Win32Window {
   ~WindowsVideoPopupWindow() override = default;
 
   bool CreatePopup() {
+    PopupLog(L"CreatePopup requested");
     SetQuitOnClose(false);
-    return Create(kDefaultTitle, Point(10, 10), Size(384, 132));
+    const bool created = Create(kDefaultTitle, Point(10, 10), Size(384, 132));
+    PopupLog(L"CreatePopup result=" + BoolString(created) +
+             L" hwnd=" + HwndString(GetHandle()));
+    return created;
   }
 
   bool IsAlive() { return GetHandle() != nullptr; }
@@ -173,6 +251,7 @@ class WindowsVideoPopupWindow : public Win32Window {
   void Configure(const flutter::EncodableMap& args) {
     HWND hwnd = GetHandle();
     if (hwnd == nullptr) {
+      PopupLog(L"Configure skipped: hwnd=null");
       return;
     }
 
@@ -187,6 +266,16 @@ class WindowsVideoPopupWindow : public Win32Window {
         1, LogicalToPhysical(hwnd, MapNumber(args, "height").value_or(100.0)));
     const auto x = MapNumber(args, "x");
     const auto y = MapNumber(args, "y");
+
+    PopupLog(L"Configure begin hwnd=" + HwndString(hwnd) +
+             L" x=" + (x.has_value() ? std::to_wstring(*x) : L"null") +
+             L" y=" + (y.has_value() ? std::to_wstring(*y) : L"null") +
+             L" width=" + std::to_wstring(width) +
+             L" height=" + std::to_wstring(height) +
+             L" center=" + BoolString(MapBool(args, "center", false)) +
+             L" alwaysOnTop=" +
+             BoolString(MapBool(args, "alwaysOnTop", false)) +
+             L" foreground=" + HwndString(GetForegroundWindow()));
 
     int left = x.has_value() ? LogicalToPhysical(hwnd, *x) : 0;
     int top = y.has_value() ? LogicalToPhysical(hwnd, *y) : 0;
@@ -208,11 +297,19 @@ class WindowsVideoPopupWindow : public Win32Window {
 
     SetWindowPos(hwnd, nullptr, left, top, width, height,
                  SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
+    RECT after_position;
+    if (GetWindowRect(hwnd, &after_position)) {
+      PopupLog(L"Configure positioned hwnd=" + HwndString(hwnd) +
+               L" rect=" + RectString(after_position));
+    }
 
     always_on_top_ = MapBool(args, "alwaysOnTop", false);
     if (always_on_top_) {
       SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+      PopupLog(L"Configure applied HWND_TOPMOST");
+    } else {
+      PopupLog(L"Configure left window non-topmost at startup");
     }
 
     configured_ = true;
@@ -224,23 +321,34 @@ class WindowsVideoPopupWindow : public Win32Window {
   void Raise() {
     HWND hwnd = GetHandle();
     if (hwnd == nullptr) {
+      PopupLog(L"Raise skipped: hwnd=null");
       return;
     }
 
+    PopupLog(L"Raise begin hwnd=" + HwndString(hwnd) +
+             L" alwaysOnTop=" + BoolString(always_on_top_) +
+             L" iconic=" + BoolString(IsIconic(hwnd)) +
+             L" visible=" + BoolString(IsWindowVisible(hwnd)) +
+             L" foregroundBefore=" + HwndString(GetForegroundWindow()));
     ShowWindow(hwnd, IsIconic(hwnd) ? SW_RESTORE : SW_SHOWNORMAL);
     SetWindowPos(hwnd, always_on_top_ ? HWND_TOPMOST : HWND_TOP, 0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
     BringWindowToTop(hwnd);
     FocusWindow(hwnd);
+    PopupLog(L"Raise end hwnd=" + HwndString(hwnd) +
+             L" foregroundAfter=" + HwndString(GetForegroundWindow()));
   }
 
   void SetAlwaysOnTop(bool always_on_top) {
     HWND hwnd = GetHandle();
     if (hwnd == nullptr) {
+      PopupLog(L"SetAlwaysOnTop skipped: hwnd=null");
       return;
     }
 
     always_on_top_ = always_on_top;
+    PopupLog(L"SetAlwaysOnTop hwnd=" + HwndString(hwnd) +
+             L" alwaysOnTop=" + BoolString(always_on_top));
     SetWindowPos(hwnd, always_on_top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0,
                  0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     Raise();
@@ -276,6 +384,7 @@ class WindowsVideoPopupWindow : public Win32Window {
       return;
     }
 
+    PopupLog(L"SendBoundsChanged hwnd=" + HwndString(hwnd));
     channel_->InvokeMethod(
         "boundsChanged",
         std::make_unique<flutter::EncodableValue>(GetBounds()));
@@ -283,6 +392,7 @@ class WindowsVideoPopupWindow : public Win32Window {
 
  protected:
   bool OnCreate() override {
+    PopupLog(L"OnCreate begin hwnd=" + HwndString(GetHandle()));
     RECT frame = GetClientArea();
     long view_width = frame.right - frame.left;
     long view_height = frame.bottom - frame.top;
@@ -300,8 +410,13 @@ class WindowsVideoPopupWindow : public Win32Window {
     flutter_controller_ = std::make_unique<flutter::FlutterViewController>(
         view_width, view_height, project);
     if (!flutter_controller_->engine() || !flutter_controller_->view()) {
+      PopupLog(L"OnCreate FlutterViewController setup failed");
       return false;
     }
+    PopupLog(L"OnCreate FlutterViewController setup succeeded "
+             L"viewSize=" +
+             std::to_wstring(view_width) + L"x" +
+             std::to_wstring(view_height));
 
     PasteboardPluginRegisterWithRegistrar(
         flutter_controller_->engine()->GetRegistrarForPlugin(
@@ -318,10 +433,13 @@ class WindowsVideoPopupWindow : public Win32Window {
     });
 
     SetChildContent(flutter_controller_->view()->GetNativeWindow());
+    PopupLog(L"OnCreate child attached child=" +
+             HwndString(flutter_controller_->view()->GetNativeWindow()));
     return true;
   }
 
   void OnDestroy() override {
+    PopupLog(L"OnDestroy hwnd=" + HwndString(GetHandle()));
     channel_.reset();
     flutter_controller_.reset();
     Win32Window::OnDestroy();
@@ -341,6 +459,7 @@ class WindowsVideoPopupWindow : public Win32Window {
     }
 
     if (message == WM_CLOSE) {
+      PopupLog(L"WM_CLOSE hwnd=" + HwndString(hwnd));
       SendBoundsChanged();
       DestroyWindow(hwnd);
       return 0;
@@ -364,6 +483,7 @@ class WindowsVideoPopupWindow : public Win32Window {
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue>& call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+    PopupLog(L"Child channel method=" + Utf8ToWide(call.method_name()));
     if (call.method_name() == "configureVideoPopup") {
       const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
       if (args == nullptr) {
@@ -424,9 +544,15 @@ WindowsVideoPopupManager& WindowsVideoPopupManager::Instance() {
   return manager;
 }
 
-void WindowsVideoPopupManager::RegisterMainEngine(
-    flutter::FlutterEngine* engine) {
+void WindowsVideoPopupManager::RegisterMainEngine(flutter::FlutterEngine* engine,
+                                                  HWND main_window) {
+  main_window_ = main_window;
+  PopupLog(L"RegisterMainEngine engine=" +
+           std::to_wstring(reinterpret_cast<std::uintptr_t>(engine)) +
+           L" mainWindow=" + HwndString(main_window_) +
+           L" foreground=" + HwndString(GetForegroundWindow()));
   if (engine == nullptr) {
+    PopupLog(L"RegisterMainEngine skipped: engine=null");
     return;
   }
 
@@ -435,6 +561,9 @@ void WindowsVideoPopupManager::RegisterMainEngine(
           engine->messenger(), kChannelName,
           &flutter::StandardMethodCodec::GetInstance());
   main_channel_->SetMethodCallHandler([this](const auto& call, auto result) {
+    PopupLog(L"Main channel method=" + Utf8ToWide(call.method_name()) +
+             L" mainWindow=" + HwndString(main_window_) +
+             L" foreground=" + HwndString(GetForegroundWindow()));
     if (call.method_name() == "openOrFocus") {
       const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
       if (args == nullptr) {
@@ -457,11 +586,18 @@ void WindowsVideoPopupManager::RegisterMainEngine(
 
 bool WindowsVideoPopupManager::OpenOrFocus(
     const std::string& window_arguments) {
+  PopupLog(L"OpenOrFocus begin mainWindow=" + HwndString(main_window_) +
+           L" existing=" + BoolString(popup_window_ != nullptr) +
+           L" foreground=" + HwndString(GetForegroundWindow()) +
+           L" args=" + Utf8ToWide(window_arguments));
   if (popup_window_ && !popup_window_->IsAlive()) {
+    PopupLog(L"OpenOrFocus clearing stale popup window");
     popup_window_.reset();
   }
 
   if (popup_window_) {
+    PopupLog(L"OpenOrFocus raising existing popup hwnd=" +
+             HwndString(popup_window_->GetHandle()));
     popup_window_->Raise();
     return true;
   }
@@ -469,15 +605,21 @@ bool WindowsVideoPopupManager::OpenOrFocus(
   auto popup_window =
       std::make_unique<WindowsVideoPopupWindow>(window_arguments);
   if (!popup_window->CreatePopup()) {
+    PopupLog(L"OpenOrFocus create failed");
     return false;
   }
 
   popup_window_ = std::move(popup_window);
+  PopupLog(L"OpenOrFocus created popup hwnd=" +
+           HwndString(popup_window_->GetHandle()) +
+           L" waiting for Dart configure before first show");
   return true;
 }
 
 void WindowsVideoPopupManager::ForwardDisplayMode(
     const std::string& mode_name) {
+  PopupLog(L"ForwardDisplayMode mode=" + Utf8ToWide(mode_name) +
+           L" mainChannel=" + BoolString(main_channel_ != nullptr));
   if (main_channel_ == nullptr) {
     return;
   }

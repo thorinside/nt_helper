@@ -115,8 +115,15 @@ Future<void> _bootstrapApp(List<String> args) async {
     WidgetsFlutterBinding.ensureInitialized,
   );
 
+  if (Platform.isWindows) {
+    debugPrint('[VIDEO_POPUP_DART] main() Windows args=$args');
+  }
+
   if (Platform.isWindows &&
       VideoPopupWindowService.isWindowsNativeVideoPopupArguments(args)) {
+    debugPrint(
+      '[VIDEO_POPUP_DART] main(): detected Windows native video popup args',
+    );
     await _bootstrapVideoPopupWindow();
     return;
   }
@@ -130,6 +137,10 @@ Future<void> _bootstrapApp(List<String> args) async {
       if (VideoPopupWindowService.isVideoPopupArguments(
         windowController.arguments,
       )) {
+        debugPrint(
+          '[VIDEO_POPUP_DART] main(): detected desktop_multi_window '
+          'video popup arguments=${windowController.arguments}',
+        );
         await _bootstrapVideoPopupWindow();
         return;
       }
@@ -317,6 +328,10 @@ Future<void> _bootstrapApp(List<String> args) async {
 }
 
 Future<void> _bootstrapVideoPopupWindow() async {
+  debugPrint(
+    '[VIDEO_POPUP_DART] _bootstrapVideoPopupWindow() '
+    'platform=${Platform.operatingSystem}',
+  );
   if (!Platform.isWindows) {
     await StartupLogService.traceAsync(
       'windowManager.ensureInitialized',

@@ -19,6 +19,10 @@ const _windowsVideoPopupChannel = MethodChannel(
   'nt_helper/windows_video_popup',
 );
 
+void _videoPopupLog(String message) {
+  debugPrint('[VIDEO_POPUP_DART] $message');
+}
+
 class VideoPopupApp extends StatelessWidget {
   const VideoPopupApp({super.key});
 
@@ -62,6 +66,10 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   void initState() {
     super.initState();
     _alwaysOnTop = _settings.videoPopupAlwaysOnTop;
+    _videoPopupLog(
+      'VideoPopupWindow.initState platform=${Platform.operatingSystem} '
+      'alwaysOnTop=$_alwaysOnTop',
+    );
     if (!Platform.isWindows) {
       windowManager.addListener(this);
     }
@@ -82,6 +90,9 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
 
   Future<void> _configureWindowController() async {
     if (Platform.isWindows) {
+      _videoPopupLog(
+        'VideoPopupWindow configuring Windows native method handler',
+      );
       _windowsVideoPopupChannel.setMethodCallHandler(_handleWindowsMethod);
       return;
     }
@@ -105,6 +116,10 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
     switch (call.method) {
       case 'boundsChanged':
         final bounds = _rectFromMap(call.arguments);
+        _videoPopupLog(
+          'VideoPopupWindow received boundsChanged raw=${call.arguments} '
+          'parsed=$bounds',
+        );
         if (bounds != null) {
           await _settings.setVideoPopupBounds(bounds);
         }
@@ -147,6 +162,7 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
 
   Future<void> _setDisplayMode(DisplayMode mode) async {
     if (Platform.isWindows) {
+      _videoPopupLog('setDisplayMode via Windows native channel mode=$mode');
       await _windowsVideoPopupChannel.invokeMethod('setDisplayMode', mode.name);
     } else {
       await _channel.invokeMethod('setDisplayMode', mode.name);
@@ -156,6 +172,7 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   Future<void> _toggleAlwaysOnTop() async {
     final next = !_alwaysOnTop;
     if (Platform.isWindows) {
+      _videoPopupLog('setAlwaysOnTop via Windows native channel next=$next');
       await _windowsVideoPopupChannel.invokeMethod('setAlwaysOnTop', {
         'alwaysOnTop': next,
       });
@@ -532,6 +549,12 @@ Future<void> configureVideoPopupWindow() async {
   );
 
   if (Platform.isWindows) {
+    _videoPopupLog(
+      'configureVideoPopupWindow via Windows native channel '
+      'hasSavedPosition=$hasSavedPosition bounds=$bounds '
+      'initialSize=$initialSize '
+      'alwaysOnTop=${settings.videoPopupAlwaysOnTop}',
+    );
     await _windowsVideoPopupChannel.invokeMethod('configureVideoPopup', {
       'x': hasSavedPosition ? bounds.left : null,
       'y': hasSavedPosition ? bounds.top : null,
@@ -568,6 +591,7 @@ Future<void> configureVideoPopupWindow() async {
 
 Future<void> raiseVideoPopupWindow() async {
   if (Platform.isWindows) {
+    _videoPopupLog('raiseVideoPopupWindow via Windows native channel');
     await _windowsVideoPopupChannel.invokeMethod('raiseCurrentWindow');
     return;
   }
@@ -578,6 +602,7 @@ Future<Rect> getWindowsVideoPopupBounds() async {
   final result = await _windowsVideoPopupChannel
       .invokeMapMethod<String, dynamic>('getBounds');
   final bounds = _rectFromMap(result);
+  _videoPopupLog('getWindowsVideoPopupBounds raw=$result parsed=$bounds');
   if (bounds != null) return bounds;
   return Rect.zero;
 }

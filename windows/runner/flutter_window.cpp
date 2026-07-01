@@ -278,7 +278,7 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
   StartupLog(L"Registering Flutter plugins");
   RegisterPlugins(flutter_controller_->engine());
   WindowsVideoPopupManager::Instance().RegisterMainEngine(
-      flutter_controller_->engine());
+      flutter_controller_->engine(), GetHandle());
   StartupLog(L"Flutter plugins registered");
 
   // Register USB video capture plugin
