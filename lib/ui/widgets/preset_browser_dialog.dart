@@ -27,6 +27,12 @@ import 'package:nt_helper/services/preset_analyzer.dart';
 
 enum _FileAction { download, upload, newFolder, rename, delete, view }
 
+bool get _supportsDesktopDrop =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.linux);
+
 class _DeleteSelectedIntent extends Intent {
   const _DeleteSelectedIntent();
 }
@@ -206,6 +212,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                                         onItemSelected: _handleItemSelected,
                                         currentPath: loaded.currentPath,
                                         onContextMenu: _handleContextMenu,
+                                        onFilesDropped: _handlePanelDrop,
                                       ),
                                 error: (error) => Center(
                                   child: Column(
@@ -327,10 +334,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       ),
     );
 
-    if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.windows ||
-            defaultTargetPlatform == TargetPlatform.macOS ||
-            defaultTargetPlatform == TargetPlatform.linux)) {
+    if (_supportsDesktopDrop && isMobile) {
       return DropTarget(
         onDragDone: _handleDragDone,
         onDragEntered: _handleDragEntered,
@@ -342,6 +346,12 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
             if (_isInstallingPackage) _buildInstallOverlay(),
           ],
         ),
+      );
+    }
+
+    if (_supportsDesktopDrop) {
+      return Stack(
+        children: [content, if (_isInstallingPackage) _buildInstallOverlay()],
       );
     }
 
@@ -976,9 +986,17 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       _isDragOver = false;
     });
 
-    if (details.files.isEmpty) return;
+    _handleDroppedFiles(details.files.cast<XFile>());
+  }
 
-    if (details.files.length > 1) {
+  void _handlePanelDrop(List<XFile> files, String targetDirectory) {
+    _handleDroppedFiles(files, targetDirectory: targetDirectory);
+  }
+
+  void _handleDroppedFiles(List<XFile> files, {String? targetDirectory}) {
+    if (files.isEmpty) return;
+
+    if (files.length > 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please drop only one file at a time'),
@@ -988,21 +1006,21 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       return;
     }
 
-    final file = details.files.first;
+    final file = files.first;
     final lowerPath = file.path.toLowerCase();
 
     if (lowerPath.endsWith('.zip')) {
       _processPackageFile(file);
     } else {
-      _uploadDroppedFile(file);
+      _uploadDroppedFile(file, targetDirectory: targetDirectory);
     }
   }
 
-  Future<void> _uploadDroppedFile(XFile file) async {
+  Future<void> _uploadDroppedFile(XFile file, {String? targetDirectory}) async {
     final cubit = context.read<PresetBrowserCubit>();
     final bytes = await file.readAsBytes();
     final fileName = file.path.split('/').last.split('\\').last;
-    final targetDir = cubit.getSelectedDirectoryPath();
+    final targetDir = targetDirectory ?? cubit.getCurrentDirectory();
 
     try {
       setState(() => _uploadProgress = 0);
@@ -1208,6 +1226,8 @@ class ThreePanelNavigator extends StatefulWidget {
   final Function(DirectoryEntry, PanelPosition) onItemSelected;
   final String currentPath;
   final Function(DirectoryEntry, Offset, String panelPath)? onContextMenu;
+  final void Function(List<XFile> files, String targetDirectory)?
+  onFilesDropped;
 
   const ThreePanelNavigator({
     super.key,
@@ -1220,6 +1240,7 @@ class ThreePanelNavigator extends StatefulWidget {
     required this.onItemSelected,
     required this.currentPath,
     this.onContextMenu,
+    this.onFilesDropped,
   });
 
   @override
@@ -1281,6 +1302,7 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
             position: PanelPosition.left,
             currentPath: leftPath,
             onContextMenu: widget.onContextMenu,
+            onFilesDropped: widget.onFilesDropped,
             focusNode: _leftFocusNode,
             nextPanelFocusNode: _centerFocusNode,
           ),
@@ -1295,6 +1317,7 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
             position: PanelPosition.center,
             currentPath: centerPath,
             onContextMenu: widget.onContextMenu,
+            onFilesDropped: widget.onFilesDropped,
             focusNode: _centerFocusNode,
             nextPanelFocusNode: _rightFocusNode,
           ),
@@ -1309,6 +1332,7 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
             position: PanelPosition.right,
             currentPath: rightPath,
             onContextMenu: widget.onContextMenu,
+            onFilesDropped: widget.onFilesDropped,
             focusNode: _rightFocusNode,
           ),
         ),
@@ -1338,6 +1362,8 @@ class DirectoryPanel extends StatefulWidget {
   final PanelPosition position;
   final String currentPath;
   final Function(DirectoryEntry, Offset, String panelPath)? onContextMenu;
+  final void Function(List<XFile> files, String targetDirectory)?
+  onFilesDropped;
   final FocusNode? focusNode;
   final FocusNode? nextPanelFocusNode;
 
@@ -1349,6 +1375,7 @@ class DirectoryPanel extends StatefulWidget {
     required this.position,
     required this.currentPath,
     this.onContextMenu,
+    this.onFilesDropped,
     this.focusNode,
     this.nextPanelFocusNode,
   });
@@ -1364,6 +1391,7 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
   final ScrollController _scrollController = ScrollController();
   int _focusedIndex = 0;
   bool _showKeyboardFocus = false;
+  bool _isDragOver = false;
 
   @override
   void initState() {
@@ -1515,8 +1543,10 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
       PanelPosition.right => 'Right panel',
     };
 
+    Widget panel;
+
     if (widget.items.isEmpty) {
-      return Semantics(
+      panel = Semantics(
         label: '$panelLabel, empty',
         child: Container(
           decoration: BoxDecoration(
@@ -1534,31 +1564,93 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
           ),
         ),
       );
-    }
-
-    return Semantics(
-      label: '$panelLabel, ${widget.items.length} items',
-      child: Focus(
-        focusNode: _focusNode,
-        onKeyEvent: _handleKeyEvent,
-        child: FocusTraversalGroup(
-          descendantsAreTraversable: false,
-          child: Container(
-            clipBehavior: Clip.hardEdge,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: _showKeyboardFocus && _focusNode.hasFocus
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).dividerColor,
-                width: _showKeyboardFocus && _focusNode.hasFocus ? 2.0 : 0.5,
+    } else {
+      panel = Semantics(
+        label: '$panelLabel, ${widget.items.length} items',
+        child: Focus(
+          focusNode: _focusNode,
+          onKeyEvent: _handleKeyEvent,
+          child: FocusTraversalGroup(
+            descendantsAreTraversable: false,
+            child: Container(
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _showKeyboardFocus && _focusNode.hasFocus
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).dividerColor,
+                  width: _showKeyboardFocus && _focusNode.hasFocus ? 2.0 : 0.5,
+                ),
+              ),
+              child: Material(
+                color: Theme.of(context).colorScheme.surface,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  itemCount: widget.items.length,
+                  itemBuilder: (context, index) => _buildItem(context, index),
+                ),
               ),
             ),
-            child: Material(
-              color: Theme.of(context).colorScheme.surface,
-              child: ListView.builder(
-                controller: _scrollController,
-                itemCount: widget.items.length,
-                itemBuilder: (context, index) => _buildItem(context, index),
+          ),
+        ),
+      );
+    }
+
+    if (_supportsDesktopDrop && widget.onFilesDropped != null) {
+      panel = DropTarget(
+        onDragEntered: (_) => setState(() => _isDragOver = true),
+        onDragExited: (_) => setState(() => _isDragOver = false),
+        onDragDone: (details) {
+          setState(() => _isDragOver = false);
+          widget.onFilesDropped!(
+            details.files.cast<XFile>(),
+            widget.currentPath,
+          );
+        },
+        child: Stack(
+          children: [panel, if (_isDragOver) _buildPanelDragOverlay(context)],
+        ),
+      );
+    }
+
+    return panel;
+  }
+
+  Widget _buildPanelDragOverlay(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Semantics(
+          label: 'Drop file into ${widget.currentPath}',
+          liveRegion: true,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.08),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            ),
+            child: Center(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Text(
+                    'Drop into ${widget.currentPath}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
               ),
             ),
           ),

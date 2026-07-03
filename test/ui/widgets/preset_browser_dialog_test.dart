@@ -255,6 +255,50 @@ void main() {
         () => mockCubit.selectFile(testFile, PanelPosition.left),
       ).called(1);
     });
+
+    testWidgets('wires distinct drop directories to desktop panels', (
+      tester,
+    ) async {
+      final midiDir = DirectoryEntry(
+        name: 'MIDI/',
+        attributes: 0x10,
+        date: 0,
+        time: 0,
+        size: 0,
+      );
+      final songsDir = DirectoryEntry(
+        name: 'Songs/',
+        attributes: 0x10,
+        date: 0,
+        time: 0,
+        size: 0,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: Scaffold(
+            body: ThreePanelNavigator(
+              leftPanelItems: [midiDir],
+              centerPanelItems: [songsDir],
+              rightPanelItems: const [],
+              selectedLeftItem: midiDir,
+              selectedCenterItem: songsDir,
+              selectedRightItem: null,
+              currentPath: '/',
+              onItemSelected: (_, _) {},
+              onFilesDropped: (_, _) {},
+            ),
+          ),
+        ),
+      );
+
+      final panelPaths = tester
+          .widgetList<DirectoryPanel>(find.byType(DirectoryPanel))
+          .map((panel) => panel.currentPath)
+          .toList();
+
+      expect(panelPaths, ['/', '/MIDI', '/MIDI/Songs']);
+    });
   });
 
   group('DirectoryPanel', () {

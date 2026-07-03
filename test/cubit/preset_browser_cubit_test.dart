@@ -346,6 +346,65 @@ void main() {
       });
     });
 
+    group('getPanelDirectory', () {
+      test('returns each desktop panel directory independently', () {
+        cubit.emit(
+          PresetBrowserState.loaded(
+            currentPath: '/',
+            leftPanelItems: [],
+            centerPanelItems: [],
+            rightPanelItems: [],
+            selectedLeftItem: DirectoryEntry(
+              name: 'MIDI/',
+              attributes: 0x10,
+              date: 0,
+              time: 0,
+              size: 0,
+            ),
+            selectedCenterItem: DirectoryEntry(
+              name: 'Songs/',
+              attributes: 0x10,
+              date: 0,
+              time: 0,
+              size: 0,
+            ),
+            selectedRightItem: null,
+            navigationHistory: [],
+            sortByDate: false,
+          ),
+        );
+
+        expect(cubit.getPanelDirectory(PanelPosition.left), '/');
+        expect(cubit.getPanelDirectory(PanelPosition.center), '/MIDI');
+        expect(cubit.getPanelDirectory(PanelPosition.right), '/MIDI/Songs');
+      });
+
+      test('selected directory path is separate from panel drop paths', () {
+        cubit.emit(
+          PresetBrowserState.loaded(
+            currentPath: '/',
+            leftPanelItems: [],
+            centerPanelItems: [],
+            rightPanelItems: [],
+            selectedLeftItem: DirectoryEntry(
+              name: 'wavetables/',
+              attributes: 0x10,
+              date: 0,
+              time: 0,
+              size: 0,
+            ),
+            selectedCenterItem: null,
+            selectedRightItem: null,
+            navigationHistory: [],
+            sortByDate: false,
+          ),
+        );
+
+        expect(cubit.getSelectedDirectoryPath(), '/wavetables');
+        expect(cubit.getPanelDirectory(PanelPosition.left), '/');
+      });
+    });
+
     group('preset history', () {
       test('loadRecentPresets loads from SharedPreferences', () async {
         when(
