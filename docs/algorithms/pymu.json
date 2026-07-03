@@ -3,8 +3,8 @@
   "name": "Poly Multisample",
   "description": "This algorithm is inspired by the original “SD Multisample” algorithm on the disting EX, with hints of the Crossfade Loop Synth 103 VST plug-in, and the “Audio Playback with Crossfade” algorithm on the disting mk4. It is a polyphonic sample playback instrument, playing WAV files from the MicroSD card. It can also record audio (i.e. sample in the traditional sense) and play that. It can apply crossfade looping to make smooth looping pads out of any sample material. It can be played via CV/gate, MIDI, or I2C. It supports both velocity switches and round robins per sample.",
   "categories": [
-    "Sample Player",
-    "Polyphonic Synth",
+    "Polyphonic",
+    "Sampler",
     "Instrument"
   ],
   "short_description": "A polyphonic sample player",
@@ -25,12 +25,14 @@
     {
       "name": "Folder",
       "min": 0,
+      "max": null,
       "default": 0,
       "description": "Sets the sample folder to use."
     },
     {
       "name": "Sample",
       "min": -1,
+      "max": null,
       "default": -1,
       "description": "Allows you to choose a single sample within the folder to play, or “<MULTISAMPLE>” for the usual case where you want the algorithm to choose the sample automatically based on the note pitch."
     },
@@ -253,8 +255,8 @@
   ],
   "input_ports": [
     {
-      "name": "CV/gate",
-      "description": "Control voltage and gate inputs for pitch and triggering."
+      "name": "CV/Gate",
+      "description": "Control Voltage and Gate inputs for pitch and triggering."
     },
     {
       "name": "MIDI",
@@ -262,17 +264,17 @@
     },
     {
       "name": "I2C",
-      "description": "I2C input for digital control."
+      "description": "I2C communication input."
     }
   ],
   "output_ports": [
     {
-      "name": "Left/mono output",
-      "description": "The left or mono output audio signal."
+      "name": "Left/Mono Output",
+      "description": "The left or mono audio output bus."
     },
     {
-      "name": "Right output",
-      "description": "The right output audio signal."
+      "name": "Right Output",
+      "description": "The right audio output bus."
     },
     {
       "name": "Left/mono output",

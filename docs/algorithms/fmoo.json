@@ -1,0 +1,135 @@
+{
+  "guid": "fmoo",
+  "name": "VCF (24dB/oct LP)",
+  "description": "This algorithm is a 24dB/octave lowpass filter, implemented using circuit emulation of a four pole transistor ladder filter [135] . It is a port of the same algorithm on the disting EX, for which there is a [video here](https://www.youtube.com/watch?v=YfG_Bg_n7fs) [136] .",
+  "categories": [
+    "Filter",
+    "Synthesis"
+  ],
+  "short_description": "Fourth order LP filter",
+  "gui_description": "The display simply shows the filter centre frequency, in Hz and as a MIDI note number.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Sweep",
+      "min": -36.0,
+      "max": 84.0,
+      "default": 0.0,
+      "description": "A manual frequency sweep control; offsets the frequency CV.",
+      "type": "string",
+      "channelCountRef": "ST",
+      "is_bus": false
+    },
+    {
+      "name": "Resonance",
+      "min": 0,
+      "max": 100,
+      "default": 20,
+      "description": "Sets the filter resonance. The filter will self-oscillate at high resonances.",
+      "type": "string",
+      "is_bus": false
+    },
+    {
+      "name": "Drive",
+      "min": -12.0,
+      "max": 48.0,
+      "default": 0.0,
+      "description": "A gain control for the input to the filter. Boosting the input gives a subjectively pleasant non-linear distortion.",
+      "type": "string",
+      "channelCountRef": "dB",
+      "is_bus": false
+    },
+    {
+      "name": "Output gain",
+      "min": -40,
+      "max": 12,
+      "default": 0,
+      "description": "A simple output gain control.",
+      "type": "string",
+      "channelCountRef": "dB",
+      "is_bus": false
+    },
+    {
+      "name": "Normalize",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "If set, boosts the gain to compensate for the natural tendency of the circuit to lose low-frequency level as the resonance is increased.",
+      "type": "string",
+      "is_bus": false
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of busses to process.",
+      "type": "string",
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "string",
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "description": "Sets the MIDI channel on which to respond to note on events.",
+      "type": "string",
+      "is_bus": false
+    },
+    {
+      "name": "Keyboard track",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Sets the amount by which the pitch of received MIDI notes affects the filter cutoff.",
+      "type": "string",
+      "channelCountRef": "%",
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Audio input",
+      "description": "The audio input bus."
+    },
+    {
+      "name": "Frequency input",
+      "description": "The frequency CV input bus (1V/octave)."
+    },
+    {
+      "name": "Resonance input",
+      "description": "The resonance CV input bus."
+    },
+    {
+      "name": "Audio input",
+      "description": "The audio input bus."
+    },
+    {
+      "name": "Frequency input",
+      "description": "The frequency CV input bus (1V/octave)."
+    },
+    {
+      "name": "Resonance input",
+      "description": "The resonance CV input bus. Scaled such that 5V corresponds to the full range."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The output bus."
+    },
+    {
+      "name": "Output",
+      "description": "The output bus."
+    }
+  ]
+}

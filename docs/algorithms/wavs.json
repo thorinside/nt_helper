@@ -1,11 +1,11 @@
 {
   "guid": "wavs",
   "name": "Waveshaper",
-  "description": "This algorithm is based on the Dual Waveshaper algorithm on the disting mk4. You may like to watch the video on that algorithm here. From the disting mk4 manual: “Type 0 is what is usually termed a wavefolder. This increases the harmonic content of the sound in interesting ways, especially as the gain changes. Type 1 is a triangle-to-sine waveshaper. Used on most audio this is a relatively gentle form of overdrive/saturation. However, when fed with the right level of triangle wave, the output is exactly a sine wave, which is useful when you have a triangle wave VCO handy but really want a pure sine wave instead.”",
+  "description": "This algorithm is based on the Dual Waveshaper algorithm on the disting mk4. You may like to watch the video on that algorithm here https://www.youtube.com/watch?v=-B1VzxQ2qOo [142] . From the disting mk4 manual:\n\n“Type 0 is what is usually termed a wavefolder. This increases the harmonic content of the sound in interesting ways, especially as the gain changes.\n\n“Type 1 is a triangle-to-sine waveshaper. Used on most audio this is a relatively gentle form of overdrive/saturation. However, when fed with the right level of triangle wave, the output is exactly a sine wave, which is useful when you have a triangle wave VCO handy but really want a pure sine wave instead.”",
   "categories": [
+    "Distortion",
     "Waveshaping",
-    "Saturation",
-    "Audio Processing"
+    "Utility"
   ],
   "short_description": "Waveshaper/wavefolder",
   "gui_description": "The display shows how an input sine wave will be affected by the waveshaper. It is not an oscilloscope – it’s not showing what your actual audio looks like (unless you happen to be feeding it a sine wave). It’s just a graphical aid to get an idea of how much waveshaping is being applied.",
@@ -35,9 +35,8 @@
       "max": 100,
       "default": 100,
       "description": "The output wet/dry mix.",
-      "enum_values": [],
       "type": "string",
-      "channelCountRef": "",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -46,9 +45,8 @@
       "max": 0,
       "default": 0,
       "description": "The output gain applied to the shaped signal.",
-      "enum_values": [],
       "type": "string",
-      "channelCountRef": "",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {

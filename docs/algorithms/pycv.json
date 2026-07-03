@@ -3,8 +3,9 @@
   "name": "Poly CV",
   "description": "This algorithm takes the polysynth control logic from the other polysynths and uses it not to produce sound, but to output CVs and gates. This makes it most obviously useful as a MIDI/CV converter, but it can also be used as a chord/arpeggio engine controlled by CV/gate inputs. In fact, the algorithm can also generate MIDI as well as or instead of CV/gates, and so works as a MIDI-to-MIDI chord engine, for example [99].",
   "categories": [
-    "MIDI Converter",
-    "CV Converter",
+    "MIDI",
+    "CV",
+    "Converter",
     "Utility"
   ],
   "short_description": "A polyphonic MIDI/CV converter",
@@ -34,7 +35,7 @@
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "Controls how the algorithm will respond to MPE. See above."
+      "description": "Controls how the algorithm will respond to MPE."
     },
     {
       "name": "I2C channel",
@@ -48,7 +49,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard polysynth sustain mode parameter. See above."
+      "description": "The standard polysynth sustain mode parameter."
     },
     {
       "name": "Sustain",
@@ -64,9 +65,7 @@
       "default": 0,
       "description": "Coarse tuning control.",
       "type": "string",
-      "channelCountRef": "ST",
-      "is_common": true,
-      "is_bus": false
+      "channelCountRef": "ST"
     },
     {
       "name": "Fine tune",
@@ -94,11 +93,20 @@
       "channelCountRef": "V"
     },
     {
+      "name": "Voice allocation",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets the voice allocation scheme for polyphonic converters – one of ‘Round robin’ or ‘Lowest voice’."
+    },
+    {
       "name": "Voices",
       "min": 1,
       "max": 14,
       "default": 1,
-      "description": "The number of voices to use (up to the maximum set by the specification)."
+      "description": "The number of voices to use (up to the maximum set by the specification).",
+      "type": "string",
+      "channelCountRef": "Col5"
     },
     {
       "name": "Gate outputs",
@@ -164,7 +172,14 @@
       "description": "The standard Add/Replace mode selector as described above for the paraphonic gate output."
     },
     {
-      "name": "MIDI channel (output)",
+      "name": "Apply global tuning",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "If enabled, apply the global tuning setting to the output pitch CVs. Disable this when using the pitch CVs internally to the NT to control another algorithm, since the controlled algorithm will be using the global tuning setting to adjust its pitch."
+    },
+    {
+      "name": "MIDI channel (Output)",
       "min": 0,
       "max": 16,
       "default": 0,
@@ -175,7 +190,9 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables MIDI output to the breakout."
+      "description": "Enables MIDI output to the breakout.",
+      "type": "string",
+      "channelCountRef": "Col5"
     },
     {
       "name": "Output to Select Bus",
@@ -202,25 +219,21 @@
   "input_ports": [
     {
       "name": "CV/gate inputs",
-      "description": "Inputs used when the algorithm is used as a chord/arpeggio engine."
+      "description": "Inputs used to control the chord/arpeggio engine."
     }
   ],
   "output_ports": [
     {
       "name": "Gate",
-      "description": "Voice gate outputs, optionally scaled by velocity."
+      "description": "Gate output for each voice."
     },
     {
       "name": "Pitch CV",
-      "description": "Voice pitch CV outputs."
+      "description": "Pitch CV output for each voice."
     },
     {
       "name": "Velocity",
-      "description": "Voice velocity outputs."
-    },
-    {
-      "name": "Paraphonic gate",
-      "description": "A single gate output that is high while any voice gate output is high."
+      "description": "Velocity output for each voice."
     },
     {
       "name": "First output",

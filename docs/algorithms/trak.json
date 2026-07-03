@@ -1,14 +1,15 @@
 {
   "guid": "trak",
   "name": "Tracker",
-  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the video on that algorithm, here [131] . The pitch shifter part of the EX algorithm was split out into a separate algorithm on the NT (above), which you can combine with this algorithm if it suits your needs.\n\nThe algorithm tracks the pitch and envelope of an audio signal, which are output as CVs. It can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio).\n\nThe chords can be tuned microtonally using Scala or MTS.",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. The algorithm tracks the pitch and envelope of an audio signal, which are output as CVs. It can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio). The chords can be tuned microtonally using Scala or MTS.",
   "categories": [
     "Pitch Tracking",
     "Envelope Tracking",
-    "Harmony Generation"
+    "Harmony",
+    "Utility"
   ],
   "short_description": "A pitch and envelope tracker",
-  "gui_description": "The display shows the tracked note at the bottom of the screen, as a MIDI note number plus cents, and as a frequency in Hz. To the right of this is a bar that shows the envelope, and the tuning as a deviation from the true pitch of the tracked note.\n\nAbove this is the closest note to the tracked note that lies within the current scale (on the left), and the four harmony notes (on the right).",
+  "gui_description": "The display shows the tracked note at the bottom of the screen, as a MIDI note number plus cents, and as a frequency in Hz. To the right of this is a bar that shows the envelope, and the tuning as a deviation from the true pitch of the tracked note. Above this is the closest note to the tracked note that lies within the current scale (on the left), and the four harmony notes (on the right).",
   "specifications": [],
   "parameters": [
     {
@@ -146,8 +147,8 @@
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "The audio input bus."
+      "name": "Audio Input",
+      "description": "Audio signal to be tracked for pitch and envelope."
     },
     {
       "name": "Input",
@@ -156,44 +157,24 @@
   ],
   "output_ports": [
     {
-      "name": "Pitch output",
-      "description": "The pitch CV output bus."
+      "name": "Pitch CV",
+      "description": "CV output representing the tracked pitch."
     },
     {
-      "name": "Env output",
-      "description": "The envelope CV output bus."
+      "name": "Envelope CV",
+      "description": "CV output representing the tracked envelope."
     },
     {
-      "name": "Change trigger out",
-      "description": "The change trigger output bus – emits a trigger pulse when the current tracked note changes."
+      "name": "Change Trigger",
+      "description": "Trigger pulse emitted when the current tracked note changes."
     },
     {
-      "name": "Chord 1 output",
-      "description": "The pitch CV output bus for the first chord note."
+      "name": "Chord 1-4 Pitch CV",
+      "description": "Pitch CV outputs for harmonizing chords."
     },
     {
-      "name": "Chord 2 output",
-      "description": "The pitch CV output bus for the second chord note."
-    },
-    {
-      "name": "Chord 3 output",
-      "description": "The pitch CV output bus for the third chord note."
-    },
-    {
-      "name": "Chord 4 output",
-      "description": "The pitch CV output bus for the fourth chord note."
-    },
-    {
-      "name": "Shift 1 output",
-      "description": "The pitch shift CV output bus for the first pitch shifter."
-    },
-    {
-      "name": "Shift 2 output",
-      "description": "The pitch shift CV output bus for the second pitch shifter."
-    },
-    {
-      "name": "Shift 3 output",
-      "description": "The pitch shift CV output bus for the third pitch shifter."
+      "name": "Shift 1-3 Pitch Shift CV",
+      "description": "Pitch shift CV outputs to drive pitch shifters for harmony copies."
     },
     {
       "name": "Pitch output",

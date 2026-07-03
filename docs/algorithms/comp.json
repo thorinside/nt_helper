@@ -1,10 +1,11 @@
 {
   "guid": "comp",
   "name": "Compressor",
-  "description": "This algorithm is a multi-channel compressor. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you, say, want a compressor on all 12 module\ninputs, you don’t need to add 12 copies of the algorithm to do so.\n\nA sidechain input is available, to compress one signal according to the envelope of another.\n\nThe algorithm always works as an insert effect i.e. the output replaces the input.",
+  "description": "This algorithm is a multi-channel compressor. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you, say, want a compressor on all 12 module inputs, you don’t need to add 12 copies of the algorithm to do so.\n\nA sidechain input is available, to compress one signal according to the envelope of another.\n\nThe algorithm always works as an insert effect i.e. the output replaces the input.",
   "categories": [
     "Dynamics",
-    "Audio Processing"
+    "Compressor",
+    "Insert Effect"
   ],
   "short_description": "A simple compressor",
   "gui_description": "The display shows a graph of the signal level (travelling from right to left). Superimposed on this is the gain reduction amount. To the right of the graph, the bar represents the gain reduction currently being applied.",

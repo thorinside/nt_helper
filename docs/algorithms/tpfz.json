@@ -1,10 +1,10 @@
 {
   "guid": "tpfz",
   "name": "Temporal Freeze",
-  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The ‘temporal’ part of the name indicates that it works in the time domain, in contrast to the Spectral Freeze algorithm (above). There are a number (depending on the specification) of different ‘voices’ i.e. you can freeze different moments of audio and play them simultaneously. You can also layer up new audio on top of existing freezes.",
+  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The ‘temporal’ part of the name indicates that it works in the time domain, in contrast to the Spectral Freeze algorithm (above). There are a number (depending on the specification) of different ‘voices’ i.e. you can freeze different moments of audio and play them simultaneously. You can also layer up new audio on top of existing freezes. You can smoothly apply a detuning to the frozen audio, offering effects from a simple octave down, to complex microtonal chords.",
   "categories": [
-    "Audio Effects",
-    "Time-based",
+    "Audio Effect",
+    "Time-domain",
     "Freeze"
   ],
   "short_description": "An audio ‘freeze’ effect",
@@ -50,7 +50,7 @@
     },
     {
       "name": "Auto voices",
-      "default": 2,
+      "min": 2,
       "description": "When the freeze target is Auto, sets how many voices will be used by the automatic voice selection. The remainder can be frozen manually."
     },
     {
@@ -66,14 +66,23 @@
       "min": 1,
       "max": 7,
       "default": 4,
-      "description": "Sets the number of ‘playback heads’ (to use a tape metaphor)."
+      "description": "Sets the number of ‘playback heads’."
     },
     {
-      "name": "Octave down heads",
+      "name": "Detuned heads",
       "min": 0,
       "max": 7,
       "default": 0,
-      "description": "Sets how many of the playback heads run at half speed i.e. an octave down."
+      "description": "Sets how many of the playback heads use their detuning setting (as a simple count)."
+    },
+    {
+      "name": "Detuned",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets how many of the playback heads use their detuning setting (as a percentage, with smooth blending between values).",
+      "type": "scaled",
+      "channelCountRef": "%"
     },
     {
       "name": "Gain",
@@ -81,6 +90,24 @@
       "max": 6,
       "default": 0,
       "description": "Applies a gain to the algorithm outputs.",
+      "type": "scaled",
+      "channelCountRef": "dB"
+    },
+    {
+      "name": "Detuning 1-7",
+      "min": -24,
+      "max": 24,
+      "default": -12,
+      "description": "The detuning amount for play heads 1-7 respectively.",
+      "type": "scaled",
+      "channelCountRef": "ST"
+    },
+    {
+      "name": "Detuned 1-7",
+      "min": -40,
+      "max": 12,
+      "default": 0,
+      "description": "The gain to apply to play heads 1-7 respectively when detuned.",
       "type": "scaled",
       "channelCountRef": "dB"
     },
@@ -152,31 +179,59 @@
       "max": 1,
       "default": 0,
       "description": "Activates a new freeze on the corresponding voice when the parameter changes from ‘0’ to ‘1’, and releases the freeze when the parameter changes from ‘1’ to ‘0’.",
-      "type": "scaled"
+      "type": "scaled",
+      "channelCountRef": "per-voice"
     },
     {
       "name": "Layer",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Triggers the addition of a layer when the parameter changes from ‘0’ to ‘1’."
+      "description": "Triggers the addition of a layer when the parameter changes from ‘0’ to ‘1’.",
+      "type": "scaled",
+      "channelCountRef": "per-voice"
     },
     {
       "name": "Pedal",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Controls the ‘pedal’ interface to the voice."
+      "description": "Controls the ‘pedal’ interface to the voice.",
+      "type": "scaled",
+      "channelCountRef": "per-voice"
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "scaled",
+      "channelCountRef": "per-voice"
+    },
+    {
+      "name": "Microtuning",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables the use of microtuning for the detuned play heads."
+    },
+    {
+      "name": "Scala .scl",
+      "min": 0,
+      "default": 0,
+      "description": "Selects the Scala .scl file to use for microtuning."
     }
   ],
   "input_ports": [
+    {
+      "name": "Left/mono input",
+      "description": "Left or mono input audio bus."
+    },
+    {
+      "name": "Right input",
+      "description": "Right input audio bus."
+    },
     {
       "name": "Left/mono input",
       "description": "Sets the left or mono input audio bus."
@@ -188,12 +243,12 @@
   ],
   "output_ports": [
     {
-      "name": "Left/mono output",
-      "description": "The left or mono output signal from the voice."
+      "name": "Left output",
+      "description": "Left output bus for the voice."
     },
     {
       "name": "Right output",
-      "description": "The right output signal from the voice."
+      "description": "Right output bus for the voice."
     },
     {
       "name": "Left/mono output",

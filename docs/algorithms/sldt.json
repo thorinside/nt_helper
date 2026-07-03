@@ -3,7 +3,8 @@
   "name": "Slope Detector",
   "description": "This algorithm provides slope detection, a classic modular synthesizer function that has been part of the synthesist’s toolkit since the very early days of modular.\n\nIt takes a CV input, and provides three outputs – simple gates that tell you whether the signal is rising, falling, or steady.\n\nIf you would prefer to have trigger outputs (e.g. a trigger that tells you when a signal has started to rise), you can feed the outputs from this algorithm into a Delayed Function algorithm (above) to convert the gates into triggers.\n\nIf you need simple inverse outputs (e.g. say you want ‘changing’ instead of ‘steady’), use a Logic algorithm (above).",
   "categories": [
-    "CV Utilities",
+    "Utility",
+    "CV Processing",
     "Modular"
   ],
   "short_description": "Detects slopes",
@@ -20,7 +21,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables the channel."
+      "description": "Enables the channel.",
+      "type": "toggle"
     },
     {
       "name": "Rising output mode",
@@ -57,8 +59,8 @@
   ],
   "input_ports": [
     {
-      "name": "CV input",
-      "description": "The input CV signal to be analyzed for slope."
+      "name": "CV Input",
+      "description": "The CV input signal to be analyzed for slope."
     },
     {
       "name": "Input",
@@ -67,16 +69,16 @@
   ],
   "output_ports": [
     {
-      "name": "Rising gate",
-      "description": "A simple gate that tells you whether the signal is rising."
+      "name": "Rising",
+      "description": "Gate output indicating the signal is rising."
     },
     {
-      "name": "Falling gate",
-      "description": "A simple gate that tells you whether the signal is falling."
+      "name": "Falling",
+      "description": "Gate output indicating the signal is falling."
     },
     {
-      "name": "Steady gate",
-      "description": "A simple gate that tells you whether the signal is steady."
+      "name": "Steady",
+      "description": "Gate output indicating the signal is steady."
     },
     {
       "name": "Rising output",

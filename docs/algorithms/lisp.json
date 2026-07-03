@@ -5,7 +5,7 @@
   "categories": [
     "Delay",
     "Modulation",
-    "Stereo Effect"
+    "Stereo"
   ],
   "short_description": "A bucket-brigade delay effect",
   "gui_description": "The display simply shows the current delay time, taking into account any clock syncing, and the limits on the delay time imposed by the currently selected BBD size.",
@@ -30,9 +30,8 @@
       "default": 50.0,
       "description": "Sets the delay time, between the minimum and maximum times determined from the BBD size and the current sample rate.",
       "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "channelCountRef": "stereo",
+      "is_bus": true
     },
     {
       "name": "Spread",
@@ -40,10 +39,7 @@
       "max": 100,
       "default": 0,
       "description": "Sets the difference in delay times between the left and right channels. At 0%, the two channels have the same delay time.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Colour",
@@ -51,10 +47,7 @@
       "max": 100,
       "default": 0,
       "description": "Allows you to lower the cut-off frequencies of the low pass filters, resulting in delays that lose more of their high frequency components.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Feedback",
@@ -62,10 +55,7 @@
       "max": 110.0,
       "default": 0.0,
       "description": "Sets the amount of the delayed signal that gets routed back to the input of the delay, causing repeated echoes. Note that the control goes up to 110%. Settings above 100% cause ‘positive feedback’ i.e. the delays get louder over time.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Feedback path",
@@ -73,10 +63,7 @@
       "max": 100,
       "default": 0,
       "description": "Sets the feedback path, as described above.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Mix",
@@ -84,10 +71,7 @@
       "max": 100,
       "default": 100,
       "description": "The wet/dry mix.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Level",
@@ -95,10 +79,7 @@
       "max": 0,
       "default": 0,
       "description": "The gain applied to the delay/wet signal.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Dry mix",
@@ -106,10 +87,7 @@
       "max": 100,
       "default": 0,
       "description": "Controls whether the ‘dry’ output is indeed the true dry sound or a filtered version. The filtered version can be useful when using fairly ‘dark’-sounding delays to match the dry sound more closely to the delayed sound.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "LFO 1 Speed",
@@ -124,10 +102,7 @@
       "max": 100,
       "default": 0,
       "description": "The LFO depth.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "LFO 1 Spread",
@@ -135,10 +110,7 @@
       "max": 100,
       "default": 0,
       "description": "Varies the phase of the LFO applied to each (stereo) channel.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "LFO 2 Speed",
@@ -153,10 +125,7 @@
       "max": 100,
       "default": 0,
       "description": "The LFO depth.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "LFO 2 Spread",
@@ -164,10 +133,7 @@
       "max": 100,
       "default": 0,
       "description": "Varies the phase of the LFO applied to each (stereo) channel.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Ducking",
@@ -175,10 +141,7 @@
       "max": 40,
       "default": 0,
       "description": "Reduces the level of the delays when the signal level is high. This is typically used to let the initial note ‘cut through’ the delays, with the delays then fading up during the note’s decay tails.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Env->LFO 1 Speed",
@@ -186,10 +149,7 @@
       "max": 100,
       "default": 0,
       "description": "Sets the amount by which the envelope modifies the modulation speed. Positive settings cause the modulation to speed up when the sound is louder; negative settings cause the modulation to slow down when the sound is louder.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Env->LFO 1 Depth",
@@ -197,10 +157,7 @@
       "max": 100,
       "default": 0,
       "description": "Sets the amount by which the envelope modifies the modulation depth. Positive settings cause the modulation depth to increase when the sound is louder; negative settings cause the modulation depth to decrease when the sound is louder.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Env->LFO 1 Spread",
@@ -208,10 +165,7 @@
       "max": 100,
       "default": 0,
       "description": "Sets the amount by which the envelope modifies the modulation LFO’s spread.",
-      "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string"
     },
     {
       "name": "Clock source",
@@ -266,29 +220,9 @@
     {
       "name": "Clock input",
       "description": "The input bus to use for the clock, if the source is ‘Clock input’."
-    },
-    {
-      "name": "Clock input",
-      "description": "The input bus to use for the clock, if the source is ‘Clock input’."
-    },
-    {
-      "name": "Left/mono input",
-      "description": "The left or mono input bus."
-    },
-    {
-      "name": "Right input",
-      "description": "The right input bus."
     }
   ],
   "output_ports": [
-    {
-      "name": "Left/mono output",
-      "description": "The left or mono output bus."
-    },
-    {
-      "name": "Right output",
-      "description": "The right output bus."
-    },
     {
       "name": "Left/mono output",
       "description": "The left or mono output bus."

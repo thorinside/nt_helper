@@ -4,8 +4,8 @@
   "description": "This algorithm is a looper, based on the disting EX algorithm of the same name, but significantly extended. Loops can have crossfades, they can fade in and out, and overdubbing can fade in and out, all of which is designed to make it easy to achieve smooth, ambient looping.\n\nAll looping operations can also be synchronised to a clock input, if tight rhythmic looping is more your thing. The looper can also generate clocks (analogue and/or MIDI), if you prefer the looper to be the source of tempo in your setup.\n\nLoops may also be reversed, and played at half speed (an octave down).\n\nA ‘layers’ system is also implemented, which is like the ‘undo/redo’ found on some loopers but more powerful.\n\nThe core control setup is a two button record/play/overdub paradigm in the manner of many stompbox loopers, though many more controls are available. These can be mapped to CV, MIDI, or I2C as usual; a dedicated MIDI-note based interface is also provided for ease of use with MIDI pedalboards which send notes when footswitches are pressed.",
   "categories": [
     "Looper",
-    "Delay",
-    "Utility"
+    "Utility",
+    "MIDI"
   ],
   "short_description": "A looper",
   "specifications": [
@@ -67,7 +67,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates ‘stop all’. All currently playing loops are selected as targets, and stopped."
+      "description": "Activates ‘stop all’. All currently playing loops are selected as targets and stopped."
     },
     {
       "name": "Bypass clock",
@@ -137,7 +137,12 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Controls what happens when a loop is stopped."
+      "description": "Controls what happens when a loop is stopped.",
+      "enum_values": [
+        "Pause",
+        "Mute",
+        "Retrigger"
+      ]
     },
     {
       "name": "Attack time",
@@ -159,9 +164,10 @@
       "max": 100,
       "default": 0,
       "description": "The loop envelope attack stage shape.",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Decay shape",
@@ -169,9 +175,8 @@
       "max": 100,
       "default": 0,
       "description": "The loop envelope decay stage shape.",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Overdub attack time",
@@ -193,9 +198,8 @@
       "max": 0.0,
       "default": 0.0,
       "description": "Sets how much the previous loop content will fade out on each pass while overdubbing.",
-      "enum_values": [
-        "dB"
-      ]
+      "type": "string",
+      "channelCountRef": "dB"
     },
     {
       "name": "Retrigger fade",
@@ -203,9 +207,8 @@
       "max": 100.0,
       "default": 2.0,
       "description": "Sets the duration of the crossfade applied when retriggering.",
-      "enum_values": [
-        "ms"
-      ]
+      "type": "string",
+      "channelCountRef": "ms"
     },
     {
       "name": "Layer fade",
@@ -213,9 +216,8 @@
       "max": 1000,
       "default": 10,
       "description": "Sets the duration of the crossfade when changing layers.",
-      "enum_values": [
-        "ms"
-      ]
+      "type": "string",
+      "channelCountRef": "ms"
     },
     {
       "name": "Clear hold time",
@@ -223,9 +225,8 @@
       "max": 5.0,
       "default": 1.0,
       "description": "Sets how long Record needs to be held before a Clear happens.",
-      "enum_values": [
-        "s"
-      ]
+      "type": "string",
+      "channelCountRef": "s"
     },
     {
       "name": "Record hold time",
@@ -233,9 +234,8 @@
       "max": 5.0,
       "default": 1.0,
       "description": "Sets how long Record needs to be held before releasing it is treated as pressing it again.",
-      "enum_values": [
-        "s"
-      ]
+      "type": "string",
+      "channelCountRef": "s"
     },
     {
       "name": "Next hold time",
@@ -243,8 +243,26 @@
       "max": 5.0,
       "default": 0.3,
       "description": "Sets how long ‘Target next’ needs to be held before the target loop is set to None (or all loops, if it is already None).",
+      "type": "string",
+      "channelCountRef": "s"
+    },
+    {
+      "name": "Next hold order",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "If set, reverses the order of targetting none or all loops by holding ‘Target next’."
+    },
+    {
+      "name": "Mixed play/stop",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets what happens when you hit ‘Play’ and some targetted loops are playing while others are stopped.",
       "enum_values": [
-        "s"
+        "Toggle",
+        "All play",
+        "All stop"
       ]
     },
     {
@@ -252,7 +270,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If on, activating any looper control wakes the UI and dismisses the screensaver, as if you’d moved an encoder/pot/button on the module itself."
+      "description": "If on, activating any looper control wakes the UI and dismisses the screensaver."
     },
     {
       "name": "Only record targets",
@@ -264,9 +282,15 @@
     {
       "name": "Clock source",
       "min": 0,
-      "max": 2,
+      "max": 3,
       "default": 0,
-      "description": "The clock source for synchronisation – one of ‘None’, ‘Clock input’, or ‘MIDI clock’."
+      "description": "The clock source for synchronisation.",
+      "enum_values": [
+        "None",
+        "Clock input",
+        "MIDI clock",
+        "Loop 1"
+      ]
     },
     {
       "name": "MIDI divisor",
@@ -295,9 +319,8 @@
       "max": 1000,
       "default": 0,
       "description": "Specifies a time window around the clock – if a loop would naturally loop during this window, it is retriggered so that it begins exactly on the clock pulse.",
-      "enum_values": [
-        "ms"
-      ]
+      "type": "string",
+      "channelCountRef": "ms"
     },
     {
       "name": "2nd press cancels",
@@ -346,14 +369,23 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Selects stereo or mono operation."
+      "description": "Selects stereo or mono operation.",
+      "enum_values": [
+        "Mono",
+        "Stereo"
+      ]
     },
     {
       "name": "Bit depth",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Selects ‘32 bit (float)’, ‘24 bit’, or ‘16 bit’."
+      "description": "Selects bit depth.",
+      "enum_values": [
+        "32 bit (float)",
+        "24 bit",
+        "16 bit"
+      ]
     },
     {
       "name": "Crossfade time",
@@ -416,14 +448,22 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector for the loop outputs."
+      "description": "The standard Add/Replace mode selector for the loop outputs.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     },
     {
       "name": "Trigger mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector for the trigger output."
+      "description": "The standard Add/Replace mode selector for the trigger output.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     },
     {
       "name": "MIDI channel",
@@ -540,12 +580,12 @@
   ],
   "input_ports": [
     {
-      "name": "Input left/mono",
-      "description": "The input bus for the left (if stereo) or mono signal."
+      "name": "Input signal",
+      "description": "Audio input for recording into loops."
     },
     {
-      "name": "Input right",
-      "description": "The input bus for the right signal, if stereo."
+      "name": "Clock input",
+      "description": "External clock signal for synchronization."
     },
     {
       "name": "Clock input",
@@ -554,16 +594,12 @@
   ],
   "output_ports": [
     {
-      "name": "Output left/mono",
-      "description": "The output bus for the left (if stereo) or mono signal."
+      "name": "Output clocks",
+      "description": "Trigger/clock pulses synced to loop length."
     },
     {
-      "name": "Output right",
-      "description": "The output bus for the right signal, if stereo."
-    },
-    {
-      "name": "Trigger output",
-      "description": "The output bus for an end-of-loop trigger pulse or clock."
+      "name": "MIDI output",
+      "description": "MIDI clock and data output to breakout, Select Bus, or USB."
     },
     {
       "name": "Trigger output",

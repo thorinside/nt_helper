@@ -1,10 +1,10 @@
 {
   "guid": "mac2",
   "name": "Macro Oscillator 2",
-  "description": "This algorithm is an implementation of the open source Plaits module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. This version of the disting NT firmware is based on v1.2 of the Plaits code.\n\nInput normalization: The original Plaits module made extensive use of detecting which inputs had jacks plugged in and adjusting its behaviour accordingly. For example, if nothing is plugged into the Trigger input, the envelope is not used and the module constantly emits sound. The disting NT has no way of knowing whether its sockets are connected or not, so this algorithm relies on the various 'input' settings being enabled or not. To take the same example, if the 'Trigger input' setting is set to ‘None’, the algorithm will generate constant sound; if the setting is something else, the algorithm assumes you're going to supply triggers on the input you choose.",
+  "description": "This algorithm is an implementation of the open source Plaits module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. This version of the disting NT firmware is based on v1.2 of the Plaits code.",
   "categories": [
-    "Oscillator",
-    "Synthesis"
+    "Synthesis",
+    "Oscillator"
   ],
   "short_description": "It's Plaits!",
   "parameters": [
@@ -22,7 +22,9 @@
       "default": 0,
       "description": "Coarse tuning control.",
       "type": "string",
-      "channelCountRef": "ST"
+      "channelCountRef": "ST",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Fine tune",
@@ -31,23 +33,27 @@
       "default": 0,
       "description": "Fine tuning control.",
       "type": "string",
-      "channelCountRef": "cents"
+      "channelCountRef": "cents",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Harmonics",
       "min": 0,
       "max": 127,
       "default": 64,
-      "description": "Sets the harmonics control.",
-      "type": "string",
-      "channelCountRef": "Col5"
+      "description": "Sets the harmonics control."
     },
     {
       "name": "Timbre",
       "min": 0,
       "max": 127,
       "default": 64,
-      "description": "Sets the timbre control."
+      "description": "Sets the timbre control.",
+      "type": "string",
+      "channelCountRef": "Col5",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Morph",
@@ -63,7 +69,9 @@
       "default": 0,
       "description": "Sets the FM depth.",
       "type": "string",
-      "channelCountRef": "%"
+      "channelCountRef": "%",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Timbre mod",
@@ -72,7 +80,9 @@
       "default": 0,
       "description": "Sets the timbre modulation depth.",
       "type": "string",
-      "channelCountRef": "%"
+      "channelCountRef": "%",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Morph mod",
@@ -81,7 +91,9 @@
       "default": 0,
       "description": "Sets the morph modulation depth.",
       "type": "string",
-      "channelCountRef": "%"
+      "channelCountRef": "%",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Low-pass gate",
@@ -102,9 +114,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "string",
-      "channelCountRef": "Col5"
+      "description": "The standard Add/Replace mode selector."
     },
     {
       "name": "Main gain",
@@ -113,7 +123,9 @@
       "default": 0,
       "description": "The level of the ‘Main’ output signal.",
       "type": "string",
-      "channelCountRef": "dB"
+      "channelCountRef": "dB",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Aux gain",
@@ -122,7 +134,9 @@
       "default": 0,
       "description": "The level of the ‘Aux’ output signal.",
       "type": "string",
-      "channelCountRef": "dB"
+      "channelCountRef": "dB",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "MIDI mode",
@@ -168,31 +182,31 @@
   "input_ports": [
     {
       "name": "Trigger input",
-      "description": "Trigger input for envelope control"
+      "description": "Trigger input for envelope and note onset."
     },
     {
       "name": "Level input",
-      "description": "Level input"
+      "description": "Level input for amplitude control."
     },
     {
       "name": "CV input",
-      "description": "Pitch CV input"
+      "description": "Pitch CV input."
     },
     {
       "name": "FM input",
-      "description": "FM input"
+      "description": "FM depth input."
     },
     {
       "name": "Harmonics input",
-      "description": "Harmonics input"
+      "description": "Harmonics control input."
     },
     {
       "name": "Timbre input",
-      "description": "Timbre input"
+      "description": "Timbre control input."
     },
     {
       "name": "Morph input",
-      "description": "Morph input"
+      "description": "Morph control input."
     },
     {
       "name": "Trigger input",
@@ -226,11 +240,11 @@
   "output_ports": [
     {
       "name": "Main",
-      "description": "Main output signal"
+      "description": "Main output signal."
     },
     {
       "name": "Aux",
-      "description": "Auxiliary output signal"
+      "description": "Auxiliary output signal."
     },
     {
       "name": "Main output",

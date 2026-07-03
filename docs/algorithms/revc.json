@@ -4,7 +4,8 @@
   "description": "This algorithm implements the reverb and diffuser parts of the Clouds module by Émilie Gillet. The diffuser is a simple network of all-pass filters which ‘smears’ the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
   "categories": [
     "Reverb",
-    "Effects"
+    "Effects",
+    "Diffuser"
   ],
   "short_description": "The reverb from Clouds",
   "specifications": [],
@@ -75,7 +76,7 @@
       "max": 1,
       "default": 0,
       "description": "Allows you to run the algorithm at the disting NT’s own sample rate (‘Native’) or the sample rate of a real Clouds module (‘Authentic (32kHz)’).",
-      "type": "scaled",
+      "type": "enum",
       "channelCountRef": "",
       "is_bus": false
     },
@@ -85,7 +86,7 @@
       "max": 1,
       "default": 0,
       "description": "The standard Add/Replace mode selector as described above.",
-      "type": "scaled",
+      "type": "enum",
       "channelCountRef": "",
       "is_bus": false
     }

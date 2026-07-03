@@ -1,13 +1,13 @@
 {
   "guid": "usbt",
   "name": "USB audio (to host)",
-  "description": "This algorithm routes signals to the USB audio host, if one is connected.\n\nThe host sees 12 input channels. Each one of these can be set to receive any of the disting NT’s busses.\n\nNote that the signals seen by the algorithm, and so by the host, depend where in the list of algorithms this one appears. If it’s the first algorithm, it can send to the host the module’s own inputs, unmodified; if it’s the last algorithm, it can send to the host the outputs of all the other algorithms.\n\nNote also that “USB audio” doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
+  "description": "This algorithm routes signals to the USB audio host, if one is connected. The host sees 12 input channels. Each one of these can be set to receive any of the disting NT’s busses. Note that the signals seen by the algorithm, and so by the host, depend where in the list of algorithms this one appears. If it’s the first algorithm, it can send to the host the module’s own inputs, unmodified; if it’s the last algorithm, it can send to the host the outputs of all the other algorithms. Note also that “USB audio” doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
   "categories": [
-    "Utility",
-    "Connectivity"
+    "USB",
+    "Routing",
+    "Utility"
   ],
   "short_description": "Sends audio to USB host",
-  "specifications": [],
   "parameters": [
     {
       "name": "USB channel 1 from",
@@ -95,5 +95,10 @@
     }
   ],
   "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "USB Host",
+      "description": "12 channels of audio/CV sent to the connected USB host."
+    }
+  ]
 }

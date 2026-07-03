@@ -9,13 +9,6 @@
   "short_description": "Chorus effect based on an 80s polysynth",
   "parameters": [
     {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
-    },
-    {
       "name": "Mode",
       "min": 0,
       "max": 2,
@@ -26,6 +19,13 @@
         "Mode 1",
         "Mode 2"
       ]
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [

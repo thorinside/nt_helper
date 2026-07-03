@@ -1,10 +1,10 @@
 {
   "guid": "phas",
   "name": "Phaser",
-  "description": "This algorithm is based on the Phaser algorithm on the disting mk4. You may like to view the video on that algorithm, which is here [97] . It’s a classic phaser effect, using a number of all-pass filters to introduce notches into the audio’s frequency spectrum. You may like to apply an LFO to the sweep CV input.",
+  "description": "This algorithm is based on the Phaser algorithm on the disting mk4. It’s a classic phaser effect, using a number of all-pass filters to introduce notches into the audio’s frequency spectrum. You may like to apply an LFO to the sweep CV input.",
   "categories": [
-    "Effects",
-    "Modulation"
+    "Modulation",
+    "Audio Effect"
   ],
   "short_description": "Classic phaser effect",
   "parameters": [
@@ -27,7 +27,7 @@
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "description": "Sets the amount of feedback around the effect. Negative values invert the signal.",
+      "description": "Sets the amount of feedback around the effect.\nNegative values invert the signal.",
       "enum_values": [],
       "type": "string",
       "channelCountRef": "",
@@ -38,7 +38,7 @@
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "If enabled, warps the sweep parameter/CV for a more perceptually linear sweep."
+      "description": "If enabled, warps the sweep parameter/CV for a\nmore perceptually linear sweep."
     },
     {
       "name": "Input scale",
@@ -46,7 +46,6 @@
       "max": 100,
       "default": 20,
       "description": "Sets the scaling of the sweep CV input.",
-      "enum_values": [],
       "type": "string",
       "channelCountRef": "",
       "is_bus": false
@@ -57,7 +56,6 @@
       "max": 100,
       "default": 50,
       "description": "The output wet/dry mix.",
-      "enum_values": [],
       "type": "string",
       "channelCountRef": "",
       "is_bus": false
@@ -68,7 +66,6 @@
       "max": 0,
       "default": 0,
       "description": "The output gain applied to the effected signal.",
-      "enum_values": [],
       "type": "string",
       "channelCountRef": "",
       "is_bus": false
@@ -78,24 +75,17 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The number of busses to process, starting from the\nInput. For example, for a stereo signal, set this to 2."
     }
   ],
   "input_ports": [
     {
-      "name": "Sweep CV",
-      "description": "Control voltage input to sweep the all-pass filters."
+      "name": "Audio Input",
+      "description": "The first audio input bus."
     },
     {
-      "name": "Audio Input",
-      "description": "Audio signal input to be processed by the phaser."
+      "name": "Sweep CV",
+      "description": "Control voltage input for sweeping the all-pass filters."
     },
     {
       "name": "Sweep input",
@@ -109,7 +99,7 @@
   "output_ports": [
     {
       "name": "Audio Output",
-      "description": "The processed phaser audio signal."
+      "description": "The first output bus."
     },
     {
       "name": "Output",

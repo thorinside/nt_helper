@@ -20,8 +20,21 @@
       "min": 0.0,
       "max": 10.0,
       "default": 2.0,
+      "type": "string",
+      "channelCountRef": "common",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Gate offset",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 2.0,
+      "scope": "common",
       "description": "Offsets (delays) the gate input relative to the signal inputs. This is useful to allow signal CVs to settle before they are sampled on the rising gate, and also to cope with modules which output both a pitch and gate but change their gate first.",
-      "type": "file",
+      "type": "string",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -30,18 +43,20 @@
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "enum",
-      "is_common": false
+      "scope": "per-channel",
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Mode",
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "description": "Chooses between ‘Sample and hold’ and ‘Track and hold’.",
-      "type": "enum",
-      "is_common": false
+      "enum_values": [
+        "Sample and hold",
+        "Track and hold"
+      ]
     }
   ],
   "input_ports": [
@@ -52,9 +67,21 @@
     {
       "name": "Input",
       "description": "The signal input bus to sample/track."
+    },
+    {
+      "name": "Gate input",
+      "description": "The input bus to use for the gate/trigger."
+    },
+    {
+      "name": "Input",
+      "description": "The signal input bus to sample/track."
     }
   ],
   "output_ports": [
+    {
+      "name": "Output",
+      "description": "The output bus."
+    },
     {
       "name": "Output",
       "description": "The output bus."

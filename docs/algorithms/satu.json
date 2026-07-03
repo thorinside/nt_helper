@@ -5,7 +5,7 @@
   "categories": [
     "Saturation",
     "Distortion",
-    "Utility"
+    "Dynamics"
   ],
   "short_description": "Soft-clipping saturation",
   "parameters": [
@@ -38,6 +38,7 @@
       "default": 0,
       "description": "Enables saturation on this channel.",
       "type": "scaled",
+      "channelCountRef": "per_channel",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -46,8 +47,9 @@
       "min": 1,
       "max": 12,
       "default": 1,
-      "description": "The number of busses to process, starting from the\nInput. For example, for a stereo signal, set this to 2.",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
       "type": "scaled",
+      "channelCountRef": "per_channel",
       "is_per_channel": true,
       "is_bus": false
     }

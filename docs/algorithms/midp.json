@@ -40,9 +40,9 @@
       "default": 0,
       "description": "Sets the behaviour when a new file is chosen.",
       "enum_values": [
-        "Wait until the end of the bar and then change to the new file.",
-        "Wait until the end of the file and then change to the new file.",
-        "Change immediately."
+        "Wait until the end of the bar and then change to the new file",
+        "Wait until the end of the file and then change to the new file",
+        "Change immediately"
       ]
     },
     {
@@ -52,8 +52,8 @@
       "default": 0,
       "description": "Sets how the file position changes when switching to a new file.",
       "enum_values": [
-        "The new file starts from the beginning.",
-        "The new file starts from the current position in the old file (modulo the length of the new file)."
+        "The new file starts from the beginning",
+        "The new file starts from the current position in the old file (modulo the length of the new file)"
       ]
     },
     {
@@ -63,8 +63,8 @@
       "default": 0,
       "description": "Set the playback mode for the tracks.",
       "enum_values": [
-        "Normal playback.",
-        "Track is muted."
+        "Normal playback",
+        "Track is muted"
       ]
     },
     {
@@ -94,8 +94,9 @@
       "max": 100,
       "default": 10,
       "description": "Sets the length of output trigger pulses.",
-      "type": "scaled",
-      "channelCountRef": "ms"
+      "type": "trigger",
+      "channelCountRef": "Col5",
+      "is_bus": false
     },
     {
       "name": "Convert live MIDI",
@@ -111,11 +112,11 @@
       "default": 0,
       "description": "Sets the multiplier for incoming clock pulses.",
       "enum_values": [
-        "clock is interpreted as 24ppqn.",
-        "clock is interpreted as 1/32 notes.",
-        "clock is interpreted as 1/16 notes.",
-        "clock is interpreted as 1/8 notes.",
-        "clock is interpreted as 1/4 notes."
+        "clock is interpreted as 24ppqn",
+        "clock is interpreted as 1/32 notes",
+        "clock is interpreted as 1/16 notes",
+        "clock is interpreted as 1/8 notes",
+        "clock is interpreted as 1/4 notes"
       ]
     },
     {
@@ -125,8 +126,8 @@
       "default": 0,
       "description": "Sets the mode for the reset input.",
       "enum_values": [
-        "the input is a reset trigger.",
-        "the input is a run/stop signal."
+        "the input is a reset trigger",
+        "the input is a run/stop signal"
       ]
     },
     {
@@ -174,16 +175,16 @@
   ],
   "input_ports": [
     {
-      "name": "MIDI Input",
-      "description": "Incoming MIDI data for playback or live processing."
+      "name": "Clock input",
+      "description": "Bus used as the clock input"
     },
     {
-      "name": "Clock Input",
-      "description": "Analogue or MIDI clock signal for synchronization."
+      "name": "Reset input",
+      "description": "Bus used as the reset input"
     },
     {
-      "name": "Reset Input",
-      "description": "Input signal for resetting playback position."
+      "name": "Live MIDI",
+      "description": "Incoming live MIDI signal to be processed or converted"
     },
     {
       "name": "Clock input",
@@ -196,28 +197,16 @@
   ],
   "output_ports": [
     {
-      "name": "MIDI Breakout",
-      "description": "MIDI output to the breakout connector."
+      "name": "Pitch output 1-4",
+      "description": "MIDI/CV converter pitch outputs"
     },
     {
-      "name": "MIDI Select Bus",
-      "description": "MIDI output to the Select Bus."
+      "name": "Gate output 1-4",
+      "description": "MIDI/CV converter gate outputs"
     },
     {
-      "name": "MIDI USB",
-      "description": "MIDI output via USB."
-    },
-    {
-      "name": "Internal MIDI",
-      "description": "MIDI output sent to other algorithms."
-    },
-    {
-      "name": "Pitch Output 1-4",
-      "description": "CV pitch output from the MIDI/CV converter."
-    },
-    {
-      "name": "Gate Output 1-4",
-      "description": "CV gate output from the MIDI/CV converter."
+      "name": "MIDI output",
+      "description": "MIDI output to breakout, Select Bus, USB, or internal algorithms"
     },
     {
       "name": "1-4 Pitch output",

@@ -1,11 +1,11 @@
 {
   "guid": "dels",
   "name": "Delay (Stereo)",
-  "description": "This algorithm is a simple stereo in/stereo out delay effect. The delay time can be set manually, via a clock pulse, or via MIDI clock. It can also be modulated via its ‘V/oct input’, which halves the delay time for every 1V rise in CV (conversely, doubles it for every 1V fall in CV). The ‘Fractional’ parameter allows for delay times that are not integer multiples of the sample rate. This slightly increases CPU load but will sound significantly better if the delay time is being modulated, for example for chorus or flange type sounds. Conversely, turning it off makes for an extremely clean digital delay, with no colouration in the repeats.",
+  "description": "This algorithm is a simple stereo in/stereo out delay effect.\n\nThe delay time can be set manually, via a clock pulse, or via MIDI clock.\n\nIt can also be modulated via its ‘V/oct input’, which halves the delay time for every 1V rise in CV\n(conversely, doubles it for every 1V fall in CV).\n\nThe ‘Fractional’ parameter allows for delay times that are not integer multiples of the sample rate.\nThis slightly increases CPU load but will sound significantly better if the delay time is being\nmodulated, for example for chorus or flange type sounds. Conversely, turning it off makes for an\nextremely clean digital delay, with no colouration in the repeats.",
   "categories": [
     "Delay",
-    "Stereo",
-    "Effect"
+    "Effects",
+    "Stereo"
   ],
   "short_description": "A simple stereo delay effect",
   "specifications": [
@@ -36,7 +36,6 @@
       "description": "The wet/dry mix.",
       "type": "scaled",
       "channelCountRef": "",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -45,10 +44,7 @@
       "max": 0,
       "default": 0,
       "description": "The gain applied to the delay/wet signal.",
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "scaled"
     },
     {
       "name": "Time",
@@ -56,10 +52,7 @@
       "max": 32767,
       "default": 250,
       "description": "The delay time.",
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "scaled"
     },
     {
       "name": "Feedback",
@@ -67,10 +60,7 @@
       "max": 100,
       "default": 50,
       "description": "The delay feedback.",
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "scaled"
     },
     {
       "name": "Initial pan",
@@ -78,10 +68,7 @@
       "max": 100,
       "default": -100,
       "description": "If the mode is “Ping-pong”, sets the pan position of the first delay.",
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "scaled"
     },
     {
       "name": "Delay multiplier",
@@ -152,6 +139,26 @@
   "input_ports": [
     {
       "name": "Left input",
+      "description": "Left audio input signal"
+    },
+    {
+      "name": "Right input",
+      "description": "Right audio input signal"
+    },
+    {
+      "name": "V/oct input",
+      "description": "CV input for 1V/octave modulation of the delay time"
+    },
+    {
+      "name": "Clock input",
+      "description": "Clock pulse input for delay synchronization"
+    },
+    {
+      "name": "Clock input",
+      "description": "The input bus to use for the clock, if the source is ‘Clock input’."
+    },
+    {
+      "name": "Left input",
       "description": "The left input bus."
     },
     {
@@ -159,19 +166,19 @@
       "description": "The right input bus."
     },
     {
-      "name": "Clock input",
-      "description": "The input bus to use for the clock."
-    },
-    {
       "name": "V/oct input",
       "description": "The input bus to use for 1V/octave modulation of the delay time."
-    },
-    {
-      "name": "Clock input",
-      "description": "The input bus to use for the clock, if the source is ‘Clock input’."
     }
   ],
   "output_ports": [
+    {
+      "name": "Left output",
+      "description": "Left audio output signal"
+    },
+    {
+      "name": "Right output",
+      "description": "Right audio output signal"
+    },
     {
       "name": "Left output",
       "description": "The left output bus."

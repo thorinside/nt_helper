@@ -3,8 +3,8 @@
   "name": "Reverb",
   "description": "This algorithm offers a classic algorithmic reverb effect. It does not seek to emulate any particular hardware, or for that matter, any particular physical reverberant space.",
   "categories": [
-    "Effects",
-    "Reverb"
+    "Reverb",
+    "Effects"
   ],
   "short_description": "A general purpose reverb effect",
   "specifications": [],

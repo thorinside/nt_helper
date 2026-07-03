@@ -1,11 +1,11 @@
 {
   "guid": "lpsd",
   "name": "Looper (MicroSD)",
-  "description": "This algorithm is a version of the Looper algorithm (above) which uses the MicroSD card for storage instead of the module’s memory. Consequently, the maximum loop times are much, much longer.\n\nOperation of the algorithm is identical to that of the Looper. Please refer to the documentation above; this section will cover only the differences between the two algorithms.",
+  "description": "This algorithm is a version of the Looper algorithm (above) which uses the MicroSD card for storage instead of the module’s memory. Consequently, the maximum loop times are much, much longer. Operation of the algorithm is identical to that of the Looper. Please refer to the documentation above; this section will cover only the differences between the two algorithms.",
   "categories": [
     "Looper",
-    "Storage",
-    "Audio Recording"
+    "Sampling",
+    "Storage"
   ],
   "short_description": "A MicroSD-based looper",
   "specifications": [
@@ -22,25 +22,25 @@
     {
       "name": "Max Loop Time",
       "value": "About 1.5 hours",
-      "description": "Using mono 32 bit float, 48kHz"
+      "description": "Using mono 32 bit float, 48kHz; other bit depths affect the time as for the regular Looper algorithm."
     },
     {
-      "name": "Recommended Card Format",
+      "name": "Storage Format",
       "value": "exFAT",
-      "description": "Recommended for cards to be used with this algorithm."
+      "description": "Recommended formatting for cards used with this algorithm."
+    },
+    {
+      "name": "File Size",
+      "value": "1GB",
+      "description": "Each file created on the MicroSD card is 1GB in size."
     }
   ],
   "parameters": [
     {
       "name": "Number of layers",
-      "description": "Sets how many of the available layers it will actually use. Setting this to ‘1’ effectively disables layers for this loop, which might be preferred if it’s important to avoid the delay associated with starting overdub into a new layer."
+      "description": "Sets how many of the available layers it will actually use. Setting this to '1' effectively disables layers for this loop, which might be preferred if it’s important to avoid the delay associated with starting overdub into a new layer."
     }
   ],
   "input_ports": [],
-  "output_ports": [
-    {
-      "name": "Busy",
-      "description": "Displayed in the UI during operations that require reading from the card (starting overdub into a new layer, changing layer, switching into/out of reverse)."
-    }
-  ]
+  "output_ports": []
 }

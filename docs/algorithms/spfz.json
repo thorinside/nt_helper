@@ -3,11 +3,12 @@
   "name": "Spectral Freeze",
   "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The ‘spectral’ part of the name indicates that it works in the frequency domain – unlike simple loopers or granular effects, which work in the time domain, this algorithm captures the spectrum of a sound (using an FFT) and uses that to resynthesize audio. As well as completely freezing sound, the algorithm can actually play it back at any desired speed (i.e. it does time stretching) and pitch. There are a number (depending on the specification) of different ‘voices’ i.e. you can freeze different moments of audio and play them simultaneously.",
   "categories": [
-    "Audio Effects",
     "Spectral",
+    "Effect",
     "Time-stretching"
   ],
   "short_description": "An audio ‘freeze’ effect",
+  "gui_description": "The display shows information about each of the voices. The vertical bar on the left shows the envelope level. The small vertical lines visualise the segment of the audio that is being used. The ‘T’ above to the voice number indicates the ‘Freeze target’; if there is no ‘T’, the target is set to ‘Auto’.",
   "specifications": [
     {
       "name": "Voices",
@@ -94,7 +95,7 @@
       "max": 100.0,
       "default": 0.0,
       "description": "Drops out transient elements of the sound.",
-      "type": "file",
+      "type": "folder",
       "is_bus": false
     },
     {
@@ -124,7 +125,7 @@
       "max": 24,
       "default": 0,
       "description": "Sets the coarse pitch shift amount for all voices. Added to the individual voice shifts.",
-      "type": "file",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -133,7 +134,7 @@
       "max": 100,
       "default": 0,
       "description": "Sets the fine pitch shift amount for all voices. Added to the individual voice shifts.",
-      "type": "file",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -149,7 +150,7 @@
       "max": 24,
       "default": 0,
       "description": "Sets the coarse pitch shift amount.",
-      "type": "file",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -158,18 +159,11 @@
       "max": 100,
       "default": 0,
       "description": "Sets the fine pitch shift amount.",
-      "type": "file",
+      "type": "enum",
       "is_bus": false
     },
     {
-      "name": "Output (per-voice)",
-      "min": 1,
-      "max": 64,
-      "default": 13,
-      "description": "Sets the output bus for the voice."
-    },
-    {
-      "name": "Output mode (per-voice)",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -185,7 +179,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "Audio output from the spectral freeze voices."
+      "description": "Sets the output bus for the voice."
     }
   ]
 }

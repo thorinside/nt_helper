@@ -1,11 +1,11 @@
 {
   "guid": "fbnk",
   "name": "Filter bank",
-  "description": "This algorithm is based on the disting EX algorithm of the same name. It provides a bank of up to 12 parallel filters or resonators. The filters' levels can be controlled manually, via CV, or with envelopes driven from gates, and their pitch can also be set manually or via CV or MIDI. The filters can be mono, stereo, or up to 8 channels wide. Filter modes include Resonator (peaking all-pass), Bandpass (attenuate frequencies away from centre), and Multiband (crossover points).",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. The disting EX manual states “this algorithm provides a bank of eight parallel stereo bandpass filters or resonators. The filters' levels can be controlled manually, via CV, or with envelopes driven from gates, and their pitch can also be set manually or via CV or MIDI. The resonators in particular are good for being played as chords over MIDI, in the manner of the Alesis Quadraverb Plus”. This implementation goes further in that the number of filters can be increased to 12, and the filters can be mono, stereo, or up to 8 channels wide.",
   "categories": [
-    "Filters",
-    "Synthesis",
-    "Effects"
+    "Filter",
+    "Resonator",
+    "Polysynth"
   ],
   "short_description": "A fixed filter/resonator bank",
   "gui_description": "The display shows the notes to which each filter is tuned, overlaid on a bar to represent the envelope level of the voice.",
@@ -23,8 +23,7 @@
       "max": 8,
       "default": 1,
       "scope": "global",
-      "type": "bus",
-      "is_bus": true
+      "description": "The number of audio input busses (e.g. set to 2 for stereo)."
     },
     {
       "name": "Mode",
@@ -32,7 +31,14 @@
       "max": 2,
       "default": 0,
       "scope": "global",
+      "enum_values": [
+        "Resonator",
+        "Bandpass",
+        "Multiband"
+      ],
       "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -40,18 +46,11 @@
       "min": 1,
       "max": 100,
       "default": 50,
+      "scope": "global",
       "description": "Sets the filter gain (for resonators) or resonance (for bandpass/multiband).",
-      "enum_values": [
-        "Resonator",
-        "Bandpass",
-        "Multiband"
-      ],
-      "enumValues": [
-        "Resonator",
-        "Bandpass",
-        "Multiband"
-      ],
-      "type": "enum",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -59,26 +58,27 @@
       "min": 0,
       "max": 1023,
       "default": 64,
-      "description": "The envelope attack time. The scale is exponential, from 1ms up to 4s.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "The envelope attack time. The scale is exponential, from 1ms up to 4s."
     },
     {
       "name": "Release time",
       "min": 0,
       "max": 1023,
       "default": 64,
-      "description": "The envelope release time. The scale is exponential, from 1ms up to 4s.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "The envelope release time. The scale is exponential, from 1ms up to 4s."
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 24,
       "default": 0,
+      "scope": "global",
       "description": "An overall gain control.",
-      "type": "enum",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -86,26 +86,30 @@
       "min": 0,
       "max": 127,
       "default": 0,
-      "description": "The filter frequency/pitch, as a MIDI note number.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "per-channel",
+      "description": "The filter frequency/pitch, as a MIDI note number."
     },
     {
       "name": "Gate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The filter gate.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "per-channel",
+      "description": "The filter gate."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
+      "scope": "per-channel",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
       "type": "enum",
+      "is_per_channel": true,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -113,8 +117,11 @@
       "min": -40.0,
       "max": 24.0,
       "default": 0.0,
+      "scope": "per-channel",
       "description": "The filter’s gain.",
-      "type": "enum",
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -122,44 +129,43 @@
       "min": 0,
       "max": 16,
       "default": 1,
-      "description": "The MIDI channel to listen on.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "The MIDI channel to listen on."
     },
     {
       "name": "MPE channels",
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "Controls how the algorithm will respond to MPE. See above.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "Controls how the algorithm will respond to MPE."
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
       "default": 0,
-      "description": "Sets the I2C channel.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "Sets the I2C channel."
     },
     {
       "name": "Controlled voices",
       "min": 1,
       "max": 12,
       "default": 12,
-      "description": "Sets the number of filters that will be controlled by MIDI or CV/gate. By reducing this, you can elect to control some filters by MIDI while the rest remain under manual control.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "Sets the number of filters that will be controlled by MIDI or CV/gate. By reducing this, you can elect to control some filters by MIDI while the rest remain under manual control."
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
+      "scope": "global",
       "description": "Coarse tuning control.",
-      "type": "enum",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -167,8 +173,11 @@
       "min": -100,
       "max": 100,
       "default": 0,
+      "scope": "global",
       "description": "Fine tuning control.",
-      "type": "enum",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -176,35 +185,35 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain pedal).",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
     },
     {
       "name": "Bend range",
       "min": 0,
       "max": 48,
       "default": 2,
-      "description": "The MIDI pitch bend range.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "The MIDI pitch bend range."
     },
     {
       "name": "Unison",
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of voices to play simultaneously for each note triggered.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "The number of voices to play simultaneously for each note triggered."
     },
     {
       "name": "Unison detune",
       "min": 0,
       "max": 100,
       "default": 10,
+      "scope": "global",
       "description": "The detune amount when Unison is active.",
-      "type": "enum",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -212,17 +221,19 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard polysynth sustain mode parameter. See above.",
-      "type": "enum",
-      "is_bus": false
+      "scope": "global",
+      "description": "The standard polysynth sustain mode parameter."
     },
     {
       "name": "Press -> volume",
       "min": -100,
       "max": 100,
       "default": 0,
+      "scope": "global",
       "description": "The amount by which pressure (per note for MPE) affects the note volume.",
-      "type": "enum",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -230,15 +241,18 @@
       "min": -100,
       "max": 100,
       "default": 0,
+      "scope": "global",
       "description": "The amount by which the MPE Y dimension affects the note volume.",
-      "type": "enum",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Audio input",
-      "description": ""
+      "description": "The first audio input bus."
     }
   ],
   "output_ports": [

@@ -6,6 +6,7 @@
     "Filter"
   ],
   "short_description": "Low/High pass filter",
+  "specifications": [],
   "parameters": [
     {
       "name": "Sweep",
@@ -15,7 +16,6 @@
       "description": "Controls the filter sweep.",
       "type": "file",
       "channelCountRef": "",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -26,7 +26,6 @@
       "description": "Sets the filter resonance/Q.",
       "type": "file",
       "channelCountRef": "",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -34,11 +33,10 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
-    },
-    {
-      "name": "Output mode",
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "type": "file",
+      "channelCountRef": "",
+      "is_bus": false
     }
   ],
   "input_ports": [

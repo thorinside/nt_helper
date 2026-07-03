@@ -4,7 +4,7 @@
   "description": "This simple algorithm computes the absolute value of the input voltage.",
   "categories": [
     "Signal Processing",
-    "Waveform Shaping"
+    "Utility"
   ],
   "short_description": "Full-wave rectifier/absolute value",
   "specifications": [

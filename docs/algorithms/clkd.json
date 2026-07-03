@@ -21,15 +21,12 @@
       "max": 2,
       "default": 0,
       "scope": "per-channel",
+      "description": "The divisor type. The options are “Free”, “Metrical (2)”, and “Metrical (2,3)”.",
       "enum_values": [
         "Free",
         "Metrical (2)",
         "Metrical (2,3)"
-      ],
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      ]
     },
     {
       "name": "Divisor",
@@ -69,11 +66,7 @@
       "max": 1,
       "default": 1,
       "scope": "per-channel",
-      "description": "The standard Add/Replace mode selector as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "ES-5 Expander",
@@ -81,7 +74,9 @@
       "max": 6,
       "default": 0,
       "scope": "per-channel",
-      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. “1” means the ES-5 itself."
+      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. “1” means the ES-5 itself.",
+      "type": "enum",
+      "channelCountRef": "Col5"
     }
   ],
   "input_ports": [

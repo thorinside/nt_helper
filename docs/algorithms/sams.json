@@ -1,10 +1,10 @@
 {
   "guid": "sams",
   "name": "Sample Player (Speed)",
-  "description": "This algorithm plays samples with flexible control over the playback speed, including the possibility of playing the sample backwards. It provides the features of a number of disting mk4 algorithms, including Audio Playback, Audio Playback with V/Oct, Audio Playback with Z Speed, and Audio Playback with Reverse.\n\nPlease review the section on the features common to the various Sample Players, above.",
+  "description": "This algorithm plays samples with flexible control over the playback speed, including the possibility of playing the sample backwards. It provides the features of a number of disting mk4 algorithms, including Audio Playback, Audio Playback with V/Oct, Audio Playback with Z Speed, and Audio Playback with Reverse.",
   "categories": [
-    "Sample Player",
-    "Playback"
+    "Sample Playback",
+    "Audio Utility"
   ],
   "short_description": "Plays samples with speed/pitch control",
   "specifications": [
@@ -21,9 +21,9 @@
       "max": 200.0,
       "default": 100.0,
       "description": "Sets the playback speed. Negative values play backwards.",
-      "type": "file",
-      "channelCountRef": "",
-      "is_per_channel": false,
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -32,9 +32,9 @@
       "max": 60,
       "default": 0,
       "description": "Transposes the playback speed in semitones.",
-      "type": "file",
-      "channelCountRef": "",
-      "is_per_channel": false,
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -43,9 +43,9 @@
       "max": 100,
       "default": 0,
       "description": "Adjusts the playback speed in cents.",
-      "type": "file",
-      "channelCountRef": "",
-      "is_per_channel": false,
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     }
   ],

@@ -1,7 +1,7 @@
 {
   "guid": "drea",
   "name": "Dream Machine",
-  "description": "This algorithm is an implementation of the original Dream Machine algorithm on the disting EX.\n\nIt is designed to generate drones, allowing the user to explore non-traditional harmonies based on prime ratios. It was inspired by the theories of composer La Monte Young. An interesting read is the pdf “Notes on The Theatre of Eternal Music” available in a number of places online.\n\nThe output is a combination of five sounds – the fundamental and four harmonies. The prime ratios that define the frequency relationships are controlled by parameters.\n\nThe algorithm uses wavetable synthesis to generate the tones. Additionally the fundamental may instead be a pure sine, triangle, or square wave.\n\nEach tone has a simple attack/release envelope, controlled by its own gate parameter.\n\nBy default, little is mapped to the CV inputs, and it is perfectly possible to drive the algorithm entirely by hand. You may however like to map inputs as FM inputs, or to control the gates.",
+  "description": "This algorithm is an implementation of the original Dream Machine algorithm on the disting EX. It is designed to generate drones, allowing the user to explore non-traditional harmonies based on prime ratios. The output is a combination of five sounds – the fundamental and four harmonies. The prime ratios that define the frequency relationships are controlled by parameters. The algorithm uses wavetable synthesis to generate the tones. Additionally the fundamental may instead be a pure sine, triangle, or square wave. Each tone has a simple attack/release envelope, controlled by its own gate parameter.",
   "categories": [
     "Drone Synth",
     "Just Intonation",
@@ -9,6 +9,7 @@
   ],
   "short_description": "Just intonation drone synth",
   "gui_description": "The display shows the current waveform within the wavetable on the right of the screen. The rest of the screen shows the frequency, ratio, and gate level of the five tones (from left to right).",
+  "specifications": [],
   "parameters": [
     {
       "name": "Wavetable",
@@ -21,7 +22,7 @@
       "default": 0.0,
       "description": "Sets the position within the wavetable.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -30,7 +31,7 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Chooses the waveform for the fundamental.",
+      "description": "Chooses the waveform for the fundamental. The options are “Wavetable”, “Sine”, “Triangle”, and “Square”.",
       "enum_values": [
         "Wavetable",
         "Sine",
@@ -73,7 +74,7 @@
       "default": 29.135,
       "description": "Sets the fundamental frequency.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -84,7 +85,7 @@
       "default": 1,
       "description": "Sets an octave shift for the fundamental.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -95,7 +96,7 @@
       "default": 0,
       "description": "Adjusts the tuning of all frequencies in (12-TET) semitone steps.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -176,7 +177,7 @@
       "default": 0,
       "description": "Gain for the fundamental. “-40” is treated as –∞dB.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -187,7 +188,7 @@
       "default": 0,
       "description": "Gain for tone 1.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -198,7 +199,7 @@
       "default": 0,
       "description": "Gain for tone 2.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -209,7 +210,7 @@
       "default": 0,
       "description": "Gain for tone 3.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -220,7 +221,7 @@
       "default": 0,
       "description": "Gain for tone 4.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -231,7 +232,7 @@
       "default": 0,
       "description": "Stereo pan position for tone 1.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -242,7 +243,7 @@
       "default": 0,
       "description": "Stereo pan position for tone 2.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -253,7 +254,7 @@
       "default": 0,
       "description": "Stereo pan position for tone 3.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -264,7 +265,7 @@
       "default": 0,
       "description": "Stereo pan position for tone 4.",
       "type": "string",
-      "channelCountRef": "1",
+      "channelCountRef": "unit",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -315,7 +316,7 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the scaling for the FM inputs.",
+      "description": "Sets the scaling for the FM inputs. The options are 1Hz/V, 10Hz/V, 100Hz/V or 1kHz/V.",
       "enum_values": [
         "1Hz/V",
         "10Hz/V",
@@ -354,11 +355,11 @@
   "output_ports": [
     {
       "name": "Left output",
-      "description": "Left audio output signal"
+      "description": "The left output bus."
     },
     {
       "name": "Right output",
-      "description": "Right audio output signal"
+      "description": "The right output bus."
     },
     {
       "name": "Left output",

@@ -5,7 +5,7 @@
   "categories": [
     "Additive Synthesis",
     "Polysynth",
-    "Subtractive Synthesis"
+    "Synthesizer"
   ],
   "short_description": "An additive polysynth",
   "specifications": [
@@ -412,7 +412,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Time A1",
+      "name": "Env 1 Time A1",
       "min": 0,
       "max": 5000,
       "default": 0,
@@ -421,7 +421,7 @@
       "channelCountRef": "ms"
     },
     {
-      "name": "Time A2",
+      "name": "Env 1 Time A2",
       "min": 0,
       "max": 5000,
       "default": 0,
@@ -430,7 +430,7 @@
       "channelCountRef": "ms"
     },
     {
-      "name": "Time A3",
+      "name": "Env 1 Time A3",
       "min": 0,
       "max": 5000,
       "default": 0,
@@ -439,7 +439,7 @@
       "channelCountRef": "ms"
     },
     {
-      "name": "Time R1",
+      "name": "Env 1 Time R1",
       "min": 0,
       "max": 5000,
       "default": 0,
@@ -448,16 +448,16 @@
       "channelCountRef": "ms"
     },
     {
-      "name": "Time R2",
+      "name": "Env 1 Time R2",
       "min": 0,
       "max": 5000,
       "default": 5000,
-      "description": "The time for the second release stage. When set to maximum, release becomes 'Infinite'.",
+      "description": "The time for the second release stage. Maximum value is 'Infinite'.",
       "type": "string",
       "channelCountRef": "ms"
     },
     {
-      "name": "Shape A1",
+      "name": "Env 1 Shape A1",
       "min": 0,
       "max": 100,
       "default": 0,
@@ -466,7 +466,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Shape A2",
+      "name": "Env 1 Shape A2",
       "min": 0,
       "max": 100,
       "default": 0,
@@ -475,7 +475,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Shape A3",
+      "name": "Env 1 Shape A3",
       "min": 0,
       "max": 100,
       "default": 0,
@@ -484,7 +484,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Shape R1",
+      "name": "Env 1 Shape R1",
       "min": 0,
       "max": 100,
       "default": 0,
@@ -493,7 +493,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Shape R2",
+      "name": "Env 1 Shape R2",
       "min": 0,
       "max": 100,
       "default": 0,
@@ -502,7 +502,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Level A1",
+      "name": "Env 1 Level A1",
       "min": 0.0,
       "max": 100.0,
       "default": 0.0,
@@ -511,7 +511,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Level A2",
+      "name": "Env 1 Level A2",
       "min": 0.0,
       "max": 100.0,
       "default": 100.0,
@@ -520,16 +520,16 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Sustain (Group)",
+      "name": "Env 1 Sustain",
       "min": 0.0,
       "max": 100.0,
       "default": 100.0,
-      "description": "The sustain level for group envelopes.",
+      "description": "The sustain level.",
       "type": "string",
       "channelCountRef": "%"
     },
     {
-      "name": "Level R1",
+      "name": "Env 1 Level R1",
       "min": 0.0,
       "max": 100.0,
       "default": 100.0,
@@ -538,14 +538,266 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Speed",
+      "name": "Env 2 Time A1",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the first attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 2 Time A2",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the second attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 2 Time A3",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the third attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 2 Time R1",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the first release stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 2 Time R2",
+      "min": 0,
+      "max": 5000,
+      "default": 5000,
+      "description": "The time for the second release stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 2 Shape A1",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 2 Shape A2",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 2 Shape A3",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A3 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 2 Shape R1",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the R1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 2 Shape R2",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the R2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 2 Level A1",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The level at the end of the A1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 2 Level A2",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The level at the end of the A2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 2 Sustain",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The sustain level.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 2 Level R1",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The level at the end of the R1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Time A1",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the first attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 3 Time A2",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the second attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 3 Time A3",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the third attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 3 Time R1",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the first release stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 3 Time R2",
+      "min": 0,
+      "max": 5000,
+      "default": 5000,
+      "description": "The time for the second release stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env 3 Shape A1",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Shape A2",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Shape A3",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A3 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Shape R1",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the R1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Shape R2",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the R2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Level A1",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The level at the end of the A1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Level A2",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The level at the end of the A2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Sustain",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The sustain level.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env 3 Level R1",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The level at the end of the R1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 1 Speed",
       "min": 0,
       "max": 1000,
       "default": 500,
       "description": "The LFO speed. Exponential scale from 0.05Hz to 20Hz."
     },
     {
-      "name": "Offset",
+      "name": "LFO 1 Offset",
       "min": 0.0,
       "max": 100.0,
       "default": 100.0,
@@ -554,7 +806,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Amount",
+      "name": "LFO 1 Amount",
       "min": 0.0,
       "max": 100.0,
       "default": 0.0,
@@ -563,7 +815,7 @@
       "channelCountRef": "%"
     },
     {
-      "name": "KB Track",
+      "name": "LFO 1 KB Track",
       "min": 0.0,
       "max": 100.0,
       "default": 0.0,
@@ -572,11 +824,134 @@
       "channelCountRef": "%"
     },
     {
-      "name": "Multiplier",
+      "name": "LFO 1 Multiplier",
       "min": 0,
       "max": 2,
       "default": 0,
       "description": "A multiplier for the LFO speed: 1x, 10x, or 100x."
+    },
+    {
+      "name": "LFO 2 Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "The LFO speed. Exponential scale from 0.05Hz to 20Hz."
+    },
+    {
+      "name": "LFO 2 Offset",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The LFO offset.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 2 Amount",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The depth of the LFO around the offset.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 2 KB Track",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Keyboard tracking.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 2 Multiplier",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "A multiplier for the LFO speed."
+    },
+    {
+      "name": "LFO 3 Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "The LFO speed. Exponential scale from 0.05Hz to 20Hz."
+    },
+    {
+      "name": "LFO 3 Offset",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The LFO offset.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 3 Amount",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The depth of the LFO around the offset.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 3 KB Track",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Keyboard tracking.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 3 Multiplier",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "A multiplier for the LFO speed."
+    },
+    {
+      "name": "LFO 4 Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "The LFO speed. Exponential scale from 0.05Hz to 20Hz."
+    },
+    {
+      "name": "LFO 4 Offset",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The LFO offset.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 4 Amount",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The depth of the LFO around the offset.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 4 KB Track",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Keyboard tracking.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO 4 Multiplier",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "A multiplier for the LFO speed."
     },
     {
       "name": "Pulse width",
@@ -790,7 +1165,6 @@
       "description": "Sets how velocity affects the depth of the pulse width envelope."
     }
   ],
-  "input_ports": [],
   "output_ports": [
     {
       "name": "Left/mono output",

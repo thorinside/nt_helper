@@ -1,0 +1,82 @@
+{
+  "guid": "vowl",
+  "name": "Vowel Filter",
+  "description": "This algorithm is based on the Dual Vowel Filter algorithm on the disting mk4. A set of three bandpass filters (BPFs) is used to mimic the response of the human vocal tract, resulting in vowel-like sounds when provided suitable source material.",
+  "categories": [
+    "Filter",
+    "Vocal",
+    "Synthesis"
+  ],
+  "short_description": "Simulates vowel sounds",
+  "parameters": [
+    {
+      "name": "Mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "One of ‘Switched’ or ‘Blended’.",
+      "enum_values": [
+        "Switched",
+        "Blended"
+      ]
+    },
+    {
+      "name": "Vowel (Switched)",
+      "min": 0,
+      "max": 8,
+      "default": 0,
+      "description": "The chosen vowel, if the mode is Switched."
+    },
+    {
+      "name": "Vowel (Blended)",
+      "min": 0,
+      "max": 800,
+      "default": 0,
+      "description": "The chosen vowel, if the mode is Blended."
+    },
+    {
+      "name": "BPF gain 2",
+      "min": -20,
+      "max": 0,
+      "default": 0,
+      "description": "Adjusts the gain of the second BPF."
+    },
+    {
+      "name": "BPF gain 3",
+      "min": -20,
+      "max": 0,
+      "default": -6,
+      "description": "Adjusts the gain of the third BPF."
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Audio input",
+      "description": "The first input bus to process."
+    },
+    {
+      "name": "Vowel input",
+      "description": "The bus to use to control the vowel. Scaled such that 0-5V covers the full range of vowels."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The first output bus."
+    }
+  ]
+}

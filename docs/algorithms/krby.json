@@ -1,18 +1,19 @@
 {
   "guid": "krby",
   "name": "Kirbinator",
-  "description": "This algorithm continuously records audio into a buffer and plays slices of the buffer under the influence of various probabilities. The slices can be pitched up and down, played forwards and backwards, and panned in stereo.\n\nKey to the operation of the algorithm are two trigger inputs, the Mark input and the Trigger input. These can be the same signal, but more interesting results often arise when they’re not. Typically both signals would be regular clocks, but this is by no means a requirement.\n\nThe Mark input defines the slices in the audio buffer. Say you have a rhythmic pattern going into the audio input, and the Mark signal is a (synchronised) clock. If that clock is a quarter note clock, the audio slices will be a quarter note long; if the clock is faster, say an eighth note, then the slices will be shorter. If your audio pattern is playing eighth notes and the clock is an eighth note, then one slice will be one note.\n\nThe Trigger input tells the Kirbinator when to choose a new slice to play and to change its playback parameters. In our example before, if the Trigger were a quarter note clock, the playback would jump and potentially change pitch and direction on every beat.\n\nNote that playback continues with the new parameters until another Trigger is received; it doesn’t, say, play one slice and then stop.\n\nThe audio buffer is stereo, but the algorithm can be used as mono, stereo, or mono-in stereo-out, according to the routing parameters.",
+  "description": "This algorithm continuously records audio into a buffer and plays slices of the buffer under the influence of various probabilities. The slices can be pitched up and down, played forwards and backwards, and panned in stereo.\n\nKey to the operation of the algorithm are two trigger inputs, the Mark input and the Trigger input. These can be the same signal, but more interesting results often arise when they’re not. Typically both signals would be regular clocks, but this is by no means a requirement.\n\nThe Mark input defines the slices in the audio buffer. Say you have a rhythmic pattern going into the audio input, and the Mark signal is a (synchronised) clock. If that clock is a quarter note clock, the audio slices will be a quarter note long; if the clock is faster, say an eighth note, then the slices will be shorter. If your audio pattern is playing eighth notes and the clock is an eighth note, then one slice will be one note.\n\nThe Trigger input tells the Kirbinator when to choose a new slice to play and to change its playback parameters. In our example before, if the Trigger were a quarter note clock, the playback would jump and potentially change pitch and direction on every beat.\n\nNote that playback continues with the new parameters until another Trigger is received; it doesn’t, say, play one slice and then stop. However, if the Play probability is less than 100%, a new Trigger may cause the playback to stop. A trigger on the Stop input also causes playback to stop.\n\nThe audio buffer is stereo, but the algorithm can be used as mono, stereo, or mono-in stereo-out, according to the routing parameters.",
   "categories": [
-    "Stochastic",
-    "Audio Processor",
-    "Buffer",
-    "Slicing"
+    "Stochastic Audio Processor",
+    "Buffer Processor",
+    "Sampler",
+    "Effect"
   ],
   "short_description": "Stochastic audio processor",
   "specifications": [
     {
       "name": "Buffer size",
-      "value": "1-44 seconds"
+      "value": "1-44 seconds",
+      "description": "The maximum size of the audio buffer."
     }
   ],
   "parameters": [
@@ -21,10 +22,8 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "description": "The probability that playback will be pitched up.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -32,10 +31,8 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "description": "The probability that playback will be pitched down.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -43,10 +40,8 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "description": "The probability that, if playback is pitched up or down, it will be by a perfect fifth; otherwise, it will be by an octave.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -54,10 +49,8 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "description": "The probability that playback will be reversed.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -65,10 +58,8 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "description": "The probability that a glide will be applied to any pitch change.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -76,10 +67,8 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "description": "The probability that playback of the new slice will be stuttered, that is, that the initial part of the playback will be repeated.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -87,10 +76,8 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "description": "If ‘Metrical’ stutter has been selected, the probability that a stutter will be a triplet division, rather than a division by a power of 2.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -98,10 +85,8 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "description": "The probability that playback will actually happen; otherwise, playback stops.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -109,10 +94,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets whether a single glide time is used, or independent times for up and down glides.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets whether a single glide time is used, or independent times for up and down glides."
     },
     {
       "name": "Glide",
@@ -121,8 +103,7 @@
       "default": 100,
       "description": "The time of the glide time to apply, if a glide is activated by the probability.",
       "type": "string",
-      "channelCountRef": "ms",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -132,8 +113,7 @@
       "default": 100,
       "description": "The glide up time, if the control is independent.",
       "type": "string",
-      "channelCountRef": "ms",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -143,8 +123,7 @@
       "default": 100,
       "description": "The glide down time, if the control is independent.",
       "type": "string",
-      "channelCountRef": "ms",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -152,60 +131,42 @@
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "Whether glides are allowed when the playback direction reverses. Such glides can produce a very strong “tape stop” effect.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Whether glides are allowed when the playback direction reverses. Such glides can produce a very strong “tape stop” effect."
     },
     {
       "name": "Min stutter",
       "min": 1,
       "max": 16,
       "default": 2,
-      "description": "If a stutter is activated, the minimum number of restarts.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "If a stutter is activated, the minimum number of restarts."
     },
     {
       "name": "Max stutter",
       "min": 1,
       "max": 16,
       "default": 3,
-      "description": "If a stutter is activated, the maximum number of restarts.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "If a stutter is activated, the maximum number of restarts."
     },
     {
       "name": "Min jump",
       "min": 0,
       "max": 16,
       "default": 0,
-      "description": "The minimum number of slices away from the current record position to jump.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The minimum number of slices away from the current record position to jump."
     },
     {
       "name": "Max jump",
       "min": 0,
       "max": 16,
       "default": 0,
-      "description": "The maximum number of slices away from the current record position to jump.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The maximum number of slices away from the current record position to jump."
     },
     {
       "name": "Stutter",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "Sets whether stutter is ‘Free’ (unconstrained apart from by the minimum and maximum parameters), or ‘Metrical’ (restricted to powers of 2 and 3, according to the Triplet probability).",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets whether stutter is ‘Free’ (unconstrained apart from by the minimum and maximum parameters), or ‘Metrical’ (restricted to powers of 2 and 3, according to the Triplet probability)."
     },
     {
       "name": "Pitch offset",
@@ -214,8 +175,7 @@
       "default": 0,
       "description": "Applies a constant pitch change to playback, added to any probabilistic pitch change.",
       "type": "string",
-      "channelCountRef": "ST",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -225,8 +185,7 @@
       "default": 0,
       "description": "Applies a constant glide time, added to any probabilistic glide.",
       "type": "string",
-      "channelCountRef": "ms",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -236,8 +195,7 @@
       "default": 10,
       "description": "Sets the fade in/out time for slice playback.",
       "type": "string",
-      "channelCountRef": "ms",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -245,20 +203,14 @@
       "min": 0,
       "max": 32767,
       "default": 0,
-      "description": "If non-zero, a random seed to apply.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "If non-zero, a random seed to apply."
     },
     {
       "name": "Apply seed",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Applies the random seed when the parameter goes from 0 to 1.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Applies the random seed when the parameter goes from 0 to 1."
     },
     {
       "name": "Mutate",
@@ -267,8 +219,7 @@
       "default": 0,
       "description": "The degree of mutation from the given random seed to the next.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -278,19 +229,16 @@
       "default": 0.0,
       "description": "Sets the time after which releasing the trigger input will be treated as a stop trigger.",
       "type": "string",
-      "channelCountRef": "s",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
       "name": "Buffer size",
       "min": 1.0,
-      "max": null,
-      "default": null,
+      "max": 44.0,
       "description": "The audio buffer size (the maximum is set by the algorithm specifications).",
       "type": "string",
-      "channelCountRef": "s",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -300,8 +248,7 @@
       "default": -24.0,
       "description": "The amount by which existing buffer content is attenuated on each recording pass. -24dB is treated as –∞dB i.e. the previous content is completely replaced.",
       "type": "string",
-      "channelCountRef": "dB",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -309,10 +256,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables transient detection. See above.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Enables transient detection."
     },
     {
       "name": "Sensitivity",
@@ -321,8 +265,7 @@
       "default": 100,
       "description": "The transient detection sensitivity.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -332,8 +275,7 @@
       "default": -40,
       "description": "The level of the input signal passed through to the output.",
       "type": "string",
-      "channelCountRef": "dB",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -343,8 +285,17 @@
       "default": 0,
       "description": "The output level of the Kirbinator effect.",
       "type": "string",
-      "channelCountRef": "dB",
-      "is_per_channel": false,
+      "channelCountRef": "1",
+      "is_bus": false
+    },
+    {
+      "name": "No-play dry gain",
+      "min": -40,
+      "max": 6,
+      "default": -40,
+      "description": "The level of the dry signal passed through when (and only when) a slice is not playing.",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -354,8 +305,7 @@
       "default": 0,
       "description": "The average pan position of slice playback.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -365,8 +315,7 @@
       "default": 0,
       "description": "The amount of random deviation away from the average pan position, calculated for each trigger.",
       "type": "string",
-      "channelCountRef": "percentage",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -374,10 +323,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "string",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector."
     }
   ],
   "input_ports": [
@@ -395,15 +341,11 @@
     },
     {
       "name": "Pitch offset input",
-      "description": "A 1V/octave pitch CV input added to the Pitch offset parameter."
+      "description": "1V/octave pitch CV on this bus is added to the ‘Pitch offset’ parameter."
     },
     {
-      "name": "Left/mono audio input",
-      "description": "Audio input for the buffer recording."
-    },
-    {
-      "name": "Right audio input",
-      "description": "Audio input for the buffer recording."
+      "name": "Audio input",
+      "description": "Stereo or mono audio input to be recorded into the buffer."
     },
     {
       "name": "Left/mono input",
@@ -427,17 +369,17 @@
     },
     {
       "name": "Pitch offset input",
-      "description": "A 1V/octave pitch CV on this bus is added to the ‘Pitch offset’ parameter."
+      "description": "1V/octave pitch CV on this bus is added to the ‘Pitch offset’ parameter."
     }
   ],
   "output_ports": [
     {
-      "name": "Left/mono audio output",
-      "description": "The left or mono audio output of the processed signal."
+      "name": "Left/mono output",
+      "description": "The left or mono audio output."
     },
     {
-      "name": "Right audio output",
-      "description": "The right audio output of the processed signal."
+      "name": "Right output",
+      "description": "The right audio output."
     },
     {
       "name": "Left/mono output",

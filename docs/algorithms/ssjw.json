@@ -5,10 +5,12 @@
   "categories": [
     "Synth",
     "Drone",
-    "Simulation"
+    "Simulation",
+    "World Instruments"
   ],
   "short_description": "Tanpura synth by Seaside Modular",
   "gui_description": "The display shows the tuning of the four strings, with the last string played highlighted.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Bridge shape",
@@ -169,20 +171,15 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     }
   ],
-  "input_ports": [
-    {
-      "name": "Strum input bus",
-      "description": "Triggers the instrument to advance to and play the next string."
-    }
-  ],
+  "input_ports": [],
   "output_ports": [
-    {
-      "name": "Output bus",
-      "description": "The audio output of the tanpura simulation."
-    },
     {
       "name": "Output",
       "description": "The output bus."

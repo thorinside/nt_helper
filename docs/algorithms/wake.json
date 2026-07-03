@@ -3,8 +3,7 @@
   "name": "Display Awakener",
   "description": "This simple algorithm generates no sound – it simply exists to give you a way to wake the display from sleep without physically touching the module.\n\nIt has 12 parameters, which can be mapped to whatever you’d like to wake the display. For example, you might map one to a MIDI CC so you can wake the display from a MIDI controller. Or, you might map one to an input CV so that the module wakes whenever it gets a clock pulse from your sequencer.\n\nNote that you can treat audio as CV for this purpose; if you map an audio input to one of the wake parameters, you can have a setup where the module display wakes whenever you play audio into the module – great for pedalboard use.",
   "categories": [
-    "Utility",
-    "System"
+    "Utility"
   ],
   "short_description": "Wakes the display from sleep",
   "parameters": [

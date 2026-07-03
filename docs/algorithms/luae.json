@@ -5,7 +5,8 @@
   "categories": [
     "Utility",
     "Math",
-    "Logic"
+    "Logic",
+    "CV Processing"
   ],
   "short_description": "A single line of Lua",
   "gui_description": "The display shows any errors encountered when parsing or running the expression, or “No errors” if everything is OK.",
@@ -16,93 +17,44 @@
       "description": "The number of independent expressions to evaluate."
     }
   ],
-  "parameters": [
-    {
-      "name": "Input A-H",
-      "min": 1,
-      "max": 64,
-      "scope": "global",
-      "description": "The bus to use for the correspondingly named expression variable."
-    },
-    {
-      "name": "Input A-H mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "description": "The standard Add/Replace mode selector as described above."
-    },
-    {
-      "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "scope": "per-channel",
-      "description": "Enables evaluation of the expression."
-    },
-    {
-      "name": "Expression",
-      "scope": "per-channel",
-      "description": "The expression text."
-    },
-    {
-      "name": "Rate",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "description": "Whether the expression is evaluated at control rate or audio rate."
-    }
-  ],
   "input_ports": [
     {
       "name": "Input A",
-      "description": "Input variable 'a'"
+      "description": "Input variable a"
     },
     {
       "name": "Input B",
-      "description": "Input variable 'b'"
+      "description": "Input variable b"
     },
     {
       "name": "Input C",
-      "description": "Input variable 'c'"
+      "description": "Input variable c"
     },
     {
       "name": "Input D",
-      "description": "Input variable 'd'"
+      "description": "Input variable d"
     },
     {
       "name": "Input E",
-      "description": "Input variable 'e'"
+      "description": "Input variable e"
     },
     {
       "name": "Input F",
-      "description": "Input variable 'f'"
+      "description": "Input variable f"
     },
     {
       "name": "Input G",
-      "description": "Input variable 'g'"
+      "description": "Input variable g"
     },
     {
       "name": "Input H",
-      "description": "Input variable 'h'"
+      "description": "Input variable h"
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The result of the Lua expression evaluation"
-    },
-    {
-      "name": "Output",
-      "description": "The bus to use for the expression output."
+      "description": "The expression output"
     }
   ]
 }

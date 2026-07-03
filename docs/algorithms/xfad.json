@@ -3,7 +3,7 @@
   "name": "Crossfader",
   "description": "This algorithm crossfades between two or more sets of signals (from mono up to sets of eight channels). When crossfading between more than two sets of signals, it behaves like a ‘scanning’ or ‘morphing’ mixer. Three different crossfade curves are available: Equal gain (Appropriate for crossfading phase-coherent material), Equal power (Appropriate for crossfading non-phase-coherent material), and Transition (DJ-style crossfade where both sources are at full gain at the 50% position). Inputs A to L, and the output, use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the ‘Width’ parameter. For example, to crossfade stereo signals, set the Width to 2. The crossfade can be controlled by both a parameter and a CV, which are simply summed if both are in use.",
   "categories": [
-    "Mixer",
+    "Mixing",
     "Utility"
   ],
   "short_description": "Crossfades signals",
@@ -16,139 +16,126 @@
       "max": 100.0,
       "default": 50.0,
       "description": "The crossfade position, from 0% (input A only) to 100% (input B only).",
-      "type": "file",
+      "type": "folder",
       "channelCountRef": "Width",
       "is_bus": false
     },
     {
       "name": "Curve",
+      "min": 0,
+      "max": 2,
+      "default": 1,
+      "description": "The crossfade curve.",
       "enum_values": [
         "Equal gain",
         "Equal power",
         "Transition"
-      ],
-      "type": "enum",
-      "is_bus": false
+      ]
     },
     {
       "name": "Input A",
       "min": 1,
       "max": 64,
       "default": 1,
-      "description": "The first bus for input A.",
-      "type": "bus"
+      "description": "The first bus for input A."
     },
     {
       "name": "Input B",
       "min": 1,
       "max": 64,
       "default": 2,
-      "description": "The first bus for input B.",
-      "type": "bus"
+      "description": "The first bus for input B."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "enum"
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process. For example for stereo signals, set this to 2.",
-      "type": "bus"
+      "description": "The number of busses to process. For example for stereo signals, set this to 2."
     },
     {
       "name": "Number of inputs",
       "min": 2,
       "max": 12,
       "default": 2,
-      "description": "The number of inputs to use.",
-      "type": "enum"
+      "description": "The number of inputs to use."
     },
     {
       "name": "Input C",
       "min": 1,
       "max": 64,
       "default": 3,
-      "description": "The first bus for input C.",
-      "type": "bus"
+      "description": "The first bus for input C."
     },
     {
       "name": "Input D",
       "min": 1,
       "max": 64,
       "default": 4,
-      "description": "The first bus for input D.",
-      "type": "bus"
+      "description": "The first bus for input D."
     },
     {
       "name": "Input E",
       "min": 1,
       "max": 64,
       "default": 5,
-      "description": "The first bus for input E.",
-      "type": "bus"
+      "description": "The first bus for input E."
     },
     {
       "name": "Input F",
       "min": 1,
       "max": 64,
       "default": 6,
-      "description": "The first bus for input F.",
-      "type": "bus"
+      "description": "The first bus for input F."
     },
     {
       "name": "Input G",
       "min": 1,
       "max": 64,
       "default": 7,
-      "description": "The first bus for input G.",
-      "type": "bus"
+      "description": "The first bus for input G."
     },
     {
       "name": "Input H",
       "min": 1,
       "max": 64,
       "default": 8,
-      "description": "The first bus for input H.",
-      "type": "bus"
+      "description": "The first bus for input H."
     },
     {
       "name": "Input I",
       "min": 1,
       "max": 64,
       "default": 9,
-      "description": "The first bus for input I.",
-      "type": "bus"
+      "description": "The first bus for input I."
     },
     {
       "name": "Input J",
       "min": 1,
       "max": 64,
       "default": 10,
-      "description": "The first bus for input J.",
-      "type": "bus"
+      "description": "The first bus for input J."
     },
     {
       "name": "Input K",
       "min": 1,
       "max": 64,
       "default": 11,
-      "description": "The first bus for input K.",
-      "type": "bus"
+      "description": "The first bus for input K."
     },
     {
       "name": "Input L",
       "min": 1,
       "max": 64,
       "default": 12,
-      "description": "The first bus for input L.",
-      "type": "bus"
+      "description": "The first bus for input L."
     }
   ],
   "input_ports": [
@@ -202,13 +189,17 @@
     },
     {
       "name": "Crossfade input",
+      "description": "CV input to drive the crossfade position."
+    },
+    {
+      "name": "Crossfade input",
       "description": "The CV input to drive the crossfade, scaled so that 5V covers the range 0-100%."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The combined crossfaded output signal."
+      "description": "The combined crossfaded output signals."
     },
     {
       "name": "Output",

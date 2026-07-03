@@ -1,10 +1,11 @@
 {
   "guid": "vcam",
   "name": "VCA/Multiplier",
-  "description": "This algorithm is a voltage multiplier, which can be used as a VCA. The CV on the common channel is used to multiply the voltages on the other channels.",
+  "description": "This algorithm is a voltage multiplier, which can be used as a VCA. The CV on the common channel is used to multiply the voltages on the other channels. The algorithm supports zero-cross detection, in the manner of our Persephone analogue VCA module.",
   "categories": [
     "VCA",
-    "Multiplier"
+    "Multiplier",
+    "Utility"
   ],
   "short_description": "Four quadrant multiplier",
   "specifications": [
@@ -30,7 +31,7 @@
       "default": 8,
       "scope": "common",
       "description": "Sets the scaling of the input CV that corresponds to “unity gain”.",
-      "type": "string",
+      "type": "scaled",
       "channelCountRef": "V"
     },
     {
@@ -40,6 +41,14 @@
       "default": 1,
       "scope": "per-channel",
       "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Zero cross",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "per-channel",
+      "description": "Activates zero-cross detection. Changes in the VCA CV are only applied when the channel signal crosses 0V."
     }
   ],
   "input_ports": [

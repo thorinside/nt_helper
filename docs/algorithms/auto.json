@@ -4,7 +4,8 @@
   "description": "This algorithm allows you to automatically create multi-sampled instruments in a format that can be used by the Poly Multisample algorithm, by triggering an external synth (by MIDI or CV/gate) and recording the resulting audio.\n\nYou can set the range of notes to be sampled, and the step size (e.g. every note, every fourth note etc.). You can also choose to sample multiple velocity levels per note, and multiple round-robins of each note.\n\nThe samples are stored on the MicroSD card, in a folder within the root ‘samples’ folder.",
   "categories": [
     "Sampling",
-    "Utility"
+    "Utility",
+    "MIDI"
   ],
   "short_description": "Creates multisamples",
   "gui_description": "While sampling, the display shows a level meter, the filename of the sample currently being recorded, and the elapsed time. It also shows a gauge of the pressure on the MicroSD card.",
@@ -23,7 +24,7 @@
       "enum_values": [
         "16",
         "24",
-        "32 bit"
+        "32"
       ]
     },
     {
@@ -99,7 +100,7 @@
       "max": 60.0,
       "default": 1.0,
       "description": "The note length (i.e. how long the gate is held high, or between MIDI note on and note off).",
-      "type": "scaled",
+      "type": "string",
       "channelCountRef": "s"
     },
     {
@@ -108,7 +109,7 @@
       "max": 60.0,
       "default": 0.1,
       "description": "The time to keep recording after the note is released.",
-      "type": "scaled",
+      "type": "string",
       "channelCountRef": "s"
     },
     {
@@ -116,7 +117,7 @@
       "min": 0,
       "max": 2048,
       "default": 0,
-      "description": "Adjusts for latency. Set the Latency parameter to something close to the value shown in the display during a Test note to avoid silence at the start of recorded samples."
+      "description": "Adjusts for latency. See below."
     },
     {
       "name": "Preview note",
@@ -142,10 +143,6 @@
   ],
   "input_ports": [
     {
-      "name": "Audio Input",
-      "description": "Audio signals from an external synth to be recorded."
-    },
-    {
       "name": "Left/mono input",
       "description": "The left channel input to record."
     },
@@ -155,18 +152,6 @@
     }
   ],
   "output_ports": [
-    {
-      "name": "CV Output",
-      "description": "Pitch CV to trigger an external synth."
-    },
-    {
-      "name": "Gate Output",
-      "description": "Gate signal to trigger an external synth."
-    },
-    {
-      "name": "MIDI Output",
-      "description": "MIDI data to trigger an external synth."
-    },
     {
       "name": "CV output",
       "description": "The pitch CV output bus."

@@ -5,22 +5,18 @@
   "categories": [
     "MIDI",
     "Trigger",
+    "Gate",
+    "I2C",
     "Utility"
   ],
   "short_description": "Generates triggers from MIDI/I2C",
-  "specifications": [
-    {
-      "name": "Channels",
-      "value": "1-12",
-      "description": "The number of triggers to generate."
-    }
-  ],
   "parameters": [
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "channel",
       "description": "Enables the trigger."
     },
     {
@@ -28,6 +24,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "channel",
       "description": "Sets whether to generate a trigger from note on messages, or a gate from note on/off messages."
     },
     {
@@ -35,27 +32,27 @@
       "min": 1,
       "max": 100,
       "default": 10,
+      "scope": "channel",
       "description": "The length of the trigger pulse.",
-      "type": "scaled",
-      "channelCountRef": "per-channel",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "trigger",
+      "channelCountRef": "Channels, 1-12: The number of triggers to generate."
     },
     {
       "name": "Level",
       "min": -10.0,
       "max": 10.0,
       "default": 5.0,
+      "scope": "channel",
       "description": "The magnitude of the trigger/gate.",
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "trigger",
+      "channelCountRef": "Channels, 1-12: The number of triggers to generate."
     },
     {
       "name": "Velocity",
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "channel",
       "description": "Sets whether to apply velocity scaling to the trigger/gate magnitude."
     },
     {
@@ -63,16 +60,15 @@
       "min": -10.0,
       "max": 10.0,
       "default": 1.0,
-      "description": "If applying velocity scaling, the voltage corresponding to minimum velocity.",
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_bus": false
+      "scope": "channel",
+      "description": "If applying velocity scaling, the voltage corresponding to minimum velocity."
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
+      "scope": "channel",
       "description": "The MIDI channel, or ‘Off’."
     },
     {
@@ -80,6 +76,7 @@
       "min": 0,
       "max": 255,
       "default": 0,
+      "scope": "channel",
       "description": "The I2C channel, or ‘Off’."
     },
     {
@@ -87,6 +84,7 @@
       "min": -1,
       "max": 127,
       "default": -1,
+      "scope": "channel",
       "description": "The note number to respond to, or ‘Any’."
     },
     {
@@ -94,6 +92,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "channel",
       "description": "The standard Add/Replace mode selector as described above."
     },
     {
@@ -101,11 +100,20 @@
       "min": 0,
       "max": 6,
       "default": 0,
+      "scope": "channel",
       "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. “1” means the ES-5 itself."
     }
   ],
   "input_ports": [],
   "output_ports": [
+    {
+      "name": "Output Bus",
+      "description": "Routed to the bus specified by the Output parameter."
+    },
+    {
+      "name": "ES-5 Expander Output",
+      "description": "Routed to the selected output on the ES-5 expander if enabled."
+    },
     {
       "name": "Output",
       "description": "The output bus."

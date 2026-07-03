@@ -1,10 +1,11 @@
 {
   "guid": "pywt",
   "name": "Poly Wavetable",
-  "description": "This algorithm is inspired by the original Poly Wavetable algorithm on the disting EX. It is a complete polyphonic synthesizer, using wavetable oscillators. Each voice has two envelopes, a filter and an LFO. Please refer to the section “Common polysynth features” above, and to the section on wavetables on the MicroSD card, also above. There are a number of in-depth videos on the disting EX version of this algorithm, which mostly apply equally well to this version.",
+  "description": "This algorithm is inspired by the original Poly Wavetable algorithm on the disting EX.\n\nIt is a complete polyphonic synthesizer, using wavetable oscillators. Each voice has two envelopes, a filter and an LFO.\n\nPlease refer to the section “Common polysynth features” above, and to the section on wavetables on the MicroSD card, also above.",
   "categories": [
-    "Polyphonic Synthesizer",
-    "Wavetable Synthesis"
+    "Synthesizer",
+    "Polyphonic",
+    "Wavetable"
   ],
   "short_description": "A polyphonic wavetable synthesizer",
   "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar to indicate the note envelope. The waveform within the wavetable of the most recently played note is also shown.",
@@ -84,15 +85,13 @@
       "min": 0,
       "max": 3,
       "default": 0,
+      "description": "The filter type; 'Off', 'Lowpass', 'Bandpass' or 'Highpass'.",
       "enum_values": [
         "Off",
         "Lowpass",
         "Bandpass",
         "Highpass"
-      ],
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      ]
     },
     {
       "name": "Filter freq",
@@ -120,14 +119,12 @@
       "min": 0,
       "max": 2,
       "default": 0,
+      "description": "Sets whether the LFOs are retriggered at note on. The options are 'Poly' (each voice's LFO triggers independently), 'Mono' (all LFOs are retriggered when the first note is played), or 'Off' (LFOs are free-running).",
       "enum_values": [
         "Poly",
         "Mono",
         "Off"
-      ],
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      ]
     },
     {
       "name": "LFO spread",
@@ -135,9 +132,8 @@
       "max": 90,
       "default": 0,
       "description": "Sets the phase to which LFOs are retriggered. The value, in degrees (360° per LFO cycle), is multiplied by the voice number to give the initial LFO phase. When retrigger is off, this sets the phase relationship between the free-running LFOs.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "Degrees"
     },
     {
       "name": "Veloc -> volume",
@@ -145,9 +141,8 @@
       "max": 100,
       "default": 100,
       "description": "The amount by which the note velocity affects the note volume.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Veloc -> wave",
@@ -155,19 +150,15 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which the note velocity affects the wavetable position.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Veloc -> filter",
       "min": -127,
       "max": 127,
       "default": 0,
-      "description": "The amount by which the note velocity affects the filter frequency.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The amount by which the note velocity affects the filter frequency."
     },
     {
       "name": "Veloc -> peak",
@@ -175,9 +166,8 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which the note velocity affects the envelope attack peak.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Veloc -> sustain",
@@ -185,9 +175,8 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which the note velocity affects the envelope sustain level.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Pitch -> wave",
@@ -195,9 +184,8 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which the note pitch affects the wavetable position.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Pitch -> filter",
@@ -205,9 +193,8 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which the note pitch affects the filter frequency.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Env-1 -> wave",
@@ -215,19 +202,15 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which envelope 1 affects the wavetable position.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Env-1 -> filter",
       "min": -127,
       "max": 127,
       "default": 0,
-      "description": "The amount by which envelope 1 affects the filter frequency.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The amount by which envelope 1 affects the filter frequency."
     },
     {
       "name": "Env-2 -> wave",
@@ -235,19 +218,15 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which envelope 2 affects the wavetable position.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Env-2 -> filter",
       "min": -127,
       "max": 127,
       "default": 0,
-      "description": "The amount by which envelope 2 affects the filter frequency.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The amount by which envelope 2 affects the filter frequency."
     },
     {
       "name": "Env-2 -> pitch",
@@ -255,9 +234,8 @@
       "max": 12.0,
       "default": 0.0,
       "description": "The amount by which envelope 2 affects the note pitch.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "ST"
     },
     {
       "name": "LFO -> wave",
@@ -265,19 +243,15 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which the LFO affects the wavetable position.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "LFO -> filter",
       "min": -127,
       "max": 127,
       "default": 0,
-      "description": "The amount by which the LFO affects the filter frequency.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The amount by which the LFO affects the filter frequency."
     },
     {
       "name": "LFO -> pitch",
@@ -285,9 +259,8 @@
       "max": 12.0,
       "default": 0.0,
       "description": "The amount by which the LFO affects the note pitch.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "ST"
     },
     {
       "name": "Press -> volume",
@@ -295,9 +268,8 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which pressure (per note for MPE) affects the note volume.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Press -> wave",
@@ -305,19 +277,15 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which pressure (per note for MPE) affects the wavetable position.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Press -> filter",
       "min": -127,
       "max": 127,
       "default": 0,
-      "description": "The amount by which pressure (per note for MPE) affects the filter frequency.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The amount by which pressure (per note for MPE) affects the filter frequency."
     },
     {
       "name": "Press -> sustain",
@@ -325,9 +293,8 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which pressure (per note for MPE) affects the envelope sustain level.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "MPE Y -> volume",
@@ -335,9 +302,8 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which the MPE Y dimension affects the note volume.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "MPE Y -> wave",
@@ -345,33 +311,15 @@
       "max": 100,
       "default": 0,
       "description": "The amount by which the MPE Y dimension affects the wavetable position.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "MPE Y -> filter",
       "min": -127,
       "max": 127,
       "default": 0,
-      "description": "The amount by which the MPE Y dimension affects the filter frequency.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Velocity curve",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "The scaling curve for MIDI velocity. ‘0’ is linear; either side is exponential or logarithmic."
-    },
-    {
-      "name": "Pressure curve",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "The scaling curve for MIDI pressure (aftertouch). ‘0’ is linear; either side is exponential or logarithmic."
+      "description": "The amount by which the MPE Y dimension affects the filter frequency."
     },
     {
       "name": "Unison",
@@ -386,9 +334,8 @@
       "max": 100,
       "default": 10,
       "description": "The detune amount when Unison is active.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "cents"
     },
     {
       "name": "Output spread",
@@ -396,23 +343,20 @@
       "max": 100,
       "default": 0,
       "description": "The amount of output spread.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "%"
     },
     {
       "name": "Spread mode",
       "min": 0,
       "max": 2,
       "default": 0,
+      "description": "The output spread mode.",
       "enum_values": [
         "Spread by voice",
         "Spread by voice 2",
         "Spread by pitch"
-      ],
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      ]
     },
     {
       "name": "Gain",
@@ -420,9 +364,8 @@
       "max": 24,
       "default": 0,
       "description": "Applies an overall output gain.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "string",
+      "channelCountRef": "dB"
     },
     {
       "name": "Output mode",
@@ -485,13 +428,11 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "description": "Sets the note triggering mode.",
       "enum_values": [
         "Gated",
         "Triggered"
-      ],
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      ]
     }
   ],
   "input_ports": [

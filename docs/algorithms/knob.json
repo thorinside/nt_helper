@@ -5,7 +5,7 @@
   "categories": [
     "Performance",
     "Utility",
-    "Control"
+    "Clocking"
   ],
   "short_description": "Configures the Knob Recorders",
   "specifications": [
@@ -21,6 +21,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "global",
       "description": "Enables the ‘Page select’ parameter."
     },
     {
@@ -28,6 +29,7 @@
       "min": 1,
       "max": 10,
       "default": 1,
+      "scope": "global",
       "description": "When this parameter changes, it changes the current page in the Performance Page custom UI. This will be most useful when mapped to a MIDI CC, for example, so you can remotely control the visible page."
     },
     {
@@ -35,6 +37,7 @@
       "min": 0,
       "max": 1,
       "default": 1,
+      "scope": "per-channel",
       "description": "Enables the channel."
     },
     {
@@ -42,13 +45,11 @@
       "min": 1,
       "max": 1000,
       "default": 100,
+      "scope": "per-channel",
       "description": "Scales the amount of time allocated to this item from the available total (as set in the specification).",
-      "enum_values": [],
       "type": "scaled",
       "channelCountRef": "specification",
-      "isPerChannel": true,
       "is_per_channel": true,
-      "is_common": false,
       "is_bus": false
     },
     {
@@ -56,6 +57,7 @@
       "min": 0,
       "max": 2,
       "default": 0,
+      "scope": "per-channel",
       "description": "Sets the clock source for this item: one of ‘None’, ‘Clock input’, or ‘MIDI’.",
       "enum_values": [
         "None",
@@ -68,6 +70,7 @@
       "min": 4,
       "max": 19,
       "default": 9,
+      "scope": "per-channel",
       "description": "The MIDI clock divisor, if the ‘Clock source’ is ‘MIDI’.",
       "type": "enum"
     },
@@ -76,6 +79,7 @@
       "min": 1,
       "max": 96,
       "default": 1,
+      "scope": "per-channel",
       "description": "A multiplier applied to the clock source."
     }
   ],

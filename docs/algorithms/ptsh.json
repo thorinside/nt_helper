@@ -3,9 +3,9 @@
   "name": "Pitch Shifter",
   "description": "This algorithm performs pitch shifting, using a time-domain algorithm [98] . The pitch shift amount is the sum of the various shift amount parameters and the CV input. The algorithm was extracted from the disting EX ‘Tracker’ algorithm, as was the disting NT’s ‘Tracker’, below. As such these two algorithms make a natural pairing.",
   "categories": [
-    "Pitch",
-    "Time-domain",
-    "Effects"
+    "Pitch Shifting",
+    "Audio Effects",
+    "Time-domain"
   ],
   "short_description": "A time-domain pitch shifter",
   "gui_description": "The display shows the current shift amount in cents.",
@@ -24,8 +24,9 @@
       "max": 682,
       "default": 300,
       "description": "The maximum length of the delay line used by the pitch shifter. The mean latency of the algorithm is half this value.",
-      "type": "string",
-      "channelCountRef": "ms"
+      "type": "scaled",
+      "channelCountRef": "",
+      "is_bus": false
     },
     {
       "name": "Octaves",
@@ -40,8 +41,9 @@
       "max": 48,
       "default": 0,
       "description": "The pitch shift amount, in semitones.",
-      "type": "string",
-      "channelCountRef": "ST"
+      "type": "scaled",
+      "channelCountRef": "",
+      "is_bus": false
     },
     {
       "name": "Cents",
@@ -49,8 +51,9 @@
       "max": 1200,
       "default": 0,
       "description": "The pitch shift amount, in cents.",
-      "type": "string",
-      "channelCountRef": "cents"
+      "type": "scaled",
+      "channelCountRef": "",
+      "is_bus": false
     },
     {
       "name": "Output mode",
@@ -68,9 +71,21 @@
     {
       "name": "Shift input",
       "description": "The bus to use as a V/octave pitch shift amount CV."
+    },
+    {
+      "name": "Audio input",
+      "description": "The bus to use as the audio input."
+    },
+    {
+      "name": "Shift input",
+      "description": "The bus to use as a V/octave pitch shift amount CV."
     }
   ],
   "output_ports": [
+    {
+      "name": "Output",
+      "description": "The output bus."
+    },
     {
       "name": "Output",
       "description": "The output bus."

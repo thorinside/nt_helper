@@ -7,6 +7,7 @@
     "Modulation"
   ],
   "short_description": "A simple attack/release envelope",
+  "gui_description": "The display shows the envelope shape. If the visible parameter page is one of the Channel pages, it also shows the current envelope level.",
   "specifications": [
     {
       "name": "Channels",
@@ -133,6 +134,16 @@
       "default": -1,
       "scope": "per-channel",
       "description": "The MIDI or I2C note number that will trigger the envelope, or ‘-1’ for ‘Any’."
+    },
+    {
+      "name": "Velocity depth",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "scope": "per-channel",
+      "description": "The amount by which the trigger velocity affects the envelope scale (applies only to MIDI and I2C).",
+      "type": "string",
+      "channelCountRef": "%"
     }
   ],
   "input_ports": [
@@ -142,10 +153,6 @@
     }
   ],
   "output_ports": [
-    {
-      "name": "Envelope Output",
-      "description": "The generated envelope signal."
-    },
     {
       "name": "Output",
       "description": "Sets the envelope output bus."

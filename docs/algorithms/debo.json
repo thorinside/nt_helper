@@ -4,7 +4,7 @@
   "description": "This algorithm implements a simple switch debouncer. It was added primarily so that simple passive guitar footswitches can be attached to the module’s inputs (with a suitable voltage source) and used with, for example, the Looper algorithm.",
   "categories": [
     "Utility",
-    "Signal Processing"
+    "Signal Conditioning"
   ],
   "short_description": "A switch debouncer",
   "specifications": [
@@ -20,11 +20,10 @@
       "min": 1,
       "max": 100,
       "default": 10,
-      "scope": "global",
-      "description": "The hold-off time. Once the output has changed, it is not allowed to change again for the this duration.",
       "type": "scaled",
       "channelCountRef": "global",
       "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -32,31 +31,23 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
       "description": "Enables debouncing on this channel.",
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "scope": "per-channel",
       "description": "The standard Add/Replace mode selector as described above.",
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Output Volts",
       "min": -10,
       "max": 10,
       "default": 5,
-      "scope": "per-channel",
       "description": "The output voltage when the input is ‘high’, in Volts.",
-      "type": "scaled",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -65,9 +56,7 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "scope": "per-channel",
       "description": "The output voltage when the input is ‘high’, in 12-TET semitones (one twelfth of a Volt).",
-      "type": "scaled",
       "is_per_channel": true,
       "is_bus": false
     }

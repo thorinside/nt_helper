@@ -1,13 +1,19 @@
 {
   "guid": "conv",
   "name": "Convolver",
-  "description": "This algorithm performs real-time convolution of the input signal and another signal (often called an 'impulse response'), which is loaded from the MicroSD card.\n\nThis is often used for realistic reverb effects, since the required impulse responses can be sampled from a physical location, but the technique is much more general and can be a very creative way to mangle and combine sounds.\n\nConvolution is notoriously CPU-intensive, and the disting NT is a resource-constrained embedded system – you should not expect to achieve the same results as you might in the latest new fangled convolution reverb plug-in in your DAW, with orders of magnitude more CPU power and RAM. However, this algorithm remains a useful tool within the context of a modular synth.\n\nThe algorithm is based on the disting EX algorithm of the same name.",
+  "description": "This algorithm performs real-time convolution of the input signal and another signal (often called an 'impulse response'), which is loaded from the MicroSD card. This is often used for realistic reverb effects, since the required impulse responses can be sampled from a physical location, but the technique is much more general and can be a very creative way to mangle and combine sounds. Convolution is notoriously CPU-intensive, and the disting NT is a resource-constrained embedded system – you should not expect to achieve the same results as you might in the latest new fangled convolution reverb plug-in in your DAW, with orders of magnitude more CPU power and RAM. However, this algorithm remains a useful tool within the context of a modular synth.",
   "categories": [
     "Reverb",
     "Effects",
     "Convolution"
   ],
   "short_description": "Computes audio convolutions",
+  "use_cases": [
+    "realistic reverb effects",
+    "mangle and combine sounds",
+    "master bus insert effect"
+  ],
+  "gui_description": "The display shows a graphical representation of the impulse sample on the left of the screen. On the right side, it shows the mono/stereo processing mode, the maximum impulse time (as a result of the current parameter values), the actual length of the sample file, and the current overall CPU usage.",
   "specifications": [
     {
       "name": "Max impulse",
@@ -63,7 +69,7 @@
       "max": 12,
       "default": 0,
       "description": "The output level of the dry signal.",
-      "type": "file",
+      "type": "string",
       "channelCountRef": "dB",
       "is_bus": false
     },
@@ -73,7 +79,7 @@
       "max": 12,
       "default": 0,
       "description": "The output level of the convolution result.",
-      "type": "file",
+      "type": "string",
       "channelCountRef": "dB",
       "is_bus": false
     },
@@ -82,7 +88,11 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     }
   ],
   "input_ports": [
@@ -93,25 +103,9 @@
     {
       "name": "Right input",
       "description": "The right audio input bus."
-    },
-    {
-      "name": "Left/mono input",
-      "description": "The left or mono audio input bus."
-    },
-    {
-      "name": "Right input",
-      "description": "The right audio input bus."
     }
   ],
   "output_ports": [
-    {
-      "name": "Left output",
-      "description": "The left audio output bus."
-    },
-    {
-      "name": "Right output",
-      "description": "The right audio output bus."
-    },
     {
       "name": "Left output",
       "description": "The left audio output bus."

@@ -4,11 +4,10 @@
   "description": "This algorithm simply generates a sine wave tone at a particular pitch or frequency.\n\nNote that if using a note to specify the pitch, it respects the global tuning setting.",
   "categories": [
     "Utility",
-    "Oscillator"
+    "Signal Generation"
   ],
   "short_description": "Generates a pitch reference tone",
   "gui_description": "The display shows the chosen pitch as a MIDI note name plus cents, as a fractional MIDI note number, and as a frequency in Hz.",
-  "specifications": [],
   "parameters": [
     {
       "name": "Pitch mode",
@@ -33,6 +32,7 @@
       "type": "string",
       "channelCountRef": "Hz",
       "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -51,6 +51,7 @@
       "type": "string",
       "channelCountRef": "V",
       "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -62,11 +63,16 @@
       "type": "string",
       "channelCountRef": "dB",
       "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     }
   ],
   "input_ports": [],
   "output_ports": [
+    {
+      "name": "Output",
+      "description": "The generated sine wave tone signal."
+    },
     {
       "name": "Output",
       "description": "The output bus."

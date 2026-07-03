@@ -38,9 +38,7 @@
       "default": 0,
       "description": "Provides a coarse tuning control.",
       "type": "string",
-      "channelCountRef": "ST",
-      "is_common": false,
-      "is_bus": false
+      "channelCountRef": "ST"
     },
     {
       "name": "Fine tune",
@@ -56,7 +54,7 @@
       "min": 8,
       "max": 64,
       "default": 16,
-      "description": "Sets the resolution of the resonators. See above."
+      "description": "Sets the resolution of the resonators. This controls the number of resonator building blocks that contribute to the overall sound and affects CPU load."
     },
     {
       "name": "Structure",
@@ -153,7 +151,7 @@
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "Controls how the algorithm will respond to MPE. See above."
+      "description": "Controls how the algorithm will respond to MPE."
     },
     {
       "name": "I2C channel",
@@ -174,7 +172,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard polysynth sustain mode parameter. See above."
+      "description": "The standard polysynth sustain mode parameter."
     },
     {
       "name": "Sustain",
@@ -271,11 +269,11 @@
   "output_ports": [
     {
       "name": "Odd output",
-      "description": "The Odd audio output signal."
+      "description": "The Odd output signal."
     },
     {
       "name": "Even output",
-      "description": "The Even audio output signal."
+      "description": "The Even output signal."
     },
     {
       "name": "Odd output",

@@ -1,12 +1,11 @@
 {
   "guid": "clou",
   "name": "Texture Synthesizer",
-  "description": "This algorithm is an implementation of the open source Clouds module by Émilie Gillet.\n\nThis implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is here. The documentation below assumes some familiarity with this.",
+  "description": "This algorithm is an implementation of the open source Clouds module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is here. The documentation below assumes some familiarity with this.",
   "categories": [
     "Granular",
-    "Texture",
-    "Delay",
-    "Spectral"
+    "Synthesis",
+    "Effects"
   ],
   "short_description": "It's Clouds!",
   "specifications": [],
@@ -59,9 +58,10 @@
       "max": 100,
       "default": 50,
       "description": "“Selects from which part of the recording buffer the audio grains are played. Turn the knob clockwise to travel back in time.”",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Size",
@@ -69,9 +69,8 @@
       "max": 100,
       "default": 50,
       "description": "Sets the grain size.",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Pitch",
@@ -79,9 +78,8 @@
       "max": 100,
       "default": 0,
       "description": "Sets the grain transposition.",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Coarse tune",
@@ -89,9 +87,8 @@
       "max": 48,
       "default": 0,
       "description": "Sets the grain pitch in semitones.",
-      "enum_values": [
-        "ST"
-      ]
+      "type": "string",
+      "channelCountRef": "ST"
     },
     {
       "name": "Fine tune",
@@ -99,9 +96,8 @@
       "max": 100,
       "default": 0,
       "description": "Sets the grain pitch in cents.",
-      "enum_values": [
-        "cents"
-      ]
+      "type": "string",
+      "channelCountRef": "cents"
     },
     {
       "name": "Density",
@@ -109,9 +105,8 @@
       "max": 100,
       "default": 50,
       "description": "“At 12 o'clock, no grains are generated. Turn clockwise and grains will be sown randomly, counter-clockwise and they will be played at a constant rate. The further you turn, the higher the overlap between grains.”",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Texture",
@@ -119,9 +114,8 @@
       "max": 100,
       "default": 50,
       "description": "“Morphs through various shapes of grain envelopes: square (boxcar), triangle, and then Hann window. Past 2 o'clock, activates a diffuser which smears transients.”",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Wet/dry",
@@ -129,9 +123,8 @@
       "max": 100,
       "default": 50,
       "description": "Wet/dry mix balance.",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Spread",
@@ -139,9 +132,8 @@
       "max": 100,
       "default": 50,
       "description": "“Stereo spread (amount of random panning/balance applied to the grains).”",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Feedback",
@@ -149,9 +141,8 @@
       "max": 100,
       "default": 50,
       "description": "Sets the amount of feedback.",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Reverb",
@@ -159,9 +150,8 @@
       "max": 100,
       "default": 50,
       "description": "Sets the amount of reverb applied to the output.",
-      "enum_values": [
-        "%"
-      ]
+      "type": "string",
+      "channelCountRef": "percentage"
     },
     {
       "name": "Output mode",
@@ -187,9 +177,33 @@
     {
       "name": "Trigger input",
       "description": "The bus to use for a trigger input."
+    },
+    {
+      "name": "Left input",
+      "description": "The left audio input bus."
+    },
+    {
+      "name": "Right input",
+      "description": "The right audio input bus."
+    },
+    {
+      "name": "V/Oct input",
+      "description": "The bus to use for a V/octave pitch CV."
+    },
+    {
+      "name": "Trigger input",
+      "description": "The bus to use for a trigger input."
     }
   ],
   "output_ports": [
+    {
+      "name": "Left output",
+      "description": "The left audio output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right audio output bus."
+    },
     {
       "name": "Left output",
       "description": "The left audio output bus."

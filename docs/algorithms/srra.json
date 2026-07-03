@@ -16,226 +16,8 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "Sets the likelihood of the pattern not changing on each clock. At 0%, there is a 50:50 chance of a bit flip, which is the most random setting. At 100%, there will never be a fit flip, so the pattern is locked. At -100% there will always be a bit flip, which has the effect of locking the pattern with a repeat count of twice the length.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Direction",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Sets whether the pattern moves forwards or in reverse when clocked.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Length",
-      "min": 1,
-      "max": 32,
-      "default": 8,
-      "description": "Sets the length of the shift register, and so sets the number of steps in the sequence.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Scale",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 10.0,
-      "description": "Scales the output CV.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Offset",
-      "min": -10.0,
-      "max": 10.0,
-      "default": 0.0,
-      "description": "Offsets the output CV.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Cause",
-      "min": 0,
-      "max": 4,
-      "default": 0,
-      "description": "Chooses what will cause a trigger to be generated: The new bit value is high, The new bit value is low, The bit changes, The bit goes from low to high, The bit goes from high to low.",
-      "enum_values": [],
-      "type": "enum",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Type",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Chooses whether the output trigger will be of a fixed length, or calculated as a percentage of the clock length.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Length (ms)",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "description": "The trigger length, if fixed length is chosen.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Length (%)",
-      "min": 1,
-      "max": 100,
-      "default": 50,
-      "description": "The trigger length, if percentage of clock is chosen.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "CV output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The Add/Replace mode for the CV bus.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Trigger output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The Add/Replace mode for the trigger bus.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Follow MIDI clock",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Sets whether the pattern generator follows MIDI clock.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Divisor",
-      "min": 0,
-      "max": 19,
-      "default": 4,
-      "description": "Sets the clock divisor when following MIDI clock.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Output to breakout",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables MIDI output to the breakout.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Output to Select Bus",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables MIDI output to the Select Bus.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Output to USB",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables MIDI output to USB.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Output to internal",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms.",
-      "enum_values": [],
-      "type": "toggle",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "description": "The MIDI channel on which to send a note when a trigger fires.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "MIDI note",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "description": "The MIDI note number to send.",
-      "enum_values": [],
-      "type": "scaled",
-      "channelCountRef": "",
+      "type": "string",
+      "channelCountRef": "1",
       "is_per_channel": false,
       "is_bus": false
     }
@@ -243,37 +25,21 @@
   "input_ports": [
     {
       "name": "Clock input",
-      "description": "Clock input bus for triggering the shift register rotation."
+      "description": "The clock input bus used to rotate the shift register."
     },
     {
       "name": "Modify input",
-      "description": "Gate input that forces the pattern to be modified on a clock, overriding the lock."
-    },
-    {
-      "name": "Clock input",
-      "description": "Chooses the clock input bus."
-    },
-    {
-      "name": "Modify input",
-      "description": "Chooses the “modify” input bus. If this gate input is high, the pattern will always be modified on a clock, even if the pattern is locked."
+      "description": "The modify input bus. If this gate input is high, the pattern will always be modified on a clock, even if the pattern is locked."
     }
   ],
   "output_ports": [
     {
       "name": "CV output",
-      "description": "The output bus for the generated random CV."
+      "description": "The output bus for the generated CV."
     },
     {
       "name": "Trigger output",
       "description": "The output bus for the generated trigger."
-    },
-    {
-      "name": "CV output",
-      "description": "The output bus for the CV."
-    },
-    {
-      "name": "Trigger output",
-      "description": "The output bus for the trigger."
     }
   ]
 }

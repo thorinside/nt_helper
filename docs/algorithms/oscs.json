@@ -3,8 +3,9 @@
   "name": "Oscilloscope",
   "description": "This algorithm implements a simple but useful 2-channel oscilloscope.",
   "categories": [
-    "Utility",
-    "Visualization"
+    "Analysis",
+    "Visualization",
+    "Utility"
   ],
   "short_description": "Oscilloscope for viewing waveforms",
   "gui_description": "The display shows one or both waveforms according to the display mode.",
@@ -32,10 +33,10 @@
       "description": "The type of trigger, to synchronise the display to the waveform.",
       "enum_values": [
         "Free running",
-        "1 rising - trigger on the rising edge of input 1",
-        "1 falling - trigger on the falling edge of input 1",
-        "2 rising - trigger on the rising edge of input 2",
-        "2 falling - trigger on the falling edge of input 2"
+        "1 rising",
+        "1 falling",
+        "2 rising",
+        "2 falling"
       ]
     },
     {
@@ -44,7 +45,18 @@
       "max": 11.0,
       "default": 0.0,
       "description": "Set the trigger voltage – the voltage the input signal has to cross to trigger the oscilloscope.",
-      "type": "file",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_bus": false
+    },
+    {
+      "name": "Trigger voltage",
+      "min": -11.0,
+      "max": 11.0,
+      "default": 0.0,
+      "description": "Set the trigger voltage – the voltage the input signal has to cross to trigger the oscilloscope.",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -98,7 +110,13 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the vertical scale for channel 2."
+      "description": "Sets the vertical scale for channel 2.",
+      "enum_values": [
+        "10V",
+        "5V",
+        "2V",
+        "1V"
+      ]
     },
     {
       "name": "Vertical offset 1",
@@ -106,7 +124,8 @@
       "max": 11.0,
       "default": 0.0,
       "description": "Sets an amount by which to move the display of channel 1 vertically.",
-      "type": "file",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -115,7 +134,8 @@
       "max": 11.0,
       "default": 0.0,
       "description": "Sets an amount by which to move the display of channel 2 vertically.",
-      "type": "file",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {

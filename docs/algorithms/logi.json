@@ -1,10 +1,11 @@
 {
   "guid": "logi",
   "name": "Logic",
-  "description": "This algorithm is based on the disting mk4 algorithm of the same name. Each channel of the algorithm is independent and performs logical operations on its X & Y inputs. Complex logical operations can be constructed by combining operations. The inputs of each channel can be set to the outputs of other channels, allowing you to chain them internally to the algorithm.",
+  "description": "This algorithm is based on the disting mk4 algorithm of the same name. It includes comparator functions, thus fulfilling the role of the disting mk4 Comparator algorithm. Each channel of the algorithm is independent and performs logical operations on its X & Y inputs. Complex logical operations can be constructed by combining operations. The inputs of each channel can be set to the outputs of other channels, allowing you to chain them internally to the algorithm.",
   "categories": [
     "Logic",
-    "Utilities"
+    "Utility",
+    "Comparator"
   ],
   "short_description": "Performs various logical operations",
   "specifications": [
@@ -20,9 +21,10 @@
       "min": 0.0,
       "max": 10.0,
       "default": 1.0,
-      "description": "Sets the input threshold. Signals above this voltage are treated as a logic ‘1’/true.",
       "type": "string",
+      "channelCountRef": "global",
       "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -30,9 +32,10 @@
       "min": 0.0,
       "max": 10.0,
       "default": 0.5,
-      "description": "Sets the input hysteresis. Once over the threshold, signals must fall by this amount before being treated as a logic ‘0’/false.",
       "type": "string",
+      "channelCountRef": "global",
       "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -40,9 +43,10 @@
       "min": -10.0,
       "max": 10.0,
       "default": 5.0,
-      "description": "The output voltage for logic ‘1’/true. Logic ‘0’/false is always output as 0V.",
       "type": "string",
+      "channelCountRef": "global",
       "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -51,9 +55,7 @@
       "max": 1,
       "default": 0,
       "description": "Enables the channel.",
-      "type": "string",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Operation",
@@ -61,9 +63,19 @@
       "max": 9,
       "default": 0,
       "description": "Selects the logical operation from the table above.",
-      "type": "string",
-      "is_per_channel": true,
-      "is_bus": false
+      "enum_values": [
+        "AND",
+        "OR",
+        "XOR",
+        "NAND",
+        "NOR",
+        "XNOR",
+        "SR flip-flop",
+        "D flip-flop",
+        "> (greater than)",
+        "< (less than)"
+      ],
+      "is_per_channel": true
     },
     {
       "name": "Invert X",
@@ -71,9 +83,7 @@
       "max": 1,
       "default": 0,
       "description": "Inverts the X input (before it is used by the logical operation).",
-      "type": "string",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Invert Y",
@@ -81,27 +91,21 @@
       "max": 1,
       "default": 0,
       "description": "Inverts the Y input (before it is used by the logical operation).",
-      "type": "string",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Input X",
       "min": 1,
       "default": 1,
       "description": "Chooses the X input bus or channel for the operation.",
-      "type": "string",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Input Y",
       "min": 1,
       "default": 2,
       "description": "Chooses the Y input bus or channel for the operation.",
-      "type": "string",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Output mode",
@@ -109,19 +113,17 @@
       "max": 1,
       "default": 0,
       "description": "The standard Add/Replace mode selector as described above.",
-      "type": "string",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_per_channel": true
     }
   ],
   "input_ports": [
     {
       "name": "Input X",
-      "description": "Input signal X for logical operations"
+      "description": "Input signal for logical operations"
     },
     {
       "name": "Input Y",
-      "description": "Input signal Y for logical operations"
+      "description": "Input signal for logical operations"
     }
   ],
   "output_ports": [

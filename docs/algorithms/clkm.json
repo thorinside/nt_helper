@@ -28,8 +28,8 @@
       "max": 10.0,
       "default": 0.0,
       "description": "The output voltage when the clock is low/inactive.",
-      "type": "file",
-      "channelCountRef": "1",
+      "type": "string",
+      "channelCountRef": "V",
       "is_bus": false
     },
     {
@@ -38,8 +38,8 @@
       "max": 10.0,
       "default": 5.0,
       "description": "The output voltage when the clock is high/active.",
-      "type": "file",
-      "channelCountRef": "1",
+      "type": "string",
+      "channelCountRef": "V",
       "is_bus": false
     },
     {

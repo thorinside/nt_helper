@@ -3,9 +3,9 @@
   "name": "Wavetable Waveshaper",
   "description": "This algorithm is based on the Wavetable Waveshaper algorithm on the disting mk4. Applied to audio, this algorithm is a wavetable-based waveshaper effect. More generally, considering the input as a CV lookup, this algorithm provides a wavetable-based transfer function. As such it offers a great way to roll your own phase distortion synthesis.",
   "categories": [
-    "Waveshaping",
-    "Synthesis",
-    "Effects"
+    "Waveshaper",
+    "Audio Effect",
+    "Synthesis"
   ],
   "short_description": "Waveshaper that uses a wavetable",
   "gui_description": "The display shows the current wavetable.",
@@ -23,8 +23,7 @@
       "default": 0.0,
       "description": "Sets the position within the wavetable.",
       "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -41,8 +40,7 @@
       "default": 100,
       "description": "The output wet/dry mix.",
       "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -52,8 +50,7 @@
       "default": 0,
       "description": "The output gain applied to the shaped signal.",
       "type": "string",
-      "channelCountRef": "unit",
-      "is_per_channel": false,
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -61,28 +58,34 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_bus": false
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "The audio or CV signal to be processed by the waveshaper."
-    },
-    {
-      "name": "Wave input",
-      "description": "CV input to modulate the wavetable offset."
+      "description": "The first input bus to process."
     },
     {
       "name": "Gain input",
-      "description": "CV input to control the input gain."
+      "description": "The bus to use to control the input gain."
+    },
+    {
+      "name": "Wave input",
+      "description": "Input bus to modulate the wave offset."
     },
     {
       "name": "Gain input",
@@ -100,7 +103,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The waveshaped output signal."
+      "description": "The first output bus."
     },
     {
       "name": "Output",

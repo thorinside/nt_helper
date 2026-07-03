@@ -1,12 +1,11 @@
 {
   "guid": "pyfm",
   "name": "Poly FM",
-  "description": "This algorithm is inspired by the original Poly FM algorithm on the disting EX. It is a polyphonic, multitimbral, FM synthesizer. It uses the six-operator FM engine from the open source Plaits module by Émilie Gillet (exactly as used in the Macro Oscillator 2 algorithm, above). It loads Yamaha DX7 voice bank SysEx files from the MicroSD card. Please refer to the section “Common polysynth features” above.",
+  "description": "This algorithm is inspired by the original Poly FM algorithm on the disting EX. It is a polyphonic, multitimbral, FM synthesizer. It uses the six-operator FM engine from the open source Plaits [100] module by Émilie Gillet (exactly as used in the Macro Oscillator 2 algorithm, above). It loads Yamaha DX7 voice bank SysEx files from the MicroSD card. Please refer to the section “Common polysynth features” above.",
   "categories": [
     "Synthesizer",
-    "FM",
-    "Polyphonic",
-    "Multitimbral"
+    "FM Synthesis",
+    "Polyphonic"
   ],
   "short_description": "A polyphonic FM synthesizer",
   "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar to indicate the note envelope. When adjusting the microtuning parameters, more information about the chosen tuning is displayed.",
@@ -28,8 +27,8 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "description": "A global gain adjustment applied to all timbres (in addition to their individual gains).",
-      "type": "string",
+      "scope": "global",
+      "type": "scaled",
       "channelCountRef": "global",
       "is_per_channel": false,
       "is_common": true,
@@ -40,18 +39,16 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard polysynth sustain mode parameter. See above.",
-      "type": "string",
-      "channelCountRef": "global",
+      "scope": "global",
+      "type": "enum",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
     {
       "name": "Bank",
+      "scope": "per-trigger",
       "description": "Chooses the voice bank.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -61,9 +58,8 @@
       "min": 1,
       "max": 32,
       "default": 1,
+      "scope": "per-trigger",
       "description": "Chooses the voice within the bank.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -73,9 +69,9 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "description": "Coarse tuning control.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -85,9 +81,9 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "Fine tuning control.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -97,9 +93,9 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "An overall scaling on the modulator depths. Corresponds to the Plaits 'Timbre'.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -109,9 +105,9 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "An overall scaling on the envelope times. Corresponds to the Plaits 'Morph'.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -121,9 +117,9 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "description": "Sets the output level.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -133,9 +129,9 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain pedal).",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -145,9 +141,9 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "The amount by which pressure (per note for MPE) affects the note volume.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -157,9 +153,9 @@
       "min": -200,
       "max": 200,
       "default": 0,
-      "description": "The amount by which pressure (per note for MPE) affects the brightness.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -169,9 +165,9 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "The amount by which the MPE Y dimension affects the note volume.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -181,9 +177,9 @@
       "min": -200,
       "max": 200,
       "default": 0,
-      "description": "The amount by which the MPE Y dimension affects the brightness.",
-      "type": "string",
-      "channelCountRef": "per-timbre",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -193,9 +189,8 @@
       "min": 0,
       "max": 16,
       "default": 1,
-      "description": "The MIDI channel to listen on.",
-      "type": "string",
-      "channelCountRef": "per-timbre-setup",
+      "scope": "per-trigger",
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -205,9 +200,8 @@
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "Controls how the algorithm will respond to MPE. See above.",
-      "type": "string",
-      "channelCountRef": "per-timbre-setup",
+      "scope": "per-trigger",
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -217,9 +211,8 @@
       "min": 0,
       "max": 255,
       "default": 1,
-      "description": "Sets the I2C channel.",
-      "type": "string",
-      "channelCountRef": "per-timbre-setup",
+      "scope": "per-trigger",
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -229,9 +222,9 @@
       "min": 0,
       "max": 48,
       "default": 2,
-      "description": "The MIDI pitch bend range.",
-      "type": "string",
-      "channelCountRef": "per-timbre-setup",
+      "scope": "per-trigger",
+      "type": "scaled",
+      "channelCountRef": "per-trigger",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -241,11 +234,11 @@
   "output_ports": [
     {
       "name": "Left/mono output",
-      "description": "The left or mono output bus."
+      "description": ""
     },
     {
       "name": "Right output",
-      "description": "The right output bus."
+      "description": ""
     }
   ]
 }

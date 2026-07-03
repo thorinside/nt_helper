@@ -3,12 +3,12 @@
   "name": "Chaos",
   "description": "This algorithm generates chaotic CVs according to a variety of so-called ‘attractors’, including the well-known Lorenz equations [63] . Each generates three CVs, named X, Y, and Z, which are available on separate outputs.",
   "categories": [
-    "CV Generation",
-    "Chaos",
-    "Modulation"
+    "Modulation",
+    "Chaos Generator"
   ],
   "short_description": "CVs from the Lorenz equations",
   "gui_description": "The display shows a graphical representation of the outputs, projected onto the X/Y, X/Z, and Y/Z planes.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Attractor",
@@ -166,15 +166,15 @@
   "output_ports": [
     {
       "name": "X output",
-      "description": "The chaotic X CV output."
+      "description": "Chaotic CV output X"
     },
     {
       "name": "Y output",
-      "description": "The chaotic Y CV output."
+      "description": "Chaotic CV output Y"
     },
     {
       "name": "Z output",
-      "description": "The chaotic Z CV output."
+      "description": "Chaotic CV output Z"
     },
     {
       "name": "X output",

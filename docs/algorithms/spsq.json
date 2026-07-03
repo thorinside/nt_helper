@@ -1,14 +1,15 @@
 {
   "guid": "spsq",
   "name": "Step Sequencer",
-  "description": "This algorithm is a 16-step note sequencer, based on the sequencers in the Expert Sleepers FH-2 module. It can output CVs and/or MIDI.\n\nEach step has pitch, velocity, and a general-purpose “modulation” value. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step fires a number of gates within the duration of one clock). Each substep (either repeat or ratchet) can be on or off – this is set by the “Pattern” parameter. Furthermore each step or substep can be a tie – this is set by the “Ties” parameter.\n\nA tie means a note which continues until just after the beginning of the next (sub)step. When outputting MIDI, this means the note off will follow the next note on i.e. the notes are played legato. When outputting CV, a tie means that the gate will not go low between the notes, and that the pitch CV will glide (if the glide time is non-zero).\n\nThe algorithm has a function for randomising the pitches, rhythm, or both.\n\nEach Step Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up songs.\n\nRemember that every pitch etc. is a parameter and therefore mappable. Something as simple as an LFO modulating a sequence step’s pitch can produce fascinating evolving patterns. If you need to constrain the sequencer to a scale/key, follow it with a Quantizer.",
+  "description": "This algorithm is a 16-step note sequencer, based on the sequencers in the Expert Sleepers FH-2 module. It can output CVs and/or MIDI. Each step has pitch, velocity, and a general-purpose “modulation” value. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step fires a number of gates within the duration of one clock). Each substep (either repeat or ratchet) can be on or off – this is set by the “Pattern” parameter. Furthermore each step or substep can be a tie – this is set by the “Ties” parameter. A tie means a note which continues until just after the beginning of the next (sub)step. When outputting MIDI, this means the note off will follow the next note on i.e. the notes are played legato. When outputting CV, a tie means that the gate will not go low between the notes, and that the pitch CV will glide (if the glide time is non-zero). The algorithm has a function for randomising the pitches, rhythm, or both. Each Step Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up songs.",
   "categories": [
     "Sequencer",
     "MIDI",
-    "CV"
+    "CV",
+    "Note Generation"
   ],
   "short_description": "A simple note sequencer",
-  "gui_description": "The display shows an overview of the 16 steps. The step pitches are displayed across the top of the screen. The current step being played is indicated by a highlight on the pitch value. The start and end steps are indicated by solid bars between the pitches. The step whose parameter is being edited is shown highlighted. The steps’ divisions, patterns, and ties are shown graphically. If the current parameter is a pitch, velocity, or modulation, these values are shown via the thin lines to the left of the steps. Divisions (repeats or ratchets) are shown as stacks of blocks: Ties are indicated by longer bars:",
+  "gui_description": "The display shows an overview of the 16 steps. The step pitches are displayed across the top of the screen. The current step being played is indicated by a highlight on the pitch value. The start and end steps are indicated by solid bars between the pitches. The step whose parameter is being edited is shown highlighted. The steps’ divisions, patterns, and ties are shown graphically. If the current parameter is a pitch, velocity, or modulation, these values are shown via the thin lines to the left of the steps. Divisions (repeats or ratchets) are shown as stacks of blocks; Ties are indicated by longer bars.",
   "specifications": [],
   "parameters": [
     {
@@ -46,15 +47,6 @@
         "Random2",
         "Random3"
       ],
-      "enumValues": [
-        "Forwards",
-        "Reverse",
-        "Alt",
-        "Alt2",
-        "Random",
-        "Random2",
-        "Random3"
-      ],
       "type": "enum",
       "is_per_channel": false,
       "is_common": true,
@@ -71,12 +63,6 @@
         "Halves",
         "Inwards"
       ],
-      "enumValues": [
-        "Straight",
-        "Odd/Even",
-        "Halves",
-        "Inwards"
-      ],
       "type": "enum",
       "is_per_channel": false,
       "is_common": true,
@@ -88,10 +74,6 @@
       "max": 1,
       "default": 0,
       "enum_values": [
-        "% of clock",
-        "Trigger"
-      ],
-      "enumValues": [
         "% of clock",
         "Trigger"
       ],
@@ -287,12 +269,6 @@
         "Rhythm",
         "Both"
       ],
-      "enumValues": [
-        "Nothing",
-        "Pitches",
-        "Rhythm",
-        "Both"
-      ],
       "type": "enum",
       "is_per_channel": false,
       "is_common": true,
@@ -304,10 +280,6 @@
       "max": 1,
       "default": 0,
       "enum_values": [
-        "Uniform",
-        "Normal"
-      ],
-      "enumValues": [
         "Uniform",
         "Normal"
       ],
@@ -480,11 +452,6 @@
         "run/stop signal",
         "one shot trigger"
       ],
-      "enumValues": [
-        "reset trigger",
-        "run/stop signal",
-        "one shot trigger"
-      ],
       "type": "enum",
       "is_per_channel": false,
       "is_common": true,
@@ -551,10 +518,6 @@
       "max": 1,
       "default": 0,
       "enum_values": [
-        "Switch",
-        "Load"
-      ],
-      "enumValues": [
         "Switch",
         "Load"
       ],
@@ -692,14 +655,6 @@
       "description": "The bus to use for the sequence select trigger."
     },
     {
-      "name": "MIDI Clock",
-      "description": "Clock signal from MIDI."
-    },
-    {
-      "name": "MIDI Notes",
-      "description": "Note signals from MIDI used to program sequencer pitches."
-    },
-    {
       "name": "Clock input",
       "description": "The bus to use as the clock input."
     },
@@ -718,7 +673,7 @@
   ],
   "output_ports": [
     {
-      "name": "Pitch CV output",
+      "name": "Pitch output",
       "description": "The bus to use for the pitch CV output."
     },
     {
@@ -730,16 +685,12 @@
       "description": "The bus to use for the velocity output."
     },
     {
-      "name": "Modulation CV output",
+      "name": "Mod output",
       "description": "The bus to use for the modulation CV output."
     },
     {
-      "name": "Step CV output",
-      "description": "The bus to use for the step CV output (1/12th of a Volt per step)."
-    },
-    {
-      "name": "MIDI output",
-      "description": "MIDI output to breakout, Select Bus, USB, or internal algorithms."
+      "name": "Step output",
+      "description": "The bus to use for the step CV output. This represents the current sequencer step number scaled as 1/12th of a Volt per step."
     },
     {
       "name": "Pitch output",

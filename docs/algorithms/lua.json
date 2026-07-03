@@ -8,13 +8,20 @@
     "Sequencing"
   ],
   "short_description": "Algorithm defined by a Lua script",
+  "use_cases": [
+    "CV processing",
+    "quirky little sequencers",
+    "generative things"
+  ],
   "parameters": [
     {
       "name": "Program",
       "min": 0,
       "max": 999,
       "default": 0,
-      "description": "Selects the program to run."
+      "description": "Selects the program to run.",
+      "type": "string",
+      "channelCountRef": ""
     }
   ],
   "input_ports": [],

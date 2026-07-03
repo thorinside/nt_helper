@@ -1,12 +1,14 @@
 {
   "guid": "fqsh",
   "name": "Frequency Shifter",
-  "description": "This algorithm is based on the Frequency Shifter algorithm on the disting EX. You may like to view the video on that algorithm, which is here https://www.youtube.com/watch?v=FaH9u9E2K9k . The algorithm is a frequency shifter. Note that this is very different from a pitch shifter. A pitch shifter multiplies the frequencies of the constituent harmonics of a sound by the same amount, and so preserves their harmonic relationship. A frequency shifter adds a shift to the frequencies of the constituent harmonics of a sound, and so tends to break harmonic relationships, making sounds more ‘clangorous’ or ‘bell-like’.",
+  "description": "This algorithm is based on the Frequency Shifter algorithm on the disting EX. The algorithm is a frequency shifter. Note that this is very different from a pitch shifter. A pitch shifter multiplies the frequencies of the constituent harmonics of a sound by the same amount, and so preserves their harmonic relationship. A frequency shifter adds a shift to the frequencies of the constituent harmonics of a sound, and so tends to break harmonic relationships, making sounds more ‘clangorous’ or ‘bell-like’.",
   "categories": [
-    "Frequency Shifting",
-    "Audio Effects"
+    "Effects",
+    "Frequency Modulation",
+    "Sound Design"
   ],
   "short_description": "Shifts frequency (not pitch)",
+  "specifications": [],
   "parameters": [
     {
       "name": "Shift",
@@ -23,14 +25,26 @@
       "min": 0,
       "max": 3,
       "default": 2,
-      "description": "Set a multiplier for the shift amount: x1, x10, x100, or x1000."
+      "description": "Set a multiplier for the shift amount: x1, x10, x100, or x1000.",
+      "enum_values": [
+        "x1",
+        "x10",
+        "x100",
+        "x1000"
+      ]
     },
     {
       "name": "Hz/V",
       "min": 0,
       "max": 3,
       "default": 1,
-      "description": "Sets the scaling of the shift CV input, in Hz/Volt. One of: 1Hz/V, 10Hz/V, 100Hz/V, or 1kHz/V."
+      "description": "Sets the scaling of the shift CV input, in Hz/Volt. One of: 1Hz/V, 10Hz/V, 100Hz/V, or 1kHz/V.",
+      "enum_values": [
+        "1Hz/V",
+        "10Hz/V",
+        "100Hz/V",
+        "1kHz/V"
+      ]
     },
     {
       "name": "Mix",
@@ -38,10 +52,6 @@
       "max": 100,
       "default": 100,
       "description": "The output wet/dry mix.",
-      "enum_values": [
-        "0",
-        "100"
-      ],
       "type": "string",
       "channelCountRef": "1",
       "is_bus": false
@@ -68,14 +78,22 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above for the positive shifted output."
+      "description": "The standard Add/Replace mode selector as described above for the positive shifted output.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     },
     {
       "name": "-ve shift mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above for the negative shifted output."
+      "description": "The standard Add/Replace mode selector as described above for the negative shifted output.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     }
   ],
   "input_ports": [

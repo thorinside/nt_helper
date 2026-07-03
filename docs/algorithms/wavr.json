@@ -3,7 +3,7 @@
   "name": "Audio recorder",
   "description": "This algorithm records WAV files to the MicroSD card. A typical use for this would be to record the module’s inputs, but any bus can be the source for a recording, so you could also record the output of other algorithms – for example, you could run a mixer and record the stereo mix-down.\n\nThe algorithm can also play back its recordings. It does so to the same bus channels as are chosen for recording.\n\nSince the module is fully DC-coupled, it can also record and play CVs.\n\nUp to 10 files can be recorded simultaneously, each mono or stereo. It goes without saying that the more files you record, and the larger the chosen bit depth, the more demands are placed on the MicroSD card. You would be advised to check your card performance before relying on the algorithm for any crucial recordings.",
   "categories": [
-    "Recording",
+    "Audio Recording",
     "Storage",
     "Utility"
   ],
@@ -78,26 +78,26 @@
       "max": 24,
       "default": 0,
       "description": "Sets the playback level.",
-      "type": "file",
-      "channelCountRef": "",
+      "type": "folder",
+      "channelCountRef": "mono",
       "is_per_channel": false,
       "is_bus": false
     },
     {
       "name": "Enable",
-      "scope": "per-channel",
+      "min": 0,
+      "max": 1,
+      "default": 0,
       "description": "Enables the file for recording and playback.",
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "file"
     },
     {
       "name": "Playback",
-      "scope": "per-channel",
+      "min": 0,
+      "max": 1,
+      "default": 1,
       "description": "Enables the file for playback. (Both ‘Enable’ and ‘Playback’ must be on for the file to be included in playback.)",
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "file"
     }
   ],
   "input_ports": [

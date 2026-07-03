@@ -3,8 +3,9 @@
   "name": "Macro Oscillator",
   "description": "This algorithm is an implementation of the open source Braids module by Émilie Gillet. This implementation should behave and sound identical to the original, with the caveat that the original module runs at 96kHz – for a totally accurate recreation, you would need to run the disting NT at 96kHz. Any demos or tutorials you may find online should apply just as well to this version.",
   "categories": [
+    "Synthesis",
     "Oscillator",
-    "Synthesis"
+    "FM"
   ],
   "short_description": "It's Braids!",
   "parameters": [
@@ -62,17 +63,19 @@
       "min": 0,
       "max": 15,
       "default": 0,
-      "description": "Sets the amount by which the envelope affects the colour1.",
-      "enum_values": [
-        "Col5"
-      ]
+      "description": "Sets the amount by which the envelope affects the colour1."
     },
     {
       "name": "AD VCA",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets whether the envelope is applied to the volume of the output."
+      "description": "Sets whether the envelope is applied to the volume of the output.",
+      "enum_values": [
+        "Off",
+        "On"
+      ],
+      "type": "toggle"
     },
     {
       "name": "Coarse",
@@ -80,9 +83,7 @@
       "max": 48,
       "default": 0,
       "description": "Coarse tuning control.",
-      "enum_values": [
-        "ST"
-      ]
+      "type": "string"
     },
     {
       "name": "Fine",
@@ -90,9 +91,7 @@
       "max": 100,
       "default": 0,
       "description": "Fine tuning control.",
-      "enum_values": [
-        "cents"
-      ]
+      "type": "string"
     },
     {
       "name": "Scale",
@@ -163,9 +162,7 @@
       "max": 12,
       "default": 0,
       "description": "Sets an output gain.",
-      "enum_values": [
-        "dB"
-      ]
+      "type": "string"
     },
     {
       "name": "Output mode",
@@ -217,6 +214,26 @@
   ],
   "input_ports": [
     {
+      "name": "Trigger",
+      "description": "Trigger input for the oscillator"
+    },
+    {
+      "name": "Pitch",
+      "description": "Pitch input for the oscillator"
+    },
+    {
+      "name": "FM",
+      "description": "Frequency Modulation input"
+    },
+    {
+      "name": "Timbre",
+      "description": "Timbre control input"
+    },
+    {
+      "name": "Colour",
+      "description": "Colour control input"
+    },
+    {
       "name": "Trigger input",
       "description": "Selects which bus is used as the trigger input."
     },
@@ -238,6 +255,10 @@
     }
   ],
   "output_ports": [
+    {
+      "name": "Output",
+      "description": "The output signal of the oscillator"
+    },
     {
       "name": "Output",
       "description": "The bus for the output signal."

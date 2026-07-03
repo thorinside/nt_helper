@@ -3,19 +3,17 @@
   "name": "Poly FM (Editable)",
   "description": "This algorithm is a version of the Poly FM algorithm (above) which forgoes multi-timbrality in favour of being able to edit the actual FM voice parameters, just as if you were editing a real DX7.\n\nPlease refer to the documentation of the Poly FM algorithm for everything not covered here.",
   "categories": [
-    "Synthesizer",
     "FM Synthesis",
-    "Polyphonic"
+    "Polyphonic",
+    "Synthesizer"
   ],
   "short_description": "A polyphonic FM synthesizer",
-  "parameters": [
-    {
-      "name": "Voices",
-      "min": 1,
-      "max": 24,
-      "description": "The number of simultaneous voices."
-    }
-  ],
+  "parameters": [],
   "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Audio Output",
+      "description": "Polyphonic FM audio signal"
+    }
+  ]
 }

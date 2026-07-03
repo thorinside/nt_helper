@@ -5,7 +5,7 @@
   "categories": [
     "Envelope",
     "Synthesis",
-    "TB-303"
+    "Utility"
   ],
   "short_description": "AD envelope with variable peak",
   "gui_description": "The display shows the input (dark) and output (light) signals.",
@@ -109,7 +109,7 @@
   "input_ports": [
     {
       "name": "Input",
-      "description": "Input signal (dark on display)"
+      "description": "The input signal to be processed by the AD shaper."
     },
     {
       "name": "Input",
@@ -119,7 +119,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "Output signal (light on display)"
+      "description": "The processed AD envelope signal."
     },
     {
       "name": "Output",

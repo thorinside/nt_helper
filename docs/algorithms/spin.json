@@ -1,26 +1,22 @@
 {
   "guid": "spin",
   "name": "Three Pot",
-  "description": "This algorithm allows you to run what are effectively DSP “plug-ins”, loaded from the MicroSD card.\n\nIt was designed particularly to support programs written for the Spin Semiconductor 125 FV-1 chip. This popular IC has ended up in numerous products including some Eurorack modules (e.g. the FX Aid and the Timiszoara). Its popularity and the relative ease of developing for it has led to a large number of (generally open source) DSP programs being available, and it is this that the Three Pot algorithm was designed to leverage.\n\nThe name “Three Pot” comes from the FV-1 hardware design – all it has are stereo inputs and outputs, and connections for three pots for user controls.\n\nAlthough the focus is on converted FV-1 programs, the conversion works by translating the programs to C++ and then compiling them for the disting NT – so you can if you like actually write C++ directly and use this algorithm to run it on the module.",
+  "description": "This algorithm allows you to run what are effectively DSP “plug-ins”, loaded from the MicroSD card. It was designed particularly to support programs written for the Spin Semiconductor 126 FV-1 chip. This popular IC has ended up in numerous products including some Eurorack modules (e.g. the FX Aid and the Timiszoara). Its popularity and the relative ease of developing for it has led to a large number of (generally open source) DSP programs being available, and it is this that the Three Pot algorithm was designed to leverage. The name “Three Pot” comes from the FV-1 hardware design – all it has are stereo inputs and outputs, and connections for three pots for user controls. Although the focus is on converted FV-1 programs, the conversion works by translating the programs to C++ and then compiling them for the disting NT – so you can if you like actually write C++ directly and use this algorithm to run it on the module.",
   "categories": [
     "DSP",
     "Effects",
-    "Utility"
+    "Programmable"
   ],
   "short_description": "Runs DSP code from the SD card",
-  "use_cases": [
-    "Running FV-1 compatible DSP programs",
-    "Executing custom C++ DSP plug-ins from SD card",
-    "Using open-source DSP libraries"
-  ],
-  "gui_description": "The UI for this algorithm is currently unique on the disting NT in that it not only provides a custom display, but it also changes the way the knobs work. The display shows the program name, pot labels, and description (all from the 3pot file if provided). The three pots on the module control the three pot parameters directly. Additionally, the right encoder changes the program. While selecting a new program, the whole display is given over to showing the program description.",
-  "parameters": [
+  "gui_description": "The UI for this algorithm is currently unique on the disting NT in that it not only provides a custom display, but it also changes the way the knobs work. The display shows the program name, pot labels, and description. The three pots on the module control the three pot parameters directly. Additionally, the right encoder changes the program.",
+  "specifications": [
     {
       "name": "Code memory",
-      "min": 1,
-      "max": 24,
+      "value": "1-24",
       "description": "The amount of code memory to assign to the algorithm (in multiples of 512 bytes)."
-    },
+    }
+  ],
+  "parameters": [
     {
       "name": "Program",
       "min": 0,
@@ -34,9 +30,8 @@
       "max": 100.0,
       "default": 50.0,
       "description": "The first program ‘pot’ parameter.",
-      "type": "string",
+      "type": "folder",
       "channelCountRef": "",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -45,10 +40,7 @@
       "max": 100.0,
       "default": 50.0,
       "description": "The second program ‘pot’ parameter.",
-      "type": "string",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder"
     },
     {
       "name": "Pot 3",
@@ -56,20 +48,16 @@
       "max": 100.0,
       "default": 50.0,
       "description": "The third program ‘pot’ parameter.",
-      "type": "string",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder"
     },
     {
       "name": "Pre/post gain",
       "min": -36,
       "max": 0,
       "default": -20,
-      "description": "Sets the gain adjustment applied before the program’s DSP code. The signal is attenuated by the gain specified before the program is run, and amplified by the inverse gain afterwards.",
-      "type": "string",
+      "description": "Sets the gain adjustment applied before the program’s DSP code.",
+      "type": "folder",
       "channelCountRef": "",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -90,10 +78,7 @@
       "max": 100,
       "default": 100,
       "description": "Sets the mix if the style is ‘Wet/dry’.",
-      "type": "string",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder"
     },
     {
       "name": "Dry gain",
@@ -101,10 +86,7 @@
       "max": 24,
       "default": -40,
       "description": "Sets the dry gain if the mix style is ‘Independent’.",
-      "type": "string",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder"
     },
     {
       "name": "Wet gain",
@@ -112,10 +94,7 @@
       "max": 24,
       "default": 0,
       "description": "Sets the wet gain if the mix style is ‘Independent’.",
-      "type": "string",
-      "channelCountRef": "",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder"
     },
     {
       "name": "Rate conversion",
@@ -136,17 +115,21 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector."
+      "description": "The standard Add/Replace mode selector.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     }
   ],
   "input_ports": [
     {
       "name": "Left Input",
-      "description": "Stereo left audio input"
+      "description": "Stereo audio input left"
     },
     {
       "name": "Right Input",
-      "description": "Stereo right audio input"
+      "description": "Stereo audio input right"
     },
     {
       "name": "Left input",
@@ -160,11 +143,11 @@
   "output_ports": [
     {
       "name": "Left Output",
-      "description": "Stereo left audio output"
+      "description": "Stereo audio output left"
     },
     {
       "name": "Right Output",
-      "description": "Stereo right audio output"
+      "description": "Stereo audio output right"
     },
     {
       "name": "Left output",

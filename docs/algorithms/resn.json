@@ -1,11 +1,11 @@
 {
   "guid": "resn",
   "name": "Resonator",
-  "description": "This algorithm is an implementation of the open source Rings module by Émilie Gillet. It can be played via MIDI or I2C, or simply via CV/gate as the original. Any demos or tutorials you may find online should apply just as well to this implementation.",
+  "description": "This algorithm is an implementation of the open source Rings module by Émilie Gillet. It can be played via MIDI or I2C, or simply via CV/gate as the original. Any demos or tutorials you may find online should apply just as well to this implementation. The user manual for the original module is here. The documentation below assumes some familiarity with this.",
   "categories": [
-    "Physical Modeling",
     "Synthesis",
-    "Effect"
+    "Physical Modeling",
+    "Effects"
   ],
   "short_description": "It's Rings!",
   "specifications": [],
@@ -38,9 +38,7 @@
       "default": 0,
       "description": "Provides a coarse tuning control.",
       "type": "string",
-      "channelCountRef": "ST",
-      "is_common": true,
-      "is_bus": false
+      "channelCountRef": "ST"
     },
     {
       "name": "Fine tune",
@@ -180,35 +178,35 @@
   "input_ports": [
     {
       "name": "Strum",
-      "description": "Triggers a strum event."
+      "description": "Input for triggering strums."
     },
     {
       "name": "V/Oct",
-      "description": "Pitch control CV."
+      "description": "Input for V/octave pitch CV."
     },
     {
       "name": "Audio",
-      "description": "Audio input to be processed by the resonator."
+      "description": "Audio input for processing."
     },
     {
       "name": "Brightness",
-      "description": "CV control for resonator brightness."
+      "description": "Input for controlling resonator brightness."
     },
     {
       "name": "Frequency",
-      "description": "CV control for resonator frequency."
+      "description": "Input for controlling resonator frequency."
     },
     {
       "name": "Damping",
-      "description": "CV control for resonator damping."
+      "description": "Input for controlling resonator damping."
     },
     {
       "name": "Structure",
-      "description": "CV control for resonator structure."
+      "description": "Input for controlling resonator structure."
     },
     {
       "name": "Position",
-      "description": "CV control for resonator position."
+      "description": "Input for controlling resonator position."
     },
     {
       "name": "Strum input",
@@ -246,11 +244,11 @@
   "output_ports": [
     {
       "name": "Odd output",
-      "description": "Odd resonator output."
+      "description": "The odd-numbered output signal."
     },
     {
       "name": "Even output",
-      "description": "Even resonator output."
+      "description": "The even-numbered output signal."
     },
     {
       "name": "Odd output",

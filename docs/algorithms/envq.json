@@ -7,6 +7,7 @@
     "Modulation"
   ],
   "short_description": "A versatile envelope generator",
+  "gui_description": "The display shows a graphical representation of the envelope(s). If the current parameter is one of the shape parameters, the relevant part of the envelope is highlighted. Otherwise, the current envelope is shown, with a horizontal line overlaid to indicate the current output level, and the currently active section is highlighted. When there are many envelopes, the display is subdivided into regions for each one.",
   "specifications": [
     {
       "name": "Channels",
@@ -25,6 +26,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "description": "Enables the envelope."
     },
     {
@@ -32,6 +34,7 @@
       "min": 1,
       "max": 8,
       "default": 1,
+      "scope": "per-channel",
       "description": "Chooses the shape used by the envelope generator."
     },
     {
@@ -39,6 +42,7 @@
       "min": 0,
       "max": 5,
       "default": 0,
+      "scope": "per-channel",
       "enum_values": [
         "Gate",
         "Trigger",
@@ -56,6 +60,7 @@
       "min": 0,
       "max": 3,
       "default": 0,
+      "scope": "per-channel",
       "enum_values": [
         "Off",
         "No stretch",
@@ -71,19 +76,15 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "enum_values": [
-        "Input",
-        "MIDI"
-      ],
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "scope": "per-channel",
+      "description": "The clock source, one of ‘Input’ or ‘MIDI’."
     },
     {
       "name": "MIDI divisor",
       "min": 0,
       "max": 19,
       "default": 4,
+      "scope": "per-channel",
       "description": "The MIDI clock divisor, if the source is MIDI."
     },
     {
@@ -91,8 +92,9 @@
       "min": -10.0,
       "max": 10.0,
       "default": 8.0,
+      "scope": "per-channel",
       "description": "The magnitude of the output envelope.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -101,8 +103,9 @@
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
+      "scope": "per-channel",
       "description": "The offset (starting/ending value) of the envelope.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -111,8 +114,9 @@
       "min": 0,
       "max": 100,
       "default": 100,
+      "scope": "per-channel",
       "description": "The amount by which the trigger velocity affects the envelope scale.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -121,8 +125,9 @@
       "min": -100,
       "max": 100,
       "default": 0,
+      "scope": "per-channel",
       "description": "The amount by which the trigger velocity affects the envelope attack time.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -131,6 +136,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "description": "The standard Add/Replace mode selector as described above, for the envelope’s output."
     },
     {
@@ -138,6 +144,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "description": "The standard Add/Replace mode selector as described above, for the envelope’s end of cycle output."
     },
     {
@@ -145,6 +152,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "description": "The standard Add/Replace mode selector as described above, for the envelope’s active output."
     },
     {
@@ -152,6 +160,7 @@
       "min": 0,
       "max": 16,
       "default": 0,
+      "scope": "per-channel",
       "description": "The MIDI channel on which notes can trigger the envelope."
     },
     {
@@ -159,6 +168,7 @@
       "min": 0,
       "max": 255,
       "default": 1,
+      "scope": "per-channel",
       "description": "The I2C channel on which notes can trigger the envelope."
     },
     {
@@ -166,6 +176,7 @@
       "min": -1,
       "max": 127,
       "default": -1,
+      "scope": "per-channel",
       "description": "The MIDI or I2C note number that will trigger the envelope, or ‘-1’ for ‘Any’."
     },
     {
@@ -173,8 +184,9 @@
       "min": 0,
       "max": 1000,
       "default": 0,
+      "scope": "per-channel",
       "description": "Sets the delay time. In milliseconds, multiplied by the Range parameter.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -183,8 +195,9 @@
       "min": 0,
       "max": 1000,
       "default": 500,
+      "scope": "per-channel",
       "description": "Sets the attack time.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -193,8 +206,9 @@
       "min": 0,
       "max": 1000,
       "default": 0,
+      "scope": "per-channel",
       "description": "Sets the hold time.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -203,8 +217,9 @@
       "min": 0,
       "max": 1000,
       "default": 500,
+      "scope": "per-channel",
       "description": "Sets the decay time.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -213,8 +228,9 @@
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
+      "scope": "per-channel",
       "description": "Sets the sustain level.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -223,8 +239,9 @@
       "min": 0,
       "max": 1000,
       "default": 500,
+      "scope": "per-channel",
       "description": "Sets the release time.",
-      "type": "string",
+      "type": "file",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -233,6 +250,7 @@
       "min": 0,
       "max": 127,
       "default": 64,
+      "scope": "per-channel",
       "description": "Sets the attack curve shape. Low values are more exponential; high values more linear."
     },
     {
@@ -240,6 +258,7 @@
       "min": 0,
       "max": 127,
       "default": 64,
+      "scope": "per-channel",
       "description": "Sets the decay and release curve shapes. Low values are more exponential; high values more linear."
     },
     {
@@ -247,25 +266,18 @@
       "min": 0,
       "max": 4,
       "default": 2,
+      "scope": "per-channel",
       "description": "The time range (multiplier), from ‘x 0.01’ to ‘x 100’."
     }
   ],
   "input_ports": [
     {
       "name": "Trigger input",
-      "description": "The bus used for the envelope's trigger input."
+      "description": "The bus to use for the envelope’s trigger input."
     },
     {
       "name": "Clock input",
-      "description": "The bus used for the envelope's clock input."
-    },
-    {
-      "name": "MIDI",
-      "description": "MIDI clock and note input."
-    },
-    {
-      "name": "I2C",
-      "description": "I2C note input."
+      "description": "The bus to use for the envelope’s clock input."
     },
     {
       "name": "Trigger input",
@@ -279,7 +291,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The main envelope output."
+      "description": "The bus to use for the envelope’s output."
     },
     {
       "name": "End of cycle output",

@@ -1,11 +1,12 @@
 {
   "guid": "ensq",
   "name": "Envelope Sequencer",
-  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer (below), and some of the documentation for this algorithm cross-references with that for the other.\n\nEach step has a curve shape, a scale, and an offset. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock).\n\nThe algorithm has a function for randomising the curves in various ways.\n\nEach Envelope Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures.\n\nRemember that every curve shape, level, etc. is a parameter and therefore mappable.",
+  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer (below), and some of the documentation for this algorithm cross-references with that for the other. Each step has a curve shape, a scale, and an offset. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock). The algorithm has a function for randomising the curves in various ways. Each Envelope Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures. Remember that every curve shape, level, etc. is a parameter and therefore mappable.",
   "categories": [
     "Sequencer",
     "Envelope",
-    "Modulation"
+    "Modulation",
+    "MIDI"
   ],
   "short_description": "A really, really big curve sequencer",
   "gui_description": "The display shows an overview of the 16 steps. The current step being played is indicated by a highlight above the step. The start and end steps are indicated by solid bars. The step whose parameter is being edited is shown highlighted. Divisions (repeats or ratchets) are shown as breaks in the highlight, with a number above to indicate the division.",
@@ -67,7 +68,7 @@
       "default": 100,
       "description": "Sets the length of the step if the type is “% of clock”.",
       "type": "string",
-      "channelCountRef": "percentage",
+      "channelCountRef": "percent",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -78,7 +79,7 @@
       "default": 100,
       "description": "Sets the length of the step if the type is “Fixed”.",
       "type": "string",
-      "channelCountRef": "milliseconds",
+      "channelCountRef": "ms",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -96,7 +97,7 @@
       "default": 0.0,
       "description": "Sets the amplitude of the curve over the step.",
       "type": "string",
-      "channelCountRef": "volts",
+      "channelCountRef": "V",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -107,7 +108,7 @@
       "default": 0.0,
       "description": "Sets the offset added to the curve during the step.",
       "type": "string",
-      "channelCountRef": "volts",
+      "channelCountRef": "V",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -125,7 +126,7 @@
       "default": 0,
       "description": "Sets the probability that the step will be muted.",
       "type": "string",
-      "channelCountRef": "percentage",
+      "channelCountRef": "percent",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -136,7 +137,7 @@
       "default": 0,
       "description": "Sets the probability that the step will be skipped.",
       "type": "string",
-      "channelCountRef": "percentage",
+      "channelCountRef": "percent",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -147,7 +148,7 @@
       "default": 0,
       "description": "Sets the probability that the step causes a reset.",
       "type": "string",
-      "channelCountRef": "percentage",
+      "channelCountRef": "percent",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -158,7 +159,7 @@
       "default": 0,
       "description": "Sets the probability that the step will be repeated.",
       "type": "string",
-      "channelCountRef": "percentage",
+      "channelCountRef": "percent",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -225,7 +226,7 @@
       "default": 0,
       "description": "The probability that a step will be a repeat.",
       "type": "string",
-      "channelCountRef": "percentage",
+      "channelCountRef": "percent",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -236,7 +237,7 @@
       "default": 0,
       "description": "The probability that a step will be a ratchet.",
       "type": "string",
-      "channelCountRef": "percentage",
+      "channelCountRef": "percent",
       "is_per_channel": false,
       "is_bus": false
     },

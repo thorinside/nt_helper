@@ -4,8 +4,7 @@
   "description": "This algorithm allows you to drive the outputs of an ESX-8CV module attached to an ES-5 expander which is in turn attached to the disting NT.",
   "categories": [
     "Utility",
-    "Output",
-    "Expansion"
+    "Hardware Interface"
   ],
   "short_description": "Drives ESX-8CV outputs",
   "parameters": [
@@ -21,7 +20,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Controls whether the algorithm will update all eight of the hardware outputs continuously (non-adaptive mode), or only those outputs that are changing (adaptive mode). In general the best performance will be in adaptive mode, unless you want the precise timing of the output updates to be predictable."
+      "description": "Controls whether the algorithm will update all eight of the hardware outputs continuously (non-adaptive mode), or only those outputs that are changing (adaptive mode). In general the best performance will be in adaptive mode, unless you want the precise timing of the output updates to be predictable, in which case you may prefer non-adaptive mode."
     },
     {
       "name": "1",
@@ -66,7 +65,8 @@
       "description": "The bus from which to drive output 6.",
       "enum_values": [
         "Col5"
-      ]
+      ],
+      "type": "bus"
     },
     {
       "name": "7",
