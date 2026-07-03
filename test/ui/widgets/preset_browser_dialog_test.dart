@@ -1,3 +1,5 @@
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -259,6 +261,7 @@ void main() {
     testWidgets('wires distinct drop directories to desktop panels', (
       tester,
     ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
       final midiDir = DirectoryEntry(
         name: 'MIDI/',
         attributes: 0x10,
@@ -274,30 +277,101 @@ void main() {
         size: 0,
       );
 
-      await tester.pumpWidget(
-        createTestWidget(
-          child: Scaffold(
-            body: ThreePanelNavigator(
-              leftPanelItems: [midiDir],
-              centerPanelItems: [songsDir],
-              rightPanelItems: const [],
-              selectedLeftItem: midiDir,
-              selectedCenterItem: songsDir,
-              selectedRightItem: null,
-              currentPath: '/',
-              onItemSelected: (_, _) {},
-              onFilesDropped: (_, _) {},
+      final capturedTargets = <String>[];
+
+      try {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: Scaffold(
+              body: ThreePanelNavigator(
+                leftPanelItems: [midiDir],
+                centerPanelItems: [songsDir],
+                rightPanelItems: const [],
+                selectedLeftItem: midiDir,
+                selectedCenterItem: songsDir,
+                selectedRightItem: null,
+                currentPath: '/',
+                onItemSelected: (_, _) {},
+                onFilesDropped: (_, targetDirectory) {
+                  capturedTargets.add(targetDirectory);
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final panelPaths = tester
-          .widgetList<DirectoryPanel>(find.byType(DirectoryPanel))
-          .map((panel) => panel.currentPath)
-          .toList();
+        final panelPaths = tester
+            .widgetList<DirectoryPanel>(find.byType(DirectoryPanel))
+            .map((panel) => panel.currentPath)
+            .toList();
 
-      expect(panelPaths, ['/', '/MIDI', '/MIDI/Songs']);
+        expect(panelPaths, ['/', '/MIDI', '/MIDI/Songs']);
+
+        final dropTargets = tester.widgetList<DropTarget>(
+          find.byType(DropTarget),
+        );
+        expect(dropTargets, hasLength(3));
+
+        for (final dropTarget in dropTargets) {
+          dropTarget.onDragDone!(
+            DropDoneDetails(
+              files: [DropItemFile('/tmp/groove.mid')],
+              localPosition: Offset.zero,
+              globalPosition: Offset.zero,
+            ),
+          );
+        }
+
+        expect(capturedTargets, ['/', '/MIDI', '/MIDI/Songs']);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('does not register placeholder panels as drop targets', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      final capturedTargets = <String>[];
+
+      try {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: Scaffold(
+              body: ThreePanelNavigator(
+                leftPanelItems: const [],
+                centerPanelItems: const [],
+                rightPanelItems: const [],
+                selectedLeftItem: null,
+                selectedCenterItem: null,
+                selectedRightItem: null,
+                currentPath: '/',
+                onItemSelected: (_, _) {},
+                onFilesDropped: (_, targetDirectory) {
+                  capturedTargets.add(targetDirectory);
+                },
+              ),
+            ),
+          ),
+        );
+
+        final dropTargets = tester.widgetList<DropTarget>(
+          find.byType(DropTarget),
+        );
+        expect(dropTargets, hasLength(1));
+
+        dropTargets.single.onDragDone!(
+          DropDoneDetails(
+            files: [DropItemFile('/tmp/groove.mid')],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+
+        expect(capturedTargets, ['/']);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
   });
 

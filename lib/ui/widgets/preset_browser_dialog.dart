@@ -213,6 +213,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                                         currentPath: loaded.currentPath,
                                         onContextMenu: _handleContextMenu,
                                         onFilesDropped: _handlePanelDrop,
+                                        dropEnabled:
+                                            !_isInstallingPackage &&
+                                            _currentAnalysis == null,
                                       ),
                                 error: (error) => Center(
                                   child: Column(
@@ -994,6 +997,8 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   }
 
   void _handleDroppedFiles(List<XFile> files, {String? targetDirectory}) {
+    if (_isInstallingPackage || _currentAnalysis != null) return;
+
     if (files.isEmpty) return;
 
     if (files.length > 1) {
@@ -1057,14 +1062,18 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   }
 
   Future<void> _processPackageFile(XFile file) async {
+    if (_isInstallingPackage || _currentAnalysis != null) return;
+
     setState(() {
       _isInstallingPackage = true;
     });
 
     try {
       final fileBytes = await file.readAsBytes();
+      if (!mounted) return;
 
       final isValid = await PresetPackageAnalyzer.isValidPackage(fileBytes);
+      if (!mounted) return;
       if (!isValid) {
         setState(() {
           _isInstallingPackage = false;
@@ -1077,6 +1086,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       }
 
       final analysis = await PresetPackageAnalyzer.analyzePackage(fileBytes);
+      if (!mounted) return;
       if (!analysis.isValid) {
         setState(() {
           _isInstallingPackage = false;
@@ -1097,6 +1107,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       final analysisWithConflicts = await conflictDetector.detectConflicts(
         analysis,
       );
+      if (!mounted) return;
 
       setState(() {
         _currentAnalysis = analysisWithConflicts;
@@ -1104,7 +1115,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
       if (!mounted) return;
 
-      await showDialog(
+      final installed = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => PackageInstallDialog(
@@ -1112,24 +1123,33 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
           packageData: _currentPackageData!,
           distingCubit: widget.distingCubit,
           onInstall: () {
-            Navigator.of(dialogContext).pop();
-            Navigator.of(context).pop();
+            Navigator.of(dialogContext).pop(true);
           },
           onCancel: () {
-            Navigator.of(dialogContext).pop();
+            Navigator.of(dialogContext).pop(false);
           },
         ),
       );
+
+      if (!mounted) return;
 
       setState(() {
         _currentAnalysis = null;
         _currentPackageData = null;
         _isInstallingPackage = false;
       });
+
+      if (installed == true && mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
 
+      if (!mounted) return;
+
       setState(() {
+        _currentAnalysis = null;
+        _currentPackageData = null;
         _isInstallingPackage = false;
       });
 
@@ -1138,7 +1158,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         'An unexpected error occurred while processing the package:\n\n$e',
       );
     } finally {
-      if (mounted) {
+      if (mounted && _isInstallingPackage) {
         setState(() {
           _isInstallingPackage = false;
         });
@@ -1228,6 +1248,7 @@ class ThreePanelNavigator extends StatefulWidget {
   final Function(DirectoryEntry, Offset, String panelPath)? onContextMenu;
   final void Function(List<XFile> files, String targetDirectory)?
   onFilesDropped;
+  final bool dropEnabled;
 
   const ThreePanelNavigator({
     super.key,
@@ -1241,6 +1262,7 @@ class ThreePanelNavigator extends StatefulWidget {
     required this.currentPath,
     this.onContextMenu,
     this.onFilesDropped,
+    this.dropEnabled = true,
   });
 
   @override
@@ -1272,23 +1294,28 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
   @override
   Widget build(BuildContext context) {
     final leftPath = widget.currentPath;
+    final leftDropTarget = leftPath;
 
     String centerPath = widget.currentPath;
+    String? centerDropTarget;
     if (widget.selectedLeftItem != null &&
         widget.selectedLeftItem!.isDirectory) {
       centerPath = _joinPath(
         widget.currentPath,
         _cleanName(widget.selectedLeftItem!.name),
       );
+      centerDropTarget = centerPath;
     }
 
     String rightPath = centerPath;
+    String? rightDropTarget;
     if (widget.selectedCenterItem != null &&
         widget.selectedCenterItem!.isDirectory) {
       rightPath = _joinPath(
         centerPath,
         _cleanName(widget.selectedCenterItem!.name),
       );
+      rightDropTarget = rightPath;
     }
 
     return Row(
@@ -1301,8 +1328,10 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
                 widget.onItemSelected(item, PanelPosition.left),
             position: PanelPosition.left,
             currentPath: leftPath,
+            dropTargetDirectory: leftDropTarget,
             onContextMenu: widget.onContextMenu,
             onFilesDropped: widget.onFilesDropped,
+            dropEnabled: widget.dropEnabled,
             focusNode: _leftFocusNode,
             nextPanelFocusNode: _centerFocusNode,
           ),
@@ -1316,8 +1345,10 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
                 widget.onItemSelected(item, PanelPosition.center),
             position: PanelPosition.center,
             currentPath: centerPath,
+            dropTargetDirectory: centerDropTarget,
             onContextMenu: widget.onContextMenu,
             onFilesDropped: widget.onFilesDropped,
+            dropEnabled: widget.dropEnabled,
             focusNode: _centerFocusNode,
             nextPanelFocusNode: _rightFocusNode,
           ),
@@ -1331,8 +1362,10 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
                 widget.onItemSelected(item, PanelPosition.right),
             position: PanelPosition.right,
             currentPath: rightPath,
+            dropTargetDirectory: rightDropTarget,
             onContextMenu: widget.onContextMenu,
             onFilesDropped: widget.onFilesDropped,
+            dropEnabled: widget.dropEnabled,
             focusNode: _rightFocusNode,
           ),
         ),
@@ -1361,9 +1394,11 @@ class DirectoryPanel extends StatefulWidget {
   final Function(DirectoryEntry) onItemTap;
   final PanelPosition position;
   final String currentPath;
+  final String? dropTargetDirectory;
   final Function(DirectoryEntry, Offset, String panelPath)? onContextMenu;
   final void Function(List<XFile> files, String targetDirectory)?
   onFilesDropped;
+  final bool dropEnabled;
   final FocusNode? focusNode;
   final FocusNode? nextPanelFocusNode;
 
@@ -1374,8 +1409,10 @@ class DirectoryPanel extends StatefulWidget {
     required this.onItemTap,
     required this.position,
     required this.currentPath,
+    this.dropTargetDirectory,
     this.onContextMenu,
     this.onFilesDropped,
+    this.dropEnabled = true,
     this.focusNode,
     this.nextPanelFocusNode,
   });
@@ -1596,7 +1633,10 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
       );
     }
 
-    if (_supportsDesktopDrop && widget.onFilesDropped != null) {
+    if (_supportsDesktopDrop &&
+        widget.dropEnabled &&
+        widget.dropTargetDirectory != null &&
+        widget.onFilesDropped != null) {
       panel = DropTarget(
         onDragEntered: (_) => setState(() => _isDragOver = true),
         onDragExited: (_) => setState(() => _isDragOver = false),
@@ -1604,9 +1644,10 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
           setState(() => _isDragOver = false);
           widget.onFilesDropped!(
             details.files.cast<XFile>(),
-            widget.currentPath,
+            widget.dropTargetDirectory!,
           );
         },
+        enable: widget.dropEnabled,
         child: Stack(
           children: [panel, if (_isDragOver) _buildPanelDragOverlay(context)],
         ),
@@ -1620,7 +1661,7 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
     return Positioned.fill(
       child: IgnorePointer(
         child: Semantics(
-          label: 'Drop file into ${widget.currentPath}',
+          label: 'Drop file into ${widget.dropTargetDirectory}',
           liveRegion: true,
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -1646,9 +1687,11 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
                     horizontal: 16,
                     vertical: 12,
                   ),
-                  child: Text(
-                    'Drop into ${widget.currentPath}',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  child: ExcludeSemantics(
+                    child: Text(
+                      'Drop into ${widget.dropTargetDirectory}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ),
                 ),
               ),
