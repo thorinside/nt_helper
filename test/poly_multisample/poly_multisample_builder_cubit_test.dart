@@ -70,6 +70,114 @@ void main() {
       expect(service.lastSourceFolder, '/tmp/src');
     });
 
+    test('adoptStagedImport sets an import draft instrument', () async {
+      final cubit = PolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+
+      await cubit.adoptStagedImport(
+        const PolyStagedImport(
+          name: 'Imported Piano',
+          sourceLabel: '/input/Piano.dspreset',
+          regions: [
+            PolySampleRegion(
+              path: '/tmp/A_C3.wav',
+              fileName: 'A_C3.wav',
+              displayName: 'A_C3.wav',
+            ),
+            PolySampleRegion(
+              path: '/tmp/B_D3.wav',
+              fileName: 'B_D3.wav',
+              displayName: 'B_D3.wav',
+            ),
+          ],
+          warnings: ['Check mapping'],
+        ),
+      );
+
+      expect(cubit.state.sourceMode, PolySampleSourceMode.importDraft);
+      expect(cubit.state.editedRegions, hasLength(2));
+      expect(cubit.state.warnings, contains('Check mapping'));
+      expect(cubit.state.currentInstrument!.name, 'Imported Piano');
+    });
+
+    test('addStagedRegions merges without duplicating paths', () async {
+      final cubit = PolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+
+      await cubit.adoptStagedImport(
+        const PolyStagedImport(
+          name: 'Imported Piano',
+          sourceLabel: '/input/Piano.dspreset',
+          regions: [
+            PolySampleRegion(
+              path: '/tmp/A_C3.wav',
+              fileName: 'A_C3.wav',
+              displayName: 'A_C3.wav',
+            ),
+            PolySampleRegion(
+              path: '/tmp/B_D3.wav',
+              fileName: 'B_D3.wav',
+              displayName: 'B_D3.wav',
+            ),
+          ],
+        ),
+      );
+
+      await cubit.addStagedRegions(
+        const PolyStagedImport(
+          name: 'More Piano',
+          sourceLabel: '/input/More.dspreset',
+          regions: [
+            PolySampleRegion(
+              path: '/tmp/B_D3.wav',
+              fileName: 'B_D3.wav',
+              displayName: 'B_D3.wav',
+            ),
+            PolySampleRegion(
+              path: '/tmp/C_E3.wav',
+              fileName: 'C_E3.wav',
+              displayName: 'C_E3.wav',
+            ),
+          ],
+        ),
+      );
+
+      expect(cubit.state.editedRegions.map((region) => region.path).toSet(), {
+        '/tmp/A_C3.wav',
+        '/tmp/B_D3.wav',
+        '/tmp/C_E3.wav',
+      });
+      expect(cubit.state.editedRegions, hasLength(3));
+    });
+
+    test('addStagedRegions is a no-op without an instrument', () async {
+      final cubit = PolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+
+      await cubit.addStagedRegions(
+        const PolyStagedImport(
+          name: 'More Piano',
+          sourceLabel: '/input/More.dspreset',
+          regions: [
+            PolySampleRegion(
+              path: '/tmp/C_E3.wav',
+              fileName: 'C_E3.wav',
+              displayName: 'C_E3.wav',
+            ),
+          ],
+        ),
+      );
+
+      expect(cubit.state.currentInstrument, isNull);
+      expect(cubit.state.editedRegions, isEmpty);
+    });
+
     test('loads, selects, edits, and applies a local sample folder', () async {
       final sample = File('${tempRoot.path}/SoftPiano_C3.wav')
         ..writeAsBytesSync([1, 2, 3]);

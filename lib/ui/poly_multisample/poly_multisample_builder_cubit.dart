@@ -438,6 +438,35 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     );
   }
 
+  Future<void> adoptStagedImport(PolyStagedImport staged) async {
+    await _replaceOwnedTempRoots(staged.tempRoots);
+    _setInstrument(
+      PolySampleInstrument(
+        name: staged.name,
+        sourcePath: staged.tempRoots.isNotEmpty
+            ? staged.tempRoots.first
+            : staged.sourceLabel,
+        regions: staged.regions,
+      ),
+      sourceMode: PolySampleSourceMode.importDraft,
+      warnings: staged.warnings,
+    );
+  }
+
+  Future<void> addStagedRegions(PolyStagedImport staged) async {
+    if (state.currentInstrument == null) return;
+    _ownedTempRoots.addAll(staged.tempRoots);
+    final existing = state.editedRegions.map((region) => region.path).toSet();
+    final next = [
+      ...state.editedRegions,
+      ...staged.regions.where((region) => !existing.contains(region.path)),
+    ];
+    _replaceEditedRegions(next);
+    if (staged.warnings.isNotEmpty) {
+      emit(state.copyWith(warnings: [...state.warnings, ...staged.warnings]));
+    }
+  }
+
   void selectRegion(String path, PolyRegionSelectionMode mode) {
     final selected = Set<String>.from(state.selectedPaths);
     switch (mode) {
@@ -888,18 +917,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         await _importService.cleanupOwnedTempRoots(staged.tempRoots);
         return;
       }
-      await _replaceOwnedTempRoots(staged.tempRoots);
-      _setInstrument(
-        PolySampleInstrument(
-          name: staged.name,
-          sourcePath: staged.tempRoots.isNotEmpty
-              ? staged.tempRoots.first
-              : staged.sourceLabel,
-          regions: staged.regions,
-        ),
-        sourceMode: PolySampleSourceMode.importDraft,
-        warnings: staged.warnings,
-      );
+      await adoptStagedImport(staged);
     } catch (error) {
       emit(
         state.copyWith(
