@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'wav_metadata.dart';
+
 enum PolySampleIssue { missingRootNote, unsupportedFileType }
 
 class PolySampleRegion {
@@ -221,6 +223,10 @@ class PolyWaveformDraft {
     this.trimEnd,
     this.fadeInFrames = 0,
     this.fadeOutFrames = 0,
+    this.fadeInCurve = WavFadeCurve.linear,
+    this.fadeOutCurve = WavFadeCurve.linear,
+    this.fadeInStrength = 0.5,
+    this.fadeOutStrength = 0.5,
     this.gainDb = 0,
     this.normalizePeakDb,
   });
@@ -231,8 +237,49 @@ class PolyWaveformDraft {
   final int? trimEnd;
   final int fadeInFrames;
   final int fadeOutFrames;
+  final WavFadeCurve fadeInCurve;
+  final WavFadeCurve fadeOutCurve;
+  final double fadeInStrength;
+  final double fadeOutStrength;
   final double gainDb;
   final double? normalizePeakDb;
+
+  PolyWaveformDraft copyWith({
+    int? loopStart,
+    int? loopEnd,
+    int? trimStart,
+    int? trimEnd,
+    int? fadeInFrames,
+    int? fadeOutFrames,
+    WavFadeCurve? fadeInCurve,
+    WavFadeCurve? fadeOutCurve,
+    double? fadeInStrength,
+    double? fadeOutStrength,
+    double? gainDb,
+    double? normalizePeakDb,
+    bool clearLoopStart = false,
+    bool clearLoopEnd = false,
+    bool clearTrimStart = false,
+    bool clearTrimEnd = false,
+    bool clearNormalize = false,
+  }) {
+    return PolyWaveformDraft(
+      loopStart: clearLoopStart ? null : loopStart ?? this.loopStart,
+      loopEnd: clearLoopEnd ? null : loopEnd ?? this.loopEnd,
+      trimStart: clearTrimStart ? null : trimStart ?? this.trimStart,
+      trimEnd: clearTrimEnd ? null : trimEnd ?? this.trimEnd,
+      fadeInFrames: fadeInFrames ?? this.fadeInFrames,
+      fadeOutFrames: fadeOutFrames ?? this.fadeOutFrames,
+      fadeInCurve: fadeInCurve ?? this.fadeInCurve,
+      fadeOutCurve: fadeOutCurve ?? this.fadeOutCurve,
+      fadeInStrength: fadeInStrength ?? this.fadeInStrength,
+      fadeOutStrength: fadeOutStrength ?? this.fadeOutStrength,
+      gainDb: gainDb ?? this.gainDb,
+      normalizePeakDb: clearNormalize
+          ? null
+          : normalizePeakDb ?? this.normalizePeakDb,
+    );
+  }
 }
 
 class PolyStagedImport {

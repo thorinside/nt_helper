@@ -13,6 +13,7 @@ import 'package:nt_helper/poly_multisample/poly_sample_apply_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_folder_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_hardware_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
+import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 
 class _MockDistingMidiManager extends Mock implements IDistingMidiManager {}
@@ -73,6 +74,32 @@ void main() {
 
       expect(cubit.state.previewState.playingPath, '/tmp/a.wav');
       expect(adapter.playedPaths, ['/tmp/a.wav']);
+    });
+
+    test('saveDestructiveWav forwards fade curve and strength', () {
+      const draft = PolyWaveformDraft(
+        fadeInCurve: WavFadeCurve.sCurve,
+        fadeOutCurve: WavFadeCurve.equalPower,
+        fadeInStrength: 0.8,
+        fadeOutStrength: 0.2,
+        normalizePeakDb: -0.3,
+      );
+
+      final unchanged = draft.copyWith();
+
+      expect(unchanged.fadeInCurve, WavFadeCurve.sCurve);
+      expect(unchanged.fadeOutCurve, WavFadeCurve.equalPower);
+      expect(unchanged.fadeInStrength, 0.8);
+      expect(unchanged.fadeOutStrength, 0.2);
+      expect(unchanged.normalizePeakDb, -0.3);
+
+      final clearedNormalize = draft.copyWith(clearNormalize: true);
+
+      expect(clearedNormalize.normalizePeakDb, isNull);
+      expect(clearedNormalize.fadeInCurve, WavFadeCurve.sCurve);
+      expect(clearedNormalize.fadeOutCurve, WavFadeCurve.equalPower);
+      expect(clearedNormalize.fadeInStrength, 0.8);
+      expect(clearedNormalize.fadeOutStrength, 0.2);
     });
 
     test('downloads hardware samples to a local preview cache', () async {
