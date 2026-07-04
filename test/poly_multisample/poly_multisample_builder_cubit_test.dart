@@ -13,8 +13,10 @@ import 'package:nt_helper/poly_multisample/poly_sample_apply_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_folder_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_hardware_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_preferences_service.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
@@ -23,6 +25,7 @@ void main() {
     late Directory tempRoot;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       tempRoot = Directory.systemTemp.createTempSync(
         'poly_multisample_builder_cubit_test_',
       );
@@ -32,6 +35,39 @@ void main() {
       if (tempRoot.existsSync()) {
         tempRoot.deleteSync(recursive: true);
       }
+    });
+
+    test('loads remembered folders into state on construction', () async {
+      SharedPreferences.setMockInitialValues({
+        'poly_multisample.lastLocalFolder': '/tmp/a',
+        'poly_multisample.lastWavExportFolder': '/tmp/b',
+      });
+      final service = await PolySamplePreferencesService.create();
+      final cubit = PolyMultisampleBuilderCubit(
+        preferencesService: service,
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state.lastLocalFolder, '/tmp/a');
+      expect(cubit.state.lastWavExportFolder, '/tmp/b');
+    });
+
+    test('rememberSourceFolder persists and emits', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = await PolySamplePreferencesService.create();
+      final cubit = PolyMultisampleBuilderCubit(
+        preferencesService: service,
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+
+      await cubit.rememberSourceFolder('/tmp/src');
+
+      expect(cubit.state.lastSourceFolder, '/tmp/src');
+      expect(service.lastSourceFolder, '/tmp/src');
     });
 
     test('loads, selects, edits, and applies a local sample folder', () async {

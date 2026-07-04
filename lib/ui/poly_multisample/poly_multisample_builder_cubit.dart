@@ -13,6 +13,7 @@ import 'package:nt_helper/poly_multisample/poly_sample_apply_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_folder_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_hardware_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_preferences_service.dart';
 import 'package:nt_helper/poly_multisample/poly_wav_service.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 
@@ -182,16 +183,19 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     PolySampleApplyService? applyService,
     PolyWavService? wavService,
     PolyAudioPreviewService? previewService,
+    PolySamplePreferencesService? preferencesService,
   }) : _folderService = folderService ?? const PolySampleFolderService(),
        _hardwareService = hardwareService ?? const PolySampleHardwareService(),
        _importService = importService ?? PolySampleImportService(),
        _applyService = applyService ?? const PolySampleApplyService(),
        _wavService = wavService ?? const PolyWavService(),
        _previewService = previewService ?? PolyAudioPreviewService(),
+       _preferencesService = preferencesService,
        super(const PolyMultisampleBuilderState()) {
     _previewSub = _previewService.states.listen((previewState) {
       emit(state.copyWith(previewState: previewState));
     });
+    unawaited(_loadPreferences());
   }
 
   final PolySampleFolderService _folderService;
@@ -200,6 +204,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   final PolySampleApplyService _applyService;
   final PolyWavService _wavService;
   final PolyAudioPreviewService _previewService;
+  PolySamplePreferencesService? _preferencesService;
   late final StreamSubscription<PolyAudioPreviewState> _previewSub;
   final List<String> _ownedTempRoots = [];
   final List<String> _pendingTempRootsToCleanup = [];
@@ -217,9 +222,39 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     super.emit(state);
   }
 
+  Future<PolySamplePreferencesService> _prefs() async {
+    final existing = _preferencesService;
+    if (existing != null) return existing;
+    final created = await PolySamplePreferencesService.create();
+    _preferencesService = created;
+    return created;
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await _prefs();
+    if (_isClosing || isClosed) return;
+    if (prefs.lastLocalFolder == null &&
+        prefs.lastSourceFolder == null &&
+        prefs.lastImportOutputFolder == null &&
+        prefs.lastCustomOutputFolder == null &&
+        prefs.lastWavExportFolder == null) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        lastLocalFolder: prefs.lastLocalFolder,
+        lastSourceFolder: prefs.lastSourceFolder,
+        lastImportOutputFolder: prefs.lastImportOutputFolder,
+        lastCustomOutputFolder: prefs.lastCustomOutputFolder,
+        lastWavExportFolder: prefs.lastWavExportFolder,
+      ),
+    );
+  }
+
   Future<void> loadLocalFolder(String path) async {
     _contentRevision++;
     await _cleanupOwnedTempRootsExceptPath(path);
+    unawaited(_prefs().then((service) => service.setLastLocalFolder(path)));
     emit(
       state.copyWith(
         sourceMode: PolySampleSourceMode.local,
@@ -506,6 +541,18 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     );
   }
 
+  Future<void> rememberSourceFolder(String path) async {
+    final prefs = await _prefs();
+    await prefs.setLastSourceFolder(path);
+    emit(state.copyWith(lastSourceFolder: path));
+  }
+
+  Future<void> rememberImportOutputFolder(String path) async {
+    final prefs = await _prefs();
+    await prefs.setLastImportOutputFolder(path);
+    emit(state.copyWith(lastImportOutputFolder: path));
+  }
+
   Future<void> saveCustomDraft(String outputFolder) async {
     final operationRevision = _contentRevision;
     final instrumentName = state.currentInstrument?.name ?? 'Untitled';
@@ -515,6 +562,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         activeOperation: PolyMultisampleActiveOperation.saving,
         lastCustomOutputFolder: outputFolder,
         clearError: true,
+      ),
+    );
+    unawaited(
+      _prefs().then(
+        (service) => service.setLastCustomOutputFolder(outputFolder),
       ),
     );
     _beginRootConsumingOperation();
@@ -748,9 +800,15 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       ),
       overwriteConfirmed: overwriteConfirmed,
     );
+    final wavExportFolder = p.dirname(targetPath);
+    unawaited(
+      _prefs().then(
+        (service) => service.setLastWavExportFolder(wavExportFolder),
+      ),
+    );
     emit(
       state.copyWith(
-        lastWavExportFolder: p.dirname(targetPath),
+        lastWavExportFolder: wavExportFolder,
         effect: 'Saved edited WAV.',
         effectId: state.effectId + 1,
         clearError: true,
