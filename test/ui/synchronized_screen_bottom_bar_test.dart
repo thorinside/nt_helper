@@ -192,6 +192,49 @@ void main() {
       expect(find.byTooltip('Samples mode'), findsOneWidget);
     });
 
+    testWidgets('Parameters and Routing remain reachable after Samples', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1300, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        createTestWidget(isMobile: false, isOffline: false),
+      );
+
+      await tester.tap(find.byTooltip('Samples mode'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Build or edit a Disting NT multisample folder'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byTooltip('Parameters mode'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Build or edit a Disting NT multisample folder'),
+        findsNothing,
+      );
+
+      await tester.tap(find.byTooltip('Samples mode'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Build or edit a Disting NT multisample folder'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byTooltip('Routing mode'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Build or edit a Disting NT multisample folder'),
+        findsNothing,
+      );
+    });
+
     testWidgets('Samples workspace mode is absent on mobile', (tester) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1;

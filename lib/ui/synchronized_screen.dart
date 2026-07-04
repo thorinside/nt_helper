@@ -1523,7 +1523,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   : {_currentMode},
               onSelectionChanged: (Set<EditMode> modes) {
                 setState(() {
-                  if (modes.contains(EditMode.samples) && !isMobile) {
+                  final previousMode = _currentMode;
+                  final switchingAwayFromSamples =
+                      previousMode == EditMode.samples && modes.length > 1;
+                  if (modes.contains(EditMode.samples) &&
+                      !isMobile &&
+                      !switchingAwayFromSamples) {
                     _currentMode = EditMode.samples;
                   } else if (modes.length == 2 &&
                       modes.contains(EditMode.parameters) &&
@@ -1535,9 +1540,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     final newMode = modes.firstWhere(
                       (m) =>
                           m !=
-                          (_currentMode == EditMode.both
+                          (previousMode == EditMode.both
                               ? EditMode.parameters
-                              : _currentMode),
+                              : previousMode),
                       orElse: () => modes.first,
                     );
                     _currentMode = newMode;
