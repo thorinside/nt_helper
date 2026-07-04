@@ -156,8 +156,17 @@ class PolySampleApplyService {
 
   Future<void> applyLocalPlan(PolySampleApplyPlan plan) async {
     if (plan.hasConflicts) {
-      throw PolySampleApplyException('Cannot apply a plan with conflicts.');
+      final details = plan.conflicts
+          .map((conflict) {
+            return conflict.message;
+          })
+          .join(' ');
+      throw PolySampleApplyException(
+        'Cannot apply a plan with conflicts. $details',
+      );
     }
+
+    await _preflightLocalPlan(plan);
 
     for (final removal in plan.removals) {
       final file = File(removal.path);
@@ -187,6 +196,61 @@ class PolySampleApplyService {
     for (final addition in plan.additions) {
       await Directory(p.dirname(addition.toPath)).create(recursive: true);
       await File(addition.sourcePath).copy(addition.toPath);
+    }
+  }
+
+  Future<void> _preflightLocalPlan(PolySampleApplyPlan plan) async {
+    final vacatedPaths = <String>{
+      for (final removal in plan.removals) p.normalize(removal.path),
+      for (final rename in plan.renames) p.normalize(rename.fromPath),
+    };
+
+    for (final removal in plan.removals) {
+      final type = await FileSystemEntity.type(removal.path);
+      if (type != FileSystemEntityType.file &&
+          type != FileSystemEntityType.notFound) {
+        throw PolySampleApplyException(
+          '${p.basename(removal.path)} is not a removable sample file.',
+        );
+      }
+    }
+
+    for (final rename in plan.renames) {
+      if (!await File(rename.fromPath).exists()) {
+        throw PolySampleApplyException(
+          'Cannot rename missing sample ${rename.fromPath}.',
+        );
+      }
+      final targetPath = p.normalize(rename.toPath);
+      final sourcePath = p.normalize(rename.fromPath);
+      if (targetPath == sourcePath || vacatedPaths.contains(targetPath)) {
+        continue;
+      }
+      if (await FileSystemEntity.type(rename.toPath) !=
+          FileSystemEntityType.notFound) {
+        throw PolySampleApplyException(
+          '${p.basename(rename.toPath)} already exists.',
+        );
+      }
+    }
+
+    for (final addition in plan.additions) {
+      if (!await File(addition.sourcePath).exists()) {
+        throw PolySampleApplyException(
+          'Cannot copy missing sample ${addition.sourcePath}.',
+        );
+      }
+      final targetPath = p.normalize(addition.toPath);
+      final sourcePath = p.normalize(addition.sourcePath);
+      if (targetPath == sourcePath || vacatedPaths.contains(targetPath)) {
+        continue;
+      }
+      if (await FileSystemEntity.type(addition.toPath) !=
+          FileSystemEntityType.notFound) {
+        throw PolySampleApplyException(
+          '${p.basename(addition.toPath)} already exists.',
+        );
+      }
     }
   }
 }

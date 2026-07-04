@@ -201,8 +201,25 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   final PolyWavService _wavService;
   final PolyAudioPreviewService _previewService;
   late final StreamSubscription<PolyAudioPreviewState> _previewSub;
+  final List<String> _ownedTempRoots = [];
+  final List<String> _pendingTempRootsToCleanup = [];
+  final Map<String, String> _hardwarePreviewCache = {};
+  final List<String> _hardwarePreviewRoots = [];
+  var _rootConsumingOperationCount = 0;
+  var _cleanupAfterOperations = false;
+  var _isClosing = false;
+  var _contentRevision = 0;
+  var _importSequence = 0;
+
+  @override
+  void emit(PolyMultisampleBuilderState state) {
+    if (_isClosing || isClosed) return;
+    super.emit(state);
+  }
 
   Future<void> loadLocalFolder(String path) async {
+    _contentRevision++;
+    await _cleanupOwnedTempRootsExceptPath(path);
     emit(
       state.copyWith(
         sourceMode: PolySampleSourceMode.local,
@@ -253,12 +270,20 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   }
 
   Future<void> loadHardwareFolderList(IDistingMidiManager manager) async {
+    _contentRevision++;
+    await _cleanupOwnedTempRoots();
     emit(
       state.copyWith(
         sourceMode: PolySampleSourceMode.hardware,
         status: PolyMultisampleLoadStatus.loading,
         activeOperation: PolyMultisampleActiveOperation.loadingHardware,
         progressText: 'Reading /samples...',
+        clearCurrentInstrument: true,
+        baselineRegions: const [],
+        editedRegions: const [],
+        selectedPaths: const {},
+        clearFocusedPath: true,
+        warnings: const [],
         clearError: true,
       ),
     );
@@ -449,7 +474,42 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     );
   }
 
+  Future<void> returnToSources() async {
+    _contentRevision++;
+    await _previewService.stop();
+    await _cleanupHardwarePreviewRoots();
+    final keepHardwareFolders =
+        state.sourceMode == PolySampleSourceMode.hardware &&
+        state.hardwareFolders.isNotEmpty;
+    emit(
+      state.copyWith(
+        sourceMode: keepHardwareFolders
+            ? PolySampleSourceMode.hardware
+            : PolySampleSourceMode.none,
+        status: keepHardwareFolders
+            ? PolyMultisampleLoadStatus.ready
+            : PolyMultisampleLoadStatus.idle,
+        activeOperation: PolyMultisampleActiveOperation.none,
+        clearProgressText: true,
+        clearCurrentInstrument: true,
+        baselineRegions: const [],
+        editedRegions: const [],
+        selectedPaths: const {},
+        clearFocusedPath: true,
+        hardwareFolders: keepHardwareFolders ? state.hardwareFolders : const [],
+        warnings: const [],
+        waveformSummaries: const {},
+        loopDrafts: const {},
+        wavEditDrafts: const {},
+        clearError: true,
+      ),
+    );
+  }
+
   Future<void> saveCustomDraft(String outputFolder) async {
+    final operationRevision = _contentRevision;
+    final instrumentName = state.currentInstrument?.name ?? 'Untitled';
+    final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
     emit(
       state.copyWith(
         activeOperation: PolyMultisampleActiveOperation.saving,
@@ -457,28 +517,51 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         clearError: true,
       ),
     );
+    _beginRootConsumingOperation();
+    var didSave = false;
+    final rootsUsedBySave = List<String>.from(_ownedTempRoots);
     try {
+      if (await _isWithinAnyRoot(outputFolder, rootsUsedBySave)) {
+        throw const PolySampleApplyException(
+          'Choose an output folder outside the staged import.',
+        );
+      }
+      final existingPaths = await _existingLocalAudioPaths(outputFolder);
+      if (operationRevision != _contentRevision) {
+        emit(
+          state.copyWith(activeOperation: PolyMultisampleActiveOperation.none),
+        );
+        return;
+      }
       final plan = _applyService.buildPlan(
         baselineRegions: const [],
-        editedRegions: state.editedRegions,
+        editedRegions: editedRegions,
         targetFolder: outputFolder,
+        existingPaths: existingPaths,
       );
       await _applyService.applyLocalPlan(plan);
-      await _writeBuildReport(outputFolder);
+      await _writeBuildReport(
+        outputFolder,
+        instrumentName: instrumentName,
+        regions: editedRegions,
+      );
       final scan = await _folderService.scanLocalFolder(
         outputFolder,
         includeLargeFolders: true,
       );
-      _setInstrument(
-        scan.instrument ??
-            PolySampleInstrument(
-              name: PolySampleInstrument.nameFromDirectory(outputFolder),
-              sourcePath: outputFolder,
-              regions: const [],
-            ),
-        sourceMode: PolySampleSourceMode.customDraft,
-        effect: 'Saved custom sample draft.',
-      );
+      if (operationRevision == _contentRevision) {
+        _setInstrument(
+          scan.instrument ??
+              PolySampleInstrument(
+                name: PolySampleInstrument.nameFromDirectory(outputFolder),
+                sourcePath: outputFolder,
+                regions: const [],
+              ),
+          sourceMode: PolySampleSourceMode.customDraft,
+          effect: 'Saved custom sample draft.',
+        );
+      }
+      didSave = true;
     } catch (error) {
       emit(
         state.copyWith(
@@ -486,28 +569,40 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
           error: error.toString(),
         ),
       );
+    } finally {
+      if (didSave) {
+        await _cleanupTempRoots(rootsUsedBySave);
+        _ownedTempRoots.removeWhere(rootsUsedBySave.contains);
+        _pendingTempRootsToCleanup.removeWhere(rootsUsedBySave.contains);
+      }
+      await _endRootConsumingOperation();
     }
   }
 
   Future<void> applyChanges([IDistingMidiManager? manager]) async {
     final instrument = state.currentInstrument;
     if (instrument == null) return;
+    final operationRevision = _contentRevision;
+    final sourceMode = state.sourceMode;
+    final baselineRegions = List<PolySampleRegion>.from(state.baselineRegions);
+    final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
     emit(
       state.copyWith(
         activeOperation: PolyMultisampleActiveOperation.applying,
         clearError: true,
       ),
     );
+    _beginRootConsumingOperation();
     try {
-      if (state.sourceMode == PolySampleSourceMode.hardware) {
+      if (sourceMode == PolySampleSourceMode.hardware) {
         if (manager == null) {
           throw const PolySampleHardwareException(
             'A MIDI manager is required for hardware apply.',
           );
         }
         final plan = _hardwareService.buildHardwarePlan(
-          baselineRegions: state.baselineRegions,
-          editedRegions: state.editedRegions,
+          baselineRegions: baselineRegions,
+          editedRegions: editedRegions,
           targetFolder: instrument.sourcePath,
         );
         await _hardwareService.applyPlan(manager, plan);
@@ -515,20 +610,28 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
           manager,
           instrument.sourcePath,
         );
-        _setInstrument(
-          refreshed,
-          sourceMode: PolySampleSourceMode.hardware,
-          effect: 'Applied hardware sample changes.',
-        );
+        if (operationRevision == _contentRevision) {
+          _setInstrument(
+            refreshed,
+            sourceMode: PolySampleSourceMode.hardware,
+            effect: 'Applied hardware sample changes.',
+          );
+        }
         return;
       }
 
       final existingPaths = await _existingLocalAudioPaths(
         instrument.sourcePath,
       );
+      if (operationRevision != _contentRevision) {
+        emit(
+          state.copyWith(activeOperation: PolyMultisampleActiveOperation.none),
+        );
+        return;
+      }
       final plan = _applyService.buildPlan(
-        baselineRegions: state.baselineRegions,
-        editedRegions: state.editedRegions,
+        baselineRegions: baselineRegions,
+        editedRegions: editedRegions,
         targetFolder: instrument.sourcePath,
         existingPaths: existingPaths,
       );
@@ -537,12 +640,14 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         instrument.sourcePath,
         includeLargeFolders: true,
       );
-      _setInstrument(
-        refreshed.instrument ??
-            instrument.copyWith(regions: List.from(state.editedRegions)),
-        sourceMode: state.sourceMode,
-        effect: 'Applied sample changes.',
-      );
+      if (operationRevision == _contentRevision) {
+        _setInstrument(
+          refreshed.instrument ??
+              instrument.copyWith(regions: List.from(editedRegions)),
+          sourceMode: sourceMode,
+          effect: 'Applied sample changes.',
+        );
+      }
     } catch (error) {
       emit(
         state.copyWith(
@@ -550,6 +655,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
           error: error.toString(),
         ),
       );
+    } finally {
+      await _endRootConsumingOperation();
     }
   }
 
@@ -642,12 +749,37 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         lastWavExportFolder: p.dirname(targetPath),
         effect: 'Saved edited WAV.',
         effectId: state.effectId + 1,
+        clearError: true,
       ),
     );
   }
 
-  Future<void> playOrStopPreview(String path) async {
-    await _previewService.playOrStopPreview(path, gainDb: state.previewGainDb);
+  Future<void> playOrStopPreview(
+    String path, {
+    IDistingMidiManager? manager,
+  }) async {
+    try {
+      if (_isHardwarePreviewPath(path)) {
+        if (manager == null) {
+          throw const PolySampleHardwareException(
+            'Connect to Disting NT to preview hardware samples.',
+          );
+        }
+        final localPath = await _cachedHardwarePreviewPath(manager, path);
+        await _previewService.playOrStopPreview(
+          localPath,
+          displayPath: path,
+          gainDb: state.previewGainDb,
+        );
+        return;
+      }
+      await _previewService.playOrStopPreview(
+        path,
+        gainDb: state.previewGainDb,
+      );
+    } catch (error) {
+      emit(state.copyWith(error: error.toString()));
+    }
   }
 
   void setPreviewGain(double db) {
@@ -660,12 +792,21 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
   @override
   Future<void> close() async {
+    _isClosing = true;
     await _previewSub.cancel();
     await _previewService.dispose();
+    await _cleanupHardwarePreviewRoots();
+    if (_rootConsumingOperationCount > 0) {
+      _cleanupAfterOperations = true;
+    } else {
+      await _cleanupOwnedTempRoots();
+    }
     return super.close();
   }
 
   Future<void> _stageImport(Future<PolyStagedImport> Function() stage) async {
+    _contentRevision++;
+    final sequence = ++_importSequence;
     emit(
       state.copyWith(
         sourceMode: PolySampleSourceMode.importDraft,
@@ -677,6 +818,15 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     );
     try {
       final staged = await stage();
+      if (_isClosing || isClosed) {
+        await _importService.cleanupOwnedTempRoots(staged.tempRoots);
+        return;
+      }
+      if (sequence != _importSequence) {
+        await _importService.cleanupOwnedTempRoots(staged.tempRoots);
+        return;
+      }
+      await _replaceOwnedTempRoots(staged.tempRoots);
       _setInstrument(
         PolySampleInstrument(
           name: staged.name,
@@ -699,6 +849,160 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
+  Future<void> _replaceOwnedTempRoots(List<String> roots) async {
+    if (_rootConsumingOperationCount > 0) {
+      _pendingTempRootsToCleanup.addAll(_ownedTempRoots);
+      _ownedTempRoots.clear();
+    } else {
+      await _cleanupOwnedTempRoots();
+    }
+    _ownedTempRoots.addAll(roots);
+  }
+
+  Future<void> _cleanupOwnedTempRoots() async {
+    final roots = [..._pendingTempRootsToCleanup, ..._ownedTempRoots];
+    if (roots.isEmpty) return;
+    _pendingTempRootsToCleanup.clear();
+    _ownedTempRoots.clear();
+    await _cleanupTempRoots(roots);
+  }
+
+  Future<void> _cleanupOwnedTempRootsExceptPath(String path) async {
+    final keptRoots = <String>[];
+    final cleanupRoots = <String>[];
+    for (final root in _ownedTempRoots) {
+      if (await _isWithinAnyRoot(path, [root])) {
+        keptRoots.add(root);
+      } else {
+        cleanupRoots.add(root);
+      }
+    }
+    cleanupRoots.addAll(_pendingTempRootsToCleanup);
+    _pendingTempRootsToCleanup.clear();
+    _ownedTempRoots
+      ..clear()
+      ..addAll(keptRoots);
+    if (_rootConsumingOperationCount > 0) {
+      _pendingTempRootsToCleanup.addAll(cleanupRoots);
+      return;
+    }
+    await _cleanupTempRoots(cleanupRoots);
+  }
+
+  Future<void> _cleanupTempRoots(List<String> roots) async {
+    if (roots.isEmpty) return;
+    await _importService.cleanupOwnedTempRoots(roots);
+  }
+
+  bool _isHardwarePreviewPath(String path) {
+    return state.sourceMode == PolySampleSourceMode.hardware &&
+        path.startsWith('/');
+  }
+
+  Future<String> _cachedHardwarePreviewPath(
+    IDistingMidiManager manager,
+    String path,
+  ) async {
+    final existing = _hardwarePreviewCache[path];
+    if (existing != null && await File(existing).exists()) {
+      return existing;
+    }
+    final bytes = await _hardwareService.downloadSampleBytes(manager, path);
+    if (bytes == null) {
+      throw PolySampleHardwareException('Could not download $path.');
+    }
+    final root = await Directory.systemTemp.createTemp(
+      'nt_helper_poly_preview_',
+    );
+    _hardwarePreviewRoots.add(root.path);
+    final safeName = p
+        .basename(path)
+        .replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    final file = File(p.join(root.path, safeName));
+    await file.writeAsBytes(bytes, flush: true);
+    _hardwarePreviewCache[path] = file.path;
+    return file.path;
+  }
+
+  Future<void> _cleanupHardwarePreviewRoots() async {
+    final roots = List<String>.from(_hardwarePreviewRoots);
+    _hardwarePreviewRoots.clear();
+    _hardwarePreviewCache.clear();
+    for (final root in roots) {
+      try {
+        final dir = Directory(root);
+        if (await dir.exists()) {
+          await dir.delete(recursive: true);
+        }
+      } on FileSystemException {
+        // Best-effort cleanup only.
+      }
+    }
+  }
+
+  Future<bool> _isWithinAnyRoot(String path, List<String> roots) async {
+    final normalizedPath = p.normalize(path);
+    for (final root in roots) {
+      final normalizedRoot = p.normalize(root);
+      if (normalizedPath == normalizedRoot ||
+          p.isWithin(normalizedRoot, normalizedPath)) {
+        return true;
+      }
+      try {
+        final resolvedPath = await _resolvePathThroughExistingAncestor(path);
+        final resolvedRoot = await Directory(root).resolveSymbolicLinks();
+        if (resolvedPath == resolvedRoot ||
+            p.isWithin(resolvedRoot, resolvedPath)) {
+          return true;
+        }
+      } on FileSystemException {
+        // Fall back to the lexical check above when either path is missing.
+      }
+    }
+    return false;
+  }
+
+  Future<String> _resolvePathThroughExistingAncestor(String path) async {
+    final pathsToAppend = <String>[];
+    var current = Directory(path);
+    while (!await current.exists()) {
+      pathsToAppend.add(p.basename(current.path));
+      final parent = current.parent;
+      if (parent.path == current.path) {
+        throw FileSystemException('No existing ancestor', path);
+      }
+      current = parent;
+    }
+    var resolved = await current.resolveSymbolicLinks();
+    for (final segment in pathsToAppend.reversed) {
+      resolved = p.join(resolved, segment);
+    }
+    return p.normalize(resolved);
+  }
+
+  void _beginRootConsumingOperation() {
+    _rootConsumingOperationCount++;
+  }
+
+  Future<void> _endRootConsumingOperation() async {
+    if (_rootConsumingOperationCount > 0) {
+      _rootConsumingOperationCount--;
+    }
+    if ((_isClosing || isClosed) &&
+        _rootConsumingOperationCount == 0 &&
+        _cleanupAfterOperations) {
+      _cleanupAfterOperations = false;
+      await _cleanupOwnedTempRoots();
+      return;
+    }
+    if (_rootConsumingOperationCount == 0 &&
+        _pendingTempRootsToCleanup.isNotEmpty) {
+      final roots = List<String>.from(_pendingTempRootsToCleanup);
+      _pendingTempRootsToCleanup.clear();
+      await _cleanupTempRoots(roots);
+    }
+  }
+
   void _setInstrument(
     PolySampleInstrument instrument, {
     required PolySampleSourceMode sourceMode,
@@ -706,6 +1010,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     List<String> warnings = const [],
     String? effect,
   }) {
+    _contentRevision++;
     final regions = List<PolySampleRegion>.from(instrument.regions);
     emit(
       state.copyWith(
@@ -716,8 +1021,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         baselineRegions:
             baselineRegions ?? List<PolySampleRegion>.from(regions),
         editedRegions: List<PolySampleRegion>.from(regions),
-        selectedPaths: const {},
-        clearFocusedPath: true,
+        selectedPaths: regions.isEmpty
+            ? const <String>{}
+            : {regions.first.path},
+        focusedPath: regions.isEmpty ? null : regions.first.path,
+        clearFocusedPath: regions.isEmpty,
         mapRevision: state.mapRevision + 1,
         warnings: warnings,
         effect: effect,
@@ -743,6 +1051,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     List<PolySampleRegion> regions, {
     Set<String>? selectedPaths,
   }) {
+    _contentRevision++;
     PolyMultisampleParser.sortRegions(regions);
     final instrument = state.currentInstrument;
     emit(
@@ -786,13 +1095,17 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     return paths;
   }
 
-  Future<void> _writeBuildReport(String outputFolder) async {
+  Future<void> _writeBuildReport(
+    String outputFolder, {
+    required String instrumentName,
+    required List<PolySampleRegion> regions,
+  }) async {
     final buffer = StringBuffer()
       ..writeln('Poly Multisample Build Report')
-      ..writeln('Instrument: ${state.currentInstrument?.name ?? 'Untitled'}')
-      ..writeln('Samples: ${state.editedRegions.length}')
+      ..writeln('Instrument: $instrumentName')
+      ..writeln('Samples: ${regions.length}')
       ..writeln();
-    for (final region in state.editedRegions) {
+    for (final region in regions) {
       buffer.writeln(
         '${region.displayName} root=${region.rootName ?? 'unmapped'} '
         'velocity=${region.velocityLayer ?? '-'} rr=${region.roundRobin ?? '-'}',

@@ -36,12 +36,19 @@ class AudioplayersPreviewAdapter implements PolyAudioPreviewAdapter {
 }
 
 class PolyAudioPreviewState {
-  const PolyAudioPreviewState({this.playingPath, this.gainDb = 0});
+  const PolyAudioPreviewState({
+    this.playingPath,
+    this.displayPath,
+    this.gainDb = 0,
+  });
 
   final String? playingPath;
+  final String? displayPath;
   final double gainDb;
 
   bool get isPlaying => playingPath != null;
+
+  String? get visiblePath => displayPath ?? playingPath;
 }
 
 class PolyAudioPreviewService {
@@ -66,9 +73,14 @@ class PolyAudioPreviewService {
 
   Stream<PolyAudioPreviewState> get states => _stateController.stream;
 
-  Future<void> playOrStopPreview(String path, {double gainDb = 0}) async {
+  Future<void> playOrStopPreview(
+    String path, {
+    double gainDb = 0,
+    String? displayPath,
+  }) async {
     final adapter = _ensureAdapter();
-    if (state.playingPath == path) {
+    final visiblePath = displayPath ?? path;
+    if (state.visiblePath == visiblePath) {
       await stop();
       return;
     }
@@ -77,7 +89,13 @@ class PolyAudioPreviewService {
     }
     final volume = _volumeFromGainDb(gainDb);
     await adapter.play(path, volume: volume);
-    _setState(PolyAudioPreviewState(playingPath: path, gainDb: gainDb));
+    _setState(
+      PolyAudioPreviewState(
+        playingPath: path,
+        displayPath: displayPath,
+        gainDb: gainDb,
+      ),
+    );
   }
 
   Future<void> stop() async {

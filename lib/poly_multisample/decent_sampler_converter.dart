@@ -556,6 +556,7 @@ class DecentSamplerConverter {
     for (final file in presetFiles) {
       final resolver = _LocalDecentSourceResolver(
         baseDirectory: file.parent.path,
+        allowedRoot: directory.path,
       );
       final sourceDocs = options.includeSourceDocs
           ? await _sourceDocsForLocalDirectory(file.parent)
@@ -608,7 +609,10 @@ class DecentSamplerConverter {
     return [
       for (final preset in presets)
         preset.copyWith(
-          sourceResolver: _LocalDecentSourceResolver(baseDirectory: baseDir),
+          sourceResolver: _LocalDecentSourceResolver(
+            baseDirectory: baseDir,
+            allowedRoot: baseDir,
+          ),
           sourceDocs: sourceDocs,
         ),
     ];
@@ -622,9 +626,14 @@ class DecentSamplerConverter {
     DecentSamplerConvertOptions options,
   ) async {
     final archive = ZipDecoder().decodeBytes(await file.readAsBytes());
-    final files = archive
-        .where((entry) => entry.isFile && !_isMacOsJunkPath(entry.name))
-        .toList();
+    final files = archive.where((entry) {
+      if (!entry.isFile || _isMacOsJunkPath(entry.name)) return false;
+      if (_isUnsafeArchiveEntryPath(entry.name)) {
+        warnings.add('Skipped unsafe archive path ${entry.name}.');
+        return false;
+      }
+      return true;
+    }).toList();
     final presetFiles =
         files
             .where((entry) => entry.name.toLowerCase().endsWith('.dspreset'))
@@ -2301,7 +2310,13 @@ class DecentSamplerConverter {
         continue;
       }
 
-      final bytes = await plan.sourceResolver.read(region.sourcePath);
+      Uint8List? bytes;
+      try {
+        bytes = await plan.sourceResolver.read(region.sourcePath);
+      } on _BlockedDecentSourceException catch (error) {
+        warnings.add(error.message);
+        continue;
+      }
       if (bytes == null) {
         warnings.add('Missing source sample: ${region.sourcePath}');
         continue;
@@ -3459,17 +3474,59 @@ class _MissingDecentSourceResolver extends _DecentSourceResolver {
   Future<Uint8List?> read(String samplePath) async => null;
 }
 
+class _BlockedDecentSourceException implements Exception {
+  const _BlockedDecentSourceException(this.message);
+
+  final String message;
+}
+
 class _LocalDecentSourceResolver extends _DecentSourceResolver {
-  const _LocalDecentSourceResolver({required this.baseDirectory});
+  const _LocalDecentSourceResolver({
+    required this.baseDirectory,
+    required this.allowedRoot,
+  });
 
   final String baseDirectory;
+  final String allowedRoot;
 
   @override
   Future<Uint8List?> read(String samplePath) async {
-    final file = File(p.normalize(p.join(baseDirectory, samplePath)));
+    final resolved = await _resolveSamplePath(samplePath);
+    if (resolved == null) return null;
+    final file = File(resolved);
     if (!await file.exists()) return null;
     return file.readAsBytes();
   }
+
+  Future<String?> _resolveSamplePath(String samplePath) async {
+    final requestedPath = p.normalize(samplePath.trim());
+    if (p.isAbsolute(requestedPath) || _isWindowsAbsolutePath(requestedPath)) {
+      throw _BlockedDecentSourceException(
+        '$samplePath is outside the selected source and was skipped.',
+      );
+    }
+    final joined = p.isAbsolute(requestedPath)
+        ? requestedPath
+        : p.normalize(p.join(baseDirectory, requestedPath));
+    final root = await Directory(allowedRoot).resolveSymbolicLinks();
+    String resolved;
+    try {
+      resolved = await File(joined).resolveSymbolicLinks();
+    } on FileSystemException {
+      resolved = p.canonicalize(joined);
+    }
+    if (!_isWithinDirectory(resolved, root)) {
+      throw _BlockedDecentSourceException(
+        '$samplePath is outside the selected source and was skipped.',
+      );
+    }
+    return resolved;
+  }
+}
+
+bool _isWithinDirectory(String candidate, String root) {
+  if (candidate == root) return true;
+  return p.isWithin(root, candidate);
 }
 
 class _ArchiveDecentSourceResolver extends _DecentSourceResolver {
@@ -3483,12 +3540,40 @@ class _ArchiveDecentSourceResolver extends _DecentSourceResolver {
 
   @override
   Future<Uint8List?> read(String samplePath) async {
-    final path = DecentSamplerConverter._normalizeZipPath(
-      p.posix.join(presetDirectory == '.' ? '' : presetDirectory, samplePath),
-    );
+    final path = _resolveArchivePath(samplePath);
     final file = files[path] ?? _caseInsensitiveLookup(path);
     if (file == null) return null;
     return Uint8List.fromList(file.content as List<int>);
+  }
+
+  String _resolveArchivePath(String samplePath) {
+    final normalizedSamplePath = samplePath.trim().replaceAll('\\', '/');
+    if (p.posix.isAbsolute(normalizedSamplePath) ||
+        _isWindowsAbsolutePath(normalizedSamplePath)) {
+      throw _BlockedDecentSourceException(
+        '$samplePath is outside the selected source and was skipped.',
+      );
+    }
+    final parts = <String>[
+      if (presetDirectory != '.')
+        ...DecentSamplerConverter._normalizeZipPath(
+          presetDirectory,
+        ).split('/').where((part) => part.isNotEmpty),
+    ];
+    for (final part in normalizedSamplePath.split('/')) {
+      if (part.isEmpty || part == '.') continue;
+      if (part == '..') {
+        if (parts.isEmpty) {
+          throw _BlockedDecentSourceException(
+            '$samplePath is outside the selected source and was skipped.',
+          );
+        }
+        parts.removeLast();
+        continue;
+      }
+      parts.add(part);
+    }
+    return parts.join('/');
   }
 
   ArchiveFile? _caseInsensitiveLookup(String path) {
@@ -3498,4 +3583,18 @@ class _ArchiveDecentSourceResolver extends _DecentSourceResolver {
     }
     return null;
   }
+}
+
+bool _isWindowsAbsolutePath(String path) {
+  return RegExp(r'^[A-Za-z]:[/\\]').hasMatch(path) ||
+      path.startsWith(r'\\') ||
+      path.startsWith('\\');
+}
+
+bool _isUnsafeArchiveEntryPath(String path) {
+  final normalized = path.replaceAll('\\', '/');
+  if (p.posix.isAbsolute(normalized) || _isWindowsAbsolutePath(path)) {
+    return true;
+  }
+  return normalized.split('/').any((part) => part == '..');
 }

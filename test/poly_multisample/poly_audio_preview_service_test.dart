@@ -25,6 +25,28 @@ void main() {
 
       expect(service.state.playingPath, isNull);
     });
+
+    test('uses display path for toggling cached hardware previews', () async {
+      final adapter = _FakePreviewAdapter();
+      final service = PolyAudioPreviewService(adapter: adapter);
+      addTearDown(service.dispose);
+
+      await service.playOrStopPreview(
+        '/tmp/cache/a.wav',
+        displayPath: '/samples/Piano/a.wav',
+      );
+      expect(service.state.playingPath, '/tmp/cache/a.wav');
+      expect(service.state.visiblePath, '/samples/Piano/a.wav');
+
+      await service.playOrStopPreview(
+        '/tmp/cache/a.wav',
+        displayPath: '/samples/Piano/a.wav',
+      );
+
+      expect(service.state.playingPath, isNull);
+      expect(service.state.visiblePath, isNull);
+      expect(adapter.stopCount, 1);
+    });
   });
 }
 

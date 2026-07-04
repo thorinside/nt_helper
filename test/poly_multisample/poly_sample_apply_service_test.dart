@@ -108,5 +108,234 @@ void main() {
         ]);
       },
     );
+
+    test(
+      'does not delete existing files when an addition source is missing',
+      () async {
+        final removed = File('${tempRoot.path}/SoftPiano_C3.wav')
+          ..writeAsBytesSync([3]);
+        final baseline = [
+          PolyMultisampleParser.parseFile(removed, basePath: tempRoot.path),
+        ];
+        final missingSource = '${tempRoot.path}/imports/SoftPiano_D3.wav';
+        final edited = [
+          PolyMultisampleParser.parseFile(
+            File(missingSource),
+            basePath: tempRoot.path,
+          ),
+        ];
+
+        final plan = PolySampleApplyService().buildPlan(
+          baselineRegions: baseline,
+          editedRegions: edited,
+          targetFolder: tempRoot.path,
+        );
+
+        expect(plan.hasConflicts, isFalse);
+
+        await expectLater(
+          PolySampleApplyService().applyLocalPlan(plan),
+          throwsA(isA<PolySampleApplyException>()),
+        );
+        expect(removed.existsSync(), isTrue);
+        expect(removed.readAsBytesSync(), [3]);
+      },
+    );
+
+    test('does not rename files when an addition target exists', () async {
+      final renamed = File('${tempRoot.path}/SoftPiano_C3.wav')
+        ..writeAsBytesSync([3]);
+      final blockingTarget = File('${tempRoot.path}/imports/SoftPiano_E3.wav')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([9]);
+      final additionSource = File('${tempRoot.path}/outside/SoftPiano_E3.wav')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([5]);
+      final baseline = [
+        PolyMultisampleParser.parseFile(renamed, basePath: tempRoot.path),
+      ];
+      final edited = [
+        baseline.single.copyWith(rootMidi: 62, rootName: 'D3'),
+        PolyMultisampleParser.parseFile(
+          additionSource,
+          basePath: additionSource.parent.path,
+        ),
+      ];
+
+      final plan = PolySampleApplyService().buildPlan(
+        baselineRegions: baseline,
+        editedRegions: edited,
+        targetFolder: blockingTarget.parent.path,
+      );
+
+      expect(plan.hasConflicts, isFalse);
+
+      await expectLater(
+        PolySampleApplyService().applyLocalPlan(plan),
+        throwsA(isA<PolySampleApplyException>()),
+      );
+      expect(renamed.existsSync(), isTrue);
+      expect(renamed.readAsBytesSync(), [3]);
+      expect(blockingTarget.readAsBytesSync(), [9]);
+    });
+
+    test('does not delete files when a rename target already exists', () async {
+      final removed = File('${tempRoot.path}/SoftPiano_E3.wav')
+        ..writeAsBytesSync([5]);
+      final renamed = File('${tempRoot.path}/SoftPiano_C3.wav')
+        ..writeAsBytesSync([3]);
+      final blockingTarget = File('${tempRoot.path}/SoftPiano_D3.wav')
+        ..writeAsBytesSync([9]);
+      final baseline = [
+        PolyMultisampleParser.parseFile(removed, basePath: tempRoot.path),
+        PolyMultisampleParser.parseFile(renamed, basePath: tempRoot.path),
+      ];
+      final edited = [baseline[1].copyWith(rootMidi: 62, rootName: 'D3')];
+
+      final plan = PolySampleApplyService().buildPlan(
+        baselineRegions: baseline,
+        editedRegions: edited,
+        targetFolder: tempRoot.path,
+      );
+
+      expect(plan.hasConflicts, isFalse);
+
+      await expectLater(
+        PolySampleApplyService().applyLocalPlan(plan),
+        throwsA(isA<PolySampleApplyException>()),
+      );
+      expect(removed.existsSync(), isTrue);
+      expect(removed.readAsBytesSync(), [5]);
+      expect(renamed.existsSync(), isTrue);
+      expect(renamed.readAsBytesSync(), [3]);
+      expect(blockingTarget.readAsBytesSync(), [9]);
+    });
+
+    test('does not delete files when a rename target is a directory', () async {
+      final removed = File('${tempRoot.path}/SoftPiano_E3.wav')
+        ..writeAsBytesSync([5]);
+      final renamed = File('${tempRoot.path}/SoftPiano_C3.wav')
+        ..writeAsBytesSync([3]);
+      Directory('${tempRoot.path}/SoftPiano_D3.wav').createSync();
+      final baseline = [
+        PolyMultisampleParser.parseFile(removed, basePath: tempRoot.path),
+        PolyMultisampleParser.parseFile(renamed, basePath: tempRoot.path),
+      ];
+      final edited = [baseline[1].copyWith(rootMidi: 62, rootName: 'D3')];
+
+      final plan = PolySampleApplyService().buildPlan(
+        baselineRegions: baseline,
+        editedRegions: edited,
+        targetFolder: tempRoot.path,
+      );
+
+      await expectLater(
+        PolySampleApplyService().applyLocalPlan(plan),
+        throwsA(isA<PolySampleApplyException>()),
+      );
+      expect(removed.existsSync(), isTrue);
+      expect(renamed.existsSync(), isTrue);
+    });
+
+    test(
+      'does not delete files when an addition target is a directory',
+      () async {
+        final removed = File('${tempRoot.path}/SoftPiano_C3.wav')
+          ..writeAsBytesSync([3]);
+        final additionSource = File('${tempRoot.path}/outside/SoftPiano_D3.wav')
+          ..createSync(recursive: true)
+          ..writeAsBytesSync([5]);
+        Directory(
+          '${tempRoot.path}/imports/SoftPiano_D3.wav',
+        ).createSync(recursive: true);
+        final baseline = [
+          PolyMultisampleParser.parseFile(removed, basePath: tempRoot.path),
+        ];
+        final edited = [
+          PolyMultisampleParser.parseFile(
+            additionSource,
+            basePath: additionSource.parent.path,
+          ),
+        ];
+
+        final plan = PolySampleApplyService().buildPlan(
+          baselineRegions: baseline,
+          editedRegions: edited,
+          targetFolder: '${tempRoot.path}/imports',
+        );
+
+        await expectLater(
+          PolySampleApplyService().applyLocalPlan(plan),
+          throwsA(isA<PolySampleApplyException>()),
+        );
+        expect(removed.existsSync(), isTrue);
+      },
+    );
+
+    test(
+      'does not treat a removed directory as a vacated rename target',
+      () async {
+        final vacatedDirectory = Directory('${tempRoot.path}/SoftPiano_D3.wav')
+          ..createSync();
+        final renamed = File('${tempRoot.path}/SoftPiano_C3.wav')
+          ..writeAsBytesSync([3]);
+        final baseline = [
+          PolyMultisampleParser.parseFile(
+            File(vacatedDirectory.path),
+            basePath: tempRoot.path,
+          ),
+          PolyMultisampleParser.parseFile(renamed, basePath: tempRoot.path),
+        ];
+        final edited = [baseline[1].copyWith(rootMidi: 62, rootName: 'D3')];
+
+        final plan = PolySampleApplyService().buildPlan(
+          baselineRegions: baseline,
+          editedRegions: edited,
+          targetFolder: tempRoot.path,
+        );
+
+        await expectLater(
+          PolySampleApplyService().applyLocalPlan(plan),
+          throwsA(isA<PolySampleApplyException>()),
+        );
+        expect(vacatedDirectory.existsSync(), isTrue);
+        expect(renamed.existsSync(), isTrue);
+      },
+    );
+
+    test(
+      'does not treat a removed directory as a vacated addition target',
+      () async {
+        final vacatedDirectory = Directory('${tempRoot.path}/SoftPiano_D3.wav')
+          ..createSync();
+        final additionSource = File('${tempRoot.path}/outside/SoftPiano_D3.wav')
+          ..createSync(recursive: true)
+          ..writeAsBytesSync([5]);
+        final baseline = [
+          PolyMultisampleParser.parseFile(
+            File(vacatedDirectory.path),
+            basePath: tempRoot.path,
+          ),
+        ];
+        final edited = [
+          PolyMultisampleParser.parseFile(
+            additionSource,
+            basePath: additionSource.parent.path,
+          ),
+        ];
+
+        final plan = PolySampleApplyService().buildPlan(
+          baselineRegions: baseline,
+          editedRegions: edited,
+          targetFolder: tempRoot.path,
+        );
+
+        await expectLater(
+          PolySampleApplyService().applyLocalPlan(plan),
+          throwsA(isA<PolySampleApplyException>()),
+        );
+        expect(vacatedDirectory.existsSync(), isTrue);
+      },
+    );
   });
 }

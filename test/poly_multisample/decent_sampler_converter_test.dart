@@ -74,6 +74,229 @@ void main() {
       expect(outputFiles, contains('Deep_Drum_D4_V2_RR2.wav'));
     });
 
+    test(
+      'does not read standalone preset samples outside preset folder',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_escape_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+        final presetDir = Directory('${tempDir.path}/Preset')..createSync();
+        final outsideDir = Directory('${tempDir.path}/Outside')..createSync();
+        await File('${outsideDir.path}/leak.wav').writeAsBytes(_dummyWav);
+        final preset = File('${presetDir.path}/Escape.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="../Outside/leak.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final result = await DecentSamplerConverter().convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/out',
+        );
+
+        expect(result.copiedFiles, 0);
+        expect(
+          result.warnings.join('\n'),
+          contains('outside the selected source'),
+        );
+        expect(
+          result.warnings.where(
+            (warning) => warning.startsWith('Missing source sample'),
+          ),
+          isEmpty,
+        );
+        expect(
+          await Directory(result.outputFolders.single)
+              .list()
+              .where((entity) => entity is File && entity.path.endsWith('.wav'))
+              .isEmpty,
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'does not read directory import samples outside selected root',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_dir_escape_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+        final libraryDir = Directory('${tempDir.path}/Library')
+          ..createSync(recursive: true);
+        final nestedPresetDir = Directory('${libraryDir.path}/Presets')
+          ..createSync(recursive: true);
+        final outsideDir = Directory('${tempDir.path}/Outside')..createSync();
+        await File('${outsideDir.path}/leak.wav').writeAsBytes(_dummyWav);
+        final preset = File('${nestedPresetDir.path}/Escape.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="../../Outside/leak.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final result = await DecentSamplerConverter().convert(
+          sourcePath: libraryDir.path,
+          outputParentPath: '${tempDir.path}/out',
+        );
+
+        expect(result.copiedFiles, 0);
+        expect(
+          result.warnings.join('\n'),
+          contains('outside the selected source'),
+        );
+        expect(
+          result.warnings.where(
+            (warning) => warning.startsWith('Missing source sample'),
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'does not read absolute local sample paths inside selected root',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_absolute_local_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+        final samplesDir = Directory('${tempDir.path}/Samples')..createSync();
+        final sample = File('${samplesDir.path}/C4.wav')
+          ..writeAsBytesSync(_dummyWav);
+        final preset = File('${tempDir.path}/AbsoluteLocal.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="${sample.path}" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final result = await DecentSamplerConverter().convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/out',
+        );
+
+        expect(result.copiedFiles, 0);
+        expect(
+          result.warnings.join('\n'),
+          contains('outside the selected source'),
+        );
+        expect(
+          result.warnings.where(
+            (warning) => warning.startsWith('Missing source sample'),
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'does not treat Windows rooted local paths as missing samples',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_windows_rooted_local_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+        final preset = File('${tempDir.path}/WindowsRooted.dspreset');
+        await preset.writeAsString(r'''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="\\server\share\C4.wav" rootNote="C4"/>
+      <sample path="\Samples\C4.wav" rootNote="D4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final result = await DecentSamplerConverter().convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/out',
+        );
+
+        expect(result.copiedFiles, 0);
+        expect(
+          result.warnings.where(
+            (warning) => warning.contains('outside the selected source'),
+          ),
+          hasLength(2),
+        );
+        expect(
+          result.warnings.where(
+            (warning) => warning.startsWith('Missing source sample'),
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'does not follow local sample symlinks outside selected root',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_symlink_escape_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+        final presetDir = Directory('${tempDir.path}/Preset')..createSync();
+        final outsideDir = Directory('${tempDir.path}/Outside')..createSync();
+        await File('${outsideDir.path}/leak.wav').writeAsBytes(_dummyWav);
+        await Link(
+          '${presetDir.path}/LinkedSamples',
+        ).create(outsideDir.path, recursive: true);
+        final preset = File('${presetDir.path}/Escape.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="LinkedSamples/leak.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final result = await DecentSamplerConverter().convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/out',
+        );
+
+        expect(result.copiedFiles, 0);
+        expect(
+          result.warnings.join('\n'),
+          contains('outside the selected source'),
+        );
+        expect(
+          result.warnings.where(
+            (warning) => warning.startsWith('Missing source sample'),
+          ),
+          isEmpty,
+        );
+      },
+    );
+
     test('ignores macOS archive metadata entries', () async {
       final tempDir = await Directory.systemTemp.createTemp(
         'decent_converter_macos_junk_test_',
@@ -154,6 +377,184 @@ void main() {
           '${result.outputFolders.single}/Zip_Library_C4.wav',
         ).exists(),
         isTrue,
+      );
+    });
+
+    test('does not read archive samples outside the archive root', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'decent_converter_archive_escape_test_',
+      );
+      addTearDown(() async {
+        if (await tempDir.exists()) await tempDir.delete(recursive: true);
+      });
+
+      final preset = '''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="../../Outside/leak.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''';
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile(
+            'Presets/Escape.dspreset',
+            preset.length,
+            preset.codeUnits,
+          ),
+        )
+        ..addFile(
+          ArchiveFile('../Outside/leak.wav', _dummyWav.length, _dummyWav),
+        );
+
+      final source = File('${tempDir.path}/Escape.zip');
+      await source.writeAsBytes(ZipEncoder().encode(archive), flush: true);
+
+      final result = await DecentSamplerConverter().convert(
+        sourcePath: source.path,
+        outputParentPath: '${tempDir.path}/out',
+      );
+
+      expect(result.copiedFiles, 0);
+      expect(
+        result.warnings.join('\n'),
+        contains('outside the selected source'),
+      );
+      expect(
+        result.warnings.where(
+          (warning) => warning.startsWith('Missing source sample'),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('does not rebase unsafe archive preset entries above root', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'decent_converter_archive_preset_rebase_test_',
+      );
+      addTearDown(() async {
+        if (await tempDir.exists()) await tempDir.delete(recursive: true);
+      });
+
+      final preset = '''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="Samples/C4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''';
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile('../Escape.dspreset', preset.length, preset.codeUnits),
+        )
+        ..addFile(
+          ArchiveFile('../Samples/C4.wav', _dummyWav.length, _dummyWav),
+        );
+
+      final source = File('${tempDir.path}/Rebase.zip');
+      await source.writeAsBytes(ZipEncoder().encode(archive), flush: true);
+
+      await expectLater(
+        DecentSamplerConverter().convert(
+          sourcePath: source.path,
+          outputParentPath: '${tempDir.path}/out',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+      expect(Directory('${tempDir.path}/out').existsSync(), isFalse);
+    });
+
+    test('does not read absolute archive sample paths', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'decent_converter_archive_absolute_test_',
+      );
+      addTearDown(() async {
+        if (await tempDir.exists()) await tempDir.delete(recursive: true);
+      });
+
+      final preset = '''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="/Samples/C4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''';
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile('Absolute.dspreset', preset.length, preset.codeUnits),
+        )
+        ..addFile(ArchiveFile('Samples/C4.wav', _dummyWav.length, _dummyWav));
+
+      final source = File('${tempDir.path}/Absolute.zip');
+      await source.writeAsBytes(ZipEncoder().encode(archive), flush: true);
+
+      final result = await DecentSamplerConverter().convert(
+        sourcePath: source.path,
+        outputParentPath: '${tempDir.path}/out',
+      );
+
+      expect(result.copiedFiles, 0);
+      expect(
+        result.warnings.join('\n'),
+        contains('outside the selected source'),
+      );
+      expect(
+        result.warnings.where(
+          (warning) => warning.startsWith('Missing source sample'),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('does not read Windows absolute archive sample paths', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'decent_converter_archive_windows_absolute_test_',
+      );
+      addTearDown(() async {
+        if (await tempDir.exists()) await tempDir.delete(recursive: true);
+      });
+
+      final preset = '''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="C:\\Samples\\C4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''';
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile('WinAbsolute.dspreset', preset.length, preset.codeUnits),
+        )
+        ..addFile(
+          ArchiveFile('C:/Samples/C4.wav', _dummyWav.length, _dummyWav),
+        );
+
+      final source = File('${tempDir.path}/WinAbsolute.zip');
+      await source.writeAsBytes(ZipEncoder().encode(archive), flush: true);
+
+      final result = await DecentSamplerConverter().convert(
+        sourcePath: source.path,
+        outputParentPath: '${tempDir.path}/out',
+      );
+
+      expect(result.copiedFiles, 0);
+      expect(
+        result.warnings.join('\n'),
+        contains('outside the selected source'),
+      );
+      expect(
+        result.warnings.where(
+          (warning) => warning.startsWith('Missing source sample'),
+        ),
+        isEmpty,
       );
     });
 
