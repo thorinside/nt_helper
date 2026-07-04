@@ -19,6 +19,16 @@ class PolyDecentImportState {
     this.analysis,
     this.groupHandling = DecentSamplerGroupHandling.auto,
     this.manualGroupRanges = const {},
+    this.selectedPresetNames = const {},
+    this.selectedGroupKey,
+    this.selectedTagKeys = const {},
+    this.groupVelocityLayers = const {},
+    this.groupRoundRobins = const {},
+    this.tagKeyRanges = const {},
+    this.tagVelocityLayers = const {},
+    this.tagRoundRobins = const {},
+    this.preserveXmlMapping = false,
+    this.addUnmapped = false,
     this.warnings = const [],
     this.error,
     this.stagedImport,
@@ -29,6 +39,16 @@ class PolyDecentImportState {
   final DecentSamplerImportAnalysis? analysis;
   final DecentSamplerGroupHandling groupHandling;
   final Map<String, DecentSamplerTagKeyRange> manualGroupRanges;
+  final Set<String> selectedPresetNames;
+  final String? selectedGroupKey;
+  final Set<String> selectedTagKeys;
+  final Map<String, int> groupVelocityLayers;
+  final Map<String, int> groupRoundRobins;
+  final Map<String, DecentSamplerTagKeyRange> tagKeyRanges;
+  final Map<String, int> tagVelocityLayers;
+  final Map<String, int> tagRoundRobins;
+  final bool preserveXmlMapping;
+  final bool addUnmapped;
   final List<String> warnings;
   final String? error;
   final PolyStagedImport? stagedImport;
@@ -42,6 +62,17 @@ class PolyDecentImportState {
     DecentSamplerImportAnalysis? analysis,
     DecentSamplerGroupHandling? groupHandling,
     Map<String, DecentSamplerTagKeyRange>? manualGroupRanges,
+    Set<String>? selectedPresetNames,
+    String? selectedGroupKey,
+    bool clearSelectedGroupKey = false,
+    Set<String>? selectedTagKeys,
+    Map<String, int>? groupVelocityLayers,
+    Map<String, int>? groupRoundRobins,
+    Map<String, DecentSamplerTagKeyRange>? tagKeyRanges,
+    Map<String, int>? tagVelocityLayers,
+    Map<String, int>? tagRoundRobins,
+    bool? preserveXmlMapping,
+    bool? addUnmapped,
     List<String>? warnings,
     String? error,
     bool clearError = false,
@@ -53,6 +84,18 @@ class PolyDecentImportState {
       analysis: analysis ?? this.analysis,
       groupHandling: groupHandling ?? this.groupHandling,
       manualGroupRanges: manualGroupRanges ?? this.manualGroupRanges,
+      selectedPresetNames: selectedPresetNames ?? this.selectedPresetNames,
+      selectedGroupKey: clearSelectedGroupKey
+          ? null
+          : selectedGroupKey ?? this.selectedGroupKey,
+      selectedTagKeys: selectedTagKeys ?? this.selectedTagKeys,
+      groupVelocityLayers: groupVelocityLayers ?? this.groupVelocityLayers,
+      groupRoundRobins: groupRoundRobins ?? this.groupRoundRobins,
+      tagKeyRanges: tagKeyRanges ?? this.tagKeyRanges,
+      tagVelocityLayers: tagVelocityLayers ?? this.tagVelocityLayers,
+      tagRoundRobins: tagRoundRobins ?? this.tagRoundRobins,
+      preserveXmlMapping: preserveXmlMapping ?? this.preserveXmlMapping,
+      addUnmapped: addUnmapped ?? this.addUnmapped,
       warnings: warnings ?? this.warnings,
       error: clearError ? null : error ?? this.error,
       stagedImport: stagedImport ?? this.stagedImport,
@@ -86,6 +129,14 @@ class PolyDecentImportCubit extends Cubit<PolyDecentImportState> {
             highMidi: group.defaultHighMidi,
           ),
       };
+      final tagRanges = {
+        for (final tag in analysis.tags)
+          tag.key: DecentSamplerTagKeyRange(
+            lowMidi: tag.defaultLowMidi,
+            rootMidi: tag.defaultRootMidi,
+            highMidi: tag.defaultHighMidi,
+          ),
+      };
       final handling = analysis.recommendedGroupHandling;
       emit(
         state.copyWith(
@@ -93,7 +144,17 @@ class PolyDecentImportCubit extends Cubit<PolyDecentImportState> {
           analysis: analysis,
           groupHandling: handling,
           manualGroupRanges: ranges,
-          warnings: _warningsFor(handling, ranges, analysis),
+          tagKeyRanges: tagRanges,
+          selectedPresetNames: {
+            for (final preset in analysis.presets) preset.name,
+          },
+          warnings: _warningsFor(
+            handling: handling,
+            groupRanges: ranges,
+            tagRanges: tagRanges,
+            selectedTagKeys: state.selectedTagKeys,
+            analysis: analysis,
+          ),
         ),
       );
     } catch (error) {
@@ -108,9 +169,11 @@ class PolyDecentImportCubit extends Cubit<PolyDecentImportState> {
 
   void setGroupHandling(DecentSamplerGroupHandling handling) {
     final warnings = _warningsFor(
-      handling,
-      state.manualGroupRanges,
-      state.analysis,
+      handling: handling,
+      groupRanges: state.manualGroupRanges,
+      tagRanges: state.tagKeyRanges,
+      selectedTagKeys: state.selectedTagKeys,
+      analysis: state.analysis,
     );
     emit(
       state.copyWith(
@@ -128,10 +191,100 @@ class PolyDecentImportCubit extends Cubit<PolyDecentImportState> {
     emit(
       state.copyWith(
         manualGroupRanges: nextRanges,
-        warnings: _warningsFor(state.groupHandling, nextRanges, state.analysis),
+        warnings: _warningsFor(
+          handling: state.groupHandling,
+          groupRanges: nextRanges,
+          tagRanges: state.tagKeyRanges,
+          selectedTagKeys: state.selectedTagKeys,
+          analysis: state.analysis,
+        ),
         clearError: true,
       ),
     );
+  }
+
+  void togglePreset(String name) {
+    final next = Set<String>.from(state.selectedPresetNames);
+    if (!next.add(name)) next.remove(name);
+    emit(state.copyWith(selectedPresetNames: next, clearError: true));
+  }
+
+  void setSelectedGroup(String? key) {
+    emit(
+      state.copyWith(
+        selectedGroupKey: key,
+        clearSelectedGroupKey: key == null,
+        clearError: true,
+      ),
+    );
+  }
+
+  void toggleTag(String key) {
+    final next = Set<String>.from(state.selectedTagKeys);
+    if (!next.add(key)) next.remove(key);
+    emit(
+      state.copyWith(
+        selectedTagKeys: next,
+        warnings: _warningsFor(
+          handling: state.groupHandling,
+          groupRanges: state.manualGroupRanges,
+          tagRanges: state.tagKeyRanges,
+          selectedTagKeys: next,
+          analysis: state.analysis,
+        ),
+        clearError: true,
+      ),
+    );
+  }
+
+  void setGroupVelocity(String groupKey, int layer) {
+    final next = Map<String, int>.from(state.groupVelocityLayers)
+      ..[groupKey] = layer;
+    emit(state.copyWith(groupVelocityLayers: next, clearError: true));
+  }
+
+  void setGroupRoundRobin(String groupKey, int lane) {
+    final next = Map<String, int>.from(state.groupRoundRobins)
+      ..[groupKey] = lane;
+    emit(state.copyWith(groupRoundRobins: next, clearError: true));
+  }
+
+  void setTagRange(String tagKey, DecentSamplerTagKeyRange range) {
+    final nextRanges = Map<String, DecentSamplerTagKeyRange>.from(
+      state.tagKeyRanges,
+    )..[tagKey] = range;
+    emit(
+      state.copyWith(
+        tagKeyRanges: nextRanges,
+        warnings: _warningsFor(
+          handling: state.groupHandling,
+          groupRanges: state.manualGroupRanges,
+          tagRanges: nextRanges,
+          selectedTagKeys: state.selectedTagKeys,
+          analysis: state.analysis,
+        ),
+        clearError: true,
+      ),
+    );
+  }
+
+  void setTagVelocity(String tagKey, int layer) {
+    final next = Map<String, int>.from(state.tagVelocityLayers)
+      ..[tagKey] = layer;
+    emit(state.copyWith(tagVelocityLayers: next, clearError: true));
+  }
+
+  void setTagRoundRobin(String tagKey, int lane) {
+    final next = Map<String, int>.from(state.tagRoundRobins)..[tagKey] = lane;
+    emit(state.copyWith(tagRoundRobins: next, clearError: true));
+  }
+
+  void setPreserveXmlMapping(bool enabled) {
+    emit(state.copyWith(preserveXmlMapping: enabled, clearError: true));
+  }
+
+  void setAddUnmapped(bool enabled) {
+    emit(state.copyWith(addUnmapped: enabled, clearError: true));
   }
 
   Future<void> continueImport() async {
@@ -160,7 +313,17 @@ class PolyDecentImportCubit extends Cubit<PolyDecentImportState> {
         sourcePath,
         options: DecentSamplerConvertOptions(
           groupHandling: state.groupHandling,
+          selectedPresetNames: state.selectedPresetNames.toList(),
+          selectedGroupKey: state.selectedGroupKey,
+          selectedTagKeys: state.selectedTagKeys.toList(),
+          groupVelocityLayers: state.groupVelocityLayers,
           groupKeyRanges: state.manualGroupRanges,
+          groupRoundRobins: state.groupRoundRobins,
+          tagVelocityLayers: state.tagVelocityLayers,
+          tagKeyRanges: state.tagKeyRanges,
+          tagRoundRobins: state.tagRoundRobins,
+          preserveXmlMapping: state.preserveXmlMapping,
+          addUnmapped: state.addUnmapped,
         ),
       );
       emit(
@@ -180,16 +343,32 @@ class PolyDecentImportCubit extends Cubit<PolyDecentImportState> {
   }
 }
 
-List<String> _warningsFor(
-  DecentSamplerGroupHandling handling,
-  Map<String, DecentSamplerTagKeyRange> ranges,
-  DecentSamplerImportAnalysis? analysis,
-) {
-  if (handling != DecentSamplerGroupHandling.keyRanges) return const [];
+List<String> _warningsFor({
+  required DecentSamplerGroupHandling handling,
+  required Map<String, DecentSamplerTagKeyRange> groupRanges,
+  required Map<String, DecentSamplerTagKeyRange> tagRanges,
+  required Set<String> selectedTagKeys,
+  required DecentSamplerImportAnalysis? analysis,
+}) {
   final groupNames = {
     for (final group in analysis?.groups ?? const <DecentSamplerGroupInfo>[])
       group.key: group.name,
   };
+  final ranges = switch (handling) {
+    DecentSamplerGroupHandling.keyRanges => groupRanges,
+    DecentSamplerGroupHandling.selectedTags => Map.fromEntries(
+      tagRanges.entries.where((entry) => selectedTagKeys.contains(entry.key)),
+    ),
+    _ => const <String, DecentSamplerTagKeyRange>{},
+  };
+  if (ranges.isEmpty) return const [];
+  final tagNames = {
+    for (final tag in analysis?.tags ?? const <DecentSamplerTag>[])
+      tag.key: tag.label,
+  };
+  final names = handling == DecentSamplerGroupHandling.selectedTags
+      ? tagNames
+      : groupNames;
   final warnings = <String>[];
   final entries = ranges.entries
       .where((entry) => entry.value.enabled)
@@ -200,7 +379,7 @@ List<String> _warningsFor(
       final b = entries[j];
       if (_rangesOverlap(a.value, b.value)) {
         warnings.add(
-          '${groupNames[a.key] ?? a.key} and ${groupNames[b.key] ?? b.key} '
+          '${names[a.key] ?? a.key} and ${names[b.key] ?? b.key} '
           'overlap. Adjust manual key ranges before continuing.',
         );
       }
