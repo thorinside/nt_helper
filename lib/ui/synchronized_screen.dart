@@ -44,6 +44,7 @@ import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_screen.dart';
 import 'package:nt_helper/ui/plugin_gallery_screen.dart';
 import 'package:nt_helper/ui/template_manager/current_preset_template_source.dart';
 import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
@@ -70,7 +71,7 @@ import 'package:nt_helper/models/app_release.dart';
 import 'package:nt_helper/services/app_update_service.dart';
 import 'package:nt_helper/utils/build_config.dart';
 
-enum EditMode { parameters, routing, both }
+enum EditMode { parameters, routing, samples, both }
 
 /// Help text for algorithm name interactions
 const String _algorithmNameHelpText =
@@ -440,6 +441,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   @override
   Widget build(BuildContext context) {
     bool isWideScreen = MediaQuery.of(context).size.width > 900;
+    final isMobilePlatform = _platformService.isMobilePlatform();
+    final showSamplesWorkspace = !isMobilePlatform;
     final effectiveRoutingViewMode = MediaQuery.of(context).accessibleNavigation
         ? RoutingEditorViewMode.list
         : _routingViewMode;
@@ -458,6 +461,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     if (_currentMode == EditMode.both && !_canShowSplitScreen(screenWidth)) {
       _currentMode = EditMode.parameters;
     }
+    if (_currentMode == EditMode.samples && !showSamplesWorkspace) {
+      _currentMode = EditMode.parameters;
+    }
+
+    final workspaceIndex = _currentMode == EditMode.routing
+        ? 1
+        : _currentMode == EditMode.samples && showSamplesWorkspace
+        ? 2
+        : 0;
 
     // Use a conditional widget based on screen width
     if (isWideScreen && widget.slots.isNotEmpty) {
@@ -471,10 +483,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               child: _currentMode == EditMode.both
                   ? _buildSplitView()
                   : IndexedStack(
-                      index: _currentMode == EditMode.routing ? 1 : 0,
+                      index: workspaceIndex,
                       children: [
                         _buildWideScreenBody(),
                         _buildKeyedRoutingCanvas(effectiveRoutingViewMode),
+                        if (showSamplesWorkspace) _buildSamplesWorkspace(),
                       ],
                     ),
             ),
@@ -513,10 +526,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           children: [
             Expanded(
               child: IndexedStack(
-                index: _currentMode == EditMode.routing ? 1 : 0,
+                index: workspaceIndex,
                 children: [
                   _buildBody(),
                   _buildKeyedRoutingCanvas(effectiveRoutingViewMode),
+                  if (showSamplesWorkspace) _buildSamplesWorkspace(),
                 ],
               ),
             ),
@@ -907,6 +921,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           ],
         );
       },
+    );
+  }
+
+  Widget _buildSamplesWorkspace() {
+    return PolyMultisampleBuilderScreen(
+      manager: context.read<DistingCubit>().disting(),
     );
   }
 
@@ -1462,6 +1482,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   BottomAppBar _buildBottomAppBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     bool isWideScreen = screenWidth > 900;
+    final showModeLabels = screenWidth > 1250;
     bool isMobile = _platformService.isMobilePlatform();
 
     return BottomAppBar(
@@ -1476,26 +1497,38 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               segments: [
                 ButtonSegment(
                   value: EditMode.parameters,
-                  label: isWideScreen ? const Text('Parameters') : null,
+                  label: showModeLabels ? const Text('Parameters') : null,
                   icon: const Icon(Icons.tune, semanticLabel: 'Parameters'),
                   tooltip: 'Parameters mode',
                 ),
                 ButtonSegment(
                   value: EditMode.routing,
-                  label: isWideScreen ? const Text('Routing') : null,
+                  label: showModeLabels ? const Text('Routing') : null,
                   icon: const Icon(
                     Icons.account_tree,
                     semanticLabel: 'Routing',
                   ),
                   tooltip: 'Routing mode',
                 ),
+                if (!isMobile)
+                  ButtonSegment(
+                    value: EditMode.samples,
+                    label: showModeLabels ? const Text('Samples') : null,
+                    icon: const Icon(Icons.piano, semanticLabel: 'Samples'),
+                    tooltip: 'Samples mode',
+                  ),
               ],
               selected: _currentMode == EditMode.both
                   ? {EditMode.parameters, EditMode.routing}
                   : {_currentMode},
               onSelectionChanged: (Set<EditMode> modes) {
                 setState(() {
-                  if (modes.length == 2 && _canShowSplitScreen(screenWidth)) {
+                  if (modes.contains(EditMode.samples) && !isMobile) {
+                    _currentMode = EditMode.samples;
+                  } else if (modes.length == 2 &&
+                      modes.contains(EditMode.parameters) &&
+                      modes.contains(EditMode.routing) &&
+                      _canShowSplitScreen(screenWidth)) {
                     _currentMode = EditMode.both;
                   } else if (modes.length == 2) {
                     // Can't split - keep only the newly clicked one
@@ -1842,6 +1875,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       children: switch (_currentMode) {
         EditMode.parameters => _buildParameterModeActions(cubit),
         EditMode.routing => _buildRoutingModeActions(),
+        EditMode.samples => const <Widget>[],
         EditMode.both => [
           ..._buildParameterModeActions(cubit),
           ..._buildRoutingModeActions(),

@@ -6,6 +6,7 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <audioplayers_windows/audioplayers_windows_plugin.h>
 #include <desktop_drop/desktop_drop_plugin.h>
 #include <desktop_multi_window/desktop_multi_window_plugin.h>
 #include <flutter_midi_command_windows/flutter_midi_command_windows_plugin.h>
@@ -17,6 +18,8 @@
 #include <window_manager/window_manager_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
+  AudioplayersWindowsPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("AudioplayersWindowsPlugin"));
   DesktopDropPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("DesktopDropPlugin"));
   DesktopMultiWindowPluginRegisterWithRegistrar(

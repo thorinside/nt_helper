@@ -49,6 +49,9 @@ void main() {
       mockMetadataDao = MockMetadataDao();
       mockPresetsDao = MockPresetsDao();
       when(() => mockCubit.checkpoints).thenReturn([]);
+      when(
+        () => mockCubit.cpuUsageStream,
+      ).thenAnswer((_) => const Stream.empty());
       when(() => mockCubit.database).thenReturn(mockDatabase);
       when(() => mockDatabase.metadataDao).thenReturn(mockMetadataDao);
       when(() => mockDatabase.presetsDao).thenReturn(mockPresetsDao);
@@ -170,6 +173,38 @@ void main() {
       expect(find.byTooltip('Template Manager'), findsOneWidget);
       expect(find.byTooltip('Perform'), findsOneWidget);
       expect(find.byTooltip('Plugin Manager'), findsOneWidget);
+    });
+
+    testWidgets('Samples workspace mode appears on desktop only', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        createTestWidget(isMobile: false, isOffline: false),
+      );
+
+      expect(find.byTooltip('Samples mode'), findsOneWidget);
+    });
+
+    testWidgets('Samples workspace mode is absent on mobile', (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        createTestWidget(isMobile: true, isOffline: false),
+      );
+
+      expect(find.byTooltip('Samples mode'), findsNothing);
     });
 
     testWidgets('Template Manager button pushes TemplateManagerScreen', (

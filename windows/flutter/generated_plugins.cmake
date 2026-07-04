@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  audioplayers_windows
   desktop_drop
   desktop_multi_window
   flutter_midi_command_windows

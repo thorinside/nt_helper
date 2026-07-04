@@ -6347,10 +6347,7 @@ final class $$AlgorithmsTableReferences
   static MultiTypedResultKey<$SpecificationsTable, List<SpecificationEntry>>
   _specificationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.specifications,
-    aliasName: $_aliasNameGenerator(
-      db.algorithms.guid,
-      db.specifications.algorithmGuid,
-    ),
+    aliasName: 'algorithms__guid__specifications__algorithm_guid',
   );
 
   $$SpecificationsTableProcessedTableManager get specificationsRefs {
@@ -6368,10 +6365,7 @@ final class $$AlgorithmsTableReferences
   static MultiTypedResultKey<$ParametersTable, List<ParameterEntry>>
   _parametersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.parameters,
-    aliasName: $_aliasNameGenerator(
-      db.algorithms.guid,
-      db.parameters.algorithmGuid,
-    ),
+    aliasName: 'algorithms__guid__parameters__algorithm_guid',
   );
 
   $$ParametersTableProcessedTableManager get parametersRefs {
@@ -6388,10 +6382,7 @@ final class $$AlgorithmsTableReferences
   static MultiTypedResultKey<$ParameterPagesTable, List<ParameterPageEntry>>
   _parameterPagesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.parameterPages,
-    aliasName: $_aliasNameGenerator(
-      db.algorithms.guid,
-      db.parameterPages.algorithmGuid,
-    ),
+    aliasName: 'algorithms__guid__parameter_pages__algorithm_guid',
   );
 
   $$ParameterPagesTableProcessedTableManager get parameterPagesRefs {
@@ -6413,10 +6404,8 @@ final class $$AlgorithmsTableReferences
   _parameterOutputModeUsageRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.parameterOutputModeUsage,
-        aliasName: $_aliasNameGenerator(
-          db.algorithms.guid,
-          db.parameterOutputModeUsage.algorithmGuid,
-        ),
+        aliasName:
+            'algorithms__guid__parameter_output_mode_usage__algorithm_guid',
       );
 
   $$ParameterOutputModeUsageTableProcessedTableManager
@@ -6440,10 +6429,7 @@ final class $$AlgorithmsTableReferences
   static MultiTypedResultKey<$PresetSlotsTable, List<PresetSlotEntry>>
   _presetSlotsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.presetSlots,
-    aliasName: $_aliasNameGenerator(
-      db.algorithms.guid,
-      db.presetSlots.algorithmGuid,
-    ),
+    aliasName: 'algorithms__guid__preset_slots__algorithm_guid',
   );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotsRefs {
@@ -7057,13 +7043,8 @@ final class $$SpecificationsTableReferences
     super.$_typedResult,
   );
 
-  static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
-      db.algorithms.createAlias(
-        $_aliasNameGenerator(
-          db.specifications.algorithmGuid,
-          db.algorithms.guid,
-        ),
-      );
+  static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) => db.algorithms
+      .createAlias('specifications__algorithm_guid__algorithms__guid');
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
     final $_column = $_itemColumn<String>('algorithm_guid')!;
@@ -7407,7 +7388,7 @@ final class $$UnitsTableReferences
   static MultiTypedResultKey<$ParametersTable, List<ParameterEntry>>
   _parametersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.parameters,
-    aliasName: $_aliasNameGenerator(db.units.id, db.parameters.unitId),
+    aliasName: 'units__id__parameters__unit_id',
   );
 
   $$ParametersTableProcessedTableManager get parametersRefs {
@@ -7650,9 +7631,7 @@ final class $$ParametersTableReferences
   $$ParametersTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
-      db.algorithms.createAlias(
-        $_aliasNameGenerator(db.parameters.algorithmGuid, db.algorithms.guid),
-      );
+      db.algorithms.createAlias('parameters__algorithm_guid__algorithms__guid');
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
     final $_column = $_itemColumn<String>('algorithm_guid')!;
@@ -7668,9 +7647,8 @@ final class $$ParametersTableReferences
     );
   }
 
-  static $UnitsTable _unitIdTable(_$AppDatabase db) => db.units.createAlias(
-    $_aliasNameGenerator(db.parameters.unitId, db.units.id),
-  );
+  static $UnitsTable _unitIdTable(_$AppDatabase db) =>
+      db.units.createAlias('parameters__unit_id__units__id');
 
   $$UnitsTableProcessedTableManager? get unitId {
     final $_column = $_itemColumn<int>('unit_id');
@@ -8346,13 +8324,8 @@ final class $$ParameterPagesTableReferences
     super.$_typedResult,
   );
 
-  static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
-      db.algorithms.createAlias(
-        $_aliasNameGenerator(
-          db.parameterPages.algorithmGuid,
-          db.algorithms.guid,
-        ),
-      );
+  static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) => db.algorithms
+      .createAlias('parameter_pages__algorithm_guid__algorithms__guid');
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
     final $_column = $_itemColumn<String>('algorithm_guid')!;
@@ -8823,10 +8796,7 @@ final class $$ParameterOutputModeUsageTableReferences
 
   static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
       db.algorithms.createAlias(
-        $_aliasNameGenerator(
-          db.parameterOutputModeUsage.algorithmGuid,
-          db.algorithms.guid,
-        ),
+        'parameter_output_mode_usage__algorithm_guid__algorithms__guid',
       );
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
@@ -9137,7 +9107,7 @@ final class $$PresetsTableReferences
   static MultiTypedResultKey<$PresetSlotsTable, List<PresetSlotEntry>>
   _presetSlotsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.presetSlots,
-    aliasName: $_aliasNameGenerator(db.presets.id, db.presetSlots.presetId),
+    aliasName: 'presets__id__preset_slots__preset_id',
   );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotsRefs {
@@ -9452,9 +9422,7 @@ final class $$PresetSlotsTableReferences
   $$PresetSlotsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $PresetsTable _presetIdTable(_$AppDatabase db) =>
-      db.presets.createAlias(
-        $_aliasNameGenerator(db.presetSlots.presetId, db.presets.id),
-      );
+      db.presets.createAlias('preset_slots__preset_id__presets__id');
 
   $$PresetsTableProcessedTableManager get presetId {
     final $_column = $_itemColumn<int>('preset_id')!;
@@ -9470,10 +9438,8 @@ final class $$PresetSlotsTableReferences
     );
   }
 
-  static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
-      db.algorithms.createAlias(
-        $_aliasNameGenerator(db.presetSlots.algorithmGuid, db.algorithms.guid),
-      );
+  static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) => db.algorithms
+      .createAlias('preset_slots__algorithm_guid__algorithms__guid');
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
     final $_column = $_itemColumn<String>('algorithm_guid')!;
@@ -9496,10 +9462,7 @@ final class $$PresetSlotsTableReferences
   _presetParameterValuesRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.presetParameterValues,
-        aliasName: $_aliasNameGenerator(
-          db.presetSlots.id,
-          db.presetParameterValues.presetSlotId,
-        ),
+        aliasName: 'preset_slots__id__preset_parameter_values__preset_slot_id',
       );
 
   $$PresetParameterValuesTableProcessedTableManager
@@ -9524,10 +9487,8 @@ final class $$PresetSlotsTableReferences
   _presetParameterStringValuesRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.presetParameterStringValues,
-        aliasName: $_aliasNameGenerator(
-          db.presetSlots.id,
-          db.presetParameterStringValues.presetSlotId,
-        ),
+        aliasName:
+            'preset_slots__id__preset_parameter_string_values__preset_slot_id',
       );
 
   $$PresetParameterStringValuesTableProcessedTableManager
@@ -9548,10 +9509,7 @@ final class $$PresetSlotsTableReferences
   static MultiTypedResultKey<$PresetMappingsTable, List<PresetMappingEntry>>
   _presetMappingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.presetMappings,
-    aliasName: $_aliasNameGenerator(
-      db.presetSlots.id,
-      db.presetMappings.presetSlotId,
-    ),
+    aliasName: 'preset_slots__id__preset_mappings__preset_slot_id',
   );
 
   $$PresetMappingsTableProcessedTableManager get presetMappingsRefs {
@@ -9569,10 +9527,7 @@ final class $$PresetSlotsTableReferences
   static MultiTypedResultKey<$PresetRoutingsTable, List<PresetRoutingEntry>>
   _presetRoutingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.presetRoutings,
-    aliasName: $_aliasNameGenerator(
-      db.presetSlots.id,
-      db.presetRoutings.presetSlotId,
-    ),
+    aliasName: 'preset_slots__id__preset_routings__preset_slot_id',
   );
 
   $$PresetRoutingsTableProcessedTableManager get presetRoutingsRefs {
@@ -10286,13 +10241,9 @@ final class $$PresetParameterValuesTableReferences
     super.$_typedResult,
   );
 
-  static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
-      db.presetSlots.createAlias(
-        $_aliasNameGenerator(
-          db.presetParameterValues.presetSlotId,
-          db.presetSlots.id,
-        ),
-      );
+  static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) => db
+      .presetSlots
+      .createAlias('preset_parameter_values__preset_slot_id__preset_slots__id');
 
   $$PresetSlotsTableProcessedTableManager get presetSlotId {
     final $_column = $_itemColumn<int>('preset_slot_id')!;
@@ -10609,10 +10560,7 @@ final class $$PresetParameterStringValuesTableReferences
 
   static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
       db.presetSlots.createAlias(
-        $_aliasNameGenerator(
-          db.presetParameterStringValues.presetSlotId,
-          db.presetSlots.id,
-        ),
+        'preset_parameter_string_values__preset_slot_id__preset_slots__id',
       );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotId {
@@ -10925,10 +10873,9 @@ final class $$PresetMappingsTableReferences
     super.$_typedResult,
   );
 
-  static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
-      db.presetSlots.createAlias(
-        $_aliasNameGenerator(db.presetMappings.presetSlotId, db.presetSlots.id),
-      );
+  static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) => db
+      .presetSlots
+      .createAlias('preset_mappings__preset_slot_id__preset_slots__id');
 
   $$PresetSlotsTableProcessedTableManager get presetSlotId {
     final $_column = $_itemColumn<int>('preset_slot_id')!;
@@ -11243,10 +11190,9 @@ final class $$PresetRoutingsTableReferences
     super.$_typedResult,
   );
 
-  static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
-      db.presetSlots.createAlias(
-        $_aliasNameGenerator(db.presetRoutings.presetSlotId, db.presetSlots.id),
-      );
+  static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) => db
+      .presetSlots
+      .createAlias('preset_routings__preset_slot_id__preset_slots__id');
 
   $$PresetSlotsTableProcessedTableManager get presetSlotId {
     final $_column = $_itemColumn<int>('preset_slot_id')!;

@@ -97,6 +97,7 @@ dependencies:
   html: ^0.15.6
   flutter_markdown: ^0.7.6
   flutter_svg: ^2.2.4
+  audioplayers: ^6.5.1
   desktop_multi_window: ^0.3.0
 
 dev_dependencies:
