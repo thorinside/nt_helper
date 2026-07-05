@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
+import 'package:path/path.dart' as p;
 
 int effectiveLow(PolySampleRegion region) {
   return (region.rangeLow ?? region.switchPoint ?? region.rootMidi ?? 0)
@@ -67,5 +68,38 @@ PolySampleRegion? selectedRegionFor(PolyMultisampleBuilderState state) {
       if (region.path == path) return region;
     }
   }
-  return state.editedRegions.isEmpty ? null : state.editedRegions.first;
+  return null;
+}
+
+String sampleDisplayLabel(
+  PolySampleRegion region,
+  List<PolySampleRegion> regions,
+) {
+  final duplicatePaths = [
+    for (final candidate in regions)
+      if (candidate.displayName == region.displayName) candidate.path,
+  ];
+  if (duplicatePaths.length < 2) return region.displayName;
+  final normalizedPath = p.normalize(region.path);
+  final commonRoot = _commonDirectory(duplicatePaths.map(p.normalize));
+  final label = p.relative(normalizedPath, from: commonRoot);
+  return label == '.' ? region.displayName : label.replaceAll('\\', '/');
+}
+
+String _commonDirectory(Iterable<String> paths) {
+  final splitPaths = [for (final path in paths) p.split(p.dirname(path))];
+  if (splitPaths.isEmpty) return '.';
+  final common = <String>[];
+  for (var index = 0; index < splitPaths.first.length; index++) {
+    final segment = splitPaths.first[index];
+    if (splitPaths.every(
+      (parts) => index < parts.length && parts[index] == segment,
+    )) {
+      common.add(segment);
+    } else {
+      break;
+    }
+  }
+  if (common.isEmpty) return '.';
+  return p.joinAll(common);
 }

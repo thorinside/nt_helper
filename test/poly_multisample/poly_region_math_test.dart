@@ -124,7 +124,7 @@ void main() {
 
       expect(selectedRegionFor(focusedState), second);
       expect(selectedRegionFor(selectedState), second);
-      expect(selectedRegionFor(defaultState), first);
+      expect(selectedRegionFor(defaultState), isNull);
     });
   });
 }

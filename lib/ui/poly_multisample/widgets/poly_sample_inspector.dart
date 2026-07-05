@@ -41,9 +41,7 @@ class PolySampleInspector extends StatelessWidget {
           const SizedBox(height: 16),
           _MappingSection(state: state, region: region, cubit: cubit),
           const SizedBox(height: 8),
-          _LoopSection(state: state, region: region, cubit: cubit),
-          const SizedBox(height: 8),
-          _EditAudioSection(state: state, region: region, cubit: cubit),
+          _WaveformSection(state: state, region: region, cubit: cubit),
         ],
       ),
     );
@@ -67,6 +65,7 @@ class _HeaderRow extends StatelessWidget {
     final index = state.editedRegions.indexWhere(
       (candidate) => candidate.path == region.path,
     );
+    final label = sampleDisplayLabel(region, state.editedRegions);
     final playing = state.previewState.visiblePath == region.path;
     final canPreview = region.path.toLowerCase().endsWith('.wav');
     final canReveal = _isLocalPath(state, region);
@@ -79,6 +78,7 @@ class _HeaderRow extends StatelessWidget {
               ? () => cubit.selectRegion(
                   state.editedRegions[index - 1].path,
                   PolyRegionSelectionMode.replace,
+                  manager: manager,
                 )
               : null,
         ),
@@ -89,6 +89,7 @@ class _HeaderRow extends StatelessWidget {
               ? () => cubit.selectRegion(
                   state.editedRegions[index + 1].path,
                   PolyRegionSelectionMode.replace,
+                  manager: manager,
                 )
               : null,
         ),
@@ -96,7 +97,7 @@ class _HeaderRow extends StatelessWidget {
           child: Semantics(
             header: true,
             child: Text(
-              region.displayName,
+              label,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.titleSmall,
             ),
@@ -129,22 +130,37 @@ class _PreviewControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PolyMultisampleBuilderCubit>();
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Auto-preview'),
-        Switch(value: state.autoPreview, onChanged: cubit.setAutoPreview),
-        const Icon(Icons.volume_down),
-        Expanded(
-          child: Slider(
-            min: -36,
-            max: 6,
-            divisions: 42,
-            value: state.previewGainDb,
-            label: '${state.previewGainDb.round()} dB',
-            onChanged: cubit.setPreviewGain,
-          ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          title: const Text('Auto-preview'),
+          value: state.autoPreview,
+          onChanged: cubit.setAutoPreview,
         ),
-        Text('${state.previewGainDb.round()} dB'),
+        Row(
+          children: [
+            const Icon(Icons.volume_down),
+            Expanded(
+              child: Semantics(
+                label: 'Preview gain',
+                value: '${state.previewGainDb.round()} dB',
+                child: Slider(
+                  min: -36,
+                  max: 6,
+                  divisions: 42,
+                  value: state.previewGainDb,
+                  label: '${state.previewGainDb.round()} dB',
+                  semanticFormatterCallback: (value) => '${value.round()} dB',
+                  onChanged: cubit.setPreviewGain,
+                ),
+              ),
+            ),
+            Text('${state.previewGainDb.round()} dB'),
+          ],
+        ),
       ],
     );
   }
@@ -215,8 +231,8 @@ class _MappingSection extends StatelessWidget {
   }
 }
 
-class _LoopSection extends StatelessWidget {
-  const _LoopSection({
+class _WaveformSection extends StatelessWidget {
+  const _WaveformSection({
     required this.state,
     required this.region,
     required this.cubit,
@@ -231,96 +247,154 @@ class _LoopSection extends StatelessWidget {
     final canEdit =
         _isLocalPath(state, region) &&
         region.path.toLowerCase().endsWith('.wav');
-    return ExpansionTile(
-      title: const Text('Loop points'),
-      onExpansionChanged: (expanded) {
-        if (expanded &&
-            canEdit &&
-            state.waveformSummaries[region.path] == null) {
-          cubit.loadWaveform(region.path);
-        }
-      },
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: canEdit
-              ? _LoopEditor(state: state, region: region, cubit: cubit)
-              : const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Loop editing needs a local or mounted folder.'),
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LoopEditor extends StatelessWidget {
-  const _LoopEditor({
-    required this.state,
-    required this.region,
-    required this.cubit,
-  });
-
-  final PolyMultisampleBuilderState state;
-  final PolySampleRegion region;
-  final PolyMultisampleBuilderCubit cubit;
-
-  @override
-  Widget build(BuildContext context) {
-    final overview = state.waveformSummaries[region.path];
-    if (overview == null) {
-      return const LinearProgressIndicator();
+    if (!canEdit) {
+      return const Align(
+        alignment: Alignment.centerLeft,
+        child: Text('Waveform editing needs a local or mounted WAV file.'),
+      );
     }
-    final draft =
+    final overview = state.waveformSummaries[region.path];
+    final loading = state.waveformLoadingPaths.contains(region.path);
+    final failed = state.waveformFailedPaths.contains(region.path);
+    if (overview == null) {
+      if (!loading && !failed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          cubit.loadWaveform(region.path);
+        });
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              'Waveform',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text('Editing ${sampleDisplayLabel(region, state.editedRegions)}'),
+          const SizedBox(height: 8),
+          if (failed)
+            Semantics(
+              liveRegion: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Waveform loading failed.'),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => cubit.loadWaveform(region.path),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry waveform'),
+                  ),
+                ],
+              ),
+            )
+          else
+            Semantics(
+              liveRegion: true,
+              child: const Text('Loading waveform...'),
+            ),
+        ],
+      );
+    }
+
+    final loopDraft =
         state.loopDrafts[region.path] ??
         PolyWaveformDraft(
           loopStart: overview.loopStart,
           loopEnd: overview.loopEnd,
         );
-    final loopEnabled = draft.loopStart != null && draft.loopEnd != null;
-    final loopChanged =
-        draft.loopStart != overview.loopStart ||
-        draft.loopEnd != overview.loopEnd;
+    final wavDraft =
+        state.wavEditDrafts[region.path] ??
+        PolyWaveformDraft(trimStart: 0, trimEnd: overview.frameCount - 1);
     final maxFrame = math.max(0, overview.frameCount - 1);
+    final loopChanged =
+        loopDraft.loopStart != overview.loopStart ||
+        loopDraft.loopEnd != overview.loopEnd;
+    final label = sampleDisplayLabel(region, state.editedRegions);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Semantics(
+          header: true,
+          child: Text(
+            'Waveform',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text('Editing $label', overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 8),
+        Tooltip(
+          message:
+              'Click to set trim start/end. Command/Ctrl-click or right-click to set loop start/end.',
+          child: PolyWaveformEditor(
+            overview: overview,
+            mode: PolyWaveformEditorMode.trim,
+            startFrame: wavDraft.trimStart ?? 0,
+            endFrame: wavDraft.trimEnd ?? maxFrame,
+            loopStartFrame: loopDraft.loopStart,
+            loopEndFrame: loopDraft.loopEnd,
+            onChanged: (start, end) {
+              cubit.updateWavEditDraft(
+                region.path,
+                wavDraft.copyWith(trimStart: start, trimEnd: end),
+              );
+            },
+            onLoopChanged: (start, end) {
+              cubit.updateLoopDraft(
+                region.path,
+                loopDraft.copyWith(loopStart: start, loopEnd: end),
+              );
+            },
+          ),
+        ),
         SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
           title: const Text('Loop enabled'),
-          value: loopEnabled,
+          value: loopDraft.loopStart != null && loopDraft.loopEnd != null,
           onChanged: (enabled) {
             cubit.updateLoopDraft(
               region.path,
               enabled
-                  ? draft.copyWith(
-                      loopStart: overview.loopStart ?? 0,
-                      loopEnd: overview.loopEnd ?? maxFrame,
+                  ? loopDraft.copyWith(
+                      loopStart: loopDraft.loopStart ?? 0,
+                      loopEnd: loopDraft.loopEnd ?? maxFrame,
                     )
-                  : draft.copyWith(clearLoopStart: true, clearLoopEnd: true),
+                  : loopDraft.copyWith(
+                      clearLoopStart: true,
+                      clearLoopEnd: true,
+                    ),
             );
           },
         ),
-        if (loopEnabled) ...[
+        if (loopDraft.loopStart != null && loopDraft.loopEnd != null) ...[
           _FrameNudgeRow(
             label: 'Loop start',
-            value: draft.loopStart ?? 0,
+            value: loopDraft.loopStart ?? 0,
             onNudge: (delta) => cubit.updateLoopDraft(
               region.path,
-              draft.copyWith(
-                loopStart: ((draft.loopStart ?? 0) + delta)
-                    .clamp(0, maxFrame)
+              loopDraft.copyWith(
+                loopStart: ((loopDraft.loopStart ?? 0) + delta)
+                    .clamp(0, math.max(0, (loopDraft.loopEnd ?? maxFrame) - 1))
                     .toInt(),
               ),
             ),
           ),
           _FrameNudgeRow(
             label: 'Loop end',
-            value: draft.loopEnd ?? maxFrame,
+            value: loopDraft.loopEnd ?? maxFrame,
             onNudge: (delta) => cubit.updateLoopDraft(
               region.path,
-              draft.copyWith(
-                loopEnd: ((draft.loopEnd ?? maxFrame) + delta)
-                    .clamp(0, maxFrame)
+              loopDraft.copyWith(
+                loopEnd: ((loopDraft.loopEnd ?? maxFrame) + delta)
+                    .clamp(
+                      math.min(maxFrame, (loopDraft.loopStart ?? 0) + 1),
+                      maxFrame,
+                    )
                     .toInt(),
               ),
             ),
@@ -335,107 +409,29 @@ class _LoopEditor extends StatelessWidget {
             child: const Text('Save loop'),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _EditAudioSection extends StatelessWidget {
-  const _EditAudioSection({
-    required this.state,
-    required this.region,
-    required this.cubit,
-  });
-
-  final PolyMultisampleBuilderState state;
-  final PolySampleRegion region;
-  final PolyMultisampleBuilderCubit cubit;
-
-  @override
-  Widget build(BuildContext context) {
-    final canEdit =
-        _isLocalPath(state, region) &&
-        region.path.toLowerCase().endsWith('.wav');
-    return ExpansionTile(
-      title: const Text('Edit audio'),
-      onExpansionChanged: (expanded) {
-        if (expanded &&
-            canEdit &&
-            state.waveformSummaries[region.path] == null) {
-          cubit.loadWaveform(region.path);
-        }
-      },
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: canEdit
-              ? _EditAudioEditor(state: state, region: region, cubit: cubit)
-              : const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Audio editing needs a local or mounted folder.'),
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EditAudioEditor extends StatelessWidget {
-  const _EditAudioEditor({
-    required this.state,
-    required this.region,
-    required this.cubit,
-  });
-
-  final PolyMultisampleBuilderState state;
-  final PolySampleRegion region;
-  final PolyMultisampleBuilderCubit cubit;
-
-  @override
-  Widget build(BuildContext context) {
-    final overview = state.waveformSummaries[region.path];
-    if (overview == null) {
-      return const LinearProgressIndicator();
-    }
-    final draft =
-        state.wavEditDrafts[region.path] ??
-        PolyWaveformDraft(trimStart: 0, trimEnd: overview.frameCount - 1);
-    final maxFrame = math.max(0, overview.frameCount - 1);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        PolyWaveformEditor(
-          overview: overview,
-          mode: PolyWaveformEditorMode.trim,
-          startFrame: draft.trimStart ?? 0,
-          endFrame: draft.trimEnd ?? maxFrame,
-          onChanged: (start, end) {
-            cubit.updateWavEditDraft(
-              region.path,
-              draft.copyWith(trimStart: start, trimEnd: end),
-            );
-          },
-        ),
         _FrameNudgeRow(
           label: 'Trim start',
-          value: draft.trimStart ?? 0,
+          value: wavDraft.trimStart ?? 0,
           onNudge: (delta) => cubit.updateWavEditDraft(
             region.path,
-            draft.copyWith(
-              trimStart: ((draft.trimStart ?? 0) + delta)
-                  .clamp(0, maxFrame)
+            wavDraft.copyWith(
+              trimStart: ((wavDraft.trimStart ?? 0) + delta)
+                  .clamp(0, math.max(0, (wavDraft.trimEnd ?? maxFrame) - 1))
                   .toInt(),
             ),
           ),
         ),
         _FrameNudgeRow(
           label: 'Trim end',
-          value: draft.trimEnd ?? maxFrame,
+          value: wavDraft.trimEnd ?? maxFrame,
           onNudge: (delta) => cubit.updateWavEditDraft(
             region.path,
-            draft.copyWith(
-              trimEnd: ((draft.trimEnd ?? maxFrame) + delta)
-                  .clamp(0, maxFrame)
+            wavDraft.copyWith(
+              trimEnd: ((wavDraft.trimEnd ?? maxFrame) + delta)
+                  .clamp(
+                    math.min(maxFrame, (wavDraft.trimStart ?? 0) + 1),
+                    maxFrame,
+                  )
                   .toInt(),
             ),
           ),
@@ -443,88 +439,106 @@ class _EditAudioEditor extends StatelessWidget {
         _FadeRow(
           label: 'Fade in',
           overview: overview,
-          frames: draft.fadeInFrames,
-          curve: draft.fadeInCurve,
-          strength: draft.fadeInStrength,
+          frames: wavDraft.fadeInFrames,
+          curve: wavDraft.fadeInCurve,
+          strength: wavDraft.fadeInStrength,
           onFramesChanged: (frames) => cubit.updateWavEditDraft(
             region.path,
-            draft.copyWith(fadeInFrames: frames),
+            wavDraft.copyWith(fadeInFrames: frames),
           ),
           onCurveChanged: (curve) => cubit.updateWavEditDraft(
             region.path,
-            draft.copyWith(fadeInCurve: curve),
+            wavDraft.copyWith(fadeInCurve: curve),
           ),
           onStrengthChanged: (strength) => cubit.updateWavEditDraft(
             region.path,
-            draft.copyWith(fadeInStrength: strength),
+            wavDraft.copyWith(fadeInStrength: strength),
           ),
         ),
         _FadeRow(
           label: 'Fade out',
           overview: overview,
-          frames: draft.fadeOutFrames,
-          curve: draft.fadeOutCurve,
-          strength: draft.fadeOutStrength,
+          frames: wavDraft.fadeOutFrames,
+          curve: wavDraft.fadeOutCurve,
+          strength: wavDraft.fadeOutStrength,
           onFramesChanged: (frames) => cubit.updateWavEditDraft(
             region.path,
-            draft.copyWith(fadeOutFrames: frames),
+            wavDraft.copyWith(fadeOutFrames: frames),
           ),
           onCurveChanged: (curve) => cubit.updateWavEditDraft(
             region.path,
-            draft.copyWith(fadeOutCurve: curve),
+            wavDraft.copyWith(fadeOutCurve: curve),
           ),
           onStrengthChanged: (strength) => cubit.updateWavEditDraft(
             region.path,
-            draft.copyWith(fadeOutStrength: strength),
+            wavDraft.copyWith(fadeOutStrength: strength),
           ),
         ),
         Row(
           children: [
             const SizedBox(width: 92, child: Text('Gain')),
             Expanded(
-              child: Slider(
-                key: const ValueKey('poly-wav-gain-slider'),
-                min: -24,
-                max: 24,
-                divisions: 96,
-                value: draft.gainDb,
-                label: '${draft.gainDb.toStringAsFixed(1)} dB',
-                onChanged: (value) => cubit.updateWavEditDraft(
-                  region.path,
-                  draft.copyWith(gainDb: value),
+              child: Semantics(
+                label: 'Audio gain',
+                value: '${wavDraft.gainDb.toStringAsFixed(1)} dB',
+                child: Slider(
+                  key: const ValueKey('poly-wav-gain-slider'),
+                  min: -24,
+                  max: 24,
+                  divisions: 96,
+                  value: wavDraft.gainDb,
+                  label: '${wavDraft.gainDb.toStringAsFixed(1)} dB',
+                  semanticFormatterCallback: (value) =>
+                      '${value.toStringAsFixed(1)} dB',
+                  onChanged: (value) => cubit.updateWavEditDraft(
+                    region.path,
+                    wavDraft.copyWith(gainDb: value),
+                  ),
                 ),
               ),
             ),
             SizedBox(
               width: 56,
-              child: Text('${draft.gainDb.toStringAsFixed(1)} dB'),
+              child: Text('${wavDraft.gainDb.toStringAsFixed(1)} dB'),
             ),
           ],
         ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          title: const Text('Normalize'),
+          value: wavDraft.normalizePeakDb != null,
+          onChanged: (enabled) => cubit.updateWavEditDraft(
+            region.path,
+            enabled
+                ? wavDraft.copyWith(normalizePeakDb: -0.3)
+                : wavDraft.copyWith(clearNormalize: true),
+          ),
+        ),
         Row(
           children: [
-            const Text('Normalize'),
-            Switch(
-              value: draft.normalizePeakDb != null,
-              onChanged: (enabled) => cubit.updateWavEditDraft(
-                region.path,
-                enabled
-                    ? draft.copyWith(normalizePeakDb: -0.3)
-                    : draft.copyWith(clearNormalize: true),
-              ),
-            ),
+            const SizedBox(width: 92, child: Text('Peak')),
             Expanded(
-              child: Slider(
-                min: -24,
-                max: 0,
-                divisions: 48,
-                value: draft.normalizePeakDb ?? -0.3,
-                onChanged: draft.normalizePeakDb == null
-                    ? null
-                    : (value) => cubit.updateWavEditDraft(
-                        region.path,
-                        draft.copyWith(normalizePeakDb: value),
-                      ),
+              child: Semantics(
+                label: 'Normalize peak',
+                value:
+                    '${(wavDraft.normalizePeakDb ?? -0.3).toStringAsFixed(1)} dB',
+                child: Slider(
+                  min: -24,
+                  max: 0,
+                  divisions: 48,
+                  value: wavDraft.normalizePeakDb ?? -0.3,
+                  label:
+                      '${(wavDraft.normalizePeakDb ?? -0.3).toStringAsFixed(1)} dB',
+                  semanticFormatterCallback: (value) =>
+                      '${value.toStringAsFixed(1)} dB',
+                  onChanged: wavDraft.normalizePeakDb == null
+                      ? null
+                      : (value) => cubit.updateWavEditDraft(
+                          region.path,
+                          wavDraft.copyWith(normalizePeakDb: value),
+                        ),
+                ),
               ),
             ),
           ],
@@ -544,7 +558,7 @@ class _EditAudioEditor extends StatelessWidget {
                 if (target == null) return;
                 await cubit.saveDestructiveWav(region.path, target, true);
               },
-              child: const Text('Save as…'),
+              child: const Text('Save as...'),
             ),
             const SizedBox(width: 8),
             FilledButton(
@@ -553,7 +567,7 @@ class _EditAudioEditor extends StatelessWidget {
                   context: context,
                   builder: (context) {
                     return AlertDialog(
-                      title: Text('Overwrite ${p.basename(region.path)}?'),
+                      title: Text('Overwrite $label?'),
                       content: const Text(
                         'This permanently changes the audio file.',
                       ),
@@ -572,7 +586,6 @@ class _EditAudioEditor extends StatelessWidget {
                 );
                 if (confirmed != true) return;
                 await cubit.saveDestructiveWav(region.path, region.path, true);
-                await cubit.loadWaveform(region.path);
               },
               child: const Text('Overwrite'),
             ),
@@ -609,41 +622,73 @@ class _FadeRow extends StatelessWidget {
     final ms = overview.sampleRate <= 0
         ? 0.0
         : frames / overview.sampleRate * 1000;
-    return Row(
-      children: [
-        SizedBox(width: 92, child: Text(label)),
-        Expanded(
-          child: Slider(
-            min: 0,
-            max: 5000,
-            divisions: 100,
-            value: ms.clamp(0, 5000).toDouble(),
-            onChanged: (value) {
-              onFramesChanged((value / 1000 * overview.sampleRate).round());
-            },
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label),
+          Semantics(
+            label: '$label length',
+            value: '${ms.round()} ms',
+            child: Slider(
+              min: 0,
+              max: 5000,
+              divisions: 100,
+              value: ms.clamp(0, 5000).toDouble(),
+              label: '${ms.round()} ms',
+              semanticFormatterCallback: (value) => '${value.round()} ms',
+              onChanged: (value) {
+                onFramesChanged((value / 1000 * overview.sampleRate).round());
+              },
+            ),
           ),
-        ),
-        DropdownButton<WavFadeCurve>(
-          value: curve,
-          items: [
-            for (final value in WavFadeCurve.values)
-              DropdownMenuItem(value: value, child: Text(_curveLabel(value))),
-          ],
-          onChanged: (value) {
-            if (value != null) onCurveChanged(value);
-          },
-        ),
-        SizedBox(
-          width: 120,
-          child: Slider(
-            min: 0,
-            max: 1,
-            divisions: 20,
-            value: strength,
-            onChanged: onStrengthChanged,
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('$label curve:'),
+                  const SizedBox(width: 8),
+                  DropdownButton<WavFadeCurve>(
+                    value: curve,
+                    items: [
+                      for (final value in WavFadeCurve.values)
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text(_curveLabel(value)),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) onCurveChanged(value);
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(
+                width: 180,
+                child: Semantics(
+                  label: '$label strength',
+                  value: strength.toStringAsFixed(2),
+                  child: Slider(
+                    min: 0,
+                    max: 1,
+                    divisions: 20,
+                    value: strength,
+                    label: strength.toStringAsFixed(2),
+                    semanticFormatterCallback: (value) =>
+                        value.toStringAsFixed(2),
+                    onChanged: onStrengthChanged,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

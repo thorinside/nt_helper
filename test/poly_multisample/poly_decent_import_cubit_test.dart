@@ -43,6 +43,10 @@ void main() {
       await cubit.continueImport();
 
       expect(service.stageCallCount, 1);
+      expect(service.lastOptions!.selectedGroupKeys, [
+        'group:0:Group 1',
+        'group:1:Group 2',
+      ]);
       expect(cubit.state.status, PolyDecentImportStatus.completed);
     });
 
@@ -61,6 +65,238 @@ void main() {
       expect(cubit.state.tagKeyRanges['tag:soft']!.lowMidi, 60);
       expect(cubit.state.tagKeyRanges['tag:soft']!.rootMidi, 60);
       expect(cubit.state.tagKeyRanges['tag:soft']!.highMidi, 61);
+    });
+
+    test(
+      'blocks continuation when every visible preset is unchecked',
+      () async {
+        final service = _FakeImportService(_multiPresetAnalysis());
+        final cubit = PolyDecentImportCubit(importService: service);
+        addTearDown(cubit.close);
+
+        await cubit.analyzeSource('/tmp/Layered.dspreset');
+        cubit.togglePreset('Layer A');
+        cubit.togglePreset('Layer B');
+
+        expect(cubit.state.selectedPresetNames, isEmpty);
+        expect(cubit.state.canContinue, isFalse);
+
+        await cubit.continueImport();
+
+        expect(service.stageCallCount, 0);
+        expect(cubit.state.error, contains('not ready'));
+      },
+    );
+
+    test('selectedGroup handling preselects the first group', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.selectedGroup);
+
+      expect(cubit.state.selectedGroupKey, 'group:0:Group 1');
+      expect(cubit.state.canContinue, isTrue);
+
+      await cubit.continueImport();
+
+      expect(service.lastOptions!.selectedGroupKey, 'group:0:Group 1');
+    });
+
+    test('selectedTags handling requires at least one selected tag', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.selectedTags);
+
+      expect(cubit.state.canContinue, isFalse);
+
+      await cubit.continueImport();
+
+      expect(service.stageCallCount, 0);
+    });
+
+    test('tagMapping handling requires at least one selected tag', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.tagMapping);
+
+      expect(cubit.state.canContinue, isFalse);
+
+      await cubit.continueImport();
+
+      expect(service.stageCallCount, 0);
+      expect(cubit.state.error, contains('not ready'));
+    });
+
+    test('manual ranges must keep low, root, and high ordered', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.selectedTags);
+      cubit.toggleTag('tag:soft');
+      cubit.setTagRange(
+        'tag:soft',
+        const DecentSamplerTagKeyRange(lowMidi: 64, rootMidi: 60, highMidi: 63),
+      );
+
+      expect(cubit.state.canContinue, isFalse);
+      expect(cubit.state.warnings.single, contains('invalid key range'));
+
+      await cubit.continueImport();
+
+      expect(service.stageCallCount, 0);
+    });
+
+    test('key range handling requires at least one enabled group', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.keyRanges);
+      for (final entry in cubit.state.manualGroupRanges.entries) {
+        cubit.updateGroupRange(
+          entry.key,
+          DecentSamplerTagKeyRange(
+            lowMidi: entry.value.lowMidi,
+            rootMidi: entry.value.rootMidi,
+            highMidi: entry.value.highMidi,
+            enabled: false,
+          ),
+        );
+      }
+
+      expect(cubit.state.canContinue, isFalse);
+
+      await cubit.continueImport();
+
+      expect(service.stageCallCount, 0);
+    });
+
+    test('velocity layer mode forwards only explicit velocity edits', () async {
+      final service = _FakeImportService(_overlappingAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.velocityLayers);
+      cubit.setGroupVelocity('group:0:Group 1', 2);
+
+      await cubit.continueImport();
+
+      expect(service.lastOptions!.groupVelocityLayers, {'group:0:Group 1': 2});
+    });
+
+    test(
+      'velocity layer mode does not forward stale manual round robins',
+      () async {
+        final service = _FakeImportService(_overlappingAnalysis());
+        final cubit = PolyDecentImportCubit(importService: service);
+        addTearDown(cubit.close);
+
+        await cubit.analyzeSource('/tmp/Layered.dspreset');
+        cubit.setGroupHandling(DecentSamplerGroupHandling.keyRanges);
+        cubit.setGroupRoundRobin('group:0:Group 1', 2);
+        cubit.setGroupHandling(DecentSamplerGroupHandling.velocityLayers);
+
+        await cubit.continueImport();
+
+        expect(service.lastOptions!.groupRoundRobins, isEmpty);
+      },
+    );
+
+    test('group modes do not forward stale selected tag options', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.selectedTags);
+      cubit.toggleTag('tag:soft');
+      cubit.setTagVelocity('tag:soft', 2);
+      cubit.setTagRoundRobin('tag:soft', 3);
+      cubit.setGroupHandling(DecentSamplerGroupHandling.velocityLayers);
+
+      await cubit.continueImport();
+
+      final options = service.lastOptions!;
+      expect(options.selectedTagKeys, isEmpty);
+      expect(options.tagVelocityLayers, isEmpty);
+      expect(options.tagKeyRanges, isEmpty);
+      expect(options.tagRoundRobins, isEmpty);
+    });
+
+    test('tagMapping forwards selected tag options', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.tagMapping);
+      cubit.toggleTag('tag:soft');
+      cubit.setTagVelocity('tag:soft', 2);
+      cubit.setTagRoundRobin('tag:soft', 3);
+
+      await cubit.continueImport();
+
+      final options = service.lastOptions!;
+      expect(options.selectedTagKeys, ['tag:soft']);
+      expect(options.tagVelocityLayers, {'tag:soft': 2});
+      expect(options.tagRoundRobins, {'tag:soft': 3});
+      expect(options.tagKeyRanges, isEmpty);
+    });
+
+    test('tagMapping allows velocity-only overlapping tags', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.tagMapping);
+      cubit.toggleTag('tag:soft');
+      cubit.toggleTag('tag:hard');
+      cubit.setTagVelocity('tag:soft', 1);
+      cubit.setTagVelocity('tag:hard', 2);
+
+      expect(cubit.state.warnings, isEmpty);
+      expect(cubit.state.canContinue, isTrue);
+
+      await cubit.continueImport();
+
+      final options = service.lastOptions!;
+      expect(service.stageCallCount, 1);
+      expect(options.tagVelocityLayers, {'tag:soft': 1, 'tag:hard': 2});
+      expect(options.tagKeyRanges, isEmpty);
+    });
+
+    test('tagMapping validates selected tag ranges', () async {
+      final service = _FakeImportService(_taggedAnalysis());
+      final cubit = PolyDecentImportCubit(importService: service);
+      addTearDown(cubit.close);
+
+      await cubit.analyzeSource('/tmp/Layered.dspreset');
+      cubit.setGroupHandling(DecentSamplerGroupHandling.tagMapping);
+      cubit.toggleTag('tag:soft');
+      cubit.setTagRange(
+        'tag:soft',
+        const DecentSamplerTagKeyRange(lowMidi: 64, rootMidi: 60, highMidi: 63),
+      );
+
+      expect(cubit.state.canContinue, isFalse);
+      expect(cubit.state.warnings.single, contains('invalid key range'));
+
+      await cubit.continueImport();
+
+      expect(service.stageCallCount, 0);
     });
 
     test(
@@ -273,5 +509,47 @@ DecentSamplerImportAnalysis _taggedAnalysis() {
     hasAmbiguousOverlaps: true,
     structureSummary: '2 overlapping tags',
     recommendedGroupHandling: DecentSamplerGroupHandling.selectedTags,
+  );
+}
+
+DecentSamplerImportAnalysis _multiPresetAnalysis() {
+  return const DecentSamplerImportAnalysis(
+    presetName: 'Layered',
+    presets: [
+      DecentSamplerPresetInfo(
+        name: 'Layer A',
+        groupCount: 1,
+        sampleCount: 2,
+        tagCount: 0,
+      ),
+      DecentSamplerPresetInfo(
+        name: 'Layer B',
+        groupCount: 1,
+        sampleCount: 2,
+        tagCount: 0,
+      ),
+    ],
+    groups: [
+      DecentSamplerGroupInfo(
+        key: 'group:0:Group 1',
+        name: 'Group 1',
+        xmlSummary: 'Group 1',
+        sampleCount: 2,
+        rootCount: 2,
+        structureSummary: 'C4-D4',
+        noteRange: 'C4 - D4',
+        velocitySummary: '1-127',
+        roundRobinSummary: 'No seqPosition',
+        examples: ['soft_c4.wav'],
+        defaultLowMidi: 60,
+        defaultRootMidi: 60,
+        defaultHighMidi: 61,
+        defaultVelocityLayer: 1,
+      ),
+    ],
+    tags: [],
+    hasAmbiguousOverlaps: false,
+    structureSummary: '2 presets',
+    recommendedGroupHandling: DecentSamplerGroupHandling.auto,
   );
 }

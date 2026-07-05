@@ -67,16 +67,28 @@ class PolySamplesView extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        final hasUnsavedWork =
-            state.isDirty ||
-            ((state.sourceMode == PolySampleSourceMode.importDraft ||
-                    state.sourceMode == PolySampleSourceMode.customDraft) &&
-                state.editedRegions.isNotEmpty);
+        final hasUnsavedWork = _hasUnsavedWork(state);
         return PopScope(
           canPop: !hasUnsavedWork,
           onPopInvokedWithResult: (didPop, result) {
             if (didPop || !hasUnsavedWork) return;
-            _confirmDiscardChanges(context);
+            _confirmDiscardChanges(
+              context,
+              onDiscard: () async {
+                final cubit = context.read<PolyMultisampleBuilderCubit>();
+                if (cubit.state.sourceMode ==
+                        PolySampleSourceMode.importDraft ||
+                    cubit.state.sourceMode ==
+                        PolySampleSourceMode.customDraft) {
+                  await cubit.returnToSources();
+                } else {
+                  cubit.discardChanges();
+                }
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) Navigator.of(context).pop();
+                });
+              },
+            );
           },
           child: Scaffold(
             appBar: AppBar(title: const Text('Samples')),
@@ -150,8 +162,20 @@ class PolySamplesView extends StatelessWidget {
       onAddFiles: () => _addFiles(context),
       onAddFolder: () => _addFolder(context),
       onSaveAs: () => _saveAs(context),
-      onBackToSources: cubit.returnToSources,
+      onBackToSources: () => _backToSources(context, state),
     );
+  }
+
+  Future<void> _backToSources(
+    BuildContext context,
+    PolyMultisampleBuilderState state,
+  ) async {
+    final cubit = context.read<PolyMultisampleBuilderCubit>();
+    if (!_hasUnsavedWork(state)) {
+      await cubit.returnToSources();
+      return;
+    }
+    await _confirmDiscardChanges(context, onDiscard: cubit.returnToSources);
   }
 
   Future<void> _openHardware(BuildContext context) async {
@@ -182,6 +206,7 @@ class PolySamplesView extends StatelessWidget {
     final cubit = context.read<PolyMultisampleBuilderCubit>();
     final result = await FilePicker.pickFiles(
       dialogTitle: 'Import samples',
+      initialDirectory: cubit.state.lastSourceFolder,
       allowMultiple: true,
       type: FileType.custom,
       allowedExtensions: const [
@@ -199,6 +224,8 @@ class PolySamplesView extends StatelessWidget {
         if (file.path != null) file.path!,
     ];
     if (paths.isEmpty) return;
+    await cubit.rememberSourceFolder(p.dirname(paths.first));
+    if (!context.mounted) return;
 
     PolyStagedImport? staged;
     final single = paths.length == 1 ? paths.single : null;
@@ -207,8 +234,6 @@ class PolySamplesView extends StatelessWidget {
         (lower!.endsWith('.dspreset') ||
             lower.endsWith('.dslibrary') ||
             lower.endsWith('.zip'))) {
-      await cubit.rememberSourceFolder(p.dirname(single));
-      if (!context.mounted) return;
       staged = await showPolyDecentImportDialog(
         context,
         sourcePath: single,
@@ -272,12 +297,177 @@ class PolySamplesView extends StatelessWidget {
 
   Future<void> _saveAs(BuildContext context) async {
     final cubit = context.read<PolyMultisampleBuilderCubit>();
-    final path = await FilePicker.getDirectoryPath(
-      dialogTitle: 'Save samples to folder',
-      initialDirectory: cubit.state.lastCustomOutputFolder,
-    );
+    final path = await _chooseSaveFolder(context, cubit);
     if (path == null) return;
     await cubit.saveCustomDraft(path);
+  }
+}
+
+Future<String?> _chooseSaveFolder(
+  BuildContext context,
+  PolyMultisampleBuilderCubit cubit,
+) async {
+  return showDialog<String>(
+    context: context,
+    builder: (dialogContext) {
+      return _SaveFolderDialog(
+        initialParent:
+            cubit.state.lastCustomOutputFolder ??
+            (cubit.state.lastLocalFolder == null
+                ? null
+                : p.dirname(cubit.state.lastLocalFolder!)) ??
+            Directory.current.path,
+        initialName:
+            cubit.state.currentInstrument?.name.replaceAll(
+              RegExp(r'[\\/:*?"<>|]'),
+              '_',
+            ) ??
+            'Untitled',
+      );
+    },
+  );
+}
+
+class _SaveFolderDialog extends StatefulWidget {
+  const _SaveFolderDialog({
+    required this.initialParent,
+    required this.initialName,
+  });
+
+  final String initialParent;
+  final String initialName;
+
+  @override
+  State<_SaveFolderDialog> createState() => _SaveFolderDialogState();
+}
+
+class _SaveFolderDialogState extends State<_SaveFolderDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _parentController;
+  late final TextEditingController _nameController;
+  String? _createError;
+
+  @override
+  void initState() {
+    super.initState();
+    _parentController = TextEditingController(text: widget.initialParent);
+    _nameController = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _parentController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Save samples as folder'),
+      content: Form(
+        key: _formKey,
+        child: SizedBox(
+          width: 480,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _parentController,
+                  decoration: InputDecoration(
+                    labelText: 'Parent folder',
+                    suffixIcon: IconButton(
+                      tooltip: 'Browse parent folder',
+                      icon: const Icon(Icons.folder_open),
+                      onPressed: () async {
+                        final path = await FilePicker.getDirectoryPath(
+                          dialogTitle: 'Choose parent folder',
+                          initialDirectory: _parentController.text,
+                        );
+                        if (path != null) _parentController.text = path;
+                      },
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Choose a parent folder.';
+                    }
+                    if (!Directory(value.trim()).existsSync()) {
+                      return 'Parent folder does not exist.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'New or existing folder name',
+                  ),
+                  validator: (value) {
+                    if (_createError != null) return _createError;
+                    final name = value?.trim() ?? '';
+                    if (name.isEmpty) return 'Enter a folder name.';
+                    if (name == '.' || name == '..') {
+                      return 'Enter a folder name, not a relative path.';
+                    }
+                    if (name.contains(RegExp(r'[\\/:*?"<>|]'))) {
+                      return 'Folder name contains invalid characters.';
+                    }
+                    return null;
+                  },
+                ),
+                if (_createError != null) ...[
+                  const SizedBox(height: 8),
+                  Semantics(
+                    label: 'Folder creation failed: $_createError',
+                    liveRegion: true,
+                    child: ExcludeSemantics(
+                      child: Text(
+                        _createError!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            setState(() {
+              _createError = null;
+            });
+            if (!(_formKey.currentState?.validate() ?? false)) return;
+            final path = p.join(
+              _parentController.text.trim(),
+              _nameController.text.trim(),
+            );
+            try {
+              Directory(path).createSync(recursive: true);
+            } catch (error) {
+              setState(() {
+                _createError = 'Could not create folder: $error';
+              });
+              _formKey.currentState?.validate();
+              return;
+            }
+            Navigator.of(context).pop(path);
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
 
@@ -299,7 +489,10 @@ class _HardwareEmptyState extends StatelessWidget {
   }
 }
 
-Future<void> _confirmDiscardChanges(BuildContext context) async {
+Future<void> _confirmDiscardChanges(
+  BuildContext context, {
+  required Future<void> Function() onDiscard,
+}) async {
   await showDialog<void>(
     context: context,
     builder: (dialogContext) {
@@ -312,9 +505,9 @@ Future<void> _confirmDiscardChanges(BuildContext context) async {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(dialogContext).pop();
-              Navigator.of(context).pop();
+              await onDiscard();
             },
             child: const Text('Discard'),
           ),
@@ -322,4 +515,11 @@ Future<void> _confirmDiscardChanges(BuildContext context) async {
       );
     },
   );
+}
+
+bool _hasUnsavedWork(PolyMultisampleBuilderState state) {
+  return state.isDirty ||
+      ((state.sourceMode == PolySampleSourceMode.importDraft ||
+              state.sourceMode == PolySampleSourceMode.customDraft) &&
+          state.editedRegions.isNotEmpty);
 }

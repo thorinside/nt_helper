@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
 import 'package:nt_helper/ui/poly_multisample/dialogs/poly_loose_wav_import_dialog.dart';
 
 void main() {
@@ -50,11 +53,69 @@ void main() {
 
     expect(result, isNull);
   });
+
+  testWidgets('failure is announced as live status', (tester) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await _pumpDialogButton(
+        tester,
+        paths: const ['/tmp/A.wav'],
+        importService: _FailingImportService(),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Import'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.bySemanticsLabel(RegExp(r'Loose WAV import failed: .*')),
+        findsOneWidget,
+      );
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('staging import cannot be dismissed', (tester) async {
+    final service = _DelayedImportService();
+    PolyStagedImport? result;
+    await _pumpDialogButton(
+      tester,
+      paths: const ['/tmp/A.wav'],
+      importService: service,
+      onResult: (value) => result = value,
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Import'));
+    await tester.pump();
+
+    final cancel = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Cancel'),
+    );
+    expect(cancel.onPressed, isNull);
+    expect(find.bySemanticsLabel('Importing WAV files'), findsOneWidget);
+
+    await (tester.state(find.byType(Navigator)) as NavigatorState).maybePop();
+    await tester.pump();
+
+    expect(find.text('Import WAV files'), findsOneWidget);
+    expect(result, isNull);
+
+    service.complete();
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(find.text('Import WAV files'), findsNothing);
+  });
 }
 
 Future<void> _pumpDialogButton(
   WidgetTester tester, {
   required List<String> paths,
+  PolySampleImportService? importService,
   ValueChanged<PolyStagedImport?>? onResult,
 }) async {
   await tester.pumpWidget(
@@ -67,6 +128,7 @@ Future<void> _pumpDialogButton(
                 final result = await showPolyLooseWavImportDialog(
                   context,
                   paths: paths,
+                  importService: importService,
                 );
                 onResult?.call(result);
               },
@@ -77,4 +139,36 @@ Future<void> _pumpDialogButton(
       ),
     ),
   );
+}
+
+class _FailingImportService extends PolySampleImportService {
+  @override
+  Future<PolyStagedImport> stageLooseFiles(
+    List<String> paths,
+    PolyLooseWavMappingOptions options,
+  ) {
+    throw Exception('Loose import failed.');
+  }
+}
+
+class _DelayedImportService extends PolySampleImportService {
+  final _completer = Completer<PolyStagedImport>();
+
+  @override
+  Future<PolyStagedImport> stageLooseFiles(
+    List<String> paths,
+    PolyLooseWavMappingOptions options,
+  ) {
+    return _completer.future;
+  }
+
+  void complete() {
+    _completer.complete(
+      const PolyStagedImport(
+        name: 'Imported WAVs',
+        sourceLabel: '/tmp',
+        regions: [],
+      ),
+    );
+  }
 }

@@ -955,14 +955,15 @@ class DecentSamplerConverter {
           ),
       ];
     }
-    final tagVelocityLayers =
+    final usesTagOptionMaps =
         options.groupHandling == DecentSamplerGroupHandling.tagMapping ||
-            options.groupHandling == DecentSamplerGroupHandling.velocityLayers
+        options.groupHandling == DecentSamplerGroupHandling.velocityLayers ||
+        options.groupHandling == DecentSamplerGroupHandling.keyRanges ||
+        options.groupHandling == DecentSamplerGroupHandling.selectedTags;
+    final tagVelocityLayers = usesTagOptionMaps
         ? _forcedTagVelocityLayers(rawRegions, options)
         : null;
-    final tagKeyRanges =
-        options.groupHandling == DecentSamplerGroupHandling.tagMapping ||
-            options.groupHandling == DecentSamplerGroupHandling.keyRanges
+    final tagKeyRanges = usesTagOptionMaps
         ? _forcedTagKeyRanges(rawRegions, options)
         : null;
     final selectedGroupVelocityLayers =
@@ -975,9 +976,7 @@ class DecentSamplerConverter {
             options.groupHandling == DecentSamplerGroupHandling.keyRanges
         ? _forcedSelectedGroupKeyRanges(rawRegions, options)
         : null;
-    final forcedRoundRobins =
-        options.groupHandling == DecentSamplerGroupHandling.tagMapping ||
-            options.groupHandling == DecentSamplerGroupHandling.velocityLayers
+    final forcedRoundRobins = usesTagOptionMaps
         ? _forcedRoundRobins(rawRegions, options)
         : const <_DecentRawRegion, int>{};
     final forcedVelocityLayerCount =
@@ -1094,8 +1093,8 @@ class DecentSamplerConverter {
     final usedRoundRobins = <String, Set<int>>{};
     final outputNames = <String>{};
     final mapped = <_DecentMappedRegion>[];
-    var repairedRoundRobinCount = 0;
-    final repairedRoundRobinExamples = <String>[];
+    final mappedRootByRegion = <_DecentRawRegion, int>{};
+    final mappedLowByRegion = <_DecentRawRegion, int>{};
     for (final region in rawRegions) {
       final originalRoot = region.rootMidi;
       if (originalRoot == null) continue;
@@ -1103,27 +1102,36 @@ class DecentSamplerConverter {
           .clamp(0, 127)
           .toInt();
       final rangeMapping = keyRanges?.regionMappings[region];
-      final root = rangeMapping == null
+      mappedRootByRegion[region] = rangeMapping == null
           ? originalRoot
           : (rangeMapping.range.rootMidi +
                     originalRoot -
                     rangeMapping.sourceRootMidi)
                 .clamp(rangeMapping.range.lowMidi, rangeMapping.range.highMidi)
                 .toInt();
-      final low = rangeMapping == null
+      mappedLowByRegion[region] = rangeMapping == null
           ? originalLow
           : (rangeMapping.range.lowMidi +
                     originalLow -
                     rangeMapping.sourceRootMidi)
                 .clamp(rangeMapping.range.lowMidi, rangeMapping.range.highMidi)
                 .toInt();
+    }
+    var repairedRoundRobinCount = 0;
+    final repairedRoundRobinExamples = <String>[];
+    for (final region in rawRegions) {
+      final root = mappedRootByRegion[region];
+      final low = mappedLowByRegion[region];
+      if (root == null || low == null) continue;
       final velocityLayer = velocityLayerByRegion[region] ?? 1;
-      final velocityLayerCount =
-          velocityKeys['$root|$low|${region.highMidi ?? -1}']
-              ?.map((candidate) => velocityLayerByRegion[candidate] ?? 1)
-              .toSet()
-              .length ??
-          1;
+      final velocityLayerCount = rawRegions
+          .where((candidate) {
+            return mappedRootByRegion[candidate] == root &&
+                mappedLowByRegion[candidate] == low;
+          })
+          .map((candidate) => velocityLayerByRegion[candidate] ?? 1)
+          .toSet()
+          .length;
       final rrKey = '$root|$low|$velocityLayer';
       final roundRobin = _roundRobinForRegion(
         key: rrKey,
@@ -1140,19 +1148,28 @@ class DecentSamplerConverter {
         },
       );
       final roundRobinCount = rawRegions.where((candidate) {
-        return candidate.rootMidi == root &&
-            (candidate.lowMidi ?? root).clamp(0, 127).toInt() == low &&
+        return mappedRootByRegion[candidate] == root &&
+            mappedLowByRegion[candidate] == low &&
             (velocityLayerByRegion[candidate] ?? 1) == velocityLayer;
       }).length;
+      final hasExplicitVelocityLayer = _hasExplicitVelocityLayerSelection(
+        region,
+        options,
+      );
       final fileName = _targetFileName(
         presetName: presetName,
         rootMidi: root,
         switchPoint: low,
         velocityLayer: velocityLayer,
         writeVelocityLayer:
-            (forcedVelocityLayerCount ?? velocityLayerCount) > 1,
+            hasExplicitVelocityLayer ||
+            (forcedVelocityLayerCount ?? velocityLayerCount) > 1 ||
+            velocityLayer > 1,
         roundRobin: roundRobin,
-        writeRoundRobin: roundRobinCount > 1,
+        writeRoundRobin:
+            forcedRoundRobins.containsKey(region) ||
+            roundRobinCount > 1 ||
+            roundRobin > 1,
       );
       if (!outputNames.add(fileName.toLowerCase())) {
         warnings.add(
@@ -1797,29 +1814,10 @@ class DecentSamplerConverter {
           entry.key: entry.value,
     };
     if (explicitLayers.isEmpty) return null;
-    final orderedTags =
-        <String>[
-          for (final key in selectedTagKeys)
-            if (rawRegions.any((region) => region.tagKeys.contains(key))) key,
-        ]..sort((a, b) {
-          final aExplicit = explicitLayers[a];
-          final bExplicit = explicitLayers[b];
-          if (aExplicit != null && bExplicit != null) {
-            final layerCompare = aExplicit.compareTo(bExplicit);
-            if (layerCompare != 0) return layerCompare;
-          } else if (aExplicit != null) {
-            final layerCompare = aExplicit.compareTo(
-              selectedTagKeys.indexOf(b) + 1,
-            );
-            if (layerCompare != 0) return layerCompare;
-          } else if (bExplicit != null) {
-            final layerCompare = selectedTagKeys.indexOf(a) + 1 - bExplicit;
-            if (layerCompare != 0) return layerCompare;
-          }
-          return selectedTagKeys
-              .indexOf(a)
-              .compareTo(selectedTagKeys.indexOf(b));
-        });
+    final orderedTags = [
+      for (final key in selectedTagKeys)
+        if (rawRegions.any((region) => region.tagKeys.contains(key))) key,
+    ];
     final uniqueOrderedTags = <String>[];
     for (final key in orderedTags) {
       if (!uniqueOrderedTags.contains(key) &&
@@ -1828,21 +1826,52 @@ class DecentSamplerConverter {
       }
     }
     if (uniqueOrderedTags.isEmpty) return null;
+    final explicitLayerValues = explicitLayers.values.toSet();
+    var nextFallbackLayer = 1;
+    int fallbackLayerFor(String key) {
+      final explicit = explicitLayers[key];
+      if (explicit != null) return explicit;
+      while (explicitLayerValues.contains(nextFallbackLayer)) {
+        nextFallbackLayer++;
+      }
+      return nextFallbackLayer++;
+    }
+
+    final fallbackLayers = {
+      for (final key in uniqueOrderedTags) key: fallbackLayerFor(key),
+    };
+    final orderedForSummary = List<String>.from(uniqueOrderedTags)
+      ..sort((a, b) {
+        final aExplicit = explicitLayers[a];
+        final bExplicit = explicitLayers[b];
+        if (aExplicit != null && bExplicit != null) {
+          final layerCompare = aExplicit.compareTo(bExplicit);
+          if (layerCompare != 0) return layerCompare;
+        } else if (aExplicit != null) {
+          final layerCompare = aExplicit.compareTo(
+            selectedTagKeys.indexOf(b) + 1,
+          );
+          if (layerCompare != 0) return layerCompare;
+        } else if (bExplicit != null) {
+          final layerCompare = selectedTagKeys.indexOf(a) + 1 - bExplicit;
+          if (layerCompare != 0) return layerCompare;
+        }
+        return selectedTagKeys.indexOf(a).compareTo(selectedTagKeys.indexOf(b));
+      });
     final regionLayers = <_DecentRawRegion, int>{};
     for (final region in rawRegions) {
       for (var index = 0; index < uniqueOrderedTags.length; index++) {
         final tagKey = uniqueOrderedTags[index];
         if (!region.tagKeys.contains(tagKey)) continue;
-        regionLayers[region] = explicitLayers[tagKey] ?? index + 1;
+        regionLayers[region] = fallbackLayers[tagKey] ?? index + 1;
         break;
       }
     }
     if (regionLayers.isEmpty) return null;
     return _TagVelocityLayerPlan(
       tagLayers: {
-        for (var index = 0; index < uniqueOrderedTags.length; index++)
-          uniqueOrderedTags[index]:
-              explicitLayers[uniqueOrderedTags[index]] ?? index + 1,
+        for (final key in orderedForSummary)
+          key: fallbackLayers[key] ?? explicitLayers[key] ?? 1,
       },
       regionLayers: regionLayers,
     );
@@ -1899,6 +1928,29 @@ class DecentSamplerConverter {
       index++;
     }
     return candidate;
+  }
+
+  bool _hasExplicitVelocityLayerSelection(
+    _DecentRawRegion region,
+    DecentSamplerConvertOptions options,
+  ) {
+    final selectedTags = options.selectedTagKeys.toSet();
+    for (final entry in options.tagVelocityLayers.entries) {
+      if (entry.value > 0 &&
+          selectedTags.contains(entry.key) &&
+          region.tagKeys.contains(entry.key)) {
+        return true;
+      }
+    }
+    final selectedGroups = options.selectedGroupKeys.toSet();
+    final groupKey = _groupKey(region);
+    if (selectedGroups.isNotEmpty &&
+        selectedGroups.contains(groupKey) &&
+        (options.groupVelocityLayers[groupKey] ?? 0) > 0) {
+      return true;
+    }
+    return selectedGroups.isEmpty &&
+        (options.groupVelocityLayers[groupKey] ?? 0) > 0;
   }
 
   _TagKeyRangePlan? _forcedTagKeyRanges(
@@ -1965,43 +2017,57 @@ class DecentSamplerConverter {
           entry.key: entry.value,
     };
     if (explicitLayers.isEmpty) return null;
-    final orderedGroups =
-        <String>[
-          for (final key in options.selectedGroupKeys)
-            if (rawRegions.any((region) => _groupKey(region) == key)) key,
-        ]..sort((a, b) {
-          final aExplicit = explicitLayers[a];
-          final bExplicit = explicitLayers[b];
-          if (aExplicit != null && bExplicit != null) {
-            final layerCompare = aExplicit.compareTo(bExplicit);
-            if (layerCompare != 0) return layerCompare;
-          } else if (aExplicit != null) {
-            final layerCompare = aExplicit.compareTo(
-              options.selectedGroupKeys.indexOf(b) + 1,
-            );
-            if (layerCompare != 0) return layerCompare;
-          } else if (bExplicit != null) {
-            final layerCompare =
-                options.selectedGroupKeys.indexOf(a) + 1 - bExplicit;
-            if (layerCompare != 0) return layerCompare;
-          }
-          return options.selectedGroupKeys
-              .indexOf(a)
-              .compareTo(options.selectedGroupKeys.indexOf(b));
-        });
+    final orderedGroups = [
+      for (final key in options.selectedGroupKeys)
+        if (rawRegions.any((region) => _groupKey(region) == key)) key,
+    ];
+    final explicitLayerValues = explicitLayers.values.toSet();
+    var nextFallbackLayer = 1;
+    int fallbackLayerFor(String key) {
+      final explicit = explicitLayers[key];
+      if (explicit != null) return explicit;
+      while (explicitLayerValues.contains(nextFallbackLayer)) {
+        nextFallbackLayer++;
+      }
+      return nextFallbackLayer++;
+    }
+
+    final orderedForSummary = List<String>.from(orderedGroups)
+      ..sort((a, b) {
+        final aExplicit = explicitLayers[a];
+        final bExplicit = explicitLayers[b];
+        if (aExplicit != null && bExplicit != null) {
+          final layerCompare = aExplicit.compareTo(bExplicit);
+          if (layerCompare != 0) return layerCompare;
+        } else if (aExplicit != null) {
+          final layerCompare = aExplicit.compareTo(
+            options.selectedGroupKeys.indexOf(b) + 1,
+          );
+          if (layerCompare != 0) return layerCompare;
+        } else if (bExplicit != null) {
+          final layerCompare =
+              options.selectedGroupKeys.indexOf(a) + 1 - bExplicit;
+          if (layerCompare != 0) return layerCompare;
+        }
+        return options.selectedGroupKeys
+            .indexOf(a)
+            .compareTo(options.selectedGroupKeys.indexOf(b));
+      });
+    final fallbackLayers = {
+      for (final key in orderedGroups) key: fallbackLayerFor(key),
+    };
     final regionLayers = <_DecentRawRegion, int>{};
     for (final region in rawRegions) {
       final groupKey = _groupKey(region);
       final groupIndex = orderedGroups.indexOf(groupKey);
       if (groupIndex < 0) continue;
-      regionLayers[region] = explicitLayers[groupKey] ?? groupIndex + 1;
+      regionLayers[region] = fallbackLayers[groupKey] ?? groupIndex + 1;
     }
     if (regionLayers.isEmpty) return null;
     return _TagVelocityLayerPlan(
       tagLayers: {
-        for (var index = 0; index < orderedGroups.length; index++)
-          orderedGroups[index]:
-              explicitLayers[orderedGroups[index]] ?? index + 1,
+        for (final key in orderedForSummary)
+          key: fallbackLayers[key] ?? explicitLayers[key] ?? 1,
       },
       regionLayers: regionLayers,
     );

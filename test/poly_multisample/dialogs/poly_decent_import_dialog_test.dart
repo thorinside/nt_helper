@@ -1,11 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/decent_sampler_converter.dart';
+import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
+import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
 import 'package:nt_helper/ui/poly_multisample/dialogs/poly_decent_import_dialog.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_decent_import_cubit.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 
 void main() {
   testWidgets('shows analysis summary and handling modes', (tester) async {
+    final semantics = tester.ensureSemantics();
     final cubit = _TestPolyDecentImportCubit()..setTestState(_readyState());
     addTearDown(cubit.close);
 
@@ -21,6 +29,8 @@ void main() {
     expect(find.text('Split groups into separate folders'), findsOneWidget);
     expect(find.text('Import one group only'), findsOneWidget);
     expect(find.text('Import selected tags only'), findsOneWidget);
+    expect(find.bySemanticsLabel('Group handling'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('selectedTags mode reveals per-tag range steppers', (
@@ -37,10 +47,51 @@ void main() {
 
     await _pumpDialogButton(tester, cubit);
     await tester.tap(find.text('Open'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('soft'), findsOneWidget);
     expect(find.byTooltip('Increase Low'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('tagMapping exposes per-tag controls', (tester) async {
+    final cubit = _TestPolyDecentImportCubit()
+      ..setTestState(
+        _readyState().copyWith(
+          groupHandling: DecentSamplerGroupHandling.tagMapping,
+          selectedTagKeys: {'tag:soft'},
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpDialogButton(tester, cubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('soft'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Select soft, 2 samples, C4 - D4'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Increase Velocity'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('failure state is announced as live status', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final cubit = _TestPolyDecentImportCubit()
+      ..setTestState(
+        const PolyDecentImportState(
+          status: PolyDecentImportStatus.failure,
+          error: 'Import failed.',
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpDialogButton(tester, cubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Import failed.'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('import disabled while warnings present', (tester) async {
@@ -58,12 +109,230 @@ void main() {
 
     expect(button.onPressed, isNull);
   });
+
+  testWidgets('cancel disabled while staging import', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final cubit = _TestPolyDecentImportCubit()
+      ..setTestState(
+        _readyState().copyWith(status: PolyDecentImportStatus.staging),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpDialogButton(tester, cubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Cancel'),
+    );
+
+    expect(button.onPressed, isNull);
+    expect(
+      find.bySemanticsLabel('Importing Decent Sampler source'),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('option controls are disabled while staging import', (
+    tester,
+  ) async {
+    final importService = _DelayedImportService();
+    final cubit = _TestPolyDecentImportCubit(importService: importService)
+      ..setTestState(
+        _readyState().copyWith(
+          groupHandling: DecentSamplerGroupHandling.selectedTags,
+          selectedTagKeys: {'tag:soft'},
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpDialogButton(tester, cubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Import'));
+    await tester.pump();
+
+    expect(cubit.state.status, PolyDecentImportStatus.staging);
+    expect(importService.lastOptions?.selectedTagKeys, ['tag:soft']);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Import'))
+          .onPressed,
+      isNull,
+    );
+
+    await tester.ensureVisible(find.text('Preserve XML mapping'));
+    await tester.tap(find.text('Preserve XML mapping'));
+    await tester.ensureVisible(find.text('soft'));
+    await tester.tap(find.text('soft'));
+    await tester.ensureVisible(find.byTooltip('Increase Velocity').first);
+    await tester.tap(find.byTooltip('Increase Velocity').first);
+    await tester.pump();
+
+    expect(cubit.state.preserveXmlMapping, isFalse);
+    expect(cubit.state.selectedTagKeys, {'tag:soft'});
+    expect(cubit.state.tagVelocityLayers, isEmpty);
+
+    importService.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Import Decent Sampler'), findsNothing);
+  });
+
+  testWidgets('cancel disabled while analyzing source', (tester) async {
+    final cubit = _TestPolyDecentImportCubit()
+      ..setTestState(
+        const PolyDecentImportState(
+          status: PolyDecentImportStatus.analyzing,
+          sourcePath: '/tmp/Layered.dspreset',
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpDialogButton(tester, cubit);
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+
+    final button = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Cancel'),
+    );
+    expect(button.onPressed, isNull);
+
+    await (tester.state(find.byType(Navigator)) as NavigatorState).maybePop();
+    await tester.pump();
+
+    expect(find.text('Import Decent Sampler'), findsOneWidget);
+  });
+
+  testWidgets('selected tag checkbox includes mapping context', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final cubit = _TestPolyDecentImportCubit()
+      ..setTestState(
+        _readyState().copyWith(
+          groupHandling: DecentSamplerGroupHandling.selectedTags,
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpDialogButton(tester, cubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel('Select soft, 2 samples, C4 - D4'),
+      findsOneWidget,
+    );
+    final node = tester.getSemantics(
+      find.bySemanticsLabel('Select soft, 2 samples, C4 - D4'),
+    );
+    final data = node.getSemanticsData();
+    expect(data.hasAction(SemanticsAction.tap), isTrue);
+
+    await tester.ensureVisible(
+      find.bySemanticsLabel('Select soft, 2 samples, C4 - D4'),
+    );
+    await tester.tap(find.bySemanticsLabel('Select soft, 2 samples, C4 - D4'));
+    await tester.pumpAndSettle();
+
+    expect(cubit.state.selectedTagKeys, contains('tag:soft'));
+
+    semantics.dispose();
+  });
+
+  testWidgets('cancel stops an active Decent preview', (tester) async {
+    final cubit = _TestPolyDecentImportCubit()
+      ..setTestState(
+        _readyState().copyWith(
+          groupHandling: DecentSamplerGroupHandling.velocityLayers,
+        ),
+      );
+    addTearDown(cubit.close);
+    final adapter = _FakePreviewAdapter();
+    final previewCubit = PolyMultisampleBuilderCubit(
+      previewService: PolyAudioPreviewService(adapter: adapter),
+    );
+    addTearDown(previewCubit.close);
+
+    await _pumpDialogButton(tester, cubit, previewCubit: previewCubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await _startSoftPreview(tester);
+
+    expect(adapter.playedPaths, ['soft_c4.wav']);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(adapter.stopCount, 1);
+    expect(find.text('Import Decent Sampler'), findsNothing);
+  });
+
+  testWidgets('route dismissal stops an active Decent preview', (tester) async {
+    final cubit = _TestPolyDecentImportCubit()
+      ..setTestState(
+        _readyState().copyWith(
+          groupHandling: DecentSamplerGroupHandling.velocityLayers,
+        ),
+      );
+    addTearDown(cubit.close);
+    final adapter = _FakePreviewAdapter();
+    final previewCubit = PolyMultisampleBuilderCubit(
+      previewService: PolyAudioPreviewService(adapter: adapter),
+    );
+    addTearDown(previewCubit.close);
+
+    await _pumpDialogButton(tester, cubit, previewCubit: previewCubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await _startSoftPreview(tester);
+
+    await (tester.state(find.byType(Navigator)) as NavigatorState).maybePop();
+    await tester.pumpAndSettle();
+
+    expect(adapter.stopCount, 1);
+    expect(find.text('Import Decent Sampler'), findsNothing);
+  });
+
+  testWidgets('failed import stops an active Decent preview', (tester) async {
+    final cubit = _FailingPolyDecentImportCubit()
+      ..setTestState(
+        _readyState().copyWith(
+          groupHandling: DecentSamplerGroupHandling.velocityLayers,
+        ),
+      );
+    addTearDown(cubit.close);
+    final adapter = _FakePreviewAdapter();
+    final previewCubit = PolyMultisampleBuilderCubit(
+      previewService: PolyAudioPreviewService(adapter: adapter),
+    );
+    addTearDown(previewCubit.close);
+
+    await _pumpDialogButton(tester, cubit, previewCubit: previewCubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await _startSoftPreview(tester);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Import'));
+    await tester.pumpAndSettle();
+
+    expect(adapter.stopCount, 1);
+    expect(find.text('Import Decent Sampler'), findsOneWidget);
+  });
+}
+
+Future<void> _startSoftPreview(WidgetTester tester) async {
+  await tester.ensureVisible(find.byTooltip('Preview sample: Soft'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byTooltip('Preview sample: Soft'));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpDialogButton(
   WidgetTester tester,
-  PolyDecentImportCubit cubit,
-) async {
+  PolyDecentImportCubit cubit, {
+  PolyMultisampleBuilderCubit? previewCubit,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
@@ -75,6 +344,7 @@ Future<void> _pumpDialogButton(
                   context,
                   sourcePath: '/tmp/Layered.dspreset',
                   cubit: cubit,
+                  previewCubit: previewCubit,
                 );
               },
               child: const Text('Open'),
@@ -153,6 +423,7 @@ DecentSamplerImportAnalysis _analysis() {
         defaultRootMidi: 60,
         defaultHighMidi: 61,
         defaultVelocityLayer: 1,
+        previewSourcePath: 'soft_c4.wav',
       ),
       DecentSamplerGroupInfo(
         key: 'group:hard',
@@ -169,6 +440,7 @@ DecentSamplerImportAnalysis _analysis() {
         defaultRootMidi: 62,
         defaultHighMidi: 63,
         defaultVelocityLayer: 1,
+        previewSourcePath: 'hard_e4.wav',
       ),
     ],
     tags: [
@@ -187,6 +459,7 @@ DecentSamplerImportAnalysis _analysis() {
         defaultRootMidi: 60,
         defaultHighMidi: 61,
         defaultVelocityLayer: 1,
+        previewSourcePath: 'soft_c4.wav',
       ),
       DecentSamplerTag(
         key: 'tag:hard',
@@ -203,6 +476,7 @@ DecentSamplerImportAnalysis _analysis() {
         defaultRootMidi: 62,
         defaultHighMidi: 63,
         defaultVelocityLayer: 1,
+        previewSourcePath: 'hard_e4.wav',
       ),
     ],
     hasAmbiguousOverlaps: false,
@@ -212,7 +486,67 @@ DecentSamplerImportAnalysis _analysis() {
 }
 
 class _TestPolyDecentImportCubit extends PolyDecentImportCubit {
+  _TestPolyDecentImportCubit({super.importService});
+
   void setTestState(PolyDecentImportState state) {
     emit(state);
   }
+}
+
+class _DelayedImportService extends PolySampleImportService {
+  final _completer = Completer<PolyStagedImport>();
+  DecentSamplerConvertOptions? lastOptions;
+
+  @override
+  Future<PolyStagedImport> stageDecentSource(
+    String path, {
+    DecentSamplerConvertOptions options = const DecentSamplerConvertOptions(),
+    String? outputParentPath,
+  }) {
+    lastOptions = options;
+    return _completer.future;
+  }
+
+  void complete() {
+    _completer.complete(
+      const PolyStagedImport(
+        name: 'Layered',
+        sourceLabel: '/tmp/Layered.dspreset',
+        regions: [],
+      ),
+    );
+  }
+}
+
+class _FailingPolyDecentImportCubit extends _TestPolyDecentImportCubit {
+  @override
+  Future<void> continueImport() async {
+    emit(
+      state.copyWith(
+        status: PolyDecentImportStatus.failure,
+        error: 'Import failed.',
+      ),
+    );
+  }
+}
+
+class _FakePreviewAdapter implements PolyAudioPreviewAdapter {
+  final playedPaths = <String>[];
+  var stopCount = 0;
+
+  @override
+  Stream<void> get completed => const Stream.empty();
+
+  @override
+  Future<void> play(String path, {required double volume}) async {
+    playedPaths.add(path);
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCount++;
+  }
+
+  @override
+  Future<void> dispose() async {}
 }

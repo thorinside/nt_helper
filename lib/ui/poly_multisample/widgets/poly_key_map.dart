@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
@@ -27,6 +28,7 @@ class PolyKeyMap extends StatefulWidget {
 class _PolyKeyMapState extends State<PolyKeyMap> {
   final ScrollController _scrollController = ScrollController();
   String? _pendingAutoScrollPath;
+  String? _focusedRegionPath;
 
   @override
   void initState() {
@@ -92,6 +94,64 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     });
   }
 
+  List<Widget> _regionSemanticTargets(
+    Size canvasSize,
+    int minMidi,
+    int maxMidi,
+  ) {
+    final layout = _PolyKeyMapLayout(canvasSize, velocityLanes(widget.regions));
+    final span = math.max(1, maxMidi - minMidi + 1);
+    return [
+      for (final region in widget.regions.where(
+        (region) => region.rootMidi != null,
+      ))
+        Positioned.fromRect(
+          rect: _regionRect(region, layout, span, minMidi, widget.regions),
+          child: FocusableActionDetector(
+            mouseCursor: SystemMouseCursors.click,
+            shortcuts: const {
+              SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+              SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+            },
+            actions: {
+              ActivateIntent: CallbackAction<ActivateIntent>(
+                onInvoke: (_) {
+                  widget.onSelect(region);
+                  return null;
+                },
+              ),
+            },
+            onFocusChange: (focused) {
+              setState(() {
+                _focusedRegionPath = focused ? region.path : null;
+              });
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => widget.onSelect(region),
+              child: Semantics(
+                button: true,
+                selected: region.path == widget.selectedPath,
+                label: _regionSemanticLabel(region, widget.regions),
+                onTap: () => widget.onSelect(region),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _focusedRegionPath == region.path
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+          ),
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final mappedCount = widget.regions
@@ -121,28 +181,35 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
                 child: SizedBox(
                   width: canvasWidth,
                   height: canvasSize.height,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTapUp: (details) {
-                      final region = _regionAtPosition(
-                        details.localPosition,
-                        canvasSize,
-                        widget.regions,
-                        minMidi,
-                        maxMidi,
-                      );
-                      if (region != null) widget.onSelect(region);
-                    },
-                    child: CustomPaint(
-                      painter: _PolyKeyMapPainter(
-                        regions: widget.regions,
-                        selectedPath: widget.selectedPath,
-                        minMidi: minMidi,
-                        maxMidi: maxMidi,
-                        colorScheme: Theme.of(context).colorScheme,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapUp: (details) {
+                            final region = _regionAtPosition(
+                              details.localPosition,
+                              canvasSize,
+                              widget.regions,
+                              minMidi,
+                              maxMidi,
+                            );
+                            if (region != null) widget.onSelect(region);
+                          },
+                          child: CustomPaint(
+                            painter: _PolyKeyMapPainter(
+                              regions: widget.regions,
+                              selectedPath: widget.selectedPath,
+                              minMidi: minMidi,
+                              maxMidi: maxMidi,
+                              colorScheme: Theme.of(context).colorScheme,
+                            ),
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
                       ),
-                      child: const SizedBox.expand(),
-                    ),
+                      ..._regionSemanticTargets(canvasSize, minMidi, maxMidi),
+                    ],
                   ),
                 ),
               ),
@@ -152,6 +219,45 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
       ),
     );
   }
+}
+
+Rect _regionRect(
+  PolySampleRegion region,
+  _PolyKeyMapLayout layout,
+  int span,
+  int minMidi,
+  List<PolySampleRegion> regions,
+) {
+  final laneIndex = layout.lanes.indexOf(region.velocityLayer ?? 1);
+  final lane = laneIndex < 0 ? 0 : laneIndex;
+  final x0 =
+      layout.left + ((effectiveLow(region) - minMidi) / span) * layout.width;
+  final x1 =
+      layout.left +
+      ((effectiveHigh(region, regions) + 1 - minMidi) / span) * layout.width;
+  final y0 = layout.zoneTop + lane * layout.laneHeight;
+  return Rect.fromLTWH(
+    x0 + 1,
+    y0 + 2,
+    math.max(1, x1 - x0 - 2),
+    math.max(1, layout.laneHeight - 4),
+  );
+}
+
+String _regionSemanticLabel(
+  PolySampleRegion region,
+  List<PolySampleRegion> regions,
+) {
+  final root = region.rootMidi == null
+      ? 'unset'
+      : region.rootName ??
+            PolyMultisampleParser.midiToNoteName(region.rootMidi!);
+  return [
+    sampleDisplayLabel(region, regions),
+    'root $root',
+    'range ${PolyMultisampleParser.midiToNoteName(effectiveLow(region))} to ${PolyMultisampleParser.midiToNoteName(effectiveHigh(region, regions))}',
+    'velocity ${region.velocityLayer ?? 1}',
+  ].join(', ');
 }
 
 PolySampleRegion? _regionAtPosition(

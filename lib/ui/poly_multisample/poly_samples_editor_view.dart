@@ -81,96 +81,119 @@ class _Toolbar extends StatelessWidget {
     final draftMode =
         state.sourceMode == PolySampleSourceMode.importDraft ||
         state.sourceMode == PolySampleSourceMode.customDraft;
+    final canSaveMappingChanges =
+        !state.hasWaveformDrafts && state.hasRegionChanges;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            tooltip: 'Back to sample sources',
-            onPressed: onBackToSources,
-            icon: const Icon(Icons.arrow_back),
-          ),
-          Semantics(
-            header: true,
-            child: Text(
-              instrument.name,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          Text('${instrument.regions.length} samples'),
-          Text('${instrument.mappedCount} mapped'),
-          if (instrument.warningCount > 0)
-            Text('${instrument.warningCount} warnings'),
-          if (state.isDirty) const Chip(label: Text('Unsaved changes')),
-          if (draftMode)
-            FilledButton.icon(
-              onPressed: state.editedRegions.isNotEmpty && !saving
-                  ? onSaveAs
-                  : null,
-              icon: const Icon(Icons.save_as),
-              label: const Text('Save As…'),
-            )
-          else
-            FilledButton.icon(
-              onPressed: state.isDirty && !applying
-                  ? () => cubit.applyChanges(manager)
-                  : null,
-              icon: applying
-                  ? const SizedBox.square(
-                      dimension: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check),
-              label: const Text('Apply'),
-            ),
-          TextButton.icon(
-            onPressed: state.isDirty ? cubit.discardChanges : null,
-            icon: const Icon(Icons.undo),
-            label: const Text('Discard'),
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'More sample actions',
-            icon: const Icon(Icons.more_horiz),
-            onSelected: (value) {
-              switch (value) {
-                case 'add_files':
-                  onAddFiles();
-                  break;
-                case 'add_folder':
-                  onAddFolder();
-                  break;
-                case 'remove_selected':
-                  cubit.removeSelectedRegions();
-                  break;
-                case 'clear_all':
-                  cubit.clearDraft();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'add_files',
-                child: Text('Add files…'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Tooltip(
+                message: 'Back to sample sources',
+                child: OutlinedButton.icon(
+                  onPressed: onBackToSources,
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Sources'),
+                ),
               ),
-              const PopupMenuItem(
-                value: 'add_folder',
-                child: Text('Add folder…'),
+              Semantics(
+                header: true,
+                child: Text(
+                  instrument.name,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
-              PopupMenuItem(
-                value: 'remove_selected',
-                enabled: state.selectedPaths.isNotEmpty,
-                child: const Text('Remove selected'),
+              Text('${instrument.regions.length} samples'),
+              Text('${instrument.mappedCount} mapped'),
+              if (instrument.warningCount > 0)
+                Text('${instrument.warningCount} warnings'),
+              if (state.isDirty) const Chip(label: Text('Unsaved changes')),
+              if (draftMode)
+                FilledButton.icon(
+                  onPressed:
+                      state.editedRegions.isNotEmpty &&
+                          !state.hasWaveformDrafts &&
+                          !saving
+                      ? onSaveAs
+                      : null,
+                  icon: const Icon(Icons.save_as),
+                  label: const Text('Save As…'),
+                )
+              else
+                FilledButton.icon(
+                  onPressed: canSaveMappingChanges && !applying
+                      ? () => cubit.applyChanges(manager)
+                      : null,
+                  icon: applying
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check),
+                  label: const Text('Apply'),
+                ),
+              TextButton.icon(
+                onPressed: state.isDirty ? cubit.discardChanges : null,
+                icon: const Icon(Icons.undo),
+                label: const Text('Discard'),
               ),
-              PopupMenuItem(
-                value: 'clear_all',
-                enabled: state.editedRegions.isNotEmpty,
-                child: const Text('Clear all'),
+              PopupMenuButton<String>(
+                tooltip: 'More sample actions',
+                icon: const Icon(Icons.more_horiz),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'add_files':
+                      onAddFiles();
+                      break;
+                    case 'add_folder':
+                      onAddFolder();
+                      break;
+                    case 'remove_selected':
+                      cubit.removeSelectedRegions();
+                      break;
+                    case 'clear_all':
+                      cubit.clearDraft();
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'add_files',
+                    child: Text('Add files…'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'add_folder',
+                    child: Text('Add folder…'),
+                  ),
+                  PopupMenuItem(
+                    value: 'remove_selected',
+                    enabled: state.selectedPaths.isNotEmpty,
+                    child: const Text('Remove selected'),
+                  ),
+                  PopupMenuItem(
+                    value: 'clear_all',
+                    enabled: state.editedRegions.isNotEmpty,
+                    child: const Text('Clear all'),
+                  ),
+                ],
               ),
             ],
           ),
+          if (state.hasWaveformDrafts) ...[
+            const SizedBox(height: 8),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                'Save or discard waveform edits before applying or saving this sample set.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -192,15 +215,19 @@ class _EditorBody extends StatelessWidget {
         final keyMap = PolyKeyMap(
           regions: state.editedRegions,
           selectedPath: selected?.path,
-          onSelect: (region) =>
-              cubit.selectRegion(region.path, PolyRegionSelectionMode.replace),
+          onSelect: (region) => cubit.selectRegion(
+            region.path,
+            PolyRegionSelectionMode.replace,
+            manager: manager,
+          ),
         );
         final sampleList = PolySampleList(
           regions: state.editedRegions,
           selectedPaths: state.selectedPaths,
           focusedPath: state.focusedPath,
           previewVisiblePath: state.previewState.visiblePath,
-          onSelect: cubit.selectRegion,
+          onSelect: (path, mode) =>
+              cubit.selectRegion(path, mode, manager: manager),
           onPreview: (path) => cubit.playOrStopPreview(path, manager: manager),
         );
         final inspector = PolySampleInspector(state: state, manager: manager);
@@ -228,6 +255,7 @@ class _EditorBody extends StatelessWidget {
               onSelect: (region) => cubit.selectRegion(
                 region.path,
                 PolyRegionSelectionMode.replace,
+                manager: manager,
               ),
             ),
             Expanded(flex: 3, child: sampleList),

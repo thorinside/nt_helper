@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ Future<PolyStagedImport?> showPolyDecentImportDialog(
 }) {
   return showDialog<PolyStagedImport>(
     context: context,
+    barrierDismissible: false,
     builder: (context) {
       final provided = cubit;
       if (provided != null) {
@@ -43,39 +45,58 @@ class _PolyDecentImportDialog extends StatelessWidget {
     return BlocBuilder<PolyDecentImportCubit, PolyDecentImportState>(
       builder: (context, state) {
         final cubit = context.read<PolyDecentImportCubit>();
-        return AlertDialog(
-          title: const Text('Import Decent Sampler'),
-          content: SizedBox(
-            width: 640,
-            height: 560,
-            child: _DialogBody(
-              state: state,
-              cubit: cubit,
-              previewCubit: previewCubit,
-              colorScheme: colorScheme,
+        final busy =
+            state.status == PolyDecentImportStatus.analyzing ||
+            state.status == PolyDecentImportStatus.staging;
+        final optionsEnabled = state.status == PolyDecentImportStatus.ready;
+        return PopScope(
+          canPop: !busy,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) unawaited(previewCubit?.stopPreview());
+          },
+          child: AlertDialog(
+            title: const Text('Import Decent Sampler'),
+            content: SizedBox(
+              width: 640,
+              height: 560,
+              child: _DialogBody(
+                state: state,
+                cubit: cubit,
+                previewCubit: previewCubit,
+                colorScheme: colorScheme,
+                optionsEnabled: optionsEnabled,
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: busy
+                    ? null
+                    : () async {
+                        await previewCubit?.stopPreview();
+                        if (!context.mounted) return;
+                        Navigator.of(context).pop();
+                      },
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: busy || !state.canContinue
+                    ? null
+                    : () async {
+                        await cubit.continueImport();
+                        if (!context.mounted) return;
+                        if (cubit.state.status ==
+                            PolyDecentImportStatus.completed) {
+                          await previewCubit?.stopPreview();
+                          if (!context.mounted) return;
+                          Navigator.of(context).pop(cubit.state.stagedImport);
+                        } else {
+                          await previewCubit?.stopPreview();
+                        }
+                      },
+                child: const Text('Import'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed:
-                  state.status == PolyDecentImportStatus.staging ||
-                      !state.canContinue
-                  ? null
-                  : () async {
-                      await cubit.continueImport();
-                      if (!context.mounted) return;
-                      if (cubit.state.status ==
-                          PolyDecentImportStatus.completed) {
-                        Navigator.of(context).pop(cubit.state.stagedImport);
-                      }
-                    },
-              child: const Text('Import'),
-            ),
-          ],
         );
       },
     );
@@ -88,12 +109,14 @@ class _DialogBody extends StatelessWidget {
     required this.cubit,
     required this.previewCubit,
     required this.colorScheme,
+    required this.optionsEnabled,
   });
 
   final PolyDecentImportState state;
   final PolyDecentImportCubit cubit;
   final PolyMultisampleBuilderCubit? previewCubit;
   final ColorScheme colorScheme;
+  final bool optionsEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +137,10 @@ class _DialogBody extends StatelessWidget {
           ),
         );
       case PolyDecentImportStatus.failure:
-        return Text(state.error ?? 'Analysis failed.');
+        return Semantics(
+          liveRegion: true,
+          child: Text(state.error ?? 'Analysis failed.'),
+        );
       case PolyDecentImportStatus.ready:
       case PolyDecentImportStatus.staging:
       case PolyDecentImportStatus.completed:
@@ -124,6 +150,23 @@ class _DialogBody extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (state.status == PolyDecentImportStatus.staging) ...[
+                Semantics(
+                  container: true,
+                  liveRegion: true,
+                  label: 'Importing Decent Sampler source',
+                  child: const ExcludeSemantics(
+                    child: Row(
+                      children: [
+                        Icon(Icons.hourglass_empty, size: 18),
+                        SizedBox(width: 12),
+                        Text('Importing Decent Sampler source...'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Text(analysis.structureSummary),
               const SizedBox(height: 12),
               if (analysis.presets.length > 1) ...[
@@ -142,18 +185,24 @@ class _DialogBody extends StatelessWidget {
                       '${preset.groupCount} groups, ${preset.sampleCount} samples',
                     ),
                     value: state.selectedPresetNames.contains(preset.name),
-                    onChanged: (_) => cubit.togglePreset(preset.name),
+                    onChanged: optionsEnabled
+                        ? (_) => cubit.togglePreset(preset.name)
+                        : null,
                   ),
                 const SizedBox(height: 12),
               ],
-              Text(
-                'Group handling',
-                style: Theme.of(context).textTheme.titleSmall,
+              Semantics(
+                header: true,
+                child: Text(
+                  'Group handling',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
               ),
               RadioGroup<DecentSamplerGroupHandling>(
                 groupValue: state.groupHandling,
                 onChanged: (value) {
-                  if (value != null) cubit.setGroupHandling(value);
+                  if (!optionsEnabled || value == null) return;
+                  cubit.setGroupHandling(value);
                 },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -163,6 +212,7 @@ class _DialogBody extends StatelessWidget {
                         dense: true,
                         value: handling,
                         title: Text(_handlingLabel(handling)),
+                        enabled: optionsEnabled,
                       ),
                   ],
                 ),
@@ -173,16 +223,17 @@ class _DialogBody extends StatelessWidget {
                 analysis: analysis,
                 cubit: cubit,
                 previewCubit: previewCubit,
+                enabled: optionsEnabled,
               ),
               SwitchListTile(
                 title: const Text('Preserve XML mapping'),
                 value: state.preserveXmlMapping,
-                onChanged: cubit.setPreserveXmlMapping,
+                onChanged: optionsEnabled ? cubit.setPreserveXmlMapping : null,
               ),
               SwitchListTile(
                 title: const Text('Include unmapped samples'),
                 value: state.addUnmapped,
-                onChanged: cubit.setAddUnmapped,
+                onChanged: optionsEnabled ? cubit.setAddUnmapped : null,
               ),
               if (state.warnings.isNotEmpty)
                 Semantics(
@@ -211,12 +262,14 @@ class _ModeEditor extends StatelessWidget {
     required this.analysis,
     required this.cubit,
     required this.previewCubit,
+    required this.enabled,
   });
 
   final PolyDecentImportState state;
   final DecentSamplerImportAnalysis analysis;
   final PolyDecentImportCubit cubit;
   final PolyMultisampleBuilderCubit? previewCubit;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +286,7 @@ class _ModeEditor extends StatelessWidget {
                     state.groupVelocityLayers[group.key] ??
                     group.defaultVelocityLayer,
                 onChanged: (value) => cubit.setGroupVelocity(group.key, value),
+                enabled: enabled,
               ),
             ),
         ],
@@ -245,12 +299,16 @@ class _ModeEditor extends StatelessWidget {
               state: state,
               cubit: cubit,
               previewCubit: previewCubit,
+              enabled: enabled,
             ),
         ],
       ),
       DecentSamplerGroupHandling.selectedGroup => RadioGroup<String?>(
         groupValue: state.selectedGroupKey,
-        onChanged: cubit.setSelectedGroup,
+        onChanged: (value) {
+          if (!enabled) return;
+          cubit.setSelectedGroup(value);
+        },
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -260,11 +318,11 @@ class _ModeEditor extends StatelessWidget {
                 value: group.key,
                 title: Text(group.name),
                 subtitle: Text(group.structureSummary),
+                enabled: enabled,
               ),
           ],
         ),
       ),
-      DecentSamplerGroupHandling.selectedTags ||
       DecentSamplerGroupHandling.tagMapping => Column(
         children: [
           for (final tag in analysis.tags)
@@ -273,6 +331,19 @@ class _ModeEditor extends StatelessWidget {
               state: state,
               cubit: cubit,
               previewCubit: previewCubit,
+              enabled: enabled,
+            ),
+        ],
+      ),
+      DecentSamplerGroupHandling.selectedTags => Column(
+        children: [
+          for (final tag in analysis.tags)
+            _TagRow(
+              tag: tag,
+              state: state,
+              cubit: cubit,
+              previewCubit: previewCubit,
+              enabled: enabled,
             ),
         ],
       ),
@@ -303,6 +374,7 @@ class _GroupRow extends StatelessWidget {
         Expanded(child: Text(group.name)),
         _PreviewButton(
           path: group.previewSourcePath,
+          label: group.name,
           previewCubit: previewCubit,
         ),
         trailing,
@@ -317,12 +389,14 @@ class _GroupRangeRow extends StatelessWidget {
     required this.state,
     required this.cubit,
     required this.previewCubit,
+    required this.enabled,
   });
 
   final DecentSamplerGroupInfo group;
   final PolyDecentImportState state;
   final PolyDecentImportCubit cubit;
   final PolyMultisampleBuilderCubit? previewCubit;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -338,16 +412,23 @@ class _GroupRangeRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Checkbox(
-              value: range.enabled,
-              onChanged: (enabled) => cubit.updateGroupRange(
-                group.key,
-                _rangeWith(range, enabled: enabled ?? true),
+            Semantics(
+              label: 'Enable ${group.name}',
+              checked: range.enabled,
+              child: Checkbox(
+                value: range.enabled,
+                onChanged: enabled
+                    ? (checked) => cubit.updateGroupRange(
+                        group.key,
+                        _rangeWith(range, enabled: checked ?? true),
+                      )
+                    : null,
               ),
             ),
             Expanded(child: Text(group.name)),
             _PreviewButton(
               path: group.previewSourcePath,
+              label: group.name,
               previewCubit: previewCubit,
             ),
           ],
@@ -362,6 +443,7 @@ class _GroupRangeRow extends StatelessWidget {
                 group.key,
                 _rangeWith(range, lowMidi: value),
               ),
+              enabled: enabled,
             ),
             _NoteStepper(
               label: 'Root',
@@ -370,6 +452,7 @@ class _GroupRangeRow extends StatelessWidget {
                 group.key,
                 _rangeWith(range, rootMidi: value),
               ),
+              enabled: enabled,
             ),
             _NoteStepper(
               label: 'High',
@@ -378,11 +461,13 @@ class _GroupRangeRow extends StatelessWidget {
                 group.key,
                 _rangeWith(range, highMidi: value),
               ),
+              enabled: enabled,
             ),
             _IntStepper(
               label: 'RR',
               value: state.groupRoundRobins[group.key] ?? 1,
               onChanged: (value) => cubit.setGroupRoundRobin(group.key, value),
+              enabled: enabled,
             ),
           ],
         ),
@@ -397,12 +482,14 @@ class _TagRow extends StatelessWidget {
     required this.state,
     required this.cubit,
     required this.previewCubit,
+    required this.enabled,
   });
 
   final DecentSamplerTag tag;
   final PolyDecentImportState state;
   final PolyDecentImportCubit cubit;
   final PolyMultisampleBuilderCubit? previewCubit;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -417,19 +504,54 @@ class _TagRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CheckboxListTile(
-          dense: true,
-          title: Text(tag.label),
-          subtitle: Text('${tag.sampleCount} samples  ${tag.noteRange}'),
-          value: selected,
-          secondary: _PreviewButton(
-            path: tag.previewSourcePath,
-            previewCubit: previewCubit,
-          ),
-          onChanged: (_) => cubit.toggleTag(tag.key),
+        Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                label:
+                    'Select ${tag.label}, ${tag.sampleCount} samples, ${tag.noteRange}',
+                checked: selected,
+                button: true,
+                onTap: enabled ? () => cubit.toggleTag(tag.key) : null,
+                child: ExcludeSemantics(
+                  child: InkWell(
+                    onTap: enabled ? () => cubit.toggleTag(tag.key) : null,
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: selected,
+                          onChanged: enabled
+                              ? (_) => cubit.toggleTag(tag.key)
+                              : null,
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(tag.label),
+                              Text(
+                                '${tag.sampleCount} samples  ${tag.noteRange}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            _PreviewButton(
+              path: tag.previewSourcePath,
+              label: tag.label,
+              previewCubit: previewCubit,
+            ),
+          ],
         ),
         if (selected &&
-            state.groupHandling == DecentSamplerGroupHandling.selectedTags)
+            (state.groupHandling == DecentSamplerGroupHandling.selectedTags ||
+                state.groupHandling == DecentSamplerGroupHandling.tagMapping))
           Padding(
             padding: const EdgeInsets.only(left: 32),
             child: Wrap(
@@ -442,6 +564,7 @@ class _TagRow extends StatelessWidget {
                     tag.key,
                     _rangeWith(range, lowMidi: value),
                   ),
+                  enabled: enabled,
                 ),
                 _NoteStepper(
                   label: 'Root',
@@ -450,6 +573,7 @@ class _TagRow extends StatelessWidget {
                     tag.key,
                     _rangeWith(range, rootMidi: value),
                   ),
+                  enabled: enabled,
                 ),
                 _NoteStepper(
                   label: 'High',
@@ -458,6 +582,7 @@ class _TagRow extends StatelessWidget {
                     tag.key,
                     _rangeWith(range, highMidi: value),
                   ),
+                  enabled: enabled,
                 ),
                 _IntStepper(
                   label: 'Velocity',
@@ -465,11 +590,13 @@ class _TagRow extends StatelessWidget {
                       state.tagVelocityLayers[tag.key] ??
                       tag.defaultVelocityLayer,
                   onChanged: (value) => cubit.setTagVelocity(tag.key, value),
+                  enabled: enabled,
                 ),
                 _IntStepper(
                   label: 'RR',
                   value: state.tagRoundRobins[tag.key] ?? 1,
                   onChanged: (value) => cubit.setTagRoundRobin(tag.key, value),
+                  enabled: enabled,
                 ),
               ],
             ),
@@ -480,9 +607,14 @@ class _TagRow extends StatelessWidget {
 }
 
 class _PreviewButton extends StatelessWidget {
-  const _PreviewButton({required this.path, required this.previewCubit});
+  const _PreviewButton({
+    required this.path,
+    required this.label,
+    required this.previewCubit,
+  });
 
   final String? path;
+  final String label;
   final PolyMultisampleBuilderCubit? previewCubit;
 
   @override
@@ -490,11 +622,24 @@ class _PreviewButton extends StatelessWidget {
     final cubit = previewCubit;
     final samplePath = path;
     if (cubit == null || samplePath == null) return const SizedBox.shrink();
-    final playing = cubit.state.previewState.visiblePath == samplePath;
-    return IconButton(
-      tooltip: playing ? 'Stop preview' : 'Preview sample',
-      icon: Icon(playing ? Icons.stop : Icons.play_arrow),
-      onPressed: () => cubit.playOrStopPreview(samplePath),
+    return BlocBuilder<
+      PolyMultisampleBuilderCubit,
+      PolyMultisampleBuilderState
+    >(
+      bloc: cubit,
+      buildWhen: (previous, current) {
+        return previous.previewState.visiblePath !=
+            current.previewState.visiblePath;
+      },
+      builder: (context, state) {
+        final playing = state.previewState.visiblePath == samplePath;
+        final action = playing ? 'Stop preview' : 'Preview sample';
+        return IconButton(
+          tooltip: '$action: $label',
+          icon: Icon(playing ? Icons.stop : Icons.play_arrow),
+          onPressed: () => cubit.playOrStopPreview(samplePath),
+        );
+      },
     );
   }
 }
@@ -504,11 +649,13 @@ class _NoteStepper extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final String label;
   final int value;
   final ValueChanged<int> onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -519,13 +666,17 @@ class _NoteStepper extends StatelessWidget {
         IconButton(
           tooltip: 'Decrease $label',
           visualDensity: VisualDensity.compact,
-          onPressed: () => onChanged((value - 1).clamp(0, 127).toInt()),
+          onPressed: enabled
+              ? () => onChanged((value - 1).clamp(0, 127).toInt())
+              : null,
           icon: const Icon(Icons.remove, size: 18),
         ),
         IconButton(
           tooltip: 'Increase $label',
           visualDensity: VisualDensity.compact,
-          onPressed: () => onChanged((value + 1).clamp(0, 127).toInt()),
+          onPressed: enabled
+              ? () => onChanged((value + 1).clamp(0, 127).toInt())
+              : null,
           icon: const Icon(Icons.add, size: 18),
         ),
       ],
@@ -538,11 +689,13 @@ class _IntStepper extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final String label;
   final int value;
   final ValueChanged<int> onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -553,13 +706,13 @@ class _IntStepper extends StatelessWidget {
         IconButton(
           tooltip: 'Decrease $label',
           visualDensity: VisualDensity.compact,
-          onPressed: () => onChanged(math.max(1, value - 1)),
+          onPressed: enabled ? () => onChanged(math.max(1, value - 1)) : null,
           icon: const Icon(Icons.remove, size: 18),
         ),
         IconButton(
           tooltip: 'Increase $label',
           visualDensity: VisualDensity.compact,
-          onPressed: () => onChanged(value + 1),
+          onPressed: enabled ? () => onChanged(value + 1) : null,
           icon: const Icon(Icons.add, size: 18),
         ),
       ],

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -100,6 +102,34 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('hardware folder list back returns to source cards', (
+      tester,
+    ) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.hardware,
+          status: PolyMultisampleLoadStatus.ready,
+          hardwareFolders: ['/samples/Piano'],
+        ),
+      );
+
+      await _pumpView(tester, cubit, distingCubit);
+
+      expect(find.text('/samples/Piano'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Back to sample sources'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Build or edit a Disting NT multisample folder'),
+        findsOneWidget,
+      );
+      expect(cubit.state.hardwareFolders, isEmpty);
+      expect(cubit.state.sourceMode, PolySampleSourceMode.none);
+    });
+
     testWidgets('shows landing source cards', (tester) async {
       final cubit = _TestPolyMultisampleBuilderCubit();
       addTearDown(cubit.close);
@@ -137,6 +167,60 @@ void main() {
       );
       expect(cubit.state.currentInstrument, isNull);
       semantics.dispose();
+    });
+
+    testWidgets('dirty editor back asks before returning to sources', (
+      tester,
+    ) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(_pianoState(dirty: true));
+
+      await _pumpView(tester, cubit, distingCubit);
+
+      await tester.tap(find.byTooltip('Back to sample sources'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discard changes?'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.currentInstrument, isNotNull);
+      expect(find.text('Samples'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Back to sample sources'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Discard'));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.currentInstrument, isNull);
+      expect(
+        find.text('Build or edit a Disting NT multisample folder'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('waveform drafts ask before returning to sources', (
+      tester,
+    ) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        _pianoState().copyWith(
+          wavEditDrafts: const {
+            '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(trimStart: 10),
+          },
+        ),
+      );
+
+      await _pumpView(tester, cubit, distingCubit);
+
+      await tester.tap(find.byTooltip('Back to sample sources'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discard changes?'), findsOneWidget);
+      expect(cubit.state.currentInstrument, isNotNull);
     });
 
     testWidgets('pop is guarded while dirty', (tester) async {
@@ -179,6 +263,205 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Samples'), findsOneWidget);
+
+      await (tester.state(find.byType(Navigator)) as NavigatorState).maybePop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Discard'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('Samples'), findsNothing);
+    });
+
+    testWidgets('pop discard exits from a non-dirty import draft', (
+      tester,
+    ) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        _pianoState().copyWith(sourceMode: PolySampleSourceMode.importDraft),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) {
+                        return BlocProvider<PolyMultisampleBuilderCubit>.value(
+                          value: cubit,
+                          child: PolySamplesView(distingCubit: distingCubit),
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await (tester.state(find.byType(Navigator)) as NavigatorState).maybePop();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discard changes?'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Discard'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('Samples'), findsNothing);
+    });
+
+    testWidgets('save as can create a new output folder', (tester) async {
+      final tempRoot = Directory.systemTemp.createTempSync(
+        'poly_samples_save_as_test_',
+      );
+      addTearDown(() {
+        if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+      });
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        _pianoState().copyWith(sourceMode: PolySampleSourceMode.customDraft),
+      );
+
+      await _pumpView(tester, cubit, distingCubit);
+      await tester.tap(find.text('Save As…'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Parent folder'),
+        tempRoot.path,
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'New or existing folder name'),
+        'CreatedSamples',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      final expectedPath = '${tempRoot.path}/CreatedSamples';
+      expect(Directory(expectedPath).existsSync(), isTrue);
+      expect(cubit.savedCustomDraftPath, expectedPath);
+    });
+
+    testWidgets('save as defaults local folder parent to sibling folder', (
+      tester,
+    ) async {
+      final tempRoot = Directory.systemTemp.createTempSync(
+        'poly_samples_save_as_parent_test_',
+      );
+      addTearDown(() {
+        if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+      });
+      final sourceFolder = Directory('${tempRoot.path}/Piano')
+        ..createSync(recursive: true);
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        _pianoState().copyWith(
+          sourceMode: PolySampleSourceMode.customDraft,
+          lastLocalFolder: sourceFolder.path,
+        ),
+      );
+
+      await _pumpView(tester, cubit, distingCubit);
+      await tester.tap(find.text('Save As…'));
+      await tester.pumpAndSettle();
+
+      final parentField = tester.widget<TextFormField>(
+        find.widgetWithText(TextFormField, 'Parent folder'),
+      );
+      expect(parentField.controller!.text, tempRoot.path);
+    });
+
+    testWidgets('save as shows folder creation errors inline', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final tempRoot = Directory.systemTemp.createTempSync(
+        'poly_samples_save_as_error_test_',
+      );
+      addTearDown(() {
+        if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+      });
+      try {
+        File('${tempRoot.path}/ExistingFile').writeAsStringSync('not a folder');
+        final cubit = _TestPolyMultisampleBuilderCubit();
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          _pianoState().copyWith(sourceMode: PolySampleSourceMode.customDraft),
+        );
+
+        await _pumpView(tester, cubit, distingCubit);
+        await tester.tap(find.text('Save As…'));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Parent folder'),
+          tempRoot.path,
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'New or existing folder name'),
+          'ExistingFile',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Could not create folder:'),
+          findsAtLeastNWidgets(1),
+        );
+        expect(
+          find.bySemanticsLabel(RegExp(r'Folder creation failed: .*')),
+          findsOneWidget,
+        );
+        expect(find.text('Save samples as folder'), findsOneWidget);
+        expect(cubit.savedCustomDraftPath, isNull);
+      } finally {
+        semantics.dispose();
+      }
+    });
+
+    testWidgets('save as rejects relative folder names', (tester) async {
+      final tempRoot = Directory.systemTemp.createTempSync(
+        'poly_samples_save_as_relative_test_',
+      );
+      addTearDown(() {
+        if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+      });
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        _pianoState().copyWith(sourceMode: PolySampleSourceMode.customDraft),
+      );
+
+      await _pumpView(tester, cubit, distingCubit);
+      await tester.tap(find.text('Save As…'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Parent folder'),
+        tempRoot.path,
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'New or existing folder name'),
+        '..',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Enter a folder name, not a relative path.'),
+        findsOneWidget,
+      );
+      expect(cubit.savedCustomDraftPath, isNull);
     });
   });
 }
@@ -255,8 +538,15 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
         previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
       );
 
+  String? savedCustomDraftPath;
+
   void setTestState(PolyMultisampleBuilderState state) {
     emit(state);
+  }
+
+  @override
+  Future<void> saveCustomDraft(String outputFolderPath) async {
+    savedCustomDraftPath = outputFolderPath;
   }
 }
 

@@ -1303,6 +1303,128 @@ void main() {
       expect(result.warnings, isEmpty);
     });
 
+    test('remapped tag key ranges keep round robin suffixes', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'decent_converter_remapped_rr_test_',
+      );
+      addTearDown(() async {
+        if (await tempDir.exists()) await tempDir.delete(recursive: true);
+      });
+
+      await _writeDummyWavs(tempDir, [
+        'Samples/take_1_c4.wav',
+        'Samples/take_2_c4.wav',
+      ]);
+      final preset = File('${tempDir.path}/Remapped RR.dspreset');
+      await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group name="Take" tags="Take">
+      <sample path="Samples/take_1_c4.wav" rootNote="C4" loNote="C4" hiNote="C4" seqPosition="1"/>
+      <sample path="Samples/take_2_c4.wav" rootNote="C4" loNote="C4" hiNote="C4" seqPosition="2"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+      final converter = DecentSamplerConverter();
+      final analysis = await converter.analyze(sourcePath: preset.path);
+      final tagKey = analysis.tags.single.key;
+
+      final result = await converter.convert(
+        sourcePath: preset.path,
+        outputParentPath: '${tempDir.path}/out',
+        options: DecentSamplerConvertOptions(
+          groupHandling: DecentSamplerGroupHandling.tagMapping,
+          selectedTagKeys: [tagKey],
+          tagKeyRanges: {
+            tagKey: const DecentSamplerTagKeyRange(
+              lowMidi: 48,
+              rootMidi: 48,
+              highMidi: 48,
+            ),
+          },
+          preserveXmlMapping: true,
+        ),
+      );
+
+      final outputFiles =
+          await Directory(result.outputFolders.single)
+                .list()
+                .where(
+                  (entity) => entity is File && entity.path.endsWith('.wav'),
+                )
+                .map((entity) => entity.uri.pathSegments.last)
+                .toList()
+            ..sort();
+
+      expect(outputFiles, ['Remapped_RR_C3_RR1.wav', 'Remapped_RR_C3_RR2.wav']);
+      expect(result.warnings, isEmpty);
+    });
+
+    test('remapped tag key ranges keep velocity suffixes', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'decent_converter_remapped_velocity_test_',
+      );
+      addTearDown(() async {
+        if (await tempDir.exists()) await tempDir.delete(recursive: true);
+      });
+
+      await _writeDummyWavs(tempDir, [
+        'Samples/soft_c4.wav',
+        'Samples/hard_c4.wav',
+      ]);
+      final preset = File('${tempDir.path}/Velocity Keyrange.dspreset');
+      await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group name="Take" tags="Take">
+      <sample path="Samples/soft_c4.wav" rootNote="C4" loNote="C4" hiNote="C4" loVel="1" hiVel="63"/>
+      <sample path="Samples/hard_c4.wav" rootNote="C4" loNote="C4" hiNote="C4" loVel="64" hiVel="127"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+      final converter = DecentSamplerConverter();
+      final analysis = await converter.analyze(sourcePath: preset.path);
+      final tagKey = analysis.tags.single.key;
+
+      final result = await converter.convert(
+        sourcePath: preset.path,
+        outputParentPath: '${tempDir.path}/out',
+        options: DecentSamplerConvertOptions(
+          groupHandling: DecentSamplerGroupHandling.tagMapping,
+          selectedTagKeys: [tagKey],
+          tagKeyRanges: {
+            tagKey: const DecentSamplerTagKeyRange(
+              lowMidi: 48,
+              rootMidi: 48,
+              highMidi: 48,
+            ),
+          },
+          preserveXmlMapping: true,
+        ),
+      );
+
+      final outputFiles =
+          await Directory(result.outputFolders.single)
+                .list()
+                .where(
+                  (entity) => entity is File && entity.path.endsWith('.wav'),
+                )
+                .map((entity) => entity.uri.pathSegments.last)
+                .toList()
+            ..sort();
+
+      expect(outputFiles, [
+        'Velocity_Keyrange_C3_V1.wav',
+        'Velocity_Keyrange_C3_V2.wav',
+      ]);
+      expect(result.copiedFiles, 2);
+      expect(result.warnings, isEmpty);
+    });
+
     test('single edited tag velocity keeps other selected tag layer', () async {
       final tempDir = await Directory.systemTemp.createTemp(
         'decent_converter_partial_tag_velocity_test_',
@@ -1361,6 +1483,260 @@ void main() {
       expect(result.copiedFiles, 2);
       expect(result.warnings, isEmpty);
     });
+
+    test(
+      'first edited tag velocity avoids unedited tag fallback collision',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_first_tag_velocity_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+
+        await _writeDummyWavs(tempDir, [
+          'Samples/l1_c4.wav',
+          'Samples/l2_c4.wav',
+        ]);
+        final preset = File('${tempDir.path}/First Tag Velocity.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group name="L1" tags="L1">
+      <sample path="Samples/l1_c4.wav" rootNote="C4"/>
+    </group>
+    <group name="L2" tags="L2">
+      <sample path="Samples/l2_c4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final converter = DecentSamplerConverter();
+        final analysis = await converter.analyze(sourcePath: preset.path);
+        final tagKeys = {for (final tag in analysis.tags) tag.label: tag.key};
+
+        final result = await converter.convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/out',
+          options: DecentSamplerConvertOptions(
+            groupHandling: DecentSamplerGroupHandling.tagMapping,
+            selectedTagKeys: [tagKeys['L1']!, tagKeys['L2']!],
+            tagVelocityLayers: {tagKeys['L1']!: 2},
+            preserveXmlMapping: true,
+          ),
+        );
+
+        final outputFiles =
+            await Directory(result.outputFolders.single)
+                  .list()
+                  .where(
+                    (entity) => entity is File && entity.path.endsWith('.wav'),
+                  )
+                  .map((entity) => entity.uri.pathSegments.last)
+                  .toList()
+              ..sort();
+
+        expect(outputFiles, [
+          'First_Tag_Velocity_C4_V1.wav',
+          'First_Tag_Velocity_C4_V2.wav',
+        ]);
+        expect(result.warnings, isEmpty);
+      },
+    );
+
+    test(
+      'selected tag options apply ranges, layers and round robins',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_selected_tag_options_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+
+        await _writeDummyWavs(tempDir, [
+          'Samples/l1_c4.wav',
+          'Samples/l2_c4.wav',
+        ]);
+        final preset = File('${tempDir.path}/Selected Tag Options.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group name="L1" tags="L1">
+      <sample path="Samples/l1_c4.wav" rootNote="C4"/>
+    </group>
+    <group name="L2" tags="L2">
+      <sample path="Samples/l2_c4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final converter = DecentSamplerConverter();
+        final analysis = await converter.analyze(sourcePath: preset.path);
+        final tagKeys = {for (final tag in analysis.tags) tag.label: tag.key};
+
+        final result = await converter.convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/out',
+          options: DecentSamplerConvertOptions(
+            groupHandling: DecentSamplerGroupHandling.selectedTags,
+            selectedTagKeys: [tagKeys['L1']!, tagKeys['L2']!],
+            tagVelocityLayers: {tagKeys['L2']!: 2},
+            tagRoundRobins: {tagKeys['L1']!: 3},
+            tagKeyRanges: {
+              tagKeys['L1']!: const DecentSamplerTagKeyRange(
+                lowMidi: 48,
+                rootMidi: 48,
+                highMidi: 48,
+              ),
+            },
+            preserveXmlMapping: true,
+          ),
+        );
+
+        final outputFiles =
+            await Directory(result.outputFolders.single)
+                  .list()
+                  .where(
+                    (entity) => entity is File && entity.path.endsWith('.wav'),
+                  )
+                  .map((entity) => entity.uri.pathSegments.last)
+                  .toList()
+              ..sort();
+
+        expect(outputFiles, [
+          'Selected_Tag_Options_C3_V1_RR3.wav',
+          'Selected_Tag_Options_C4_V2.wav',
+        ]);
+        expect(result.decisions.join('\n'), contains('round robins'));
+        expect(result.warnings, isEmpty);
+      },
+    );
+
+    test(
+      'explicit singleton selected tag lanes survive filename rescan',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_singleton_tag_lane_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+
+        await _writeDummyWavs(tempDir, ['Samples/l1_c4.wav']);
+        final preset = File('${tempDir.path}/Singleton Tag.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group name="L1" tags="L1">
+      <sample path="Samples/l1_c4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final converter = DecentSamplerConverter();
+        final analysis = await converter.analyze(sourcePath: preset.path);
+        final tagKey = analysis.tags.single.key;
+
+        final velocityResult = await converter.convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/velocity',
+          options: DecentSamplerConvertOptions(
+            groupHandling: DecentSamplerGroupHandling.selectedTags,
+            selectedTagKeys: [tagKey],
+            tagVelocityLayers: {tagKey: 1},
+            preserveXmlMapping: true,
+          ),
+        );
+        final roundRobinResult = await converter.convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/rr',
+          options: DecentSamplerConvertOptions(
+            groupHandling: DecentSamplerGroupHandling.selectedTags,
+            selectedTagKeys: [tagKey],
+            tagRoundRobins: {tagKey: 1},
+            preserveXmlMapping: true,
+          ),
+        );
+
+        expect(
+          await File(
+            '${velocityResult.outputFolders.single}/Singleton_Tag_C4_V1.wav',
+          ).exists(),
+          isTrue,
+        );
+        expect(
+          await File(
+            '${roundRobinResult.outputFolders.single}/Singleton_Tag_C4_RR1.wav',
+          ).exists(),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'partial group velocity selections avoid fallback collisions',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_partial_group_velocity_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+
+        await _writeDummyWavs(tempDir, [
+          'Samples/g1_c4.wav',
+          'Samples/g2_c4.wav',
+        ]);
+        final preset = File('${tempDir.path}/Partial Group Velocity.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group name="Group 1">
+      <sample path="Samples/g1_c4.wav" rootNote="C4"/>
+    </group>
+    <group name="Group 2">
+      <sample path="Samples/g2_c4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final converter = DecentSamplerConverter();
+        final analysis = await converter.analyze(sourcePath: preset.path);
+        final groupKeys = [for (final group in analysis.groups) group.key];
+
+        final result = await converter.convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/out',
+          options: DecentSamplerConvertOptions(
+            groupHandling: DecentSamplerGroupHandling.velocityLayers,
+            selectedGroupKeys: groupKeys,
+            groupVelocityLayers: {groupKeys.first: 2},
+            preserveXmlMapping: true,
+          ),
+        );
+
+        final outputFiles =
+            await Directory(result.outputFolders.single)
+                  .list()
+                  .where(
+                    (entity) => entity is File && entity.path.endsWith('.wav'),
+                  )
+                  .map((entity) => entity.uri.pathSegments.last)
+                  .toList()
+              ..sort();
+
+        expect(outputFiles, [
+          'Partial_Group_Velocity_C4_V1.wav',
+          'Partial_Group_Velocity_C4_V2.wav',
+        ]);
+        expect(result.warnings, isEmpty);
+      },
+    );
 
     test('previews raw buzz gloss without relying on label meaning', () async {
       final tempDir = await Directory.systemTemp.createTemp(

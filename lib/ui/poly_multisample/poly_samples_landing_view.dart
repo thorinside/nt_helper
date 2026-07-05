@@ -22,60 +22,67 @@ class PolySamplesLandingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Semantics(
-                header: true,
-                child: Text(
-                  'Build or edit a Disting NT multisample folder',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _SourceCard(
-                    icon: Icons.sd_storage,
-                    title: 'NT Hardware',
-                    description: 'Browse /samples on the connected module',
-                    onTap: onOpenHardware,
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      'Build or edit a Disting NT multisample folder',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  _SourceCard(
-                    icon: Icons.folder_open,
-                    title: 'Local Folder',
-                    description: 'Open a multisample folder on this computer',
-                    onTap: onOpenLocal,
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _SourceCard(
+                        icon: Icons.sd_storage,
+                        title: 'NT Hardware',
+                        description: 'Browse /samples on the connected module',
+                        onTap: onOpenHardware,
+                      ),
+                      _SourceCard(
+                        icon: Icons.folder_open,
+                        title: 'Local Folder',
+                        description:
+                            'Open a multisample folder on this computer',
+                        onTap: onOpenLocal,
+                      ),
+                      _SourceCard(
+                        icon: Icons.file_upload,
+                        title: 'Import Files',
+                        description: 'Stage WAVs or a Decent Sampler preset',
+                        onTap: onImport,
+                      ),
+                    ],
                   ),
-                  _SourceCard(
-                    icon: Icons.file_upload,
-                    title: 'Import Files',
-                    description: 'Stage WAVs or a Decent Sampler preset',
-                    onTap: onImport,
+                  const SizedBox(height: 16),
+                  if (onOpenRecent != null && state.lastLocalFolder != null)
+                    TextButton.icon(
+                      onPressed: onOpenRecent,
+                      icon: const Icon(Icons.history),
+                      label: Text(
+                        'Recent: ${p.basename(state.lastLocalFolder!)}',
+                      ),
+                    ),
+                  TextButton(
+                    onPressed: onStartEmptyDraft,
+                    child: const Text('Start empty draft'),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              if (onOpenRecent != null && state.lastLocalFolder != null)
-                TextButton.icon(
-                  onPressed: onOpenRecent,
-                  icon: const Icon(Icons.history),
-                  label: Text('Recent: ${p.basename(state.lastLocalFolder!)}'),
-                ),
-              TextButton(
-                onPressed: onStartEmptyDraft,
-                child: const Text('Start empty draft'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -152,50 +159,56 @@ class PolyLargeFolderView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).colorScheme.outline),
-            borderRadius: BorderRadius.circular(8),
-          ),
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.warning_amber),
-                    const SizedBox(width: 8),
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        'Large sample folder',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.warning_amber),
+                        const SizedBox(width: 8),
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            'Large sample folder',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    for (final message in messages) Text(message),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        OutlinedButton(
+                          onPressed: onChooseSmaller,
+                          child: const Text('Choose smaller folder'),
+                        ),
+                        FilledButton(
+                          onPressed: onImportSubset,
+                          child: const Text('Import subset'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                for (final message in messages) Text(message),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    OutlinedButton(
-                      onPressed: onChooseSmaller,
-                      child: const Text('Choose smaller folder'),
-                    ),
-                    FilledButton(
-                      onPressed: onImportSubset,
-                      child: const Text('Import subset'),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),

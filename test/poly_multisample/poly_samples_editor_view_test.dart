@@ -56,6 +56,42 @@ void main() {
     expect(find.text('Unsaved changes'), findsOneWidget);
   });
 
+  testWidgets('waveform drafts explain disabled primary save action', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(
+        _state(
+          sourceMode: PolySampleSourceMode.customDraft,
+          wavEditDrafts: const {
+            '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(trimStart: 10),
+          },
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    final saveAs = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Save As…'),
+    );
+    expect(saveAs.onPressed, isNull);
+    expect(
+      find.text(
+        'Save or discard waveform edits before applying or saving this sample set.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Save or discard waveform edits before applying or saving this sample set.',
+      ),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
   testWidgets('landing shows three source cards and empty draft', (
     tester,
   ) async {
@@ -123,6 +159,7 @@ Future<void> _pumpEditor(
 PolyMultisampleBuilderState _state({
   PolySampleSourceMode sourceMode = PolySampleSourceMode.local,
   bool dirty = false,
+  Map<String, PolyWaveformDraft> wavEditDrafts = const {},
 }) {
   final baseline = dirty
       ? const [
@@ -152,6 +189,7 @@ PolyMultisampleBuilderState _state({
     editedRegions: _regions,
     selectedPaths: const {'/tmp/Piano/Piano_C3.wav'},
     focusedPath: '/tmp/Piano/Piano_C3.wav',
+    wavEditDrafts: wavEditDrafts,
   );
 }
 

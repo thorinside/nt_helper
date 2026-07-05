@@ -82,6 +82,47 @@ void main() {
     expect(selectedMode, PolyRegionSelectionMode.replace);
   });
 
+  testWidgets('disambiguates duplicate display names', (tester) async {
+    final semantics = tester.ensureSemantics();
+    const close = PolySampleRegion(
+      path: '/tmp/Kit/close/C4.wav',
+      fileName: 'C4.wav',
+      displayName: 'C4.wav',
+      rootMidi: 60,
+      rootName: 'C4',
+    );
+    const room = PolySampleRegion(
+      path: '/tmp/Kit/room/C4.wav',
+      fileName: 'C4.wav',
+      displayName: 'C4.wav',
+      rootMidi: 60,
+      rootName: 'C4',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 160,
+            child: PolySampleList(
+              regions: const [close, room],
+              selectedPaths: const {},
+              focusedPath: null,
+              previewVisiblePath: null,
+              onSelect: (_, _) {},
+              onPreview: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('close/C4.wav'), findsOneWidget);
+    expect(find.text('room/C4.wav'), findsOneWidget);
+    expect(find.bySemanticsLabel('close/C4.wav, root C4'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets('preview button disabled for non-wav files', (tester) async {
     const region = PolySampleRegion(
       path: '/tmp/mapped.aif',

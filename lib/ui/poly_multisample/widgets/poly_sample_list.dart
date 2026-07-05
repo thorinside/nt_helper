@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 
 class PolySampleList extends StatefulWidget {
   const PolySampleList({
@@ -99,12 +100,13 @@ class _PolySampleListState extends State<PolySampleList> {
       itemCount: widget.regions.length,
       itemBuilder: (context, index) {
         final region = widget.regions[index];
+        final label = sampleDisplayLabel(region, widget.regions);
         final selected = widget.selectedPaths.contains(region.path);
         final playing = widget.previewVisiblePath == region.path;
         final issues = region.currentIssues;
         return Semantics(
           selected: selected,
-          label: '${region.displayName}, root ${region.rootName ?? 'unmapped'}',
+          label: '$label, root ${region.rootName ?? 'unmapped'}',
           child: ListTile(
             dense: true,
             selected: selected,
@@ -114,7 +116,7 @@ class _PolySampleListState extends State<PolySampleList> {
                   ? 'Mapped sample'
                   : 'Sample warning',
             ),
-            title: Text(region.displayName),
+            title: Text(label),
             subtitle: Text(
               [
                 'Root ${region.rootName ?? 'unmapped'}',

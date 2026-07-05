@@ -61,7 +61,25 @@ void main() {
     expect(find.text('No sample selected'), findsOneWidget);
   });
 
-  testWidgets('loop editing gated for hardware paths', (tester) async {
+  testWidgets('shows empty message when samples exist but selection is empty', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState().copyWith(
+        selectedPaths: const {},
+        clearFocusedPath: true,
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+
+    expect(find.text('No sample selected'), findsOneWidget);
+    expect(find.byType(PolyWaveformEditor), findsNothing);
+  });
+
+  testWidgets('waveform editing gated for hardware paths', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit();
     addTearDown(cubit.close);
     cubit.setTestState(
@@ -83,18 +101,14 @@ void main() {
     );
 
     await _pumpInspector(tester, cubit);
-    await tester.tap(find.text('Loop points'));
-    await tester.pumpAndSettle();
 
     expect(
-      find.text('Loop editing needs a local or mounted folder.'),
+      find.text('Waveform editing needs a local or mounted WAV file.'),
       findsOneWidget,
     );
   });
 
-  testWidgets('edit audio section shows editor and save buttons', (
-    tester,
-  ) async {
+  testWidgets('waveform section shows editor and save buttons', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit();
     addTearDown(cubit.close);
     cubit.setTestState(
@@ -104,13 +118,151 @@ void main() {
     );
 
     await _pumpInspector(tester, cubit);
-    await tester.scrollUntilVisible(find.text('Edit audio'), 300);
-    await tester.tap(find.text('Edit audio'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Waveform'), findsOneWidget);
+    expect(find.text('Editing Piano_C3.wav'), findsOneWidget);
+    expect(
+      find.byTooltip(
+        'Click to set trim start/end. Command/Ctrl-click or right-click to set loop start/end.',
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(PolyWaveformEditor), findsOneWidget);
-    expect(find.text('Save as…'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Save as...'), 300);
+    expect(find.text('Save as...'), findsOneWidget);
     expect(find.text('Overwrite'), findsOneWidget);
+  });
+
+  testWidgets('waveform nudge buttons keep endpoints ordered', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState().copyWith(
+        waveformSummaries: {'/tmp/Piano/Piano_C3.wav': _overview()},
+        loopDrafts: const {
+          '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(
+            loopStart: 400,
+            loopEnd: 500,
+          ),
+        },
+        wavEditDrafts: const {
+          '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(
+            trimStart: 400,
+            trimEnd: 500,
+          ),
+        },
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+    await tester.scrollUntilVisible(
+      find.byTooltip('Loop start +100 frames'),
+      300,
+    );
+    await tester.tap(find.byTooltip('Loop start +100 frames'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Loop start +100 frames'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Loop end -100 frames'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Loop end -100 frames'));
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byTooltip('Trim start +100 frames'),
+      300,
+    );
+    await tester.tap(find.byTooltip('Trim start +100 frames'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Trim start +100 frames'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Trim end -100 frames'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Trim end -100 frames'));
+    await tester.pump();
+
+    final loopDraft = cubit.state.loopDrafts['/tmp/Piano/Piano_C3.wav']!;
+    final wavDraft = cubit.state.wavEditDrafts['/tmp/Piano/Piano_C3.wav']!;
+    expect(loopDraft.loopStart!, lessThan(loopDraft.loopEnd!));
+    expect(wavDraft.trimStart!, lessThan(wavDraft.trimEnd!));
+    expect(loopDraft.loopStart, 499);
+    expect(loopDraft.loopEnd, 500);
+    expect(wavDraft.trimStart, 499);
+    expect(wavDraft.trimEnd, 500);
+  });
+
+  testWidgets('duplicate sample names show a disambiguated edit target', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _duplicateNameState().copyWith(
+        waveformSummaries: {'/tmp/Kit/close/C4.wav': _overview()},
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+
+    expect(find.text('Editing close/C4.wav'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.widgetWithText(FilledButton, 'Overwrite'),
+      300,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Overwrite'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Overwrite close/C4.wav?'), findsOneWidget);
+  });
+
+  testWidgets('waveform failure shows live retry status', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState().copyWith(
+        waveformFailedPaths: const {'/tmp/Piano/Piano_C3.wav'},
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+
+    expect(find.bySemanticsLabel('Waveform loading failed.'), findsOneWidget);
+    expect(find.text('Retry waveform'), findsOneWidget);
+
+    semantics.dispose();
+  });
+
+  testWidgets('labels preview and destructive edit controls for semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState().copyWith(
+        waveformSummaries: {'/tmp/Piano/Piano_C3.wav': _overview()},
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+
+    expect(find.bySemanticsLabel('Preview gain'), findsOneWidget);
+
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -420),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Audio gain'), findsOneWidget);
+    expect(find.bySemanticsLabel('Normalize peak'), findsOneWidget);
+    expect(find.bySemanticsLabel('Fade in length'), findsOneWidget);
+    expect(find.text('Fade in curve:'), findsOneWidget);
+    expect(find.bySemanticsLabel('Fade in strength'), findsOneWidget);
+
+    semantics.dispose();
   });
 
   testWidgets('gain slider updates the wav edit draft', (tester) async {
@@ -123,14 +275,10 @@ void main() {
     );
 
     await _pumpInspector(tester, cubit);
-    await tester.scrollUntilVisible(find.text('Edit audio'), 300);
-    await tester.tap(find.text('Edit audio'));
-    await tester.pumpAndSettle();
-    await tester.drag(
-      find.byType(SingleChildScrollView),
-      const Offset(0, -420),
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('poly-wav-gain-slider')),
+      300,
     );
-    await tester.pumpAndSettle();
     await tester.drag(
       find.byKey(const ValueKey('poly-wav-gain-slider')),
       const Offset(120, 0),
@@ -212,6 +360,51 @@ PolyMultisampleBuilderState _selectedState() {
     ],
     selectedPaths: {'/tmp/Piano/Piano_C3.wav'},
     focusedPath: '/tmp/Piano/Piano_C3.wav',
+  );
+}
+
+PolyMultisampleBuilderState _duplicateNameState() {
+  return const PolyMultisampleBuilderState(
+    sourceMode: PolySampleSourceMode.local,
+    status: PolyMultisampleLoadStatus.ready,
+    currentInstrument: PolySampleInstrument(
+      name: 'Kit',
+      sourcePath: '/tmp/Kit',
+      regions: [
+        PolySampleRegion(
+          path: '/tmp/Kit/close/C4.wav',
+          fileName: 'C4.wav',
+          displayName: 'C4.wav',
+          rootMidi: 60,
+          rootName: 'C4',
+        ),
+        PolySampleRegion(
+          path: '/tmp/Kit/room/C4.wav',
+          fileName: 'C4.wav',
+          displayName: 'C4.wav',
+          rootMidi: 60,
+          rootName: 'C4',
+        ),
+      ],
+    ),
+    editedRegions: [
+      PolySampleRegion(
+        path: '/tmp/Kit/close/C4.wav',
+        fileName: 'C4.wav',
+        displayName: 'C4.wav',
+        rootMidi: 60,
+        rootName: 'C4',
+      ),
+      PolySampleRegion(
+        path: '/tmp/Kit/room/C4.wav',
+        fileName: 'C4.wav',
+        displayName: 'C4.wav',
+        rootMidi: 60,
+        rootName: 'C4',
+      ),
+    ],
+    selectedPaths: {'/tmp/Kit/close/C4.wav'},
+    focusedPath: '/tmp/Kit/close/C4.wav',
   );
 }
 
