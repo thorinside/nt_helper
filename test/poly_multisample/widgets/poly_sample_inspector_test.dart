@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_inspector.dart';
+import 'package:nt_helper/ui/poly_multisample/widgets/poly_waveform_editor.dart';
 
 void main() {
   testWidgets('shows mapping steppers for the selected sample', (tester) async {
@@ -89,6 +91,54 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('edit audio section shows editor and save buttons', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState().copyWith(
+        waveformSummaries: {'/tmp/Piano/Piano_C3.wav': _overview()},
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+    await tester.scrollUntilVisible(find.text('Edit audio'), 300);
+    await tester.tap(find.text('Edit audio'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PolyWaveformEditor), findsOneWidget);
+    expect(find.text('Save as…'), findsOneWidget);
+    expect(find.text('Overwrite'), findsOneWidget);
+  });
+
+  testWidgets('gain slider updates the wav edit draft', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState().copyWith(
+        waveformSummaries: {'/tmp/Piano/Piano_C3.wav': _overview()},
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+    await tester.scrollUntilVisible(find.text('Edit audio'), 300);
+    await tester.tap(find.text('Edit audio'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -420));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const ValueKey('poly-wav-gain-slider')),
+      const Offset(120, 0),
+    );
+    await tester.pump();
+
+    expect(
+      cubit.state.wavEditDrafts['/tmp/Piano/Piano_C3.wav']!.gainDb,
+      isNot(0),
+    );
+  });
 }
 
 Future<void> _pumpInspector(
@@ -159,6 +209,15 @@ PolyMultisampleBuilderState _selectedState() {
     ],
     selectedPaths: {'/tmp/Piano/Piano_C3.wav'},
     focusedPath: '/tmp/Piano/Piano_C3.wav',
+  );
+}
+
+WavOverview _overview() {
+  return WavOverview(
+    sampleRate: 44100,
+    frameCount: 1000,
+    peaks: List<WavPeak>.filled(40, const WavPeak(min: -0.5, max: 0.5)),
+    zeroCrossings: const [0, 250, 500, 750, 999],
   );
 }
 
