@@ -27,11 +27,14 @@ flutter test test/ui/widgets/split_stepper_control_test.dart test/poly_multisamp
 4. The `largeAndSmall` constructor renders exactly four segments in this order: large decrement, small decrement, small increment, large increment.
 5. Use exact tooltip strings from `spec.md`.
 6. Use exact dimensions from `spec.md`.
-7. Create `test/ui/widgets/split_stepper_control_test.dart` with exactly these tests:
+7. The semantics wrapper around each segment includes `onTap: action.onPressed` exactly as specified so screen-reader activation is not lost when child semantics are excluded.
+8. Create `test/ui/widgets/split_stepper_control_test.dart` with exactly these tests:
    - `compact split stepper renders two semantic buttons and fires callbacks`
    - `large and small split stepper renders four ordered actions`
    - `split stepper supports keyboard focus activation`
-8. The keyboard test uses Tab, Enter, Tab, Space in that order.
+9. The compact semantics test asserts that `Decrease Root` has `SemanticsAction.tap`.
+10. The large/small test passes compact visible labels `1` and `100`, semantic labels `1 frame` and `100 frames`, and asserts visible text `−100`, `−1`, `+1`, and `+100`.
+11. The keyboard test uses Tab, Enter, Tab, Space in that order.
 
 ### Leftover checks
 
@@ -152,15 +155,16 @@ Only these files may appear in `git status --short` before the commit:
 
 1. Keep the `_FrameNudgeRow` constructor and fields unchanged.
 2. Replace only the `for (final delta in const [-100, -1, 1, 100]) IconButton(...)` loop inside `_FrameNudgeRow.build` with the exact `SplitStepperControl.largeAndSmall` row shown in `spec.md`.
-3. Preserve all existing clamp logic in `_WaveformSection`; only `_FrameNudgeRow.build` changes for frame jog behavior.
-4. In `waveform nudge buttons keep endpoints ordered`, replace old frame tooltip strings with exact new strings:
+3. The frame nudge call passes `smallStepLabel: '1'`, `largeStepLabel: '100'`, `smallStepSemanticsLabel: '1 frame'`, and `largeStepSemanticsLabel: '100 frames'`.
+4. Preserve all existing clamp logic in `_WaveformSection`; only `_FrameNudgeRow.build` changes for frame jog behavior.
+5. In `waveform nudge buttons keep endpoints ordered`, replace old frame tooltip strings with exact new strings:
    - `Increase Loop start by 100 frames`
    - `Decrease Loop end by 100 frames`
    - `Increase Trim start by 100 frames`
    - `Decrease Trim end by 100 frames`
-5. In `labels preview and destructive edit controls for semantics`, after scrolling far enough for trim rows, add this assertion:
+6. In `labels preview and destructive edit controls for semantics`, after scrolling far enough for trim rows, add this assertion:
    - `find.bySemanticsLabel('Increase Trim start by 1 frame')` finds one widget.
-6. Do not edit `test/poly_multisample/widgets/poly_waveform_editor_test.dart`.
+7. Do not edit `test/poly_multisample/widgets/poly_waveform_editor_test.dart`.
 
 ### Leftover checks
 

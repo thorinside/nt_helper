@@ -88,6 +88,8 @@ class SplitStepperControl extends StatelessWidget {
     required this.onIncrement,
   }) : smallStepLabel = null,
        largeStepLabel = null,
+       smallStepSemanticsLabel = null,
+       largeStepSemanticsLabel = null,
        onSmallDecrement = null,
        onSmallIncrement = null,
        onLargeDecrement = null,
@@ -99,6 +101,8 @@ class SplitStepperControl extends StatelessWidget {
     required this.valueLabel,
     required this.smallStepLabel,
     required this.largeStepLabel,
+    required this.smallStepSemanticsLabel,
+    required this.largeStepSemanticsLabel,
     required this.onSmallDecrement,
     required this.onSmallIncrement,
     required this.onLargeDecrement,
@@ -112,6 +116,8 @@ class SplitStepperControl extends StatelessWidget {
   final VoidCallback? onIncrement;
   final String? smallStepLabel;
   final String? largeStepLabel;
+  final String? smallStepSemanticsLabel;
+  final String? largeStepSemanticsLabel;
   final VoidCallback? onSmallDecrement;
   final VoidCallback? onSmallIncrement;
   final VoidCallback? onLargeDecrement;
@@ -124,9 +130,9 @@ Constructor behavior:
 | Constructor | Rendered segments from left to right | Segment text/icon | Tooltip and semantics label |
 |---|---|---|---|
 | default | decrement, increment | `Icons.remove`, `Icons.add` | `Decrease <label>`, `Increase <label>` |
-| `largeAndSmall` | large decrement, small decrement, small increment, large increment | `−<largeStepLabel>`, `−<smallStepLabel>`, `+<smallStepLabel>`, `+<largeStepLabel>` with the sign prepended by the widget | `Decrease <label> by <largeStepLabel>`, `Decrease <label> by <smallStepLabel>`, `Increase <label> by <smallStepLabel>`, `Increase <label> by <largeStepLabel>` |
+| `largeAndSmall` | large decrement, small decrement, small increment, large increment | `−<largeStepLabel>`, `−<smallStepLabel>`, `+<smallStepLabel>`, `+<largeStepLabel>` with the sign prepended by the widget | `Decrease <label> by <largeStepSemanticsLabel>`, `Decrease <label> by <smallStepSemanticsLabel>`, `Increase <label> by <smallStepSemanticsLabel>`, `Increase <label> by <largeStepSemanticsLabel>` |
 
-For `largeAndSmall`, call sites pass unsigned labels. The frame nudge call site passes `smallStepLabel: '1 frame'` and `largeStepLabel: '100 frames'`.
+For `largeAndSmall`, call sites pass unsigned compact visible labels plus unsigned human-readable semantic labels. The frame nudge call site passes `smallStepLabel: '1'`, `largeStepLabel: '100'`, `smallStepSemanticsLabel: '1 frame'`, and `largeStepSemanticsLabel: '100 frames'`. This keeps the four-segment control compact while preserving exact screen-reader and tooltip wording.
 
 Private helper contracts:
 
@@ -164,14 +170,14 @@ Visual rules:
 - `largeAndSmall` segment width is 54 logical pixels.
 - Add a vertical divider with width `1`, thickness `1`, and color `outlineVariant` between every pair of adjacent segments.
 - Default constructor icons have size `16`.
-- `largeAndSmall` segment text uses `Theme.of(context).textTheme.labelSmall`.
+- `largeAndSmall` segment text uses `Theme.of(context).textTheme.labelSmall` and the compact visible labels, for example `−100`, `−1`, `+1`, `+100`.
 - Use Unicode minus `−` (`U+2212`) for visible negative labels in `largeAndSmall`.
 
 Accessibility and focus rules:
 
 - Wrap the whole control in `Semantics(container: true, label: label, value: valueLabel)`.
 - Every segment is an `IconButton` with the exact tooltip named above.
-- Wrap every `IconButton` in `Semantics(button: true, label: tooltipText, enabled: onPressed != null, excludeSemantics: true)` so the tooltip does not create a duplicate semantics node.
+- Wrap every `IconButton` in `Semantics(button: true, label: tooltipText, enabled: onPressed != null, onTap: onPressed, excludeSemantics: true)` so the tooltip does not create a duplicate semantics node and screen-reader activation still invokes the segment callback.
 - Do not add custom arrow-key shortcuts. Tab traversal reaches each segment in left-to-right order. Enter and Space activation use Flutter `IconButton` default behavior.
 - Do not create live-region announcements. These controls update already-visible draft values synchronously.
 
@@ -233,8 +239,10 @@ return Row(
     SplitStepperControl.largeAndSmall(
       label: label,
       valueLabel: '$value frames',
-      smallStepLabel: '1 frame',
-      largeStepLabel: '100 frames',
+      smallStepLabel: '1',
+      largeStepLabel: '100',
+      smallStepSemanticsLabel: '1 frame',
+      largeStepSemanticsLabel: '100 frames',
       onLargeDecrement: () => onNudge(-100),
       onSmallDecrement: () => onNudge(-1),
       onSmallIncrement: () => onNudge(1),
@@ -261,6 +269,7 @@ Imports:
 
 ```dart
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/ui/widgets/split_stepper_control.dart';
@@ -270,8 +279,8 @@ Required tests:
 
 | Test name | Assertions |
 |---|---|
-| `compact split stepper renders two semantic buttons and fires callbacks` | Pump default constructor with `label: 'Root'`, `valueLabel: 'C3'`; find tooltips `Decrease Root` and `Increase Root`; find semantics label `Root`; semantics data value is `C3`; tapping both tooltips increments separate counters once |
-| `large and small split stepper renders four ordered actions` | Pump `largeAndSmall` with `label: 'Trim start'`, `valueLabel: '400 frames'`, `smallStepLabel: '1 frame'`, `largeStepLabel: '100 frames'`; find the four exact tooltips from the API table; tap each tooltip left to right; collected deltas equal `[-100, -1, 1, 100]` |
+| `compact split stepper renders two semantic buttons and fires callbacks` | Pump default constructor with `label: 'Root'`, `valueLabel: 'C3'`; find tooltips `Decrease Root` and `Increase Root`; find semantics label `Root`; semantics data value is `C3`; `tester.getSemantics(find.bySemanticsLabel('Decrease Root')).getSemanticsData().hasAction(SemanticsAction.tap)` is true; tapping both tooltips increments separate counters once |
+| `large and small split stepper renders four ordered actions` | Pump `largeAndSmall` with `label: 'Trim start'`, `valueLabel: '400 frames'`, `smallStepLabel: '1'`, `largeStepLabel: '100'`, `smallStepSemanticsLabel: '1 frame'`, `largeStepSemanticsLabel: '100 frames'`; find visible text `−100`, `−1`, `+1`, `+100`; find the four exact tooltips from the API table; tap each tooltip left to right; collected deltas equal `[-100, -1, 1, 100]` |
 | `split stepper supports keyboard focus activation` | Pump default constructor; send Tab to focus `Decrease Root`; send Enter; send Tab to focus `Increase Root`; send Space; final decrement count is `1` and increment count is `1` |
 
 ### Update file: `test/poly_multisample/widgets/poly_sample_inspector_test.dart`
@@ -306,7 +315,7 @@ No changes to `test/poly_multisample/widgets/poly_waveform_editor_test.dart` are
 
 | Risk | Plausible path | Chosen handling | Tests required |
 |---|---|---|---|
-| Screen reader users hear unlabeled minus/plus icons | User navigates the sidebar with VoiceOver, TalkBack, or desktop screen reader | Parent semantics exposes field label and value; every segment has exact action label | `split_stepper_control_test.dart` compact semantics test; inspector semantics assertions |
+| Screen reader users hear unlabeled minus/plus icons or cannot activate a segment | User navigates the sidebar with VoiceOver, TalkBack, or desktop screen reader | Parent semantics exposes field label and value; every segment has exact action label and a tap semantics action | `split_stepper_control_test.dart` compact semantics/action test; inspector semantics assertions |
 | Keyboard-only users cannot operate the compact control | User tabs through the sidebar and presses Enter or Space | Use `IconButton` segments with default focus and activation | `split_stepper_control_test.dart` keyboard focus activation test |
 | Frame endpoints cross during rapid large nudge taps | User repeatedly taps `+100` start or `-100` end near the other endpoint | Preserve existing clamp callbacks in `_WaveformSection` | Existing inspector nudge test with updated tooltips |
 | Mapping rows regress by wiring the wrong callback to a segment | User taps Root plus expecting the root note to increase | Keep `_StepRow` callback names and test `Increase Root` changes C3 to C#3 | Existing root stepper test |
