@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
+import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_samples_editor_view.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_samples_landing_view.dart';
+import 'package:nt_helper/ui/poly_multisample/widgets/poly_key_map.dart';
+import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_inspector.dart';
+import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_list.dart';
+
+void main() {
+  testWidgets('shows toolbar stats, key map, list and inspector', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    expect(find.text('2 samples'), findsOneWidget);
+    expect(find.text('1 mapped'), findsOneWidget);
+    expect(find.byType(PolyKeyMap), findsOneWidget);
+    expect(find.byType(PolySampleList), findsOneWidget);
+    expect(find.byType(PolySampleInspector), findsOneWidget);
+  });
+
+  testWidgets('draft mode shows Save As instead of Apply', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(_state(sourceMode: PolySampleSourceMode.importDraft));
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    expect(find.text('Save As…'), findsOneWidget);
+    expect(find.text('Apply'), findsNothing);
+  });
+
+  testWidgets('dirty state enables Apply and Discard', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(_state(dirty: true));
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    final apply = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Apply'),
+    );
+    final discard = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Discard'),
+    );
+
+    expect(apply.onPressed, isNotNull);
+    expect(discard.onPressed, isNotNull);
+    expect(find.text('Unsaved changes'), findsOneWidget);
+  });
+
+  testWidgets('landing shows three source cards and empty draft', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PolySamplesLandingView(
+            state: const PolyMultisampleBuilderState(),
+            onOpenHardware: () {},
+            onOpenLocal: () {},
+            onImport: () {},
+            onOpenRecent: null,
+            onStartEmptyDraft: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('NT Hardware'), findsOneWidget);
+    expect(find.text('Local Folder'), findsOneWidget);
+    expect(find.text('Import Files'), findsOneWidget);
+    expect(find.text('Start empty draft'), findsOneWidget);
+    expect(
+      find.text('Build or edit a Disting NT multisample folder'),
+      findsOneWidget,
+    );
+  });
+}
+
+Future<void> _pumpEditor(
+  WidgetTester tester,
+  PolyMultisampleBuilderCubit cubit,
+) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: BlocProvider<PolyMultisampleBuilderCubit>.value(
+          value: cubit,
+          child: SizedBox(
+            width: 1200,
+            height: 800,
+            child:
+                BlocBuilder<
+                  PolyMultisampleBuilderCubit,
+                  PolyMultisampleBuilderState
+                >(
+                  builder: (context, state) {
+                    return PolySamplesEditorView(
+                      state: state,
+                      manager: null,
+                      onAddFiles: () {},
+                      onAddFolder: () {},
+                      onSaveAs: () {},
+                      onBackToSources: () {},
+                    );
+                  },
+                ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+PolyMultisampleBuilderState _state({
+  PolySampleSourceMode sourceMode = PolySampleSourceMode.local,
+  bool dirty = false,
+}) {
+  final baseline = dirty
+      ? const [
+          PolySampleRegion(
+            path: '/tmp/Piano/Piano_C3.wav',
+            fileName: 'Piano_C3.wav',
+            displayName: 'Piano_C3.wav',
+            rootMidi: 47,
+            rootName: 'B2',
+          ),
+          PolySampleRegion(
+            path: '/tmp/Piano/Piano_Unmapped.wav',
+            fileName: 'Piano_Unmapped.wav',
+            displayName: 'Piano_Unmapped.wav',
+          ),
+        ]
+      : _regions;
+  return PolyMultisampleBuilderState(
+    sourceMode: sourceMode,
+    status: PolyMultisampleLoadStatus.ready,
+    currentInstrument: const PolySampleInstrument(
+      name: 'Piano',
+      sourcePath: '/tmp/Piano',
+      regions: _regions,
+    ),
+    baselineRegions: baseline,
+    editedRegions: _regions,
+    selectedPaths: const {'/tmp/Piano/Piano_C3.wav'},
+    focusedPath: '/tmp/Piano/Piano_C3.wav',
+  );
+}
+
+const _regions = [
+  PolySampleRegion(
+    path: '/tmp/Piano/Piano_C3.wav',
+    fileName: 'Piano_C3.wav',
+    displayName: 'Piano_C3.wav',
+    rootMidi: 48,
+    rootName: 'C3',
+  ),
+  PolySampleRegion(
+    path: '/tmp/Piano/Piano_Unmapped.wav',
+    fileName: 'Piano_Unmapped.wav',
+    displayName: 'Piano_Unmapped.wav',
+  ),
+];
+
+class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
+  _TestPolyMultisampleBuilderCubit()
+    : super(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+
+  void setTestState(PolyMultisampleBuilderState state) {
+    emit(state);
+  }
+}
+
+class _FakePreviewAdapter implements PolyAudioPreviewAdapter {
+  @override
+  Stream<void> get completed => const Stream.empty();
+
+  @override
+  Future<void> play(String path, {required double volume}) async {}
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  Future<void> dispose() async {}
+}
