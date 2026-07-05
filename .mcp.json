@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "disting": {
-      "type": "http",
-      "url": "http://localhost:3847/mcp"
-    },
     "dart-mcp": {
       "type": "stdio",
       "command": "fvm",
