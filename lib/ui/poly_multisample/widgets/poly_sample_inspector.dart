@@ -30,19 +30,22 @@ class PolySampleInspector extends StatelessWidget {
       return const Center(child: Text('No sample selected'));
     }
     final cubit = context.read<PolyMultisampleBuilderCubit>();
-    return ListView(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
-      children: [
-        _HeaderRow(state: state, region: region, manager: manager),
-        const SizedBox(height: 12),
-        _PreviewControls(state: state),
-        const SizedBox(height: 16),
-        _MappingSection(state: state, region: region, cubit: cubit),
-        const SizedBox(height: 8),
-        _LoopSection(state: state, region: region, cubit: cubit),
-        const SizedBox(height: 8),
-        _EditAudioSection(state: state, region: region, cubit: cubit),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _HeaderRow(state: state, region: region, manager: manager),
+          const SizedBox(height: 12),
+          _PreviewControls(state: state),
+          const SizedBox(height: 16),
+          _MappingSection(state: state, region: region, cubit: cubit),
+          const SizedBox(height: 8),
+          _LoopSection(state: state, region: region, cubit: cubit),
+          const SizedBox(height: 8),
+          _EditAudioSection(state: state, region: region, cubit: cubit),
+        ],
+      ),
     );
   }
 }

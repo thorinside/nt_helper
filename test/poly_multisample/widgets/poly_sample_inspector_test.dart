@@ -126,7 +126,10 @@ void main() {
     await tester.scrollUntilVisible(find.text('Edit audio'), 300);
     await tester.tap(find.text('Edit audio'));
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView), const Offset(0, -420));
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -420),
+    );
     await tester.pumpAndSettle();
     await tester.drag(
       find.byKey(const ValueKey('poly-wav-gain-slider')),
