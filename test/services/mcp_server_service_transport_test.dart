@@ -9,6 +9,94 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}
 
+Future<HttpClientResponse> _postJsonRpc(
+  HttpClient client,
+  int port,
+  Object body, {
+  String? sessionId,
+}) async {
+  final request = await client.postUrl(Uri.parse('http://127.0.0.1:$port/mcp'));
+  request.headers
+    ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
+    ..set(HttpHeaders.contentTypeHeader, 'application/json');
+  if (sessionId != null) {
+    request.headers.set('mcp-session-id', sessionId);
+  }
+  request.write(jsonEncode(body));
+  return request.close().timeout(const Duration(seconds: 5));
+}
+
+Future<Map<String, dynamic>> _readJsonRpcMessage(
+  HttpClientResponse response,
+) async {
+  final body = await utf8
+      .decodeStream(response)
+      .timeout(const Duration(seconds: 5));
+
+  if (response.headers.contentType?.mimeType == 'application/json') {
+    return (jsonDecode(body) as Map).cast<String, dynamic>();
+  }
+
+  expect(response.headers.contentType?.mimeType, equals('text/event-stream'));
+
+  for (final eventBlock in body.split(RegExp(r'\r?\n\r?\n'))) {
+    final data = eventBlock
+        .split(RegExp(r'\r?\n'))
+        .where((line) => line.startsWith('data:'))
+        .map((line) => line.substring('data:'.length).trimLeft())
+        .join('\n')
+        .trim();
+    if (data.isEmpty) {
+      continue;
+    }
+
+    final decoded = jsonDecode(data);
+    if (decoded is Map && decoded['jsonrpc'] == '2.0') {
+      return decoded.cast<String, dynamic>();
+    }
+  }
+
+  fail('No JSON-RPC message found in SSE response: $body');
+}
+
+Future<String> _initializeSession(
+  HttpClient client,
+  int port, {
+  int id = 1,
+}) async {
+  final initResponse = await _postJsonRpc(client, port, {
+    'jsonrpc': '2.0',
+    'id': id,
+    'method': 'initialize',
+    'params': {
+      'protocolVersion': '2025-06-18',
+      'capabilities': {},
+      'clientInfo': {'name': 'test-client', 'version': '0.0.0'},
+    },
+  });
+  expect(initResponse.statusCode, equals(HttpStatus.ok));
+  expect(
+    initResponse.headers.contentType?.mimeType,
+    equals('text/event-stream'),
+  );
+
+  final sessionId = initResponse.headers.value('mcp-session-id');
+  expect(sessionId, isNotNull);
+
+  final initMessage = await _readJsonRpcMessage(initResponse);
+  expect(initMessage['jsonrpc'], equals('2.0'));
+  expect(initMessage['id'], equals(id));
+
+  final initializedResponse = await _postJsonRpc(client, port, {
+    'jsonrpc': '2.0',
+    'method': 'notifications/initialized',
+  }, sessionId: sessionId);
+  expect(initializedResponse.statusCode, equals(HttpStatus.accepted));
+  await initializedResponse.drain<void>();
+
+  return sessionId!;
+}
+
 void main() {
   group('McpServerService transports', () {
     late McpServerService service;
@@ -40,84 +128,44 @@ void main() {
       final client = HttpClient();
       addTearDown(() => client.close(force: true));
 
-      // POST initialize (server replies with JSON due to enableJsonResponse: true)
-      final initRequest = await client.postUrl(
-        Uri.parse('http://127.0.0.1:$port/mcp'),
-      );
-      initRequest.headers
-        ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-        ..set(HttpHeaders.contentTypeHeader, 'application/json');
-      initRequest.write(
-        jsonEncode({
-          'jsonrpc': '2.0',
-          'id': 1,
-          'method': 'initialize',
-          'params': {
-            'protocolVersion': '2025-06-18',
-            'capabilities': {},
-            'clientInfo': {'name': 'test-client', 'version': '0.0.0'},
-          },
-        }),
-      );
-
-      final initResponse = await initRequest.close().timeout(
-        const Duration(seconds: 5),
-      );
-      expect(initResponse.statusCode, equals(HttpStatus.ok));
-      // Server uses enableJsonResponse: true, so POST returns application/json
-      expect(
-        initResponse.headers.contentType?.mimeType,
-        equals('application/json'),
-      );
-
-      final sessionId = initResponse.headers.value('mcp-session-id');
-      expect(sessionId, isNotNull);
-
-      final initBody = await utf8.decodeStream(initResponse);
-      final initMessage = jsonDecode(initBody) as Map<String, dynamic>;
-      expect(initMessage['jsonrpc'], equals('2.0'));
-      expect(initMessage['id'], equals(1));
-
-      // POST notifications/initialized (server should return 202 Accepted)
-      final initializedRequest = await client.postUrl(
-        Uri.parse('http://127.0.0.1:$port/mcp'),
-      );
-      initializedRequest.headers
-        ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-        ..set(HttpHeaders.contentTypeHeader, 'application/json')
-        ..set('mcp-session-id', sessionId!);
-      initializedRequest.write(
-        jsonEncode({'jsonrpc': '2.0', 'method': 'notifications/initialized'}),
-      );
-
-      final initializedResponse = await initializedRequest.close().timeout(
-        const Duration(seconds: 5),
-      );
-      expect(initializedResponse.statusCode, equals(HttpStatus.accepted));
-      await initializedResponse.drain<void>();
+      await _initializeSession(client, port!);
     });
 
-    test('GET /mcp returns 405 Method Not Allowed', () async {
-      await service.start(port: 0, bindAddress: InternetAddress.loopbackIPv4);
+    test(
+      'GET /mcp opens standalone SSE stream for an initialized session',
+      () async {
+        await service.start(port: 0, bindAddress: InternetAddress.loopbackIPv4);
 
-      final port = service.boundPort;
-      expect(port, isNotNull);
+        final port = service.boundPort;
+        expect(port, isNotNull);
 
-      final client = HttpClient();
-      addTearDown(() => client.close(force: true));
+        final client = HttpClient();
+        addTearDown(() => client.close(force: true));
 
-      final getRequest = await client.getUrl(
-        Uri.parse('http://127.0.0.1:$port/mcp'),
-      );
-      getRequest.headers.set(HttpHeaders.acceptHeader, 'text/event-stream');
-      getRequest.persistentConnection = false;
+        final sessionId = await _initializeSession(client, port!);
 
-      final response = await getRequest.close().timeout(
-        const Duration(seconds: 5),
-      );
-      expect(response.statusCode, equals(HttpStatus.methodNotAllowed));
-      await response.drain<void>();
-    });
+        final getRequest = await client.getUrl(
+          Uri.parse('http://127.0.0.1:$port/mcp'),
+        );
+        getRequest.headers
+          ..set(HttpHeaders.acceptHeader, 'text/event-stream')
+          ..set('mcp-session-id', sessionId);
+
+        final response = await getRequest.close().timeout(
+          const Duration(seconds: 5),
+        );
+        expect(response.statusCode, equals(HttpStatus.ok));
+        expect(
+          response.headers.contentType?.mimeType,
+          equals('text/event-stream'),
+        );
+
+        final firstChunk = await response.first.timeout(
+          const Duration(seconds: 5),
+        );
+        expect(utf8.decode(firstChunk), contains('data:'));
+      },
+    );
 
     test(
       'add without target returns tool result and does not block subsequent calls',
@@ -130,128 +178,46 @@ void main() {
         final client = HttpClient();
         addTearDown(() => client.close(force: true));
 
-        final initRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        initRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json');
-        initRequest.write(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'id': 1,
-            'method': 'initialize',
-            'params': {
-              'protocolVersion': '2025-06-18',
-              'capabilities': {},
-              'clientInfo': {'name': 'test-client', 'version': '0.0.0'},
-            },
-          }),
-        );
-        final initResponse = await initRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
-        expect(initResponse.statusCode, equals(HttpStatus.ok));
-        final sessionId = initResponse.headers.value('mcp-session-id');
-        expect(sessionId, isNotNull);
-        await initResponse.drain<void>();
+        final sessionId = await _initializeSession(client, port!);
 
-        final initializedRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        initializedRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json')
-          ..set('mcp-session-id', sessionId!);
-        initializedRequest.write(
-          jsonEncode({'jsonrpc': '2.0', 'method': 'notifications/initialized'}),
-        );
-        final initializedResponse = await initializedRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
-        expect(initializedResponse.statusCode, equals(HttpStatus.accepted));
-        await initializedResponse.drain<void>();
-
-        // Regression check: add should not require hidden "target" schema input.
-        final addRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        addRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json')
-          ..set('mcp-session-id', sessionId);
-        addRequest.write(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'id': 2,
-            'method': 'tools/call',
-            'params': {
-              'name': 'add',
-              'arguments': {'name': 'VCO/Multiplier'},
-            },
-          }),
-        );
-        final addResponse = await addRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
+        final addResponse = await _postJsonRpc(client, port, {
+          'jsonrpc': '2.0',
+          'id': 2,
+          'method': 'tools/call',
+          'params': {
+            'name': 'add',
+            'arguments': {'name': 'VCO/Multiplier'},
+          },
+        }, sessionId: sessionId);
         expect(addResponse.statusCode, equals(HttpStatus.ok));
-        final addBody = await utf8.decodeStream(addResponse);
-        final addMessage = jsonDecode(addBody) as Map<String, dynamic>;
+        final addMessage = await _readJsonRpcMessage(addResponse);
         expect(addMessage['id'], equals(2));
         expect(addMessage.containsKey('result'), isTrue);
         expect(addMessage.containsKey('error'), isFalse);
 
-        // remove should also not require hidden "target" schema input.
-        final removeRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        removeRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json')
-          ..set('mcp-session-id', sessionId);
-        removeRequest.write(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'id': 3,
-            'method': 'tools/call',
-            'params': {
-              'name': 'remove',
-              'arguments': {'slot_index': 0},
-            },
-          }),
-        );
-        final removeResponse = await removeRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
+        final removeResponse = await _postJsonRpc(client, port, {
+          'jsonrpc': '2.0',
+          'id': 3,
+          'method': 'tools/call',
+          'params': {
+            'name': 'remove',
+            'arguments': {'slot_index': 0},
+          },
+        }, sessionId: sessionId);
         expect(removeResponse.statusCode, equals(HttpStatus.ok));
-        final removeBody = await utf8.decodeStream(removeResponse);
-        final removeMessage = jsonDecode(removeBody) as Map<String, dynamic>;
+        final removeMessage = await _readJsonRpcMessage(removeResponse);
         expect(removeMessage['id'], equals(3));
         expect(removeMessage.containsKey('result'), isTrue);
         expect(removeMessage.containsKey('error'), isFalse);
 
-        // Follow-up request should still work in same session.
-        final saveRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        saveRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json')
-          ..set('mcp-session-id', sessionId);
-        saveRequest.write(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'id': 4,
-            'method': 'tools/call',
-            'params': {'name': 'save', 'arguments': <String, dynamic>{}},
-          }),
-        );
-        final saveResponse = await saveRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
+        final saveResponse = await _postJsonRpc(client, port, {
+          'jsonrpc': '2.0',
+          'id': 4,
+          'method': 'tools/call',
+          'params': {'name': 'save', 'arguments': <String, dynamic>{}},
+        }, sessionId: sessionId);
         expect(saveResponse.statusCode, equals(HttpStatus.ok));
-        final saveBody = await utf8.decodeStream(saveResponse);
-        final saveMessage = jsonDecode(saveBody) as Map<String, dynamic>;
+        final saveMessage = await _readJsonRpcMessage(saveResponse);
         expect(saveMessage['id'], equals(4));
         expect(saveMessage.containsKey('result'), isTrue);
       },
@@ -268,97 +234,31 @@ void main() {
         final client = HttpClient();
         addTearDown(() => client.close(force: true));
 
-        final initRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        initRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json');
-        initRequest.write(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'id': 11,
-            'method': 'initialize',
-            'params': {
-              'protocolVersion': '2025-06-18',
-              'capabilities': {},
-              'clientInfo': {'name': 'test-client', 'version': '0.0.0'},
-            },
-          }),
-        );
-        final initResponse = await initRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
-        expect(initResponse.statusCode, equals(HttpStatus.ok));
-        final sessionId = initResponse.headers.value('mcp-session-id');
-        expect(sessionId, isNotNull);
-        await initResponse.drain<void>();
+        final sessionId = await _initializeSession(client, port!, id: 11);
 
-        final initializedRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        initializedRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json')
-          ..set('mcp-session-id', sessionId!);
-        initializedRequest.write(
-          jsonEncode({'jsonrpc': '2.0', 'method': 'notifications/initialized'}),
-        );
-        final initializedResponse = await initializedRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
-        expect(initializedResponse.statusCode, equals(HttpStatus.accepted));
-        await initializedResponse.drain<void>();
-
-        final removeRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        removeRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json')
-          ..set('mcp-session-id', sessionId);
-        removeRequest.write(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'id': 12,
-            'method': 'tools/call',
-            'params': {
-              'name': 'remove',
-              'arguments': {'slot_index': 99},
-            },
-          }),
-        );
-        final removeResponse = await removeRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
+        final removeResponse = await _postJsonRpc(client, port, {
+          'jsonrpc': '2.0',
+          'id': 12,
+          'method': 'tools/call',
+          'params': {
+            'name': 'remove',
+            'arguments': {'slot_index': 99},
+          },
+        }, sessionId: sessionId);
         expect(removeResponse.statusCode, equals(HttpStatus.ok));
-        final removeBody = await utf8.decodeStream(removeResponse);
-        final removeMessage = jsonDecode(removeBody) as Map<String, dynamic>;
+        final removeMessage = await _readJsonRpcMessage(removeResponse);
         expect(removeMessage['id'], equals(12));
         expect(removeMessage.containsKey('result'), isTrue);
         expect(removeMessage.containsKey('error'), isFalse);
 
-        final saveRequest = await client.postUrl(
-          Uri.parse('http://127.0.0.1:$port/mcp'),
-        );
-        saveRequest.headers
-          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
-          ..set(HttpHeaders.contentTypeHeader, 'application/json')
-          ..set('mcp-session-id', sessionId);
-        saveRequest.write(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'id': 13,
-            'method': 'tools/call',
-            'params': {'name': 'save', 'arguments': <String, dynamic>{}},
-          }),
-        );
-        final saveResponse = await saveRequest.close().timeout(
-          const Duration(seconds: 5),
-        );
+        final saveResponse = await _postJsonRpc(client, port, {
+          'jsonrpc': '2.0',
+          'id': 13,
+          'method': 'tools/call',
+          'params': {'name': 'save', 'arguments': <String, dynamic>{}},
+        }, sessionId: sessionId);
         expect(saveResponse.statusCode, equals(HttpStatus.ok));
-        final saveBody = await utf8.decodeStream(saveResponse);
-        final saveMessage = jsonDecode(saveBody) as Map<String, dynamic>;
+        final saveMessage = await _readJsonRpcMessage(saveResponse);
         expect(saveMessage['id'], equals(13));
         expect(saveMessage.containsKey('result'), isTrue);
       },

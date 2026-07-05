@@ -324,20 +324,26 @@ class McpServerService extends ChangeNotifier {
     return false;
   }
 
-  /// Handle GET requests on /mcp.
-  /// Returns 405 — this server does not use server-initiated notifications,
-  /// so no SSE stream is needed. Per spec, server MUST return text/event-stream
-  /// OR 405; we choose 405 to avoid long-lived SSE connections that cause
-  /// HTTP/1.1 head-of-line blocking in clients that reuse TCP connections.
+  /// Handle GET requests on /mcp for Streamable HTTP standalone SSE streams.
   Future<void> _handleGetRequest(HttpRequest request) async {
-    _log('GET /mcp → 405 (SSE streams not supported)');
-    request.response.statusCode = HttpStatus.methodNotAllowed;
-    request.response.headers.set(
-      HttpHeaders.allowHeader,
-      'POST, DELETE, OPTIONS',
-    );
-    request.response.write('Method Not Allowed');
-    await request.response.close();
+    final sessionId = request.headers.value('mcp-session-id');
+    if (sessionId == null) {
+      _sendErrorResponse(
+        request,
+        HttpStatus.badRequest,
+        'Missing session ID for SSE stream',
+      );
+      return;
+    }
+
+    final transport = _transports[sessionId];
+    if (transport == null) {
+      _sendErrorResponse(request, HttpStatus.notFound, 'Session not found');
+      return;
+    }
+
+    _log('GET /mcp: opening SSE stream for session $sessionId');
+    await transport.handleRequest(request);
   }
 
   /// Handle DELETE requests for session termination
@@ -482,12 +488,11 @@ class McpServerService extends ChangeNotifier {
     // Create new server instance first
     server = _buildServer();
 
-    // Create new transport with event store for resumability.
-    // enableJsonResponse: POST responses use application/json instead of SSE
-    // streams, which is more compatible with clients that don't handle SSE on POST.
+    // Create new transport with event store for resumability. Leave
+    // enableJsonResponse at the Streamable HTTP default so standard clients use
+    // SSE for request responses and standalone server streams.
     transport = StreamableHTTPServerTransport(
       options: StreamableHTTPServerTransportOptions(
-        enableJsonResponse: true,
         sessionIdGenerator: sessionId != null
             ? () => sessionId
             : () => generateUUID(),
