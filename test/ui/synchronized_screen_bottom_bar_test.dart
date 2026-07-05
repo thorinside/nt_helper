@@ -11,6 +11,7 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_samples_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
 import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 
@@ -175,7 +176,7 @@ void main() {
       expect(find.byTooltip('Plugin Manager'), findsOneWidget);
     });
 
-    testWidgets('Samples workspace mode appears on desktop only', (
+    testWidgets('Samples button pushes PolySamplesScreen on desktop', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(1200, 800);
@@ -189,53 +190,13 @@ void main() {
         createTestWidget(isMobile: false, isOffline: false),
       );
 
-      expect(find.byTooltip('Samples mode'), findsOneWidget);
+      expect(find.byTooltip('Samples'), findsOneWidget);
+      await tester.tap(find.byTooltip('Samples'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PolySamplesScreen), findsOneWidget);
     });
 
-    testWidgets('Parameters and Routing remain reachable after Samples', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1300, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        createTestWidget(isMobile: false, isOffline: false),
-      );
-
-      await tester.tap(find.byTooltip('Samples mode'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Build or edit a Disting NT multisample folder'),
-        findsOneWidget,
-      );
-
-      await tester.tap(find.byTooltip('Parameters mode'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Build or edit a Disting NT multisample folder'),
-        findsNothing,
-      );
-
-      await tester.tap(find.byTooltip('Samples mode'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Build or edit a Disting NT multisample folder'),
-        findsOneWidget,
-      );
-
-      await tester.tap(find.byTooltip('Routing mode'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Build or edit a Disting NT multisample folder'),
-        findsNothing,
-      );
-    });
-
-    testWidgets('Samples workspace mode is absent on mobile', (tester) async {
+    testWidgets('Samples button is absent on mobile', (tester) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(() {
@@ -247,7 +208,7 @@ void main() {
         createTestWidget(isMobile: true, isOffline: false),
       );
 
-      expect(find.byTooltip('Samples mode'), findsNothing);
+      expect(find.byTooltip('Samples'), findsNothing);
     });
 
     testWidgets('Template Manager button pushes TemplateManagerScreen', (
