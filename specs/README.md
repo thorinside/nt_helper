@@ -37,24 +37,25 @@ FAILED with the error text.
 
 USER:
 Repository root: /Users/nealsanche/nosuch/nt_helper
+Spec folder: specs/<SPEC_FOLDER>
 Read these two files completely before doing anything:
   specs/conventions.md
-  specs/poly-samples-ui/plan.md
-That plan has 14 steps. Execute STEP <N> of 14, alone. Do not start any
-other step, and do not touch code that a different step names. Completing
-this step does NOT complete the plan unless <N> = 14.
-When done, run the verification commands from conventions.md, then commit
-with the exact message given in the step. Report: PASS or FAILED + output.
+  specs/<SPEC_FOLDER>/plan.md
+That plan has <TOTAL_STEPS> steps. Execute STEP <N> of <TOTAL_STEPS>, alone.
+Do not start any other step, and do not touch code that a different step names.
+Completing this step does NOT complete the plan unless <N> = <TOTAL_STEPS>.
+When done, run the verification commands from the step, then commit with the
+exact message given in the step. Report: PASS or FAILED + output.
 ```
 
 ## Completion audit (run by the planning model, not the executor)
 
 ```bash
-grep -A2 "Commit message" specs/poly-samples-ui/plan.md   # expected — one commit each
+grep -A2 "Commit message" specs/<SPEC_FOLDER>/plan.md      # expected — one commit each
 git log --format=%s <baseline>..HEAD                       # actual
 ```
 
 Every expected message must appear exactly once. A missing message is a skipped
 step; two steps' work under one message means the squashed step's verification
-gates never ran — re-run them by hand. Finish with one program-level pass:
-`flutter analyze` (zero issues) and `flutter test test/poly_multisample test/ui`.
+gates never ran — re-run them by hand. Finish with the program-level verification
+command named by that spec's `plan.md`.

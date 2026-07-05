@@ -4,7 +4,14 @@ This plan has **4 steps**. Execute exactly one step per fresh-context session, i
 
 Prerequisites: none outside this repo. Do not edit `lib/cubit/*`; this feature stays in the poly multisample cubit/service/UI files named below.
 
-Program-level final verification after STEP 4: `flutter analyze && flutter test test/poly_multisample`.
+Program-level final verification after STEP 4: `flutter analyze && flutter test`.
+
+Expected completion commits, one per step in order:
+
+1. `feat(poly): remember mounted sample upload destination`
+2. `feat(poly): add sample upload transport service`
+3. `feat(poly): add upload actions to sample builder cubit`
+4. `feat(poly): add sample folder upload toolbar action`
 
 ---
 
@@ -26,7 +33,7 @@ Mechanical edits:
 3. In `PolyMultisampleBuilderCubit._loadPreferences`, include `prefs.lastMountedUploadFolder` in the all-null early-return condition and in the emitted `copyWith`.
 4. Do not add upload methods in this step.
 5. Extend `test/poly_multisample/poly_sample_preferences_service_test.dart` with `test('stores last mounted upload folder', ...)`: seed `SharedPreferences.setMockInitialValues({})`, create service, call `await service.setLastMountedUploadFolder('/Volumes/NT/samples/Piano')`, expect getter equals that string.
-6. Extend `test/poly_multisample/poly_multisample_builder_cubit_test.dart` in the existing preferences group with `test('loads remembered mounted upload folder into state on construction', ...)`: seed `{'poly_multisample.lastMountedUploadFolder': '/Volumes/NT/samples/Piano'}`, create `PolySamplePreferencesService`, construct `PolyMultisampleBuilderCubit(preferencesService: service)`, `await Future<void>.delayed(Duration.zero)`, expect `state.lastMountedUploadFolder` equals the seeded path, then close cubit.
+6. Extend `test/poly_multisample/poly_multisample_builder_cubit_test.dart` next to the existing `test('loads remembered folders into state on construction', ...)` with `test('loads remembered mounted upload folder into state on construction', ...)`: seed `{'poly_multisample.lastMountedUploadFolder': '/Volumes/NT/samples/Piano'}`, create `PolySamplePreferencesService`, construct `PolyMultisampleBuilderCubit(preferencesService: service)`, `await Future<void>.delayed(Duration.zero)`, expect `state.lastMountedUploadFolder` equals the seeded path, then close cubit.
 
 Verification commands:
 
@@ -62,13 +69,14 @@ Files:
 Mechanical edits:
 
 1. Create `lib/poly_multisample/poly_sample_upload_service.dart` with the exact public symbols and method signatures from the spec: `PolySampleUploadProgress`, `PolySampleUploadException`, `PolySampleUploadFile`, `PolySampleUploadResult`, and `PolySampleUploadService`.
-2. Import exactly: `dart:io`, `dart:typed_data`, `package:path/path.dart` as `p`, `package:nt_helper/domain/i_disting_midi_manager.dart`, `package:nt_helper/models/sd_card_file_system.dart`, `poly_multisample_models.dart`, and `poly_sample_apply_service.dart`.
-3. Implement `buildUploadFiles` using `PolySampleApplyService.buildTargetFileName` and duplicate-target detection from the spec.
-4. Implement `uploadMountedSd` with temp-copy replacement, same-source skip, parent directory creation, and temp cleanup on failure.
-5. Implement `uploadSysEx` with parent directory creation, upload, download verification, exactly one corrective re-upload, and second-download failure.
-6. Private helper names in this file: `_ensureHardwareParent`, `_requireSuccess`, `_bytesEqual`, `_uniqueTempPath`.
-7. Create `test/poly_multisample/poly_sample_upload_service_test.dart` with `MockDistingMidiManager extends Mock implements IDistingMidiManager`. Register `Uint8List(0)` fallback in `setUpAll`.
-8. Add these tests exactly:
+2. Import exactly: `dart:io`, `dart:typed_data`, `package:path/path.dart` as `p`, `package:nt_helper/domain/i_disting_midi_manager.dart`, `package:nt_helper/models/sd_card_file_system.dart`, `package:nt_helper/poly_multisample/poly_multisample_models.dart`, and `package:nt_helper/poly_multisample/poly_sample_apply_service.dart`.
+3. Implement the private field `final PolySampleApplyService _applyService;` and constructor initializer from the spec.
+4. Implement `buildUploadFiles` using `_applyService.buildTargetFileName` and duplicate-target detection from the spec.
+5. Implement `uploadMountedSd` with temp-copy replacement, same-source skip, parent directory creation, host path context, and temp cleanup on failure.
+6. Implement `uploadSysEx` with POSIX path context, parent directory creation, upload, download verification, exactly one corrective re-upload, and second-download failure.
+7. Private helper names in this file: `_ensureHardwareParent`, `_requireSuccess`, `_bytesEqual`, `_uniqueTempPath`; use the exact `_requireSuccess` and `_bytesEqual` signatures from the spec.
+8. Create `test/poly_multisample/poly_sample_upload_service_test.dart` with `MockDistingMidiManager extends Mock implements IDistingMidiManager`. Register `Uint8List(0)` fallback in `setUpAll`.
+9. Add these tests exactly:
    - `test('buildUploadFiles rejects duplicate target names', ...)`: two regions that both target `Piano_C3.wav`; expect `PolySampleUploadException` and message contains `Multiple samples target Piano_C3.wav`.
    - `test('uploadMountedSd copies renamed files and preserves unrelated files', ...)`: create a temp source folder with `Piano_C3.wav`, destination folder with existing `Piano_C3.wav` containing different bytes and `unrelated.txt`; upload one region rooted C3; expect target bytes equal source and unrelated file still exists.
    - `test('uploadMountedSd skips same source and target path without deleting', ...)`: source path is already the computed target in destination; upload; expect file bytes unchanged.
@@ -117,7 +125,7 @@ Mechanical edits:
 3. Add optional constructor parameter `PolySampleUploadService? uploadService`, field `final PolySampleUploadService _uploadService;`, and initializer `_uploadService = uploadService ?? const PolySampleUploadService()`.
 4. Implement `uploadViaMountedSd` and `uploadViaSysEx` exactly as the spec states, including guard order, active operation/progress emits, preference persistence for mounted uploads, SysEx target `/samples/<sanitized current instrument name>`, effect strings, and failure emit.
 5. Add private helper `_safeHardwareFolderName` near `_fingerprintRegions` at the bottom of the cubit file.
-6. In the test file, add a fake upload service class near other fake service classes:
+6. In the test file, import `package:nt_helper/poly_multisample/poly_sample_upload_service.dart` and add a fake upload service class near other fake service classes:
 
 ```dart
 class _FakeUploadService extends PolySampleUploadService {
@@ -149,7 +157,8 @@ class _FakeUploadService extends PolySampleUploadService {
 
 The fake methods increment call counts, store destination/folder, call `onProgress?.call('Uploading fake sample...')`, await `completer?.future`, throw `error` when non-null, and return `result ?? const PolySampleUploadResult(filesUploaded: 1, bytesUploaded: 3, correctedFiles: 0)`.
 
-7. Add these cubit tests exactly:
+7. Extend `_ExposedPolyMultisampleBuilderCubit` so its constructor accepts `super.uploadService` in addition to the existing `super.applyService`, `super.wavService`, and `super.previewService` parameters.
+8. Add these cubit tests exactly:
    - `test('uploadViaMountedSd persists destination and emits success effect', ...)`: seed a local/importDraft state with one edited region using `_ExposedPolyMultisampleBuilderCubit.setTestState`; call upload; expect fake destination, `lastMountedUploadFolder`, `activeOperation.none`, and effect `Uploaded sample folder to /Volumes/NT/samples/Piano.`.
    - `test('uploadViaSysEx targets sanitized instrument folder', ...)`: instrument name `Piano/Bad:*Name`; call upload with `_MockDistingMidiManager`; expect fake `hardwareFolder == '/samples/Piano_Bad__Name'` and effect `Uploaded sample folder to /samples/Piano_Bad__Name.`.
    - `test('uploadViaSysEx reports corrected file count in effect', ...)`: fake result `correctedFiles: 2`; expect effect `Uploaded sample folder to /samples/Piano and corrected 2 files.`.

@@ -129,7 +129,7 @@ test/poly_multisample/
 | `PolySampleUploadService.uploadSysEx` | method | NEW service | yes | SysEx upload + verify/correct |
 | `_ensureHardwareParent` | function | NEW service | no | Private duplicate of hardware parent creation semantics |
 | `_requireSuccess` | function | NEW service | no | Private SD-card status guard |
-| `_listEquals` | function | NEW service | no | Private byte equality helper |
+| `_bytesEqual` | function | NEW service | no | Private byte equality helper |
 | `_uniqueTempPath` | function | NEW service | no | Private temp path helper for mounted copy |
 | `PolyMultisampleActiveOperation.uploading` | enum value | `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart` | yes | New active operation value |
 | `PolyMultisampleBuilderState.lastMountedUploadFolder` | field | builder cubit file | yes | New nullable state field |
@@ -182,7 +182,9 @@ class PolySampleUploadResult {
 class PolySampleUploadService {
   const PolySampleUploadService({
     PolySampleApplyService applyService = const PolySampleApplyService(),
-  });
+  }) : _applyService = applyService;
+
+  final PolySampleApplyService _applyService;
 
   List<PolySampleUploadFile> buildUploadFiles({
     required List<PolySampleRegion> regions,
@@ -207,12 +209,30 @@ class PolySampleUploadService {
 
 Mechanical service rules:
 
-1. `buildUploadFiles` uses `PolySampleApplyService.buildTargetFileName` with `includeVelocity` true when any region has `(velocityLayer ?? 1) > 1`, and `includeRoundRobin` true when any region has `(roundRobin ?? 1) > 1`.
+1. `buildUploadFiles` uses `_applyService.buildTargetFileName` with `includeVelocity` true when any region has `(velocityLayer ?? 1) > 1`, and `includeRoundRobin` true when any region has `(roundRobin ?? 1) > 1`.
 2. `buildUploadFiles` throws `PolySampleUploadException('Multiple samples target <basename>.')` when two source regions map to the same normalized target path.
-3. `uploadMountedSd` creates parent directories, copies each source file to a unique temp file in the target directory, deletes an existing target file with the same path, then renames the temp file to the target path. A source path equal to its normalized target path is counted as uploaded and skipped without deleting the file.
-4. `uploadMountedSd` cleans up its temp file on copy/rename failure.
-5. `uploadSysEx` creates hardware parent directories with `requestDirectoryCreate`, uploads each source file with `requestFileUpload`, downloads the target with `requestFileDownload`, compares bytes, and performs one corrective `requestFileUpload` when the first download is null or mismatched. A second null/mismatch throws `PolySampleUploadException('Verification failed for <targetPath>.')`.
-6. `bytesUploaded` counts source bytes sent by primary uploads only. Corrective uploads increment `correctedFiles` and do not add to `bytesUploaded`.
+3. `uploadMountedSd` calls `buildUploadFiles` with `targetFolder: destinationFolder` and the default host `package:path` context.
+4. `uploadMountedSd` creates parent directories, copies each source file to a unique temp file in the target directory, deletes an existing target file with the same path, then renames the temp file to the target path. A source path equal to its normalized target path is counted as uploaded and skipped without deleting the file.
+5. `uploadMountedSd` cleans up its temp file on copy/rename failure.
+6. `uploadSysEx` calls `buildUploadFiles` with `targetFolder: hardwareFolder` and `pathContext: p.posix`; hardware target paths must always use `/` separators on every host platform.
+7. `uploadSysEx` creates hardware parent directories with `requestDirectoryCreate` and `_requireSuccess`, uploads each source file with `requestFileUpload`, downloads the target with `requestFileDownload`, compares bytes with `_bytesEqual`, and performs one corrective `requestFileUpload` when the first download is null or mismatched. A second null/mismatch throws `PolySampleUploadException('Verification failed for <targetPath>.')`.
+8. `_requireSuccess` has signature `Future<void> _requireSuccess(Future<SdCardStatus?> future, String operation)` and throws `PolySampleUploadException('Hardware $operation failed: ${status?.message ?? 'no response'}')` when the status is null or unsuccessful.
+9. `_bytesEqual` has signature `bool _bytesEqual(Uint8List? actual, Uint8List expected)` so the required `dart:typed_data` import is used.
+10. `bytesUploaded` counts source bytes sent by primary uploads only. Corrective uploads increment `correctedFiles` and do not add to `bytesUploaded`.
+
+## Dependency and compatibility notes
+
+- New imports added by this spec must use package-prefixed paths from `specs/conventions.md`; do not add new relative imports.
+- `lib/poly_multisample/poly_sample_upload_service.dart` imports:
+  - `dart:io`
+  - `dart:typed_data`
+  - `package:path/path.dart` as `p`
+  - `package:nt_helper/domain/i_disting_midi_manager.dart`
+  - `package:nt_helper/models/sd_card_file_system.dart`
+  - `package:nt_helper/poly_multisample/poly_multisample_models.dart`
+  - `package:nt_helper/poly_multisample/poly_sample_apply_service.dart`
+- No existing public symbols move to new files, so no compatibility re-export is required.
+- Do not edit generated files; this feature adds no generated-code classes.
 
 ### `PolyMultisampleBuilderState` additions
 
