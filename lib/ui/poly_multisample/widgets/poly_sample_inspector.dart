@@ -744,13 +744,18 @@ class _FrameNudgeRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: Text('$label: $value')),
-        for (final delta in const [-100, -1, 1, 100])
-          IconButton(
-            tooltip: '$label ${delta.isNegative ? '' : '+'}$delta frames',
-            visualDensity: VisualDensity.compact,
-            onPressed: () => onNudge(delta),
-            icon: Icon(delta.isNegative ? Icons.remove : Icons.add, size: 18),
-          ),
+        SplitStepperControl.largeAndSmall(
+          label: label,
+          valueLabel: '$value frames',
+          smallStepLabel: '1',
+          largeStepLabel: '100',
+          smallStepSemanticsLabel: '1 frame',
+          largeStepSemanticsLabel: '100 frames',
+          onLargeDecrement: () => onNudge(-100),
+          onSmallDecrement: () => onNudge(-1),
+          onSmallIncrement: () => onNudge(1),
+          onLargeIncrement: () => onNudge(100),
+        ),
       ],
     );
   }

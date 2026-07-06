@@ -159,28 +159,20 @@ void main() {
 
     await _pumpInspector(tester, cubit);
     await tester.scrollUntilVisible(
-      find.byTooltip('Loop start +100 frames'),
+      find.byTooltip('Increase Loop start by 100 frames'),
       300,
     );
-    await tester.tap(find.byTooltip('Loop start +100 frames'));
+    await tester.tap(find.byTooltip('Increase Loop start by 100 frames'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Loop start +100 frames'));
-    await tester.pump();
-    await tester.tap(find.byTooltip('Loop end -100 frames'));
-    await tester.pump();
-    await tester.tap(find.byTooltip('Loop end -100 frames'));
+    await tester.tap(find.byTooltip('Decrease Loop end by 100 frames'));
     await tester.pump();
     await tester.scrollUntilVisible(
-      find.byTooltip('Trim start +100 frames'),
+      find.byTooltip('Increase Trim start by 100 frames'),
       300,
     );
-    await tester.tap(find.byTooltip('Trim start +100 frames'));
+    await tester.tap(find.byTooltip('Increase Trim start by 100 frames'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Trim start +100 frames'));
-    await tester.pump();
-    await tester.tap(find.byTooltip('Trim end -100 frames'));
-    await tester.pump();
-    await tester.tap(find.byTooltip('Trim end -100 frames'));
+    await tester.tap(find.byTooltip('Decrease Trim end by 100 frames'));
     await tester.pump();
 
     final loopDraft = cubit.state.loopDrafts['/tmp/Piano/Piano_C3.wav']!;
@@ -260,6 +252,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(
+      find.bySemanticsLabel('Increase Trim start by 1 frame'),
+      findsOneWidget,
+    );
     expect(find.bySemanticsLabel('Audio gain'), findsOneWidget);
     expect(find.bySemanticsLabel('Normalize peak'), findsOneWidget);
     expect(find.bySemanticsLabel('Fade in length'), findsOneWidget);
