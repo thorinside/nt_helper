@@ -26,6 +26,31 @@ void main() {
       expect(service.state.playingPath, isNull);
     });
 
+    test(
+      'restartPreview restarts the same visible path without toggling',
+      () async {
+        final adapter = _FakePreviewAdapter();
+        final service = PolyAudioPreviewService(adapter: adapter);
+        addTearDown(service.dispose);
+
+        await service.restartPreview(
+          '/tmp/rendered-a.wav',
+          displayPath: '/tmp/source.wav',
+        );
+        await service.restartPreview(
+          '/tmp/rendered-a.wav',
+          displayPath: '/tmp/source.wav',
+        );
+
+        expect(adapter.playedPaths, [
+          '/tmp/rendered-a.wav',
+          '/tmp/rendered-a.wav',
+        ]);
+        expect(adapter.stopCount, 1);
+        expect(service.state.visiblePath, '/tmp/source.wav');
+      },
+    );
+
     test('uses display path for toggling cached hardware previews', () async {
       final adapter = _FakePreviewAdapter();
       final service = PolyAudioPreviewService(adapter: adapter);

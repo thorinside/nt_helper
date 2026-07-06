@@ -98,6 +98,26 @@ class PolyAudioPreviewService {
     );
   }
 
+  Future<void> restartPreview(
+    String path, {
+    double gainDb = 0,
+    String? displayPath,
+  }) async {
+    final adapter = _ensureAdapter();
+    if (state.isPlaying) {
+      await adapter.stop();
+    }
+    final volume = _volumeFromGainDb(gainDb);
+    await adapter.play(path, volume: volume);
+    _setState(
+      PolyAudioPreviewState(
+        playingPath: path,
+        displayPath: displayPath,
+        gainDb: gainDb,
+      ),
+    );
+  }
+
   Future<void> stop() async {
     if (!state.isPlaying) return;
     await _adapter?.stop();
