@@ -43,6 +43,8 @@ class PolySampleUploadResult {
   final int correctedFiles;
 }
 
+const int _sysExUploadChunkSize = 512;
+
 class PolySampleUploadService {
   const PolySampleUploadService({
     PolySampleApplyService applyService = const PolySampleApplyService(),
@@ -165,20 +167,14 @@ class PolySampleUploadService {
       onProgress?.call('Uploading ${file.displayName}...');
       await _ensureHardwareParent(manager, file.targetPath);
       final bytes = await File(file.sourcePath).readAsBytes();
-      await _requireSuccess(
-        manager.requestFileUpload(file.targetPath, bytes),
-        'upload ${file.targetPath}',
-      );
+      await _uploadHardwareFile(manager, file.targetPath, bytes);
       filesUploaded++;
       bytesUploaded += bytes.length;
 
       final firstDownload = await manager.requestFileDownload(file.targetPath);
       if (_bytesEqual(firstDownload, bytes)) continue;
 
-      await _requireSuccess(
-        manager.requestFileUpload(file.targetPath, bytes),
-        'upload ${file.targetPath}',
-      );
+      await _uploadHardwareFile(manager, file.targetPath, bytes);
       correctedFiles++;
       final secondDownload = await manager.requestFileDownload(file.targetPath);
       if (!_bytesEqual(secondDownload, bytes)) {
@@ -193,6 +189,37 @@ class PolySampleUploadService {
       bytesUploaded: bytesUploaded,
       correctedFiles: correctedFiles,
     );
+  }
+}
+
+Future<void> _uploadHardwareFile(
+  IDistingMidiManager manager,
+  String path,
+  Uint8List bytes,
+) async {
+  if (bytes.isEmpty) {
+    await _requireSuccess(
+      manager.requestFileUploadChunk(path, Uint8List(0), 0, createAlways: true),
+      'upload chunk at 0 for $path',
+    );
+    return;
+  }
+
+  for (var position = 0; position < bytes.length;) {
+    final nextPosition = position + _sysExUploadChunkSize < bytes.length
+        ? position + _sysExUploadChunkSize
+        : bytes.length;
+    final chunk = bytes.sublist(position, nextPosition);
+    await _requireSuccess(
+      manager.requestFileUploadChunk(
+        path,
+        chunk,
+        position,
+        createAlways: position == 0,
+      ),
+      'upload chunk at $position for $path',
+    );
+    position = nextPosition;
   }
 }
 

@@ -86,7 +86,12 @@ void main() {
         (_) async => SdCardStatus(success: true, message: 'renamed'),
       );
       when(
-        () => manager.requestFileUpload('/samples/Piano/New_C4.wav', any()),
+        () => manager.requestFileUploadChunk(
+          '/samples/Piano/New_C4.wav',
+          any(),
+          0,
+          createAlways: true,
+        ),
       ).thenAnswer(
         (_) async => SdCardStatus(success: true, message: 'uploaded'),
       );
@@ -135,11 +140,20 @@ void main() {
         () => manager.requestFileRename(any(), '/samples/Piano/A_D3.wav'),
       ).called(1);
       verify(
-        () => manager.requestFileUpload(
+        () => manager.requestFileUploadChunk(
           '/samples/Piano/New_C4.wav',
-          Uint8List.fromList([1, 2, 3]),
+          any(
+            that: isA<Uint8List>().having((bytes) => bytes.toList(), 'bytes', [
+              1,
+              2,
+              3,
+            ]),
+          ),
+          0,
+          createAlways: true,
         ),
       ).called(1);
+      verifyNever(() => manager.requestFileUpload(any(), any()));
     });
   });
 }

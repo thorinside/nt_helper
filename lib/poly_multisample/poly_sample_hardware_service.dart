@@ -13,6 +13,8 @@ import 'poly_sample_apply_service.dart';
 typedef PolySampleAdditionBytesReader =
     Future<Uint8List> Function(PolySampleFileAddition addition);
 
+const int _sysExUploadChunkSize = 512;
+
 class PolySampleHardwareException implements Exception {
   const PolySampleHardwareException(this.message);
 
@@ -117,10 +119,43 @@ class PolySampleHardwareService {
       final bytes = readAdditionBytes == null
           ? await File(addition.sourcePath).readAsBytes()
           : await readAdditionBytes(addition);
+      await _uploadHardwareFile(manager, addition.toPath, bytes);
+    }
+  }
+
+  Future<void> _uploadHardwareFile(
+    IDistingMidiManager manager,
+    String path,
+    Uint8List bytes,
+  ) async {
+    if (bytes.isEmpty) {
       await _requireSuccess(
-        manager.requestFileUpload(addition.toPath, bytes),
-        'upload ${addition.toPath}',
+        manager.requestFileUploadChunk(
+          path,
+          Uint8List(0),
+          0,
+          createAlways: true,
+        ),
+        'upload chunk at 0 for $path',
       );
+      return;
+    }
+
+    for (var position = 0; position < bytes.length;) {
+      final nextPosition = position + _sysExUploadChunkSize < bytes.length
+          ? position + _sysExUploadChunkSize
+          : bytes.length;
+      final chunk = bytes.sublist(position, nextPosition);
+      await _requireSuccess(
+        manager.requestFileUploadChunk(
+          path,
+          chunk,
+          position,
+          createAlways: position == 0,
+        ),
+        'upload chunk at $position for $path',
+      );
+      position = nextPosition;
     }
   }
 
