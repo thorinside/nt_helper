@@ -45,6 +45,18 @@ class PolySampleUploadResult {
   final int failedVerificationFiles;
 }
 
+class PolySampleUploadValidationResult {
+  const PolySampleUploadValidationResult({
+    required this.filesChecked,
+    required this.bytesChecked,
+    required this.failedFiles,
+  });
+
+  final int filesChecked;
+  final int bytesChecked;
+  final int failedFiles;
+}
+
 const int _sysExUploadChunkSize = 512;
 
 class PolySampleUploadService {
@@ -213,6 +225,63 @@ class PolySampleUploadService {
       failedVerificationFiles: verification.failedFiles,
     );
   }
+
+  Future<PolySampleUploadValidationResult> validateSysEx({
+    required IDistingMidiManager manager,
+    required List<PolySampleRegion> regions,
+    required String hardwareFolder,
+    bool verifyContent = false,
+    PolySampleUploadProgress? onProgress,
+  }) async {
+    final files = buildUploadFiles(
+      regions: regions,
+      targetFolder: hardwareFolder,
+      pathContext: p.posix,
+    );
+    final uploadedFiles = <_UploadedHardwareFile>[];
+    var totalBytes = 0;
+    for (final file in files) {
+      final byteLength = await File(file.sourcePath).length();
+      totalBytes += byteLength;
+      uploadedFiles.add(
+        _UploadedHardwareFile(file: file, byteLength: byteLength),
+      );
+    }
+    final progress = _TransferProgress(
+      totalBytes: totalBytes,
+      onProgress: onProgress,
+    );
+
+    onProgress?.call('Validating ${files.length} uploaded sample(s)...');
+    final preflight = await _preflightHardwareFiles(
+      manager,
+      hardwareFolder,
+      uploadedFiles,
+    );
+    if (preflight.failedFiles > 0) {
+      onProgress?.call(
+        'Validation found ${preflight.failedFiles} missing or size-mismatched '
+        'sample(s) before content checks.',
+      );
+    }
+    if (!verifyContent) {
+      return PolySampleUploadValidationResult(
+        filesChecked: files.length,
+        bytesChecked: totalBytes,
+        failedFiles: preflight.failedFiles,
+      );
+    }
+    final mismatches = await _findMismatches(
+      manager,
+      preflight.contentCheckFiles,
+      progress,
+    );
+    return PolySampleUploadValidationResult(
+      filesChecked: files.length,
+      bytesChecked: totalBytes,
+      failedFiles: preflight.failedFiles + mismatches.length,
+    );
+  }
 }
 
 class _UploadedHardwareFile {
@@ -330,6 +399,52 @@ class _HardwareVerificationResult {
   final int failedFiles;
 }
 
+class _HardwarePreflightResult {
+  const _HardwarePreflightResult({
+    required this.contentCheckFiles,
+    required this.failedFiles,
+  });
+
+  final List<_UploadedHardwareFile> contentCheckFiles;
+  final int failedFiles;
+}
+
+Future<_HardwarePreflightResult> _preflightHardwareFiles(
+  IDistingMidiManager manager,
+  String hardwareFolder,
+  List<_UploadedHardwareFile> files,
+) async {
+  final listing = await manager.requestDirectoryListing(hardwareFolder);
+  if (listing == null) {
+    return _HardwarePreflightResult(
+      contentCheckFiles: const [],
+      failedFiles: files.length,
+    );
+  }
+
+  final entriesByName = <String, DirectoryEntry>{};
+  for (final entry in listing.entries) {
+    if (!entry.isDirectory) {
+      entriesByName[_entryName(entry)] = entry;
+    }
+  }
+
+  final contentCheckFiles = <_UploadedHardwareFile>[];
+  var failedFiles = 0;
+  for (final file in files) {
+    final entry = entriesByName[p.posix.basename(file.file.targetPath)];
+    if (entry == null || entry.size != file.byteLength) {
+      failedFiles++;
+    } else {
+      contentCheckFiles.add(file);
+    }
+  }
+  return _HardwarePreflightResult(
+    contentCheckFiles: contentCheckFiles,
+    failedFiles: failedFiles,
+  );
+}
+
 Future<_HardwareVerificationResult> _verifyHardwareFiles(
   IDistingMidiManager manager,
   List<_UploadedHardwareFile> files,
@@ -434,6 +549,9 @@ Future<bool> _downloadMatchesSource(
   );
   return _bytesEqual(actual, source);
 }
+
+String _entryName(DirectoryEntry entry) =>
+    entry.name.replaceAll(RegExp(r'/+$'), '');
 
 Future<void> _uploadHardwareFile(
   IDistingMidiManager manager,

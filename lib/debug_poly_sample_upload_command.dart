@@ -32,7 +32,16 @@ Future<int> runDebugPolySampleUploadCommand(List<String> args) async {
   stdout.writeln('Debug poly sample upload');
   stdout.writeln('  source: ${options.sourceFolder}');
   stdout.writeln('  target: ${options.hardwareFolder}');
-  stdout.writeln('  verify: ${options.verifyAfterUpload ? 'yes' : 'no'}');
+  stdout.writeln(
+    '  mode: ${options.validateOnly ? 'validate existing upload' : 'upload'}',
+  );
+  if (!options.validateOnly) {
+    stdout.writeln('  verify: ${options.verifyAfterUpload ? 'yes' : 'no'}');
+  } else {
+    stdout.writeln(
+      '  content: ${options.validateContent ? 'yes' : 'no, names and sizes'}',
+    );
+  }
 
   final sourceDir = Directory(options.sourceFolder);
   if (!await sourceDir.exists()) {
@@ -115,6 +124,22 @@ Future<int> runDebugPolySampleUploadCommand(List<String> args) async {
     final version = await manager.requestVersionString();
     stdout.writeln('Connected to Disting NT firmware: ${version ?? 'unknown'}');
     final progressPrinter = _ProgressPrinter();
+    if (options.validateOnly) {
+      final result = await const PolySampleUploadService().validateSysEx(
+        manager: manager,
+        regions: instrument.regions,
+        hardwareFolder: options.hardwareFolder,
+        verifyContent: options.validateContent,
+        onProgress: progressPrinter.write,
+      );
+      stdout.writeln(
+        'Validation finished: ${result.filesChecked} file(s), '
+        '${_formatBytes(result.bytesChecked)}, '
+        '${result.failedFiles} mismatch(es).',
+      );
+      return result.failedFiles == 0 ? 0 : 70;
+    }
+
     final result = await const PolySampleUploadService().uploadSysEx(
       manager: manager,
       regions: instrument.regions,
@@ -225,6 +250,8 @@ class _DebugPolySampleUploadOptions {
     required this.sourceFolder,
     required this.hardwareFolder,
     required this.verifyAfterUpload,
+    required this.validateOnly,
+    required this.validateContent,
     this.inputDeviceName,
     this.outputDeviceName,
     this.sysExId,
@@ -233,6 +260,8 @@ class _DebugPolySampleUploadOptions {
   final String sourceFolder;
   final String hardwareFolder;
   final bool verifyAfterUpload;
+  final bool validateOnly;
+  final bool validateContent;
   final String? inputDeviceName;
   final String? outputDeviceName;
   final int? sysExId;
@@ -241,6 +270,8 @@ class _DebugPolySampleUploadOptions {
     final values = <String, String>{};
     var sourceFolder = _defaultSourceFolder();
     var verifyAfterUpload = false;
+    var validateOnly = false;
+    var validateContent = false;
 
     for (var index = 0; index < args.length; index++) {
       final arg = args[index];
@@ -258,6 +289,15 @@ class _DebugPolySampleUploadOptions {
         verifyAfterUpload = true;
         continue;
       }
+      if (arg == '--validate' || arg == '--validate-only') {
+        validateOnly = true;
+        continue;
+      }
+      if (arg == '--validate-content') {
+        validateOnly = true;
+        validateContent = true;
+        continue;
+      }
       if (arg.startsWith('--')) {
         final separator = arg.indexOf('=');
         if (separator > 2) {
@@ -272,6 +312,8 @@ class _DebugPolySampleUploadOptions {
       sourceFolder: sourceFolder,
       hardwareFolder: values['hardware-folder'] ?? '/multisamples/$folderName',
       verifyAfterUpload: verifyAfterUpload,
+      validateOnly: validateOnly,
+      validateContent: validateContent,
       inputDeviceName: values['input'],
       outputDeviceName: values['output'],
       sysExId: int.tryParse(values['sysex-id'] ?? ''),

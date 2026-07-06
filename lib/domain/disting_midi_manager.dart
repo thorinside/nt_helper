@@ -1083,6 +1083,7 @@ class DistingMidiManager implements IDistingMidiManager {
         messageType: DistingNTRespMessageType.respDirectoryListing,
       ),
       responseExpectation: ResponseExpectation.required,
+      timeout: const Duration(seconds: 10),
     );
   }
 

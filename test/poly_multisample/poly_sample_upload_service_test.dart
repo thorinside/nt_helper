@@ -227,6 +227,113 @@ void main() {
     expect(chunkCalls.single.path, '/multisamples/Piano/Piano_C3.wav');
   });
 
+  test('validateSysEx checks uploaded files with chunked downloads', () async {
+    final manager = MockDistingMidiManager();
+    final source = File('${tempRoot.path}/Piano_C3.wav')
+      ..writeAsBytesSync([1, 2, 3]);
+    final downloadCalls = <ChunkDownloadCall>[];
+    when(
+      () => manager.requestDirectoryListing('/multisamples/Piano'),
+    ).thenAnswer(
+      (_) async => DirectoryListing(entries: [_file('Piano_C3.wav', 3)]),
+    );
+    _stubChunkDownloads(
+      manager,
+      downloadCalls,
+      (call, _) => Uint8List.fromList([1, 2, 3]),
+    );
+
+    final result = await service.validateSysEx(
+      manager: manager,
+      regions: [
+        PolySampleRegion(
+          path: source.path,
+          fileName: 'Piano_C3.wav',
+          displayName: 'Piano_C3.wav',
+          rootMidi: 48,
+        ),
+      ],
+      hardwareFolder: '/multisamples/Piano',
+      verifyContent: true,
+    );
+
+    expect(result.filesChecked, 1);
+    expect(result.bytesChecked, 3);
+    expect(result.failedFiles, 0);
+    expect(downloadCalls.single.path, '/multisamples/Piano/Piano_C3.wav');
+    expect(downloadCalls.single.position, 0);
+    expect(downloadCalls.single.count, 3);
+    verifyNever(
+      () => manager.requestFileUploadChunk(
+        any(),
+        any(),
+        any(),
+        createAlways: any(named: 'createAlways'),
+      ),
+    );
+  });
+
+  test('validateSysEx reports mismatched uploaded files', () async {
+    final manager = MockDistingMidiManager();
+    final source = File('${tempRoot.path}/Piano_C3.wav')
+      ..writeAsBytesSync([1, 2, 3]);
+    when(
+      () => manager.requestDirectoryListing('/multisamples/Piano'),
+    ).thenAnswer(
+      (_) async => DirectoryListing(entries: [_file('Piano_C3.wav', 3)]),
+    );
+    _stubChunkDownloads(
+      manager,
+      <ChunkDownloadCall>[],
+      (call, _) => Uint8List.fromList([1, 9, 3]),
+    );
+
+    final result = await service.validateSysEx(
+      manager: manager,
+      regions: [
+        PolySampleRegion(
+          path: source.path,
+          fileName: 'Piano_C3.wav',
+          displayName: 'Piano_C3.wav',
+          rootMidi: 48,
+        ),
+      ],
+      hardwareFolder: '/multisamples/Piano',
+      verifyContent: true,
+    );
+
+    expect(result.filesChecked, 1);
+    expect(result.failedFiles, 1);
+  });
+
+  test('validateSysEx reports size mismatches before downloading', () async {
+    final manager = MockDistingMidiManager();
+    final source = File('${tempRoot.path}/Piano_C3.wav')
+      ..writeAsBytesSync([1, 2, 3]);
+    when(
+      () => manager.requestDirectoryListing('/multisamples/Piano'),
+    ).thenAnswer(
+      (_) async => DirectoryListing(entries: [_file('Piano_C3.wav', 2)]),
+    );
+
+    final result = await service.validateSysEx(
+      manager: manager,
+      regions: [
+        PolySampleRegion(
+          path: source.path,
+          fileName: 'Piano_C3.wav',
+          displayName: 'Piano_C3.wav',
+          rootMidi: 48,
+        ),
+      ],
+      hardwareFolder: '/multisamples/Piano',
+    );
+
+    expect(result.filesChecked, 1);
+    expect(result.failedFiles, 1);
+    verifyNever(() => manager.requestFileDownloadChunk(any(), any(), any()));
+  });
+
   test(
     'uploadSysEx writes semantic filenames into multisamples folder',
     () async {
@@ -523,6 +630,9 @@ void main() {
 
 DirectoryEntry _dir(String name) =>
     DirectoryEntry(name: '$name/', attributes: 0x10, date: 0, time: 0, size: 0);
+
+DirectoryEntry _file(String name, int size) =>
+    DirectoryEntry(name: name, attributes: 0, date: 0, time: 0, size: size);
 
 void _stubDirectoryCreates(MockDistingMidiManager manager) {
   when(
