@@ -556,7 +556,7 @@ class DecentSamplerConverter {
     for (final file in presetFiles) {
       final resolver = _LocalDecentSourceResolver(
         baseDirectory: file.parent.path,
-        allowedRoot: directory.path,
+        allowedRoot: _localPresetAllowedRoot(file),
       );
       final sourceDocs = options.includeSourceDocs
           ? await _sourceDocsForLocalDirectory(file.parent)
@@ -603,7 +603,7 @@ class DecentSamplerConverter {
       options: options,
     );
     final baseDir = file.parent.path;
-    final commonParent = file.parent.parent.path;
+    final commonParent = _localPresetAllowedRoot(file);
     final sourceDocs = options.includeSourceDocs
         ? await _sourceDocsForLocalDirectory(file.parent)
         : const <_DecentSourceDoc>[];
@@ -618,6 +618,8 @@ class DecentSamplerConverter {
         ),
     ];
   }
+
+  String _localPresetAllowedRoot(File file) => file.parent.parent.path;
 
   Future<List<_DecentPresetPlan>> _readArchive(
     File file,

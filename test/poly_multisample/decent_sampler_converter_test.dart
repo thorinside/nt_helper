@@ -116,6 +116,49 @@ void main() {
     );
 
     test(
+      'reads directory-imported preset samples from sibling folders under common parent',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_directory_sibling_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+        final libraryDir = Directory('${tempDir.path}/Library')
+          ..createSync(recursive: true);
+        final presetDir = Directory('${libraryDir.path}/Preset')
+          ..createSync(recursive: true);
+        final samplesDir = Directory('${libraryDir.path}/Samples')
+          ..createSync(recursive: true);
+        await File('${samplesDir.path}/C4.wav').writeAsBytes(_dummyWav);
+        final preset = File('${presetDir.path}/DirectorySibling.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="../Samples/C4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final result = await DecentSamplerConverter().convert(
+          sourcePath: presetDir.path,
+          outputParentPath: '${tempDir.path}/out',
+        );
+
+        expect(result.copiedFiles, 1);
+        expect(result.warnings, isEmpty);
+        expect(
+          await File(
+            '${result.outputFolders.single}/DirectorySibling_C4.wav',
+          ).exists(),
+          isTrue,
+        );
+      },
+    );
+
+    test(
       'does not read standalone preset samples outside common parent',
       () async {
         final tempDir = await Directory.systemTemp.createTemp(
