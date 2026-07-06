@@ -40,7 +40,13 @@ class PolySampleList extends StatefulWidget {
 }
 
 class _PolySampleListState extends State<PolySampleList> {
-  static const _itemExtent = 84.0;
+  static const _itemExtent = 64.0;
+  static const _horizontalPadding = 4.0;
+  static const _verticalPadding = 6.0;
+  static const _leadingExtent = 32.0;
+  static const _previewButtonExtent = 40.0;
+  static const _contentGap = 4.0;
+  static const _stepperGap = 4.0;
 
   final ScrollController _scrollController = ScrollController();
   String? _pendingFocusedPath;
@@ -125,90 +131,170 @@ class _PolySampleListState extends State<PolySampleList> {
         final rootLabel = region.rootName ?? 'unmapped';
         final lowLabel = PolyMultisampleParser.midiToNoteName(low);
         final highLabel = PolyMultisampleParser.midiToNoteName(high);
+        final steppers = [
+          _InlineSampleStepper(
+            stepperKey: ValueKey('poly-sample-stepper-${region.path}-root'),
+            label: 'Root',
+            value: region.rootMidi == null
+                ? 'Unset'
+                : PolyMultisampleParser.midiToNoteName(root),
+            sampleLabel: label,
+            onDecrease: () =>
+                widget.onUpdateRoot(region.path, _clampMidi(root - 1)),
+            onIncrease: () =>
+                widget.onUpdateRoot(region.path, _clampMidi(root + 1)),
+          ),
+          _InlineSampleStepper(
+            stepperKey: ValueKey('poly-sample-stepper-${region.path}-low'),
+            label: 'Low',
+            value: PolyMultisampleParser.midiToNoteName(low),
+            sampleLabel: label,
+            onDecrease: () =>
+                widget.onUpdateRangeLow(region.path, _clampMidi(low - 1)),
+            onIncrease: () =>
+                widget.onUpdateRangeLow(region.path, _clampMidi(low + 1)),
+          ),
+          _InlineSampleStepper(
+            stepperKey: ValueKey('poly-sample-stepper-${region.path}-high'),
+            label: 'High',
+            value: PolyMultisampleParser.midiToNoteName(high),
+            sampleLabel: label,
+            onDecrease: () =>
+                widget.onUpdateRangeHigh(region.path, _clampMidi(high - 1)),
+            onIncrease: () =>
+                widget.onUpdateRangeHigh(region.path, _clampMidi(high + 1)),
+          ),
+          _InlineSampleStepper(
+            stepperKey: ValueKey('poly-sample-stepper-${region.path}-vel'),
+            label: 'Vel',
+            value: '$velocity',
+            sampleLabel: label,
+            onDecrease: () =>
+                widget.onUpdateVelocity(region.path, math.max(1, velocity - 1)),
+            onIncrease: () =>
+                widget.onUpdateVelocity(region.path, velocity + 1),
+          ),
+          _InlineSampleStepper(
+            stepperKey: ValueKey('poly-sample-stepper-${region.path}-rr'),
+            label: 'RR',
+            value: '$roundRobin',
+            sampleLabel: label,
+            onDecrease: () => widget.onUpdateRoundRobin(
+              region.path,
+              math.max(1, roundRobin - 1),
+            ),
+            onIncrease: () =>
+                widget.onUpdateRoundRobin(region.path, roundRobin + 1),
+          ),
+        ];
         return Semantics(
+          container: true,
+          explicitChildNodes: true,
           selected: selected,
           label:
               '$label, root $rootLabel, low $lowLabel, high $highLabel, velocity $velocity, RR $roundRobin',
-          child: ListTile(
-            dense: true,
-            selected: selected,
-            leading: Icon(
-              issues.isEmpty ? Icons.graphic_eq : Icons.warning_amber,
-              semanticLabel: issues.isEmpty
-                  ? 'Mapped sample'
-                  : 'Sample warning',
-              size: 20,
+          child: Material(
+            color: selected
+                ? Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer.withValues(alpha: 0.36)
+                : Colors.transparent,
+            child: InkWell(
+              onTap: () => widget.onSelect(region.path, _selectionMode()),
+              child: Padding(
+                key: ValueKey('poly-sample-row-${region.path}'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _horizontalPadding,
+                  vertical: _verticalPadding,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox.square(
+                      dimension: _leadingExtent,
+                      child: Center(
+                        child: Icon(
+                          issues.isEmpty
+                              ? Icons.graphic_eq
+                              : Icons.warning_amber,
+                          semanticLabel: issues.isEmpty
+                              ? 'Mapped sample'
+                              : 'Sample warning',
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: _contentGap),
+                    Expanded(
+                      flex: 1,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: _contentGap),
+                    Flexible(
+                      flex: 12,
+                      child: SizedBox(
+                        key: ValueKey(
+                          'poly-sample-stepper-strip-${region.path}',
+                        ),
+                        height: _InlineSampleStepper.height,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: constraints.maxWidth,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    for (
+                                      var stepperIndex = 0;
+                                      stepperIndex < steppers.length;
+                                      stepperIndex++
+                                    ) ...[
+                                      if (stepperIndex > 0)
+                                        const SizedBox(width: _stepperGap),
+                                      steppers[stepperIndex],
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: _contentGap),
+                    SizedBox.square(
+                      key: ValueKey('poly-sample-preview-${region.path}'),
+                      dimension: _previewButtonExtent,
+                      child: Center(
+                        child: IconButton(
+                          tooltip: playing ? 'Stop preview' : 'Preview sample',
+                          icon: Icon(playing ? Icons.stop : Icons.play_arrow),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                            width: _previewButtonExtent,
+                            height: _previewButtonExtent,
+                          ),
+                          onPressed: region.path.toLowerCase().endsWith('.wav')
+                              ? () => widget.onPreview(region.path)
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                _InlineSampleStepper(
-                  label: 'Root',
-                  value: region.rootMidi == null
-                      ? 'Unset'
-                      : PolyMultisampleParser.midiToNoteName(root),
-                  sampleLabel: label,
-                  onDecrease: () =>
-                      widget.onUpdateRoot(region.path, _clampMidi(root - 1)),
-                  onIncrease: () =>
-                      widget.onUpdateRoot(region.path, _clampMidi(root + 1)),
-                ),
-                _InlineSampleStepper(
-                  label: 'Low',
-                  value: PolyMultisampleParser.midiToNoteName(low),
-                  sampleLabel: label,
-                  onDecrease: () =>
-                      widget.onUpdateRangeLow(region.path, _clampMidi(low - 1)),
-                  onIncrease: () =>
-                      widget.onUpdateRangeLow(region.path, _clampMidi(low + 1)),
-                ),
-                _InlineSampleStepper(
-                  label: 'High',
-                  value: PolyMultisampleParser.midiToNoteName(high),
-                  sampleLabel: label,
-                  onDecrease: () => widget.onUpdateRangeHigh(
-                    region.path,
-                    _clampMidi(high - 1),
-                  ),
-                  onIncrease: () => widget.onUpdateRangeHigh(
-                    region.path,
-                    _clampMidi(high + 1),
-                  ),
-                ),
-                _InlineSampleStepper(
-                  label: 'Vel',
-                  value: '$velocity',
-                  sampleLabel: label,
-                  onDecrease: () => widget.onUpdateVelocity(
-                    region.path,
-                    math.max(1, velocity - 1),
-                  ),
-                  onIncrease: () =>
-                      widget.onUpdateVelocity(region.path, velocity + 1),
-                ),
-                _InlineSampleStepper(
-                  label: 'RR',
-                  value: '$roundRobin',
-                  sampleLabel: label,
-                  onDecrease: () => widget.onUpdateRoundRobin(
-                    region.path,
-                    math.max(1, roundRobin - 1),
-                  ),
-                  onIncrease: () =>
-                      widget.onUpdateRoundRobin(region.path, roundRobin + 1),
-                ),
-              ],
-            ),
-            trailing: IconButton(
-              tooltip: playing ? 'Stop preview' : 'Preview sample',
-              icon: Icon(playing ? Icons.stop : Icons.play_arrow),
-              onPressed: region.path.toLowerCase().endsWith('.wav')
-                  ? () => widget.onPreview(region.path)
-                  : null,
-            ),
-            onTap: () => widget.onSelect(region.path, _selectionMode()),
           ),
         );
       },
@@ -218,6 +304,7 @@ class _PolySampleListState extends State<PolySampleList> {
 
 class _InlineSampleStepper extends StatelessWidget {
   const _InlineSampleStepper({
+    required this.stepperKey,
     required this.label,
     required this.value,
     required this.sampleLabel,
@@ -225,6 +312,11 @@ class _InlineSampleStepper extends StatelessWidget {
     required this.onIncrease,
   });
 
+  static const height = 32.0;
+  static const _buttonExtent = 32.0;
+  static const _iconSize = 18.0;
+
+  final Key? stepperKey;
   final String label;
   final String value;
   final String sampleLabel;
@@ -234,6 +326,7 @@ class _InlineSampleStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      key: stepperKey,
       container: true,
       label: '$label $value for $sampleLabel',
       child: DecoratedBox(
@@ -244,31 +337,37 @@ class _InlineSampleStepper extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _button(
-                context,
-                'Decrease $label for $sampleLabel',
-                Icons.remove,
-                onDecrease,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  '$label $value',
-                  style: Theme.of(context).textTheme.labelSmall,
+        child: SizedBox(
+          height: height,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _button(
+                  context,
+                  'Decrease $label for $sampleLabel',
+                  Icons.remove,
+                  onDecrease,
                 ),
-              ),
-              _button(
-                context,
-                'Increase $label for $sampleLabel',
-                Icons.add,
-                onIncrease,
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Center(
+                    child: Text(
+                      '$label $value',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ),
+                ),
+                _button(
+                  context,
+                  'Increase $label for $sampleLabel',
+                  Icons.add,
+                  onIncrease,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -281,16 +380,23 @@ class _InlineSampleStepper extends StatelessWidget {
     IconData icon,
     VoidCallback onPressed,
   ) {
-    return IconButton(
-      tooltip: tooltip,
-      icon: Icon(icon, size: 14),
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: 24, height: 24),
-      style: IconButton.styleFrom(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    return SizedBox.square(
+      key: ValueKey('poly-sample-stepper-button-$tooltip'),
+      dimension: _buttonExtent,
+      child: IconButton(
+        tooltip: tooltip,
+        icon: Icon(icon, size: _iconSize),
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(
+          width: _buttonExtent,
+          height: _buttonExtent,
+        ),
+        style: IconButton.styleFrom(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        onPressed: onPressed,
       ),
-      onPressed: onPressed,
     );
   }
 }

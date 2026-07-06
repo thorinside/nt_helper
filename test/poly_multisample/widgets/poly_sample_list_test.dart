@@ -137,6 +137,71 @@ void main() {
     expect(find.text('RR 3'), findsOneWidget);
   });
 
+  testWidgets('keeps rows compact with centered preview and steppers', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    const region = PolySampleRegion(
+      path: '/tmp/mapped.wav',
+      fileName: 'mapped.wav',
+      displayName: 'mapped.wav',
+      rootMidi: 48,
+      rootName: 'C3',
+      rangeLow: 47,
+      rangeHigh: 55,
+      velocityLayer: 2,
+      roundRobin: 3,
+    );
+
+    await _pumpList(tester, regions: const [region]);
+
+    final rowFinder = find.byKey(
+      const ValueKey('poly-sample-row-/tmp/mapped.wav'),
+    );
+    final previewFinder = find.byKey(
+      const ValueKey('poly-sample-preview-/tmp/mapped.wav'),
+    );
+    final stepperStripFinder = find.byKey(
+      const ValueKey('poly-sample-stepper-strip-/tmp/mapped.wav'),
+    );
+    final rootStepperFinder = find.byKey(
+      const ValueKey('poly-sample-stepper-/tmp/mapped.wav-root'),
+    );
+    final rrStepperFinder = find.byKey(
+      const ValueKey('poly-sample-stepper-/tmp/mapped.wav-rr'),
+    );
+
+    expect(tester.getSize(rowFinder).height, 64);
+    expect(tester.getSize(previewFinder), const Size.square(40));
+    expect(tester.getSize(rootStepperFinder).height, 32);
+
+    final rowRect = tester.getRect(rowFinder);
+    final previewRect = tester.getRect(previewFinder);
+    final stepperStripRect = tester.getRect(stepperStripFinder);
+    final rootStepperRect = tester.getRect(rootStepperFinder);
+    final rrStepperRect = tester.getRect(rrStepperFinder);
+
+    expect(previewRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+    expect(stepperStripRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+    expect(rootStepperRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+    expect(rrStepperRect.center.dy, closeTo(rootStepperRect.center.dy, 0.5));
+
+    final actualStepperCenterX =
+        (rootStepperRect.left + rrStepperRect.right) / 2;
+    expect(actualStepperCenterX, closeTo(stepperStripRect.center.dx, 0.5));
+
+    final decreaseRootButton = find.byKey(
+      const ValueKey('poly-sample-stepper-button-Decrease Root for mapped.wav'),
+    );
+    expect(tester.getSize(decreaseRootButton), const Size.square(32));
+    expect(
+      tester.getRect(decreaseRootButton).center.dy,
+      closeTo(rootStepperRect.center.dy, 0.5),
+    );
+  });
+
   testWidgets('inline steppers emit clamped mapping updates', (tester) async {
     int? root;
     int? low;
@@ -209,11 +274,11 @@ void main() {
 }
 
 Future<void> _tapTooltipButton(WidgetTester tester, String tooltip) async {
-  await tester.tap(
-    find.byWidgetPredicate(
-      (widget) => widget is IconButton && widget.tooltip == tooltip,
-    ),
+  final button = find.byWidgetPredicate(
+    (widget) => widget is IconButton && widget.tooltip == tooltip,
   );
+  await tester.ensureVisible(button);
+  await tester.tap(button);
   await tester.pump();
 }
 
