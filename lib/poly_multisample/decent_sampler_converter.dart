@@ -603,6 +603,7 @@ class DecentSamplerConverter {
       options: options,
     );
     final baseDir = file.parent.path;
+    final commonParent = file.parent.parent.path;
     final sourceDocs = options.includeSourceDocs
         ? await _sourceDocsForLocalDirectory(file.parent)
         : const <_DecentSourceDoc>[];
@@ -611,7 +612,7 @@ class DecentSamplerConverter {
         preset.copyWith(
           sourceResolver: _LocalDecentSourceResolver(
             baseDirectory: baseDir,
-            allowedRoot: baseDir,
+            allowedRoot: commonParent,
           ),
           sourceDocs: sourceDocs,
         ),

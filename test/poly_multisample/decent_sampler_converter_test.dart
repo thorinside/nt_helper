@@ -75,7 +75,48 @@ void main() {
     });
 
     test(
-      'does not read standalone preset samples outside preset folder',
+      'reads standalone preset samples from sibling folders under common parent',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'decent_converter_sibling_test_',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) await tempDir.delete(recursive: true);
+        });
+        final libraryDir = Directory('${tempDir.path}/Library')
+          ..createSync(recursive: true);
+        final presetDir = Directory('${libraryDir.path}/Preset')
+          ..createSync(recursive: true);
+        final samplesDir = Directory('${libraryDir.path}/Samples')
+          ..createSync(recursive: true);
+        await File('${samplesDir.path}/C4.wav').writeAsBytes(_dummyWav);
+        final preset = File('${presetDir.path}/Sibling.dspreset');
+        await preset.writeAsString('''
+<DecentSampler>
+  <groups>
+    <group>
+      <sample path="../Samples/C4.wav" rootNote="C4"/>
+    </group>
+  </groups>
+</DecentSampler>
+''');
+
+        final result = await DecentSamplerConverter().convert(
+          sourcePath: preset.path,
+          outputParentPath: '${tempDir.path}/out',
+        );
+
+        expect(result.copiedFiles, 1);
+        expect(result.warnings, isEmpty);
+        expect(
+          await File('${result.outputFolders.single}/Sibling_C4.wav').exists(),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'does not read standalone preset samples outside common parent',
       () async {
         final tempDir = await Directory.systemTemp.createTemp(
           'decent_converter_escape_test_',
@@ -83,15 +124,19 @@ void main() {
         addTearDown(() async {
           if (await tempDir.exists()) await tempDir.delete(recursive: true);
         });
-        final presetDir = Directory('${tempDir.path}/Preset')..createSync();
-        final outsideDir = Directory('${tempDir.path}/Outside')..createSync();
+        final libraryDir = Directory('${tempDir.path}/Library')
+          ..createSync(recursive: true);
+        final presetDir = Directory('${libraryDir.path}/Preset')
+          ..createSync(recursive: true);
+        final outsideDir = Directory('${tempDir.path}/Outside')
+          ..createSync(recursive: true);
         await File('${outsideDir.path}/leak.wav').writeAsBytes(_dummyWav);
         final preset = File('${presetDir.path}/Escape.dspreset');
         await preset.writeAsString('''
 <DecentSampler>
   <groups>
     <group>
-      <sample path="../Outside/leak.wav" rootNote="C4"/>
+      <sample path="../../Outside/leak.wav" rootNote="C4"/>
     </group>
   </groups>
 </DecentSampler>
@@ -253,7 +298,7 @@ void main() {
     );
 
     test(
-      'does not follow local sample symlinks outside selected root',
+      'does not follow local sample symlinks outside common parent',
       () async {
         final tempDir = await Directory.systemTemp.createTemp(
           'decent_converter_symlink_escape_test_',
@@ -261,8 +306,12 @@ void main() {
         addTearDown(() async {
           if (await tempDir.exists()) await tempDir.delete(recursive: true);
         });
-        final presetDir = Directory('${tempDir.path}/Preset')..createSync();
-        final outsideDir = Directory('${tempDir.path}/Outside')..createSync();
+        final libraryDir = Directory('${tempDir.path}/Library')
+          ..createSync(recursive: true);
+        final presetDir = Directory('${libraryDir.path}/Preset')
+          ..createSync(recursive: true);
+        final outsideDir = Directory('${tempDir.path}/Outside')
+          ..createSync(recursive: true);
         await File('${outsideDir.path}/leak.wav').writeAsBytes(_dummyWav);
         await Link(
           '${presetDir.path}/LinkedSamples',
