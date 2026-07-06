@@ -31,6 +31,41 @@ void main() {
     );
   });
 
+  testWidgets('keyboard note semantics invokes cubit note preview', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    await tester.tap(find.bySemanticsLabel('Preview C4'));
+    await tester.pump();
+
+    expect(cubit.previewedNotes, [60]);
+    semantics.dispose();
+  });
+
+  testWidgets('keyboard map semantics explains note preview affordance', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    final node = tester.getSemantics(
+      find.bySemanticsLabel('Keyboard map with 1 mapped samples'),
+    );
+    expect(
+      node.hint,
+      'Tap sample ranges to select. Tap piano keys to preview notes.',
+    );
+    semantics.dispose();
+  });
+
   testWidgets('draft mode shows Save As instead of Apply', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit()
       ..setTestState(_state(sourceMode: PolySampleSourceMode.importDraft));
@@ -296,6 +331,13 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
     : super(
         previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
       );
+
+  final previewedNotes = <int>[];
+
+  @override
+  Future<void> playKeyboardNotePreview(int midi) async {
+    previewedNotes.add(midi);
+  }
 
   void setTestState(PolyMultisampleBuilderState state) {
     emit(state);
