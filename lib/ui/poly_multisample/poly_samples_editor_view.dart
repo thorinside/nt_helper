@@ -7,6 +7,7 @@ import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_key_map.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_inspector.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_list.dart';
+import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_sidebar_layout.dart';
 
 class PolySamplesEditorView extends StatelessWidget {
   const PolySamplesEditorView({
@@ -299,7 +300,10 @@ class _EditorBody extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(width: 320, child: inspector),
+              SizedBox(
+                width: PolySampleSidebarLayout.panelWidth,
+                child: inspector,
+              ),
             ],
           );
         }

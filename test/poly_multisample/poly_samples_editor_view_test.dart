@@ -9,6 +9,7 @@ import 'package:nt_helper/ui/poly_multisample/poly_samples_landing_view.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_key_map.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_inspector.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_list.dart';
+import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_sidebar_layout.dart';
 
 void main() {
   testWidgets('shows toolbar stats, key map, list and inspector', (
@@ -24,6 +25,10 @@ void main() {
     expect(find.byType(PolyKeyMap), findsOneWidget);
     expect(find.byType(PolySampleList), findsOneWidget);
     expect(find.byType(PolySampleInspector), findsOneWidget);
+    expect(
+      tester.getSize(find.byType(PolySampleInspector)).width,
+      PolySampleSidebarLayout.panelWidth,
+    );
   });
 
   testWidgets('draft mode shows Save As instead of Apply', (tester) async {
@@ -193,6 +198,10 @@ Future<void> _pumpEditor(
   PolyMultisampleBuilderCubit cubit, {
   VoidCallback? onUpload,
 }) async {
+  tester.view.physicalSize = const Size(1200, 800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(

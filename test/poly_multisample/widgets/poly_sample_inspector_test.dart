@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
@@ -16,8 +17,24 @@ void main() {
 
     await _pumpInspector(tester, cubit);
 
-    expect(find.text('Root: C3'), findsOneWidget);
-    expect(find.text('Velocity: 1'), findsOneWidget);
+    final rootRow = _byStableKey('poly-sidebar-mapping-root-row');
+    expect(
+      find.descendant(of: rootRow, matching: find.text('Root')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: rootRow, matching: find.text('C3')),
+      findsOneWidget,
+    );
+    final velocityRow = _byStableKey('poly-sidebar-mapping-velocity-row');
+    expect(
+      find.descendant(of: velocityRow, matching: find.text('Velocity')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: velocityRow, matching: find.text('1')),
+      findsOneWidget,
+    );
     expect(find.byTooltip('Decrease Root'), findsOneWidget);
     expect(find.byTooltip('Increase Root'), findsOneWidget);
     expect(find.byTooltip('Increase Round robin'), findsOneWidget);
@@ -33,8 +50,100 @@ void main() {
     await tester.pump();
 
     expect(cubit.state.editedRegions.first.rootMidi, 49);
-    expect(find.text('Root: C#3'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: _byStableKey('poly-sidebar-mapping-root-row'),
+        matching: find.text('C#3'),
+      ),
+      findsOneWidget,
+    );
   });
+
+  testWidgets(
+    'mapping stepper geometry stays fixed across value width changes',
+    (tester) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      final base = _selectedState();
+      cubit.setTestState(
+        base.copyWith(
+          editedRegions: [
+            base.editedRegions.first.copyWith(
+              rootMidi: 48,
+              rootName: 'C3',
+              velocityLayer: 9,
+              roundRobin: 9,
+            ),
+            base.editedRegions[1],
+          ],
+        ),
+      );
+
+      await _pumpInspector(tester, cubit);
+      final before = <String, Rect>{
+        for (final key in [
+          'poly-sidebar-mapping-root-increase',
+          'poly-sidebar-mapping-velocity-increase',
+          'poly-sidebar-mapping-round-robin-increase',
+          'poly-sidebar-mapping-root-row',
+          'poly-sidebar-mapping-velocity-row',
+          'poly-sidebar-mapping-round-robin-row',
+        ])
+          key: _stableRect(tester, key),
+      };
+
+      await tester.tap(_byStableKey('poly-sidebar-mapping-root-increase'));
+      await tester.pump();
+      await tester.tap(_byStableKey('poly-sidebar-mapping-velocity-increase'));
+      await tester.pump();
+      await tester.tap(
+        _byStableKey('poly-sidebar-mapping-round-robin-increase'),
+      );
+      await tester.pump();
+
+      expect(cubit.state.editedRegions.first.rootMidi, 49);
+      expect(cubit.state.editedRegions.first.velocityLayer, 10);
+      expect(cubit.state.editedRegions.first.roundRobin, 10);
+      for (final entry in before.entries) {
+        _expectStableRect(entry.value, _stableRect(tester, entry.key));
+      }
+    },
+  );
+
+  testWidgets(
+    'mapping stepper focus and rect stay stable after keyboard activation',
+    (tester) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(_selectedState());
+
+      await _pumpInspector(tester, cubit);
+      final finder = _byStableKey('poly-sidebar-mapping-velocity-increase');
+      await tester.tap(finder);
+      await tester.pump();
+      for (var i = 0; i < 20 && !_primaryFocusWithin(tester, finder); i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
+      expect(_primaryFocusWithin(tester, finder), isTrue);
+      final focusBefore = FocusManager.instance.primaryFocus;
+      expect(focusBefore, isNotNull);
+      final rectBefore = _stableRect(
+        tester,
+        'poly-sidebar-mapping-velocity-increase',
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(cubit.state.editedRegions.first.velocityLayer, 3);
+      expect(FocusManager.instance.primaryFocus, same(focusBefore));
+      _expectStableRect(
+        rectBefore,
+        _stableRect(tester, 'poly-sidebar-mapping-velocity-increase'),
+      );
+    },
+  );
 
   testWidgets('mapping stepper auto-previews when enabled', (tester) async {
     final adapter = _FakePreviewAdapter();
@@ -260,6 +369,8 @@ void main() {
     await _pumpInspector(tester, cubit);
 
     expect(find.bySemanticsLabel('Preview gain'), findsOneWidget);
+    expect(find.bySemanticsLabel('Preview gain value'), findsOneWidget);
+    expect(find.bySemanticsLabel('Root value'), findsOneWidget);
     expect(find.bySemanticsLabel('Root'), findsOneWidget);
     expect(find.bySemanticsLabel('Decrease Root'), findsOneWidget);
 
@@ -446,6 +557,33 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   void setTestState(PolyMultisampleBuilderState state) {
     emit(state);
   }
+}
+
+Finder _byStableKey(String value) => find.byKey(ValueKey(value));
+
+Rect _stableRect(WidgetTester tester, String value) {
+  return tester.getRect(_byStableKey(value));
+}
+
+void _expectStableRect(Rect before, Rect after) {
+  expect(after.topLeft, before.topLeft);
+  expect(after.size, before.size);
+}
+
+bool _primaryFocusWithin(WidgetTester tester, Finder finder) {
+  final root = tester.element(finder);
+  final focusedContext = FocusManager.instance.primaryFocus?.context;
+  if (focusedContext is! Element) return false;
+  if (focusedContext == root) return true;
+  var found = false;
+  focusedContext.visitAncestorElements((ancestor) {
+    if (ancestor == root) {
+      found = true;
+      return false;
+    }
+    return true;
+  });
+  return found;
 }
 
 class _FakePreviewAdapter implements PolyAudioPreviewAdapter {

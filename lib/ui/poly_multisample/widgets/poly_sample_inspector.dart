@@ -10,6 +10,7 @@ import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
+import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_sidebar_layout.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_waveform_editor.dart';
 import 'package:nt_helper/ui/widgets/split_stepper_control.dart';
 import 'package:path/path.dart' as p;
@@ -32,7 +33,7 @@ class PolySampleInspector extends StatelessWidget {
     }
     final cubit = context.read<PolyMultisampleBuilderCubit>();
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(PolySampleSidebarLayout.outerPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -146,26 +147,37 @@ class _PreviewControls extends StatelessWidget {
           value: state.autoPreview,
           onChanged: cubit.setAutoPreview,
         ),
-        Row(
-          children: [
-            const Icon(Icons.volume_down),
-            Expanded(
-              child: Semantics(
-                label: 'Preview gain',
-                value: '${state.previewGainDb.round()} dB',
-                child: Slider(
-                  min: -36,
-                  max: 6,
-                  divisions: 42,
-                  value: state.previewGainDb,
-                  label: '${state.previewGainDb.round()} dB',
-                  semanticFormatterCallback: (value) => '${value.round()} dB',
-                  onChanged: cubit.setPreviewGain,
+        SizedBox(
+          height: PolySampleSidebarLayout.rowHeight,
+          child: Row(
+            children: [
+              const SizedBox.square(
+                dimension: PolySampleSidebarLayout.iconButtonExtent,
+                child: Icon(Icons.volume_down),
+              ),
+              Expanded(
+                child: Semantics(
+                  label: 'Preview gain',
+                  value: '${state.previewGainDb.round()} dB',
+                  child: Slider(
+                    min: -36,
+                    max: 6,
+                    divisions: 42,
+                    value: state.previewGainDb,
+                    label: '${state.previewGainDb.round()} dB',
+                    semanticFormatterCallback: (value) => '${value.round()} dB',
+                    onChanged: cubit.setPreviewGain,
+                  ),
                 ),
               ),
-            ),
-            Text('${state.previewGainDb.round()} dB'),
-          ],
+              PolySampleSidebarSliderValue(
+                key: const ValueKey('poly-sidebar-preview-gain-value'),
+                width: PolySampleSidebarLayout.dbValueWidth,
+                semanticLabel: 'Preview gain value',
+                value: '${state.previewGainDb.round()} dB',
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -201,6 +213,7 @@ class _MappingSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _StepRow(
+          rowKeySuffix: 'root',
           label: 'Root',
           value: region.rootMidi == null
               ? 'Unset'
@@ -211,6 +224,7 @@ class _MappingSection extends StatelessWidget {
               cubit.updateRoot(region.path, root + 1, manager: manager),
         ),
         _StepRow(
+          rowKeySuffix: 'low',
           label: 'Low',
           value: PolyMultisampleParser.midiToNoteName(low),
           onMinus: () =>
@@ -219,6 +233,7 @@ class _MappingSection extends StatelessWidget {
               cubit.updateRangeLow(region.path, low + 1, manager: manager),
         ),
         _StepRow(
+          rowKeySuffix: 'high',
           label: 'High',
           value: PolyMultisampleParser.midiToNoteName(high),
           onMinus: () =>
@@ -227,6 +242,7 @@ class _MappingSection extends StatelessWidget {
               cubit.updateRangeHigh(region.path, high + 1, manager: manager),
         ),
         _StepRow(
+          rowKeySuffix: 'velocity',
           label: 'Velocity',
           value: '$velocity',
           onMinus: () => cubit.updateVelocity(
@@ -238,6 +254,7 @@ class _MappingSection extends StatelessWidget {
               cubit.updateVelocity(region.path, velocity + 1, manager: manager),
         ),
         _StepRow(
+          rowKeySuffix: 'round-robin',
           label: 'Round robin',
           value: '$roundRobin',
           onMinus: () => cubit.updateRoundRobin(
@@ -720,12 +737,14 @@ class _FadeRow extends StatelessWidget {
 
 class _StepRow extends StatelessWidget {
   const _StepRow({
+    required this.rowKeySuffix,
     required this.label,
     required this.value,
     required this.onMinus,
     required this.onPlus,
   });
 
+  final String rowKeySuffix;
   final String label;
   final String value;
   final VoidCallback onMinus;
@@ -733,20 +752,44 @@ class _StepRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: '$label $value',
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('$label: $value'),
-          const SizedBox(width: 8),
-          SplitStepperControl(
-            label: label,
-            valueLabel: value,
-            onDecrement: onMinus,
-            onIncrement: onPlus,
-          ),
-        ],
+    return SizedBox(
+      key: ValueKey('poly-sidebar-mapping-$rowKeySuffix-row'),
+      height: PolySampleSidebarLayout.rowHeight,
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        label: label,
+        value: value,
+        child: Row(
+          children: [
+            SizedBox(
+              width: PolySampleSidebarLayout.mappingLabelWidth,
+              child: ExcludeSemantics(
+                child: Text(label, overflow: TextOverflow.ellipsis),
+              ),
+            ),
+            PolySampleSidebarValueText(
+              key: ValueKey('poly-sidebar-mapping-$rowKeySuffix-value'),
+              width: PolySampleSidebarLayout.mappingValueWidth,
+              value: value,
+              semanticLabel: '$label value',
+            ),
+            const SizedBox(width: PolySampleSidebarLayout.rowGap),
+            const Spacer(),
+            PolySampleSidebarIconButton(
+              key: ValueKey('poly-sidebar-mapping-$rowKeySuffix-decrease'),
+              tooltip: 'Decrease $label',
+              onPressed: onMinus,
+              icon: Icons.remove,
+            ),
+            PolySampleSidebarIconButton(
+              key: ValueKey('poly-sidebar-mapping-$rowKeySuffix-increase'),
+              tooltip: 'Increase $label',
+              onPressed: onPlus,
+              icon: Icons.add,
+            ),
+          ],
+        ),
       ),
     );
   }
