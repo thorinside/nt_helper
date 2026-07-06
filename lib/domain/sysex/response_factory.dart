@@ -85,12 +85,10 @@ class ResponseFactory {
             case 2: // File download
               return FileChunkResponse(payload);
             default:
-              return DirectoryListingResponse(
-                payload,
-              ); // Default to directory listing
+              return SdStatusResponse(payload);
           }
         }
-        return DirectoryListingResponse(payload);
+        return SdStatusResponse(payload);
       case DistingNTRespMessageType.respFileChunk:
         return FileChunkResponse(payload);
       case DistingNTRespMessageType.respSdStatus:

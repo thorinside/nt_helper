@@ -11,7 +11,7 @@ class RequestDirectoryCreateMessage extends SysexMessage {
 
   @override
   Uint8List encode() {
-    final pathBytes = path.codeUnits;
+    final pathBytes = encodeSysExAsciiPath(path);
     final payload = [
       7, // Opcode for new folder/directory creation (kOpNewFolder)
       ...pathBytes,

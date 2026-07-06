@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
+import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 class RequestFileDownloadMessage extends SysexMessage {
   final String path;
@@ -8,7 +9,7 @@ class RequestFileDownloadMessage extends SysexMessage {
 
   @override
   Uint8List encode() {
-    final pathBytes = path.codeUnits;
+    final pathBytes = encodeSysExAsciiPath(path);
 
     // Build the message exactly like the Python code
     final message = <int>[

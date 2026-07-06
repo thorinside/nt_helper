@@ -1,5 +1,7 @@
 import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
+import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 class RequestFileUploadChunkMessage extends SysexMessage {
   final String path;
@@ -17,12 +19,14 @@ class RequestFileUploadChunkMessage extends SysexMessage {
 
   @override
   Uint8List encode() {
-    final pathBytes = path.codeUnits;
+    final pathBytes = encodeSysExAsciiPath(path);
     final count = data.length;
 
     // Build the message exactly like the Python code
     final message = <int>[
-      0xF0, 0x00, 0x21, 0x27, 0x6D, sysExId, 0x7A, 4, // Header + opcode
+      ...buildHeader(sysExId),
+      DistingNTRequestMessageType.sdCardOperation.value,
+      4, // kOpUpload
       ...pathBytes,
       0, // Null terminator
       createAlways ? 1 : 0, // Create always flag

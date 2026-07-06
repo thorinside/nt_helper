@@ -1090,17 +1090,14 @@ class DistingMidiManager implements IDistingMidiManager {
     await _checkSdCardSupport();
     final message = RequestFileDeleteMessage(sysExId: sysExId, path: path);
     final packet = message.encode();
-    await _scheduler.sendRequest<SdCardStatus>(
+    return _scheduler.sendRequest<SdCardStatus>(
       packet,
       RequestKey(
         sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respSdStatus,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
       ),
-      responseExpectation:
-          ResponseExpectation.none, // Delete is fire-and-forget
+      responseExpectation: ResponseExpectation.required,
     );
-    // Assume success since delete doesn't send a response
-    return SdCardStatus(success: true, message: 'Delete command sent');
   }
 
   @override
@@ -1163,7 +1160,7 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       RequestKey(
         sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respSdStatus,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
       ),
       responseExpectation: ResponseExpectation.required,
     );
@@ -1183,7 +1180,7 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       RequestKey(
         sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respSdStatus,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
       ),
       responseExpectation: ResponseExpectation.required,
     );
@@ -1206,22 +1203,15 @@ class DistingMidiManager implements IDistingMidiManager {
     );
     final packet = message.encode();
 
-    // Based on the Python code, uploads expect a simple ACK response, not SD status
-    // For now, let's make it fire-and-forget and assume success
-    await _scheduler.sendRequest<SdCardStatus>(
+    return _scheduler.sendRequest<SdCardStatus>(
       packet,
       RequestKey(
         sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respSdStatus,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
       ),
-      responseExpectation: ResponseExpectation.none,
-      timeout: const Duration(
-        seconds: 2,
-      ), // Shorter timeout since we're not waiting for response
+      responseExpectation: ResponseExpectation.required,
+      timeout: const Duration(seconds: 10),
     );
-
-    // Return success status since we can't easily parse the ACK format
-    return SdCardStatus(success: true, message: "Upload chunk sent");
   }
 
   @override
@@ -1229,19 +1219,13 @@ class DistingMidiManager implements IDistingMidiManager {
     await _checkSdCardSupport();
     final message = RequestDirectoryCreateMessage(sysExId: sysExId, path: path);
     final packet = message.encode();
-    await _scheduler.sendRequest<SdCardStatus>(
+    return _scheduler.sendRequest<SdCardStatus>(
       packet,
       RequestKey(
         sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respSdStatus,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
       ),
-      responseExpectation:
-          ResponseExpectation.none, // Directory create is fire-and-forget
-    );
-    // Assume success since directory create doesn't send a response
-    return SdCardStatus(
-      success: true,
-      message: 'Directory create command sent',
+      responseExpectation: ResponseExpectation.required,
     );
   }
 

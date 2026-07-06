@@ -14,6 +14,20 @@ List<int> buildFooter() {
   return [kSysExEnd];
 }
 
+List<int> encodeSysExAsciiPath(String path) {
+  final bytes = <int>[];
+  for (final codeUnit in path.codeUnits) {
+    if (codeUnit == 0 || codeUnit > 0x7F) {
+      throw FormatException(
+        'SysEx SD-card paths must contain only non-null 7-bit ASCII.',
+        path,
+      );
+    }
+    bytes.add(codeUnit);
+  }
+  return bytes;
+}
+
 List<int> encode16(int value) {
   // Ensure 16-bit range
   final int v = value & 0xFFFF;

@@ -19,7 +19,7 @@ class RequestFileUploadMessage extends SysexMessage {
 
   @override
   Uint8List encode() {
-    final pathBytes = path.codeUnits;
+    final pathBytes = encodeSysExAsciiPath(path);
     final count = data.length;
     final positionBytes = encode32(0);
     final countBytes = encode32(count);
