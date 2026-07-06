@@ -334,13 +334,18 @@ class _EditorBody extends StatelessWidget {
 class _WarningPanel extends StatelessWidget {
   const _WarningPanel({required this.title, required this.messages});
 
+  static const double _maxWarningListHeight = 200;
+
   final String title;
   final List<String> messages;
 
   @override
   Widget build(BuildContext context) {
+    final warningCount = messages.length;
+    final headerText = '$title ($warningCount)';
     return Semantics(
       liveRegion: true,
+      container: true,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: DecoratedBox(
@@ -348,27 +353,53 @@ class _WarningPanel extends StatelessWidget {
             border: Border.all(color: Theme.of(context).colorScheme.outline),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              key: const PageStorageKey<String>('poly-samples-warnings-tile'),
+              initiallyExpanded: false,
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              leading: const Icon(Icons.warning_amber),
+              title: Semantics(
+                header: true,
+                child: Text(
+                  headerText,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              subtitle: Text(
+                warningCount == 1
+                    ? '1 warning available. Expand to review.'
+                    : '$warningCount warnings available. Expand to review.',
+              ),
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.warning_amber),
-                    const SizedBox(width: 8),
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleMedium,
+                Semantics(
+                  label: warningCount == 1
+                      ? 'Warning messages, 1 total'
+                      : 'Warning messages, $warningCount total',
+                  container: true,
+                  explicitChildNodes: true,
+                  child: ConstrainedBox(
+                    key: const ValueKey('poly-samples-warnings-scroll-box'),
+                    constraints: const BoxConstraints(
+                      maxHeight: _maxWarningListHeight,
+                    ),
+                    child: Scrollbar(
+                      child: ListView.separated(
+                        key: const PageStorageKey<String>(
+                          'poly-samples-warnings-list',
+                        ),
+                        primary: false,
+                        shrinkWrap: true,
+                        itemCount: messages.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 4),
+                        itemBuilder: (context, index) => Text(messages[index]),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                for (final message in messages) Text(message),
               ],
             ),
           ),

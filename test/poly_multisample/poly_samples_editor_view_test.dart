@@ -178,6 +178,97 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
+  testWidgets(
+    'warnings disclosure is collapsed by default when warnings exist',
+    (tester) async {
+      final cubit = _TestPolyMultisampleBuilderCubit()
+        ..setTestState(
+          _state(warnings: const ['Missing root note', 'Overlapping range']),
+        );
+      addTearDown(cubit.close);
+
+      await _pumpEditor(tester, cubit);
+
+      expect(find.text('Warnings (2)'), findsOneWidget);
+      expect(find.text('Missing root note'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('poly-samples-warnings-scroll-box')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('warnings disclosure header shows warning count', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(
+        _state(warnings: const ['Missing source sample: Piano_C3.wav']),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    expect(find.text('Warnings (1)'), findsOneWidget);
+    expect(find.text('1 warning available. Expand to review.'), findsOneWidget);
+  });
+
+  testWidgets('expanding warnings reveals a bounded scrollable list', (
+    tester,
+  ) async {
+    final warnings = List<String>.generate(
+      12,
+      (index) => 'Warning ${index + 1}',
+    );
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(_state(warnings: warnings));
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+    await tester.tap(find.text('Warnings (12)'));
+    await tester.pumpAndSettle();
+
+    final scrollBox = find.byKey(
+      const ValueKey('poly-samples-warnings-scroll-box'),
+    );
+    expect(scrollBox, findsOneWidget);
+    expect(
+      find.byKey(const PageStorageKey<String>('poly-samples-warnings-list')),
+      findsOneWidget,
+    );
+    expect(tester.getSize(scrollBox).height, lessThanOrEqualTo(200));
+    expect(find.text('Warning 1'), findsOneWidget);
+    await tester.drag(scrollBox, const Offset(0, -180));
+    await tester.pumpAndSettle();
+    expect(find.text('Warning 12'), findsOneWidget);
+  });
+
+  testWidgets('many expanded warnings stay bounded without layout overflow', (
+    tester,
+  ) async {
+    final warnings = List<String>.generate(
+      60,
+      (index) => 'Overflow warning ${index + 1}',
+    );
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(_state(warnings: warnings));
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+    await tester.tap(find.text('Warnings (60)'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      tester
+          .getSize(
+            find.byKey(const ValueKey('poly-samples-warnings-scroll-box')),
+          )
+          .height,
+      lessThanOrEqualTo(200),
+    );
+    expect(find.byType(PolySampleList), findsOneWidget);
+    expect(find.byType(PolySampleInspector), findsOneWidget);
+  });
+
   testWidgets('inline row stepper focuses row and updates inspector', (
     tester,
   ) async {
@@ -276,6 +367,7 @@ PolyMultisampleBuilderState _state({
   PolyMultisampleActiveOperation activeOperation =
       PolyMultisampleActiveOperation.none,
   String? progressText,
+  List<String> warnings = const [],
 }) {
   final baseline = dirty
       ? const [
@@ -308,6 +400,7 @@ PolyMultisampleBuilderState _state({
     selectedPaths: const {'/tmp/Piano/Piano_C3.wav'},
     focusedPath: '/tmp/Piano/Piano_C3.wav',
     wavEditDrafts: wavEditDrafts,
+    warnings: warnings,
   );
 }
 
