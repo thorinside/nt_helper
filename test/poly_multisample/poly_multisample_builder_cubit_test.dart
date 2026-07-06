@@ -452,6 +452,538 @@ void main() {
     );
 
     test(
+      'keyboard note preview selects and plays a rendered local wav',
+      () async {
+        final source = File('${tempRoot.path}/Piano_C4.wav');
+        _writeTinyPreviewWav(source);
+        final adapter = _FakePreviewAdapter();
+        final renderer = _QueuedNotePreviewRenderer();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+          notePreviewRenderer: renderer.render,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            editedRegions: [
+              PolySampleRegion(
+                path: source.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+              ),
+            ],
+          ),
+        );
+
+        final preview = cubit.playKeyboardNotePreview(60);
+        await _waitForCondition(() => renderer.completers.length == 1);
+        renderer.completers.single.complete(_tinyPreviewWavBytes());
+        await preview;
+
+        expect(cubit.state.selectedPaths, {source.path});
+        expect(adapter.playedPaths, hasLength(1));
+        expect(adapter.playedPaths.single, isNot(source.path));
+        expect(cubit.state.previewState.visiblePath, source.path);
+        expect(renderer.ratios.single, closeTo(1, 0.0001));
+      },
+    );
+
+    test('keyboard note preview rotates same-range round robins', () async {
+      final sourceA = File('${tempRoot.path}/Piano_C4_rr1.wav');
+      final sourceB = File('${tempRoot.path}/Piano_C4_rr2.wav');
+      _writeTinyPreviewWav(sourceA);
+      _writeTinyPreviewWav(sourceB);
+      final adapter = _FakePreviewAdapter();
+      final renderer = _ImmediateNotePreviewRenderer();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: adapter),
+        notePreviewRenderer: renderer.render,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: sourceA.path,
+              fileName: 'rr1.wav',
+              displayName: 'rr1.wav',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 60,
+              roundRobin: 1,
+            ),
+            PolySampleRegion(
+              path: sourceB.path,
+              fileName: 'rr2.wav',
+              displayName: 'rr2.wav',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 60,
+              roundRobin: 2,
+            ),
+          ],
+        ),
+      );
+
+      await cubit.playKeyboardNotePreview(60);
+      expect(cubit.state.focusedPath, sourceA.path);
+      await cubit.playKeyboardNotePreview(60);
+
+      expect(cubit.state.focusedPath, sourceB.path);
+      expect(cubit.state.previewState.visiblePath, sourceB.path);
+    });
+
+    test(
+      'keyboard note preview restarts cached renders on repeat taps',
+      () async {
+        final source = File('${tempRoot.path}/Piano_C4.wav');
+        _writeTinyPreviewWav(source);
+        final adapter = _FakePreviewAdapter();
+        final renderer = _ImmediateNotePreviewRenderer();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+          notePreviewRenderer: renderer.render,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            editedRegions: [
+              PolySampleRegion(
+                path: source.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+              ),
+            ],
+          ),
+        );
+
+        await cubit.playKeyboardNotePreview(60);
+        await cubit.playKeyboardNotePreview(60);
+
+        expect(renderer.calls, 1);
+        expect(adapter.playedPaths, hasLength(2));
+        expect(adapter.playedPaths.first, adapter.playedPaths.last);
+        expect(adapter.stopCount, 1);
+      },
+    );
+
+    test(
+      'keyboard note preview prefers the most specific overlapping range',
+      () async {
+        final wide = File('${tempRoot.path}/Wide_C4.wav');
+        final narrow = File('${tempRoot.path}/Narrow_C4.wav');
+        _writeTinyPreviewWav(wide);
+        _writeTinyPreviewWav(narrow);
+        final adapter = _FakePreviewAdapter();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+          notePreviewRenderer: _ImmediateNotePreviewRenderer().render,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            editedRegions: [
+              PolySampleRegion(
+                path: wide.path,
+                fileName: 'wide.wav',
+                displayName: 'wide.wav',
+                rootMidi: 60,
+                rangeLow: 48,
+                rangeHigh: 72,
+              ),
+              PolySampleRegion(
+                path: narrow.path,
+                fileName: 'narrow.wav',
+                displayName: 'narrow.wav',
+                rootMidi: 60,
+                rangeLow: 59,
+                rangeHigh: 61,
+              ),
+            ],
+          ),
+        );
+
+        await cubit.playKeyboardNotePreview(60);
+
+        expect(cubit.state.focusedPath, narrow.path);
+        expect(cubit.state.previewState.visiblePath, narrow.path);
+      },
+    );
+
+    test(
+      'keyboard note preview uses focused velocity lane before lane one',
+      () async {
+        final laneOne = File('${tempRoot.path}/Lane1_C4.wav');
+        final laneTwo = File('${tempRoot.path}/Lane2_C4.wav');
+        _writeTinyPreviewWav(laneOne);
+        _writeTinyPreviewWav(laneTwo);
+        final adapter = _FakePreviewAdapter();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+          notePreviewRenderer: _ImmediateNotePreviewRenderer().render,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            selectedPaths: {laneTwo.path},
+            focusedPath: laneTwo.path,
+            editedRegions: [
+              PolySampleRegion(
+                path: laneOne.path,
+                fileName: 'lane1.wav',
+                displayName: 'lane1.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+                velocityLayer: 1,
+              ),
+              PolySampleRegion(
+                path: laneTwo.path,
+                fileName: 'lane2.wav',
+                displayName: 'lane2.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+                velocityLayer: 2,
+              ),
+            ],
+          ),
+        );
+
+        await cubit.playKeyboardNotePreview(60);
+
+        expect(cubit.state.focusedPath, laneTwo.path);
+        expect(cubit.state.previewState.visiblePath, laneTwo.path);
+      },
+    );
+
+    test(
+      'keyboard note preview rejects direct hardware paths without download',
+      () async {
+        final adapter = _FakePreviewAdapter();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.hardware,
+            editedRegions: [
+              PolySampleRegion(
+                path: '/samples/Piano/Piano_C4.wav',
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+              ),
+            ],
+          ),
+        );
+
+        await cubit.playKeyboardNotePreview(60);
+
+        expect(adapter.playedPaths, isEmpty);
+        expect(cubit.state.selectedPaths, isEmpty);
+        expect(
+          cubit.state.error,
+          'Keyboard note preview is only available for local or mounted WAV files.',
+        );
+      },
+    );
+
+    test('keyboard note preview ignores non-WAV mappings', () async {
+      final adapter = _FakePreviewAdapter();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: adapter),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/Piano_C4.aif',
+              fileName: 'Piano_C4.aif',
+              displayName: 'Piano_C4.aif',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 60,
+            ),
+          ],
+        ),
+      );
+
+      await cubit.playKeyboardNotePreview(60);
+
+      expect(adapter.playedPaths, isEmpty);
+      expect(cubit.state.error, 'No local WAV sample is mapped to C4.');
+    });
+
+    test('keyboard note preview reports missing WAV file', () async {
+      final missing = File('${tempRoot.path}/missing_C4.wav');
+      final adapter = _FakePreviewAdapter();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: adapter),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: missing.path,
+              fileName: 'missing_C4.wav',
+              displayName: 'missing_C4.wav',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 60,
+            ),
+          ],
+        ),
+      );
+
+      await cubit.playKeyboardNotePreview(60);
+
+      expect(adapter.playedPaths, isEmpty);
+      expect(cubit.state.error, contains('Cannot open file'));
+    });
+
+    test('keyboard note preview ignores stale render completion', () async {
+      final c4 = File('${tempRoot.path}/Piano_C4.wav');
+      final d4 = File('${tempRoot.path}/Piano_D4.wav');
+      _writeTinyPreviewWav(c4);
+      _writeTinyPreviewWav(d4);
+      final adapter = _FakePreviewAdapter();
+      final renderer = _QueuedNotePreviewRenderer();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: adapter),
+        notePreviewRenderer: renderer.render,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: c4.path,
+              fileName: 'Piano_C4.wav',
+              displayName: 'Piano_C4.wav',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 60,
+            ),
+            PolySampleRegion(
+              path: d4.path,
+              fileName: 'Piano_D4.wav',
+              displayName: 'Piano_D4.wav',
+              rootMidi: 62,
+              rangeLow: 62,
+              rangeHigh: 62,
+            ),
+          ],
+        ),
+      );
+
+      final first = cubit.playKeyboardNotePreview(60);
+      await _waitForCondition(() => renderer.completers.length == 1);
+      final second = cubit.playKeyboardNotePreview(62);
+      await _waitForCondition(() => renderer.completers.length == 2);
+      renderer.completers[1].complete(_tinyPreviewWavBytes());
+      await second;
+      renderer.completers[0].complete(_tinyPreviewWavBytes());
+      await first;
+
+      expect(adapter.playedPaths, hasLength(1));
+      expect(cubit.state.previewState.visiblePath, d4.path);
+    });
+
+    test('keyboard note preview single-flights identical renders', () async {
+      final source = File('${tempRoot.path}/Piano_C4.wav');
+      _writeTinyPreviewWav(source);
+      final adapter = _FakePreviewAdapter();
+      final renderer = _QueuedNotePreviewRenderer();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: adapter),
+        notePreviewRenderer: renderer.render,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: source.path,
+              fileName: 'Piano_C4.wav',
+              displayName: 'Piano_C4.wav',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 60,
+            ),
+          ],
+        ),
+      );
+
+      final first = cubit.playKeyboardNotePreview(60);
+      await _waitForCondition(() => renderer.completers.length == 1);
+      final second = cubit.playKeyboardNotePreview(60);
+      await Future<void>.delayed(Duration.zero);
+      expect(renderer.calls, hasLength(1));
+      renderer.completers.single.complete(_tinyPreviewWavBytes());
+      await Future.wait([first, second]);
+
+      expect(adapter.playedPaths, hasLength(1));
+    });
+
+    test(
+      'keyboard note preview invalidates cache when source file changes',
+      () async {
+        final source = File('${tempRoot.path}/Piano_C4.wav');
+        _writeTinyPreviewWav(source, frames: 8);
+        final adapter = _FakePreviewAdapter();
+        final renderer = _ImmediateNotePreviewRenderer();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+          notePreviewRenderer: renderer.render,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            editedRegions: [
+              PolySampleRegion(
+                path: source.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+              ),
+            ],
+          ),
+        );
+
+        await cubit.playKeyboardNotePreview(60);
+        final firstPath = adapter.playedPaths.single;
+        _writeTinyPreviewWav(source, frames: 12);
+        await cubit.playKeyboardNotePreview(60);
+
+        expect(adapter.playedPaths.last, isNot(firstPath));
+        expect(renderer.calls, 2);
+      },
+    );
+
+    test('keyboard note preview cleans temp files on close', () async {
+      final source = File('${tempRoot.path}/Piano_C4.wav');
+      _writeTinyPreviewWav(source);
+      final adapter = _FakePreviewAdapter();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: adapter),
+        notePreviewRenderer: _ImmediateNotePreviewRenderer().render,
+      );
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: source.path,
+              fileName: 'Piano_C4.wav',
+              displayName: 'Piano_C4.wav',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 60,
+            ),
+          ],
+        ),
+      );
+
+      await cubit.playKeyboardNotePreview(60);
+      final rendered = adapter.playedPaths.single;
+      final root = File(rendered).parent;
+      expect(root.existsSync(), isTrue);
+      await cubit.close();
+
+      expect(root.existsSync(), isFalse);
+    });
+
+    test(
+      'keyboard note preview with auto-preview enabled plays only rendered audio',
+      () async {
+        final source = File('${tempRoot.path}/Piano_C4.wav');
+        _writeTinyPreviewWav(source);
+        final adapter = _FakePreviewAdapter();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+          notePreviewRenderer: _ImmediateNotePreviewRenderer().render,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            autoPreview: true,
+            editedRegions: [
+              PolySampleRegion(
+                path: source.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+              ),
+            ],
+          ),
+        );
+
+        await cubit.playKeyboardNotePreview(60);
+
+        expect(adapter.playedPaths, hasLength(1));
+        expect(adapter.playedPaths.single, isNot(source.path));
+      },
+    );
+
+    test('keyboard note preview reports adapter failures', () async {
+      final source = File('${tempRoot.path}/Piano_C4.wav');
+      _writeTinyPreviewWav(source);
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(
+          adapter: _ThrowingPreviewAdapter(),
+        ),
+        notePreviewRenderer: _ImmediateNotePreviewRenderer().render,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: source.path,
+              fileName: 'Piano_C4.wav',
+              displayName: 'Piano_C4.wav',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 60,
+            ),
+          ],
+        ),
+      );
+
+      await cubit.playKeyboardNotePreview(60);
+
+      expect(cubit.state.error, contains('adapter failed'));
+    });
+
+    test(
       'auto-preview stops visible preview for non-wav mapping edits',
       () async {
         final adapter = _FakePreviewAdapter();
@@ -2442,11 +2974,91 @@ class _ExposedPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
     super.wavService,
     super.previewService,
     super.uploadService,
+    super.notePreviewRenderer,
   });
 
   void setTestState(PolyMultisampleBuilderState state) {
     emit(state);
   }
+}
+
+class _ImmediateNotePreviewRenderer {
+  var calls = 0;
+  final ratios = <double>[];
+
+  Uint8List render(Uint8List bytes, double pitchRatio) {
+    calls++;
+    ratios.add(pitchRatio);
+    return _tinyPreviewWavBytes();
+  }
+}
+
+class _QueuedNotePreviewRenderer {
+  final calls = <Uint8List>[];
+  final ratios = <double>[];
+  final completers = <Completer<Uint8List>>[];
+
+  Future<Uint8List> render(Uint8List bytes, double pitchRatio) {
+    calls.add(bytes);
+    ratios.add(pitchRatio);
+    final completer = Completer<Uint8List>();
+    completers.add(completer);
+    return completer.future;
+  }
+}
+
+void _writeTinyPreviewWav(File file, {int frames = 8}) {
+  file.writeAsBytesSync(_tinyPreviewWavBytes(frames: frames), flush: true);
+}
+
+Uint8List _tinyPreviewWavBytes({int frames = 8}) {
+  final fmtChunk = BytesBuilder()
+    ..add(_ascii('fmt '))
+    ..add(_u32(16))
+    ..add(_u16(1))
+    ..add(_u16(1))
+    ..add(_u32(44100))
+    ..add(_u32(44100 * 2))
+    ..add(_u16(2))
+    ..add(_u16(16));
+
+  final sampleData = BytesBuilder();
+  for (var index = 0; index < frames; index++) {
+    sampleData.add(_i16(index.isEven ? 1000 : -1000));
+  }
+  final dataBytes = sampleData.toBytes();
+  final dataChunk = BytesBuilder()
+    ..add(_ascii('data'))
+    ..add(_u32(dataBytes.length))
+    ..add(dataBytes);
+
+  final body = BytesBuilder()
+    ..add(_ascii('WAVE'))
+    ..add(fmtChunk.toBytes())
+    ..add(dataChunk.toBytes());
+  final bodyBytes = body.toBytes();
+  return (BytesBuilder()
+        ..add(_ascii('RIFF'))
+        ..add(_u32(bodyBytes.length))
+        ..add(bodyBytes))
+      .toBytes();
+}
+
+Uint8List _ascii(String value) => Uint8List.fromList(value.codeUnits);
+
+Uint8List _u16(int value) {
+  final data = ByteData(2)..setUint16(0, value, Endian.little);
+  return data.buffer.asUint8List();
+}
+
+Uint8List _i16(int value) {
+  final data = ByteData(2)..setInt16(0, value, Endian.little);
+  return data.buffer.asUint8List();
+}
+
+Uint8List _u32(int value) {
+  final data = ByteData(4)..setUint32(0, value, Endian.little);
+  return data.buffer.asUint8List();
 }
 
 Future<void> _waitForCondition(bool Function() condition) async {
@@ -2457,6 +3069,22 @@ Future<void> _waitForCondition(bool Function() condition) async {
     }
     await Future<void>.delayed(const Duration(milliseconds: 10));
   }
+}
+
+class _ThrowingPreviewAdapter implements PolyAudioPreviewAdapter {
+  @override
+  Stream<void> get completed => const Stream.empty();
+
+  @override
+  Future<void> play(String path, {required double volume}) async {
+    throw StateError('adapter failed');
+  }
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  Future<void> dispose() async {}
 }
 
 class _FakePreviewAdapter implements PolyAudioPreviewAdapter {
