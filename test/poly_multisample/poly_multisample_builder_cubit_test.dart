@@ -527,8 +527,7 @@ void main() {
       hardwareService.complete(1, [2]);
       await Future<void>.delayed(Duration.zero);
       hardwareService.complete(0, [1]);
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+      await _waitForCondition(() => adapter.playedPaths.length == 1);
 
       expect(adapter.playedPaths.length, 1);
       expect(File(adapter.playedPaths.single).readAsBytesSync(), [2]);
@@ -2365,6 +2364,16 @@ class _ExposedPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
 
   void setTestState(PolyMultisampleBuilderState state) {
     emit(state);
+  }
+}
+
+Future<void> _waitForCondition(bool Function() condition) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 1));
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('Timed out waiting for async condition.');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 10));
   }
 }
 

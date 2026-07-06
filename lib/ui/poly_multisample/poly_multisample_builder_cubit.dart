@@ -1503,13 +1503,15 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     if (bytes == null) {
       throw PolySampleHardwareException('Could not download $path.');
     }
-    final root = Directory.systemTemp.createTempSync('nt_helper_poly_preview_');
+    final root = await Directory.systemTemp.createTemp(
+      'nt_helper_poly_preview_',
+    );
     _hardwarePreviewRoots.add(root.path);
     final safeName = p
         .basename(path)
         .replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
     final file = File(p.join(root.path, safeName));
-    file.writeAsBytesSync(bytes, flush: true);
+    await file.writeAsBytes(bytes, flush: true);
     _hardwarePreviewCache[path] = file.path;
     return file.path;
   }
