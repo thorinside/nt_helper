@@ -134,7 +134,9 @@ void main() {
       _stubDirectoryCreates(manager);
       _stubChunkUploads(manager, chunkCalls);
       when(
-        () => manager.requestFileDownload('/samples/Piano/Nested/Piano_C3.wav'),
+        () => manager.requestFileDownload(
+          '/multisamples/Piano/Nested/Piano_C3.wav',
+        ),
       ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
 
       final result = await service.uploadSysEx(
@@ -147,20 +149,77 @@ void main() {
             rootMidi: 48,
           ),
         ],
-        hardwareFolder: '/samples/Piano/Nested',
+        hardwareFolder: '/multisamples/Piano/Nested',
       );
 
-      verify(() => manager.requestDirectoryCreate('/samples/Piano')).called(1);
       verify(
-        () => manager.requestDirectoryCreate('/samples/Piano/Nested'),
+        () => manager.requestDirectoryCreate('/multisamples/Piano'),
+      ).called(1);
+      verify(
+        () => manager.requestDirectoryCreate('/multisamples/Piano/Nested'),
       ).called(1);
       expect(chunkCalls, hasLength(1));
-      expect(chunkCalls.single.path, '/samples/Piano/Nested/Piano_C3.wav');
+      expect(chunkCalls.single.path, '/multisamples/Piano/Nested/Piano_C3.wav');
       expect(chunkCalls.single.data, [1, 2, 3]);
       expect(chunkCalls.single.position, 0);
       expect(chunkCalls.single.createAlways, isTrue);
       verifyNever(() => manager.requestFileUpload(any(), any()));
       expect(result.correctedFiles, 0);
+    },
+  );
+
+  test(
+    'uploadSysEx writes semantic filenames into multisamples folder',
+    () async {
+      final manager = MockDistingMidiManager();
+      final chunkCalls = <ChunkUploadCall>[];
+      final c3Bytes = Uint8List.fromList([1, 2, 3]);
+      final d3Bytes = Uint8List.fromList([4, 5, 6]);
+      final c3 = File('${tempRoot.path}/Pno_C3.wav')..writeAsBytesSync(c3Bytes);
+      final d3 = File('${tempRoot.path}/Pno_C3_take2.wav')
+        ..writeAsBytesSync(d3Bytes);
+      _stubDirectoryCreates(manager);
+      _stubChunkUploads(manager, chunkCalls);
+      when(
+        () => manager.requestFileDownload(
+          '/multisamples/Piano/Pno_C3_SW48_V1_RR1.wav',
+        ),
+      ).thenAnswer((_) async => Uint8List.fromList(c3Bytes));
+      when(
+        () => manager.requestFileDownload(
+          '/multisamples/Piano/Pno_take2_D3_SW60_V2_RR3.wav',
+        ),
+      ).thenAnswer((_) async => Uint8List.fromList(d3Bytes));
+
+      await service.uploadSysEx(
+        manager: manager,
+        regions: [
+          PolySampleRegion(
+            path: c3.path,
+            fileName: 'Pno_C3.wav',
+            displayName: 'Pno_C3.wav',
+            rootMidi: 48,
+            switchPoint: 48,
+            velocityLayer: 1,
+            roundRobin: 1,
+          ),
+          PolySampleRegion(
+            path: d3.path,
+            fileName: 'Pno_C3_take2.wav',
+            displayName: 'Pno_C3_take2.wav',
+            rootMidi: 50,
+            switchPoint: 60,
+            velocityLayer: 2,
+            roundRobin: 3,
+          ),
+        ],
+        hardwareFolder: '/multisamples/Piano',
+      );
+
+      expect(chunkCalls.map((call) => call.path), [
+        '/multisamples/Piano/Pno_C3_SW48_V1_RR1.wav',
+        '/multisamples/Piano/Pno_take2_D3_SW60_V2_RR3.wav',
+      ]);
     },
   );
 
@@ -177,7 +236,7 @@ void main() {
       _stubDirectoryCreates(manager);
       _stubChunkUploads(manager, chunkCalls);
       when(
-        () => manager.requestFileDownload('/samples/Piano/Piano_C3.wav'),
+        () => manager.requestFileDownload('/multisamples/Piano/Piano_C3.wav'),
       ).thenAnswer((_) async => Uint8List.fromList(bytes));
 
       await service.uploadSysEx(
@@ -190,7 +249,7 @@ void main() {
             rootMidi: 48,
           ),
         ],
-        hardwareFolder: '/samples/Piano',
+        hardwareFolder: '/multisamples/Piano',
       );
 
       expect(chunkCalls.map((call) => call.position), [0, 512, 1024]);
@@ -215,7 +274,7 @@ void main() {
     _stubDirectoryCreates(manager);
     _stubChunkUploads(manager, chunkCalls);
     when(
-      () => manager.requestFileDownload('/samples/Piano/Piano_C3.wav'),
+      () => manager.requestFileDownload('/multisamples/Piano/Piano_C3.wav'),
     ).thenAnswer((_) async {
       downloadCount++;
       return downloadCount == 1
@@ -233,7 +292,7 @@ void main() {
           rootMidi: 48,
         ),
       ],
-      hardwareFolder: '/samples/Piano',
+      hardwareFolder: '/multisamples/Piano',
     );
 
     expect(chunkCalls.map((call) => call.position), [
@@ -265,7 +324,7 @@ void main() {
       _stubDirectoryCreates(manager);
       _stubChunkUploads(manager, <ChunkUploadCall>[]);
       when(
-        () => manager.requestFileDownload('/samples/Piano/Piano_C3.wav'),
+        () => manager.requestFileDownload('/multisamples/Piano/Piano_C3.wav'),
       ).thenAnswer((_) async => Uint8List.fromList([9, 9, 9]));
 
       await expectLater(
@@ -279,13 +338,15 @@ void main() {
               rootMidi: 48,
             ),
           ],
-          hardwareFolder: '/samples/Piano',
+          hardwareFolder: '/multisamples/Piano',
         ),
         throwsA(
           isA<PolySampleUploadException>().having(
             (error) => error.message,
             'message',
-            contains('Verification failed for /samples/Piano/Piano_C3.wav'),
+            contains(
+              'Verification failed for /multisamples/Piano/Piano_C3.wav',
+            ),
           ),
         ),
       );
@@ -301,7 +362,7 @@ void main() {
     _stubDirectoryCreates(manager);
     _stubChunkUploads(manager, chunkCalls);
     when(
-      () => manager.requestFileDownload('/samples/Piano/Piano_C3.wav'),
+      () => manager.requestFileDownload('/multisamples/Piano/Piano_C3.wav'),
     ).thenAnswer((_) async {
       downloadCount++;
       if (downloadCount == 1) return null;
@@ -318,7 +379,7 @@ void main() {
           rootMidi: 48,
         ),
       ],
-      hardwareFolder: '/samples/Piano',
+      hardwareFolder: '/multisamples/Piano',
     );
 
     expect(chunkCalls, hasLength(2));
@@ -353,14 +414,14 @@ void main() {
               rootMidi: 48,
             ),
           ],
-          hardwareFolder: '/samples/Piano',
+          hardwareFolder: '/multisamples/Piano',
         ),
         throwsA(
           isA<PolySampleUploadException>().having(
             (error) => error.message,
             'message',
             contains(
-              'Hardware upload chunk at 512 for /samples/Piano/Piano_C3.wav failed: nope',
+              'Hardware upload chunk at 512 for /multisamples/Piano/Piano_C3.wav failed: nope',
             ),
           ),
         ),

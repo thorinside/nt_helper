@@ -80,11 +80,12 @@ Mechanical edits:
    - `test('buildUploadFiles rejects duplicate target names', ...)`: two regions that both target `Piano_C3.wav`; expect `PolySampleUploadException` and message contains `Multiple samples target Piano_C3.wav`.
    - `test('uploadMountedSd copies renamed files and preserves unrelated files', ...)`: create a temp source folder with `Piano_C3.wav`, destination folder with existing `Piano_C3.wav` containing different bytes and `unrelated.txt`; upload one region rooted C3; expect target bytes equal source and unrelated file still exists.
    - `test('uploadMountedSd skips same source and target path without deleting', ...)`: source path is already the computed target in destination; upload; expect file bytes unchanged.
-   - `test('uploadSysEx creates parents uploads and verifies bytes', ...)`: nested hardware folder `/samples/Piano/Nested`, mock mkdir success, upload success, download same bytes; verify `requestDirectoryCreate('/samples/Piano')`, `requestDirectoryCreate('/samples/Piano/Nested')`, one upload, and result `correctedFiles == 0`.
-   - `test('uploadSysEx corrects mismatched hardware bytes once', ...)`: first download returns different bytes, second returns source bytes; verify two uploads and result `correctedFiles == 1`.
-   - `test('uploadSysEx throws when verification still differs after correction', ...)`: both downloads differ; expect `PolySampleUploadException` message contains `Verification failed for /samples/Piano/Piano_C3.wav`.
+   - `test('uploadSysEx creates parents uploads chunk and verifies bytes', ...)`: nested hardware folder `/multisamples/Piano/Nested`, mock mkdir success, upload chunk success, download same bytes; verify `requestDirectoryCreate('/multisamples/Piano')`, `requestDirectoryCreate('/multisamples/Piano/Nested')`, one chunk upload, and result `correctedFiles == 0`.
+   - `test('uploadSysEx writes semantic filenames into multisamples folder', ...)`: two edited regions with changed root, switch point, velocity, and round robin upload to `/multisamples/Piano/<semantic filename>.wav`; expect target paths contain the generated root/SW/V/RR tags used by the NT PolyMultisample player.
+   - `test('uploadSysEx correction retry uses chunks', ...)`: first download returns different bytes, second returns source bytes; verify both attempts use ordered chunks and result `correctedFiles == 1`.
+   - `test('uploadSysEx throws when verification still differs after correction', ...)`: both downloads differ; expect `PolySampleUploadException` message contains `Verification failed for /multisamples/Piano/Piano_C3.wav`.
    - `test('uploadSysEx treats null download as a correctable mismatch', ...)`: first download null, second matches; expect `correctedFiles == 1`.
-   - `test('uploadSysEx throws on failed upload status', ...)`: upload returns `SdCardStatus(success: false, message: 'nope')`; expect message contains `Hardware upload /samples/Piano/Piano_C3.wav failed: nope`.
+   - `test('uploadSysEx failed chunk upload surfaces PolySampleUploadException', ...)`: a later chunk returns `SdCardStatus(success: false, message: 'nope')`; expect message contains `Hardware upload chunk at 512 for /multisamples/Piano/Piano_C3.wav failed: nope`.
 
 Verification commands:
 
@@ -123,7 +124,7 @@ Mechanical edits:
 1. Import `package:nt_helper/poly_multisample/poly_sample_upload_service.dart` in the cubit file.
 2. Add `uploading` after `saving` in `PolyMultisampleActiveOperation`.
 3. Add optional constructor parameter `PolySampleUploadService? uploadService`, field `final PolySampleUploadService _uploadService;`, and initializer `_uploadService = uploadService ?? const PolySampleUploadService()`.
-4. Implement `uploadViaMountedSd` and `uploadViaSysEx` exactly as the spec states, including guard order, active operation/progress emits, preference persistence for mounted uploads, SysEx target `/samples/<sanitized current instrument name>`, effect strings, and failure emit.
+4. Implement `uploadViaMountedSd` and `uploadViaSysEx` exactly as the spec states, including guard order, active operation/progress emits, preference persistence for mounted uploads, SysEx target `/multisamples/<sanitized current instrument name>`, effect strings, and failure emit.
 5. Add private helper `_safeHardwareFolderName` near `_fingerprintRegions` at the bottom of the cubit file.
 6. In the test file, import `package:nt_helper/poly_multisample/poly_sample_upload_service.dart` and add a fake upload service class near other fake service classes:
 
@@ -160,8 +161,8 @@ The fake methods increment call counts, store destination/folder, call `onProgre
 7. Extend `_ExposedPolyMultisampleBuilderCubit` so its constructor accepts `super.uploadService` in addition to the existing `super.applyService`, `super.wavService`, and `super.previewService` parameters.
 8. Add these cubit tests exactly:
    - `test('uploadViaMountedSd persists destination and emits success effect', ...)`: seed a local/importDraft state with one edited region using `_ExposedPolyMultisampleBuilderCubit.setTestState`; call upload; expect fake destination, `lastMountedUploadFolder`, `activeOperation.none`, and effect `Uploaded sample folder to /Volumes/NT/samples/Piano.`.
-   - `test('uploadViaSysEx targets sanitized instrument folder', ...)`: instrument name `Piano/Bad:*Name`; call upload with `_MockDistingMidiManager`; expect fake `hardwareFolder == '/samples/Piano_Bad__Name'` and effect `Uploaded sample folder to /samples/Piano_Bad__Name.`.
-   - `test('uploadViaSysEx reports corrected file count in effect', ...)`: fake result `correctedFiles: 2`; expect effect `Uploaded sample folder to /samples/Piano and corrected 2 files.`.
+   - `test('uploadViaSysEx targets sanitized instrument folder', ...)`: instrument name `Piano/Bad:*Name`; call upload with `_MockDistingMidiManager`; expect fake `hardwareFolder == '/multisamples/Piano_Bad__Name'` and effect `Uploaded sample folder to /multisamples/Piano_Bad__Name.`.
+   - `test('uploadViaSysEx reports corrected file count in effect', ...)`: fake result `correctedFiles: 2`; expect effect `Uploaded sample folder to /multisamples/Piano and corrected 2 files.`.
    - `test('upload guards hardware source mode', ...)`: state sourceMode hardware; call mounted upload; expect fake `mountedCalls == 0` and error `Open or import a local sample folder before uploading.`.
    - `test('upload guards pending waveform edits', ...)`: state with `wavEditDrafts` non-empty; call SysEx upload; expect fake `sysexCalls == 0` and error `Save or discard waveform edits before uploading this sample set.`.
    - `test('upload surfaces transport errors', ...)`: fake throws `PolySampleUploadException('boom')`; call mounted upload; expect `activeOperation.none` and error `boom`.

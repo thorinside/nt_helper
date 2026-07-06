@@ -1823,10 +1823,10 @@ void main() {
 
       await cubit.uploadViaSysEx(_MockDistingMidiManager());
 
-      expect(uploadService.hardwareFolder, '/samples/Piano_Bad__Name');
+      expect(uploadService.hardwareFolder, '/multisamples/Piano_Bad__Name');
       expect(
         cubit.state.effect,
-        'Uploaded sample folder to /samples/Piano_Bad__Name.',
+        'Uploaded sample folder to /multisamples/Piano_Bad__Name.',
       );
     });
 
@@ -1873,7 +1873,7 @@ void main() {
 
       expect(
         cubit.state.effect,
-        'Uploaded sample folder to /samples/Piano and corrected 2 files.',
+        'Uploaded sample folder to /multisamples/Piano and corrected 2 files.',
       );
     });
 

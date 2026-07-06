@@ -233,13 +233,15 @@ Future<void> _ensureHardwareParent(
   var current = '';
   for (final segment in segments) {
     current = current.isEmpty ? '/$segment' : p.posix.join(current, segment);
-    if (current == '/samples') continue;
+    if (_knownHardwareRoots.contains(current)) continue;
     await _requireSuccess(
       manager.requestDirectoryCreate(current),
       'mkdir $current',
     );
   }
 }
+
+const _knownHardwareRoots = {'/samples', '/multisamples'};
 
 Future<void> _requireSuccess(
   Future<SdCardStatus?> future,

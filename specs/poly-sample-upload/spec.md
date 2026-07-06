@@ -74,22 +74,23 @@ Hand spot-check after inventory: `poly_sample_hardware_service.dart` currently u
 | Decision | Rationale | Files affected | Status |
 |---|---|---|---|
 | Add a dedicated `PolySampleUploadService` instead of extending `PolySampleHardwareService`. | Upload spans both local mounted filesystems and hardware SysEx; a separate service keeps transport orchestration out of the cubit and avoids mixing mounted filesystem behavior into the hardware-only service. | NEW `lib/poly_multisample/poly_sample_upload_service.dart`; NEW `test/poly_multisample/poly_sample_upload_service_test.dart`; `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart` | required |
-| Reuse `PolySampleApplyService.buildTargetFileName` for upload target filenames. | Upload target naming must match existing Save As/Apply naming semantics for root note, velocity, and round-robin metadata. | `lib/poly_multisample/poly_sample_upload_service.dart` | required |
+| Reuse `PolySampleApplyService.buildTargetFileName` for upload target filenames. | Upload target naming must match existing Save As/Apply naming semantics for root note, switch point, velocity, and round-robin metadata. | `lib/poly_multisample/poly_sample_upload_service.dart` | required |
 | Add `PolyMultisampleActiveOperation.uploading`. | Existing toolbar disables work during long operations by active operation; upload is a long operation with hardware latency and filesystem latency. | `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; tests | required |
 | Add `lastMountedUploadFolder` to preferences and builder state. | The request requires remembering the mounted SD-card filesystem destination for later uploads; existing folder memories have different meanings and must not be overloaded. | `lib/poly_multisample/poly_sample_preferences_service.dart`; `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; tests | required |
 | Add `uploadViaMountedSd(String destinationFolder)` and `uploadViaSysEx(IDistingMidiManager manager)` to `PolyMultisampleBuilderCubit`. | The cubit is the single source of truth for sample editor state, error/effect messages, and operation guards. | `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; `test/poly_multisample/poly_multisample_builder_cubit_test.dart` | required |
 | Keep the upload action out of `DistingCubit`. | The sample editor already owns poly sample state; `DistingCubit` remains the MIDI manager facade and does not gain poly-sample orchestration. | no `lib/cubit/*` edits | out-of-scope |
 | Do not add a strategy registry. | There are exactly two transports with one service entry point each; a registry adds indirection without additional behavioral families. | no registry files | out-of-scope |
-| The SysEx hardware destination is fixed to `/samples/<sanitized current instrument name>`. | The request requires transport selection, not a second SysEx destination workflow. A deterministic destination makes the feature mechanical and matches NT sample folder conventions. | `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; tests | required |
+| The SysEx hardware destination is fixed to `/multisamples/<sanitized current instrument name>`. | The request requires transport selection, not a second SysEx destination workflow. A deterministic destination makes the feature mechanical and matches NT multisample folder conventions. | `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; tests | required |
 | The mounted SD-card destination is the exact folder returned by `FilePicker.getDirectoryPath`. | The request requires a destination folder and persistence. The selected folder is the final sampler folder; the app does not append the instrument name. | `lib/ui/poly_multisample/poly_samples_screen.dart`; `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
 | Mounted upload overwrites only planned target files and leaves unrelated existing files alone. | Removing extra files from a user-selected mounted folder is destructive and was not requested. | `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
 | SysEx verification covers every planned target file and ignores unrelated existing hardware files. | The requested corruption path is uploaded files not matching source files. Deleting unrelated hardware files is destructive and not required. | `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
 | SysEx verification performs exactly one corrective re-upload per mismatched or missing file, then fails when the second download still differs. | This satisfies correction while bounding hardware retries and avoiding infinite upload loops during persistent hardware/API failure. | `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
+| Uploaded SysEx filenames are the NT PolyMultisample mapping contract. | The NT PolyMultisample player derives root note, switch point, velocity layer, and round robin from filenames inside `/multisamples/<instrument>`, not from sidecar metadata. | `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
 | Upload is disabled for hardware-source instruments. | The requested source is a local sampler folder. Hardware-to-hardware copy has different semantics and no local bytes to verify. | `lib/ui/poly_multisample/poly_samples_editor_view.dart`; `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; tests | required |
 | Upload is blocked while waveform edit drafts exist. | Existing Save/Apply flows block while destructive WAV edits are pending; upload must not send stale source files. | `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; tests | required |
 | Upload does not mutate `currentInstrument`, `sourceMode`, `baselineRegions`, `editedRegions`, or dirty state. | Upload is an export/send operation. It must not imply that the local editor state has been applied or saved. | `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; tests | required |
 | Mounted upload does not perform read-back verification. | The request only mandates verification after SysEx upload. Local filesystem copy APIs surface copy failures through exceptions. | no mounted verification code | out-of-scope |
-| Chunked SysEx streaming is not implemented. | Existing hardware apply uses `requestFileUpload` with full bytes; `requestFileUploadChunk` is fire-and-forget in this codebase and cannot support deterministic verification progress in this feature. | no chunk upload edits | out-of-scope |
+| SysEx upload uses the existing long file upload chunk API. | NT SysEx receive limits are smaller than full WAV files; uploads must use `requestFileUploadChunk` with `createAlways` on the first chunk and wait for each hardware acknowledgement before sending the next chunk. | `lib/poly_multisample/poly_sample_upload_service.dart`; `lib/domain/i_disting_midi_manager.dart`; tests | required |
 
 ## Target file tree
 
@@ -135,7 +136,7 @@ test/poly_multisample/
 | `PolyMultisampleBuilderState.lastMountedUploadFolder` | field | builder cubit file | yes | New nullable state field |
 | `PolyMultisampleBuilderCubit.uploadViaMountedSd` | method | builder cubit file | yes | New mounted upload action |
 | `PolyMultisampleBuilderCubit.uploadViaSysEx` | method | builder cubit file | yes | New SysEx upload action |
-| `_safeHardwareFolderName` | function | builder cubit file | no | Sanitizes current instrument name for `/samples/<name>` |
+| `_safeHardwareFolderName` | function | builder cubit file | no | Sanitizes current instrument name for `/multisamples/<name>` |
 | `PolySampleUploadPath` | enum | NEW `lib/ui/poly_multisample/dialogs/poly_sample_upload_dialog.dart` | yes | Values `sysex`, `mountedSd` |
 | `showPolySampleUploadPathDialog` | function | NEW dialog file | yes | Returns selected upload path or null |
 | `_PolySampleUploadDialog` | widget | NEW dialog file | no | Private dialog body |
@@ -288,7 +289,7 @@ Mounted method success behavior:
 
 SysEx method success behavior:
 
-1. Compute `hardwareFolder = p.posix.join('/samples', _safeHardwareFolderName(instrument.name))`.
+1. Compute `hardwareFolder = p.posix.join('/multisamples', _safeHardwareFolderName(instrument.name))`.
 2. Emit `activeOperation: uploading`, `progressText: 'Uploading sample folder...'`, `clearError: true`.
 3. Call `_uploadService.uploadSysEx(regions: editedRegions, manager: manager, hardwareFolder: hardwareFolder, onProgress: ...)`.
 4. Emit `activeOperation: none`, clear progress text, and effect:
@@ -414,7 +415,7 @@ Wire `PolySamplesEditorView(..., onUpload: () => _upload(context), ...)` in `_bo
 |---|---|---|---|
 | SysEx upload reports success but file bytes differ on hardware. | MIDI/SysEx transport corruption, device write glitch, or hardware latency. | Download each planned target after upload, compare bytes, perform one corrective re-upload, download again, fail with `Verification failed for <targetPath>.` when still mismatched. | Service test: first download mismatches, second matches, `correctedFiles == 1`, upload called twice. Service test: second mismatch throws. |
 | SysEx upload target is missing after upload. | Hardware write failed even though upload request returned success. | Treat null download as mismatch and perform the same one corrective re-upload. | Service test: first download null, second matches. |
-| Hardware parent folder does not exist. | First upload to `/samples/<instrument>/<subfolder>` on a fresh card. | Create each parent segment with `requestDirectoryCreate`, skipping `/samples`. | Service test verifies mkdir calls before nested upload. |
+| Hardware parent folder does not exist. | First upload to `/multisamples/<instrument>/<subfolder>` on a fresh card. | Create each parent segment with `requestDirectoryCreate`, skipping `/multisamples`. | Service test verifies mkdir calls before nested upload. |
 | Hardware API returns null or failed status for upload/mkdir. | Device disconnected, unsupported firmware, timeout. | Throw `PolySampleUploadException('Hardware <operation> failed: <message or no response>')`; cubit emits snackbar error. | Service test for null upload status; cubit test for error state. |
 | User starts upload, then leaves editor or opens another source before upload completes. | Back navigation, return to sources, load another folder. | Cubit captures `_contentRevision`; stale progress/success emits are skipped. Failure still emits error. | Cubit test using delayed upload service and `returnToSources` before completion. |
 | Mounted SD-card filesystem disappears during copy. | User ejects card or OS unmounts volume. | Filesystem exception is caught by cubit and shown as error; temp file cleanup is attempted. | Service test with fake temp cleanup is not practical without implementation seams; cubit error test with throwing fake service is required. |
@@ -433,6 +434,6 @@ Wire `PolySamplesEditorView(..., onUpload: () => _upload(context), ...)` in `_bo
 3. The Samples editor toolbar displays an `Upload` button for local/import/custom sample sets and disables it for hardware-source sample sets.
 4. The upload dialog has exactly two paths: `SysEx to NT hardware` and `Mounted SD-card folder`; SysEx is disabled when no MIDI manager is connected.
 5. Mounted SD upload prompts with dialog title `'Upload samples to mounted SD-card folder'`, uploads to the exact folder returned by the picker, and persists that exact folder as `lastMountedUploadFolder`.
-6. SysEx upload sends to `/samples/<sanitized current instrument name>`, verifies every planned target file, corrects one mismatched/missing upload per file, and reports a snackbar error when verification still fails.
+6. SysEx upload sends to `/multisamples/<sanitized current instrument name>`, verifies every planned target file, corrects one mismatched/missing upload per file, and reports a snackbar error when verification still fails.
 7. Upload success sends an accessibility announcement through the existing effect listener and does not show a success snackbar.
 8. Upload never changes the current editor instrument, source mode, edited regions, baseline regions, selection, or dirty state.

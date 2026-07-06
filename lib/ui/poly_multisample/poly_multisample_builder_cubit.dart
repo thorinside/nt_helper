@@ -961,7 +961,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     final operationRevision = _contentRevision;
     final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
     final hardwareFolder = p.posix.join(
-      '/samples',
+      '/multisamples',
       _safeHardwareFolderName(instrument.name),
     );
     emit(
