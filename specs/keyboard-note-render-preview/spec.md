@@ -44,7 +44,7 @@ A hand-check was performed against `lib/poly_multisample/poly_audio_preview_serv
 2. **Render a temporary pitched WAV file before playback.** Add a `WavAudioRenderer.renderPitchedPreview` static method in `wav_metadata.dart`. It reads supported RIFF/WAVE PCM or float32 input with the existing private parser helpers, linearly resamples sample frames at a pitch ratio, and writes a new 16-bit PCM RIFF/WAVE with the source sample rate and channel count.
 3. **No time-stretching.** Pitched preview changes duration. Higher notes are shorter; lower notes are longer. This is the only local behavior implemented.
 4. **Local and mounted WAV only.** A supported preview source is a `.wav` path that is not `sourceMode == hardware && path.startsWith('/')`. Mounted SD-card files opened through the filesystem are local paths and are supported. `.aif`/`.aiff` pitched preview is out of scope.
-5. **Direct hardware paths out of scope.** For `PolySampleSourceMode.hardware` with slash-rooted paths, keyboard-note preview selects no region and emits `Keyboard note preview is only available for local or mounted WAV files.` Existing normal preview remains unchanged.
+5. **Direct hardware paths out of scope.** For `PolySampleSourceMode.hardware` with slash-rooted `.wav` paths that cover the tapped note, keyboard-note preview selects no region and emits `Keyboard note preview is only available for local or mounted WAV files.` Existing normal preview remains unchanged. Non-WAV direct hardware mappings follow the normal no-local-WAV path below.
 6. **Keyboard strip is the preview affordance.** Tapping painted region rectangles keeps the existing select-only behavior. Tapping the piano-key strip calls the new note preview method. Screen-reader keyboard-note semantic buttons call the same note preview method.
 7. **Manual note preview overrides auto-preview.** Tapping a piano key does not trigger normal auto-preview. It selects the region and then plays the rendered pitched WAV. The cubit adds an optional `autoPreviewSelection` named parameter to `selectRegion`, default `true`, and note preview calls it with `false`.
 8. **Repeat taps restart playback.** Generated note previews use `PolyAudioPreviewService.restartPreview`, never `playOrStopPreview`, so a second tap of the same note restarts audio instead of toggling it off.
@@ -56,7 +56,7 @@ A hand-check was performed against `lib/poly_multisample/poly_audio_preview_serv
 14. **No preview for unmapped notes.** When no local/mounted WAV candidate covers the note, leave selection unchanged, stop no audio, and emit `No local WAV sample is mapped to <NOTE>.` where `<NOTE>` comes from `PolyMultisampleParser.midiToNoteName`.
 15. **Temp cache and cleanup.** Rendered note previews are cached by normalized path, file modified milliseconds, file length, source root MIDI, and target MIDI. Files are written under `Directory.systemTemp.createTemp('nt_helper_poly_note_preview_')`. All note-preview temp roots are deleted best-effort in `close()` and `returnToSources()`.
 16. **Latest tap wins.** Add `_notePreviewRequest` token. Every await in note-preview rendering checks the token and `_isClosing`; stale completions leave cached files in place but never play audio or change selection after the newer tap.
-17. **Single-flight per render key.** Add `_notePreviewRenderInFlight` map from render cache key to `Future<String>`. Concurrent taps needing the same render await the same future. Different render keys may render concurrently; only the latest request plays.
+17. **Single-flight per render key.** Add `_notePreviewRenderInFlight` map from render cache key to `Future<String>`. Concurrent taps needing the same render await the same future. Different render keys may render concurrently; only the latest request plays. For two identical taps made before the shared render completes, the first request is stale and does not play; the second request plays once. Sequential repeat taps after a render has completed use the cache and restart playback.
 18. **Inject renderer for deterministic tests.** Add a cubit constructor parameter for a `FutureOr<Uint8List> Function(Uint8List bytes, double pitchRatio)` renderer. Production default calls `WavAudioRenderer.renderPitchedPreview`; tests use queued render completions to verify latest-wins and single-flight behavior without timing sleeps.
 19. **No success snackbar.** Successful preview produces no snackbar/effect. Failures use existing cubit `error` behavior.
 20. **Accessibility.** The key map container label gains a hint that piano keys preview notes. Each visible piano key gets a semantic button label `Preview <NOTE>`. The semantic action calls the same `onPreviewNote` callback as pointer taps. Existing region semantic labels remain unchanged.
@@ -93,7 +93,7 @@ A hand-check was performed against `lib/poly_multisample/poly_audio_preview_serv
 |---|---|---|---|
 | Same-note repeat toggles audio off | Existing `playOrStopPreview` toggles when visible path matches | Use `restartPreview` for keyboard-note previews | Preview service test: `restartPreview restarts the same visible path without toggling` |
 | Rapid taps play stale note after newer note | User taps C4 then D4 while first render awaits disk IO | `_notePreviewRequest` token checked after every await; stale render does not call playback | Cubit test: `keyboard note preview ignores stale render completion` |
-| Duplicate rendering for same temp key | Double tap while first render for the same source/note is still running | `_notePreviewRenderInFlight` shares one future per cache key | Cubit test: `keyboard note preview single-flights identical renders` |
+| Duplicate rendering for same temp key | Double tap while first render for the same source/note is still running | `_notePreviewRenderInFlight` shares one future per cache key; latest request plays once | Cubit test: `keyboard note preview single-flights identical renders` |
 | File deleted between matching and render | Local or mounted sample removed while user taps key | Catch `FileSystemException`, emit error text, no playback | Cubit test with deleted file: `keyboard note preview reports missing WAV file` |
 | Invalid or unsupported WAV | User imports corrupt `.wav` or unsupported bit depth | `renderPitchedPreview` throws `FormatException`; cubit emits error | WAV renderer test for invalid bytes; cubit error test |
 | Hardware source path tapped | User opened NT hardware folder and taps keyboard | Emit `Keyboard note preview is only available for local or mounted WAV files.` and do not download | Cubit test: `keyboard note preview rejects direct hardware paths without download` |
@@ -101,11 +101,12 @@ A hand-check was performed against `lib/poly_multisample/poly_audio_preview_serv
 | Overlapping note ranges | User has two regions covering the same note | Filter velocity, rank smaller span first, deterministic tie-breakers | Cubit test: `keyboard note preview prefers the most specific overlapping range` |
 | No velocity value from key tap | Piano key has pitch only | Apply focused/selected/lane1/lowest lane rule | Cubit tests for focused lane and lane1 fallback |
 | Round robins never rotate | Same note range has RR1/RR2 samples | Cursor keyed by low/high/velocity rotates after successful render | Cubit test: `keyboard note preview rotates same-range round robins` |
+| Sequential repeat tap does not restart | User taps the same piano key again after playback has started | Cubit calls `restartPreview` on every non-stale successful request, including cache hits | Cubit test: `keyboard note preview restarts cached renders on repeat taps` |
 | Source file changed but cache path reused | User edits or overwrites WAV after first preview | Cache key includes modified milliseconds and file length | Cubit test: overwrite file, second preview uses a different rendered path |
 | Temp files accumulate | User previews many notes then closes or returns to sources | Best-effort recursive deletion of note-preview temp roots in `close` and `returnToSources` | Cubit test: temp preview directory removed after close or source reset |
 | Existing region tap behavior regresses | New keyboard note hit targets overlap region area | Pointer note hit only accepts keyboard strip; region zone code remains select-only | Key map test: existing mapped-zone tap still selects and does not call note callback |
 | Screen-reader users cannot trigger note preview | Piano strip is painted custom UI | Add semantic button targets labeled `Preview <NOTE>` | Key map semantics test for `Preview C4` action |
-| Auto-preview double-plays raw and pitched sample | Auto-preview enabled, note tap changes selection | Note preview calls selection with `autoPreviewSelection: false` | Cubit test: auto-preview enabled note tap plays only rendered temp path |
+| Auto-preview double-plays raw and pitched sample | Auto-preview enabled, note tap changes selection | Note preview calls selection with `autoPreviewSelection: false`; `selectRegion` still increments `_autoPreviewRequest` when auto-preview is enabled so pending raw previews are invalidated | Cubit test: auto-preview enabled note tap plays only rendered temp path |
 | Audio player rejects temp file | Adapter throws during restart | Catch in cubit and emit error, leave state consistent | Cubit test with fake adapter throwing on play |
 
 No additional hardening is required for note-off, sustained playback, network paths, or hardware transfer retries because this feature only produces one-shot local temp WAV playback.
@@ -192,7 +193,7 @@ void selectRegion(
 })
 ```
 
-Behavior change: all current auto-preview logic inside `selectRegion` runs only when `autoPreviewSelection` is `true`. Existing callers do not pass the parameter and preserve current behavior.
+Behavior change: existing callers do not pass the parameter and preserve current behavior. When `autoPreviewSelection` is `true`, current auto-preview logic runs exactly as it does today. When `autoPreviewSelection` is `false`, `selectRegion` must still increment `_autoPreviewRequest` if `state.autoPreview` is enabled, to invalidate any pending raw auto-preview, but it must not call `_playAutoPreview`, `_previewService.playOrStopPreview`, or `_previewService.stop()` because of auto-preview.
 
 ### `PolyMultisampleBuilderCubit.playKeyboardNotePreview`
 
@@ -206,14 +207,15 @@ Behavior:
 
 1. Clamp `midi` to `0..127`.
 2. Increment `_notePreviewRequest` and store request id.
-3. Resolve the preview region with the velocity, overlap, and RR rules in this spec.
-4. On no region, emit `error: 'No local WAV sample is mapped to <NOTE>.'` and return.
-5. Call `selectRegion(region.path, PolyRegionSelectionMode.replace, autoPreviewSelection: false)`.
-6. Render or reuse a cached temp WAV for the selected region and target MIDI.
-7. After each await, return without playback when request id is stale or cubit is closing.
-8. Just before playback, increment the RR cursor for the selected range group.
-9. Call `_previewService.restartPreview(renderedPath, displayPath: region.path, gainDb: state.previewGainDb)`.
-10. Catch `FileSystemException`, `FormatException`, and adapter errors by emitting `error: error.toString()`.
+3. If `_hasDirectHardwareWavPreviewCandidate(midi)` is true, emit `error: 'Keyboard note preview is only available for local or mounted WAV files.'` and return without changing selection or playback.
+4. Resolve the preview region with the velocity, overlap, and RR rules in this spec.
+5. On no region, emit `error: 'No local WAV sample is mapped to <NOTE>.'` and return.
+6. Call `selectRegion(region.path, PolyRegionSelectionMode.replace, autoPreviewSelection: false)`.
+7. Render or reuse a cached temp WAV for the selected region and target MIDI.
+8. After each await, return without playback when request id is stale or cubit is closing.
+9. Just before playback, increment the RR cursor for the selected range group.
+10. Call `_previewService.restartPreview(renderedPath, displayPath: region.path, gainDb: state.previewGainDb)`.
+11. Catch `FileSystemException`, `FormatException`, and adapter errors by emitting `error: error.toString()`.
 
 Extend the cubit constructor with this optional parameter:
 
@@ -256,8 +258,11 @@ Add private helpers with these names:
 | `_notePreviewEffectiveLow(PolySampleRegion region)` | Same fallback as `effectiveLow`: `rangeLow ?? switchPoint ?? rootMidi ?? 0`, clamped `0..127`. |
 | `_notePreviewEffectiveHigh(PolySampleRegion region, List<PolySampleRegion> regions)` | Same fallback as `effectiveHigh` for same velocity lane. |
 | `_isLocalMountedWavPreviewPath(String path)` | Returns true only for `.wav` paths that are not direct hardware source paths. |
+| `_hasDirectHardwareWavPreviewCandidate(int midi)` | Returns true only when `state.sourceMode == PolySampleSourceMode.hardware` and at least one slash-rooted `.wav` region with `rootMidi != null` covers `midi` via note-preview effective low/high. |
 | `_renderedKeyboardNotePreviewPath(PolySampleRegion region, int midi)` | Builds stat-based cache key, single-flights render through `_notePreviewRenderer`, writes temp WAV, returns temp path. |
 | `_cleanupNotePreviewRoots()` | Best-effort recursive deletion, clears cache/in-flight/root lists. |
+
+Compatibility/re-export notes: no symbols move in this spec, so no compatibility exports or barrel-file changes are required.
 
 The private result class name is `_KeyboardNotePreviewMatch` with fields:
 

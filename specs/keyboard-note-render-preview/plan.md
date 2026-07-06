@@ -123,16 +123,16 @@ Implementation tasks:
 
 1. Add `import 'dart:typed_data';` because the renderer constructor parameter uses `Uint8List`.
 2. Extend the cubit constructor with `FutureOr<Uint8List> Function(Uint8List bytes, double pitchRatio)? notePreviewRenderer` and store the default renderer exactly as specified.
-3. Extend `selectRegion` with `bool autoPreviewSelection = true` as an optional named parameter. Wrap the existing auto-preview block so it runs only when `autoPreviewSelection` is true. Existing callers remain unchanged.
+3. Extend `selectRegion` with `bool autoPreviewSelection = true` as an optional named parameter. Existing callers remain unchanged. When `autoPreviewSelection` is true, keep current auto-preview behavior unchanged. When `autoPreviewSelection` is false and `state.autoPreview` is true, increment `_autoPreviewRequest` to invalidate pending raw auto-preview work, but skip calls to `_playAutoPreview`, `_previewService.playOrStopPreview`, and `_previewService.stop()` that would happen only because auto-preview is enabled.
 4. Add the five private fields listed in the spec: `_notePreviewCache`, `_notePreviewRenderInFlight`, `_notePreviewRoots`, `_notePreviewRoundRobinCursor`, and `_notePreviewRequest`.
 5. Add the private `_KeyboardNotePreviewMatch` class at top level near the other private cubit helper classes at the bottom of the file.
 6. Add `Future<void> playKeyboardNotePreview(int midi)` exactly as specified.
-7. Add the private helpers named in the spec. Keep them private in `poly_multisample_builder_cubit.dart`; do not import `poly_region_math.dart` into the cubit.
+7. Add the private helpers named in the spec, including `_hasDirectHardwareWavPreviewCandidate(int midi)`. Keep them private in `poly_multisample_builder_cubit.dart`; do not import `poly_region_math.dart` into the cubit.
 8. `_renderedKeyboardNotePreviewPath` must:
    - Stat the source file before using the cache.
    - Build cache key from `p.normalize(region.path)`, `stat.modified.millisecondsSinceEpoch`, `stat.size`, `region.rootMidi`, and target MIDI.
    - Return cached path when it exists and `File(cachedPath).exists()` is true.
-   - Use `_notePreviewRenderInFlight.putIfAbsent(cacheKey, () async { ... }())` pattern or equivalent map logic that removes the key in `whenComplete`.
+   - Use this single-flight shape: read `_notePreviewRenderInFlight[cacheKey]` and return it when non-null; otherwise create `final future = (() async { ... })();`, store it in `_notePreviewRenderInFlight[cacheKey]`, `return await future` inside `try`, and remove `cacheKey` from `_notePreviewRenderInFlight` in `finally`.
    - Create a temp root with prefix `nt_helper_poly_note_preview_`, append it to `_notePreviewRoots`, render via `_notePreviewRenderer(bytes, pitchRatio)`, and write `preview.wav` under that root.
 9. Pitch ratio is `math.pow(2, (midi - region.rootMidi!) / 12).toDouble()`.
 10. `playKeyboardNotePreview` must call `_previewService.restartPreview(renderedPath, displayPath: region.path, gainDb: state.previewGainDb)`.
@@ -143,6 +143,7 @@ Implementation tasks:
 15. Extend `test/poly_multisample/poly_multisample_builder_cubit_test.dart` with these tests in the existing cubit group:
     - `test('keyboard note preview selects and plays a rendered local wav', ...)`
     - `test('keyboard note preview rotates same-range round robins', ...)`
+    - `test('keyboard note preview restarts cached renders on repeat taps', ...)`
     - `test('keyboard note preview prefers the most specific overlapping range', ...)`
     - `test('keyboard note preview uses focused velocity lane before lane one', ...)`
     - `test('keyboard note preview rejects direct hardware paths without download', ...)`
@@ -154,14 +155,16 @@ Implementation tasks:
     - `test('keyboard note preview cleans temp files on close', ...)`
     - `test('keyboard note preview with auto-preview enabled plays only rendered audio', ...)`
     - `test('keyboard note preview reports adapter failures', ...)`
-16. Reuse the existing `_FakePreviewAdapter` where possible. Add a `_ThrowingPreviewAdapter` private test class implementing `PolyAudioPreviewAdapter` for the adapter failure test.
+16. Reuse the existing `_FakePreviewAdapter` for all non-throwing preview assertions; add fields to that fake if a named assertion needs them. Add a `_ThrowingPreviewAdapter` private test class implementing `PolyAudioPreviewAdapter` only for the adapter failure test.
 17. Add a `_writeTinyPreviewWav(File file, {int frames = 8})` helper in the test file that writes a minimal 16-bit PCM WAV. Use existing test helper style and imports.
 18. Add a `_QueuedNotePreviewRenderer` private test class with `calls`, `ratios`, and `completers`. Its `render(Uint8List bytes, double pitchRatio)` method records inputs and returns the next completer future.
 19. For stale render completion, inject `_QueuedNotePreviewRenderer.render`, start preview for C4, start preview for D4 before completing the first completer, complete the second completer with valid rendered WAV bytes, complete the first completer, await both futures, and assert adapter played exactly one path with `state.previewState.visiblePath` equal to the D4 region path.
-20. For single-flight, inject `_QueuedNotePreviewRenderer.render`, call `playKeyboardNotePreview(60)` twice before completing the first completer, assert renderer call count is `1`, complete the completer, await both futures, and assert adapter played twice from the same rendered temp path.
-21. For direct hardware paths, set state to `sourceMode: PolySampleSourceMode.hardware` with a slash-rooted WAV region and call `playKeyboardNotePreview`. Assert adapter played paths is empty and `state.error == 'Keyboard note preview is only available for local or mounted WAV files.'`.
-22. For non-WAV mappings, use only `.aif` region covering the note. Assert adapter played paths is empty and `state.error == 'No local WAV sample is mapped to C4.'` for MIDI 60.
-23. For auto-preview, set `autoPreview: true`, use a valid local WAV, call `playKeyboardNotePreview(60)`, and assert the adapter played path is not the source path and only one play occurred.
+20. For single-flight, inject `_QueuedNotePreviewRenderer.render`, call `playKeyboardNotePreview(60)` twice before completing the first completer, assert renderer call count is `1`, complete the completer, await both futures, and assert adapter played exactly one rendered temp path because the first request is stale.
+21. Add `test('keyboard note preview restarts cached renders on repeat taps', ...)`: call `playKeyboardNotePreview(60)`, await it, call `playKeyboardNotePreview(60)` again, await it, and assert renderer call count is `1`, adapter played two entries, both entries are the same rendered temp path, and the fake adapter `stopCount` is `1`.
+22. For direct hardware paths, set state to `sourceMode: PolySampleSourceMode.hardware` with a slash-rooted WAV region covering MIDI 60 and call `playKeyboardNotePreview(60)`. Assert adapter played paths is empty, selection is unchanged, and `state.error == 'Keyboard note preview is only available for local or mounted WAV files.'`.
+23. For non-WAV mappings, use only `.aif` region covering the note. Assert adapter played paths is empty and `state.error == 'No local WAV sample is mapped to C4.'` for MIDI 60.
+24. For cache invalidation, write the source WAV with `frames: 8`, preview once, overwrite the same source path with `frames: 12` so the file length changes, preview again, and assert the second rendered temp path differs from the first.
+25. For auto-preview, set `autoPreview: true`, use a valid local WAV, call `playKeyboardNotePreview(60)`, and assert the adapter played path is not the source path and only one play occurred.
 
 Verification commands:
 
