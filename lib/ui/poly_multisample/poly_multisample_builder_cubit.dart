@@ -15,6 +15,7 @@ import 'package:nt_helper/poly_multisample/poly_sample_folder_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_hardware_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_preferences_service.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_upload_service.dart';
 import 'package:nt_helper/poly_multisample/poly_wav_service.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 
@@ -31,6 +32,7 @@ enum PolyMultisampleActiveOperation {
   waveform,
   preview,
   saving,
+  uploading,
 }
 
 enum PolyRegionSelectionMode { replace, toggle, additive, range }
@@ -203,6 +205,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     PolyWavService? wavService,
     PolyAudioPreviewService? previewService,
     PolySamplePreferencesService? preferencesService,
+    PolySampleUploadService? uploadService,
   }) : _folderService = folderService ?? const PolySampleFolderService(),
        _hardwareService = hardwareService ?? const PolySampleHardwareService(),
        _importService = importService ?? PolySampleImportService(),
@@ -210,6 +213,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
        _wavService = wavService ?? const PolyWavService(),
        _previewService = previewService ?? PolyAudioPreviewService(),
        _preferencesService = preferencesService,
+       _uploadService = uploadService ?? const PolySampleUploadService(),
        super(const PolyMultisampleBuilderState()) {
     _previewSub = _previewService.states.listen((previewState) {
       emit(state.copyWith(previewState: previewState));
@@ -224,6 +228,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   final PolyWavService _wavService;
   final PolyAudioPreviewService _previewService;
   PolySamplePreferencesService? _preferencesService;
+  final PolySampleUploadService _uploadService;
   late final StreamSubscription<PolyAudioPreviewState> _previewSub;
   final List<String> _ownedTempRoots = [];
   final List<String> _pendingTempRootsToCleanup = [];
@@ -739,6 +744,156 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         _pendingTempRootsToCleanup.removeWhere(rootsUsedBySave.contains);
       }
       await _endRootConsumingOperation();
+    }
+  }
+
+  Future<void> uploadViaMountedSd(String destinationFolder) async {
+    final instrument = state.currentInstrument;
+    if (instrument == null) return;
+    if (state.sourceMode == PolySampleSourceMode.hardware) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          error: 'Open or import a local sample folder before uploading.',
+        ),
+      );
+      return;
+    }
+    if (state.editedRegions.isEmpty) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          error: 'There are no samples to upload.',
+        ),
+      );
+      return;
+    }
+    if (state.hasWaveformDrafts) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          error:
+              'Save or discard waveform edits before uploading this sample set.',
+        ),
+      );
+      return;
+    }
+
+    final operationRevision = _contentRevision;
+    final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
+    emit(
+      state.copyWith(
+        activeOperation: PolyMultisampleActiveOperation.uploading,
+        progressText: 'Uploading sample folder...',
+        clearError: true,
+      ),
+    );
+    try {
+      await _uploadService.uploadMountedSd(
+        regions: editedRegions,
+        destinationFolder: destinationFolder,
+        onProgress: (message) {
+          if (operationRevision != _contentRevision) return;
+          emit(state.copyWith(progressText: message));
+        },
+      );
+      final prefs = await _prefs();
+      await prefs.setLastMountedUploadFolder(destinationFolder);
+      if (operationRevision != _contentRevision) return;
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          clearProgressText: true,
+          lastMountedUploadFolder: destinationFolder,
+          effect: 'Uploaded sample folder to $destinationFolder.',
+          effectId: state.effectId + 1,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          clearProgressText: true,
+          error: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> uploadViaSysEx(IDistingMidiManager manager) async {
+    final instrument = state.currentInstrument;
+    if (instrument == null) return;
+    if (state.sourceMode == PolySampleSourceMode.hardware) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          error: 'Open or import a local sample folder before uploading.',
+        ),
+      );
+      return;
+    }
+    if (state.editedRegions.isEmpty) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          error: 'There are no samples to upload.',
+        ),
+      );
+      return;
+    }
+    if (state.hasWaveformDrafts) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          error:
+              'Save or discard waveform edits before uploading this sample set.',
+        ),
+      );
+      return;
+    }
+
+    final operationRevision = _contentRevision;
+    final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
+    final hardwareFolder = p.posix.join(
+      '/samples',
+      _safeHardwareFolderName(instrument.name),
+    );
+    emit(
+      state.copyWith(
+        activeOperation: PolyMultisampleActiveOperation.uploading,
+        progressText: 'Uploading sample folder...',
+        clearError: true,
+      ),
+    );
+    try {
+      final result = await _uploadService.uploadSysEx(
+        regions: editedRegions,
+        manager: manager,
+        hardwareFolder: hardwareFolder,
+        onProgress: (message) {
+          if (operationRevision != _contentRevision) return;
+          emit(state.copyWith(progressText: message));
+        },
+      );
+      if (operationRevision != _contentRevision) return;
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          clearProgressText: true,
+          effect: result.correctedFiles == 0
+              ? 'Uploaded sample folder to $hardwareFolder.'
+              : 'Uploaded sample folder to $hardwareFolder and corrected ${result.correctedFiles} files.',
+          effectId: state.effectId + 1,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          clearProgressText: true,
+          error: error.toString(),
+        ),
+      );
     }
   }
 
@@ -1495,6 +1650,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       p.join(outputFolder, 'poly_multisample_build_report.txt'),
     ).writeAsString(buffer.toString(), flush: true);
   }
+}
+
+String _safeHardwareFolderName(String name) {
+  final sanitized = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
+  return sanitized.isEmpty ? 'Untitled' : sanitized;
 }
 
 String _fingerprintRegions(List<PolySampleRegion> regions) {
