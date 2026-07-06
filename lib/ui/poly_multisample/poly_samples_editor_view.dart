@@ -260,6 +260,32 @@ class _EditorBody extends StatelessWidget {
           onSelect: (path, mode) =>
               cubit.selectRegion(path, mode, manager: manager),
           onPreview: (path) => cubit.playOrStopPreview(path, manager: manager),
+          onUpdateRoot: (path, midi) =>
+              cubit.updateRoot(path, midi, manager: manager, focusRegion: true),
+          onUpdateRangeLow: (path, midi) => cubit.updateRangeLow(
+            path,
+            midi,
+            manager: manager,
+            focusRegion: true,
+          ),
+          onUpdateRangeHigh: (path, midi) => cubit.updateRangeHigh(
+            path,
+            midi,
+            manager: manager,
+            focusRegion: true,
+          ),
+          onUpdateVelocity: (path, layer) => cubit.updateVelocity(
+            path,
+            layer,
+            manager: manager,
+            focusRegion: true,
+          ),
+          onUpdateRoundRobin: (path, lane) => cubit.updateRoundRobin(
+            path,
+            lane,
+            manager: manager,
+            focusRegion: true,
+          ),
         );
         final inspector = PolySampleInspector(state: state, manager: manager);
         if (constraints.maxWidth >= 900) {

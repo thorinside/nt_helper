@@ -138,6 +138,27 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
+  testWidgets('inline row stepper focuses row and updates inspector', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    await tester.tap(find.byTooltip('Increase Root for Piano_Unmapped.wav'));
+    await tester.pump();
+
+    expect(cubit.state.focusedPath, '/tmp/Piano/Piano_Unmapped.wav');
+    expect(cubit.state.selectedPaths, {'/tmp/Piano/Piano_Unmapped.wav'});
+    final region = cubit.state.editedRegions.singleWhere(
+      (region) => region.path == '/tmp/Piano/Piano_Unmapped.wav',
+    );
+    expect(region.rootMidi, 61);
+    expect(region.rootName, 'C#4');
+    expect(find.text('Editing Piano_Unmapped.wav'), findsOneWidget);
+  });
+
   testWidgets('landing shows three source cards and empty draft', (
     tester,
   ) async {

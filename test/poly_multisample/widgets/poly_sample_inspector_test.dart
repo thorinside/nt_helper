@@ -36,6 +36,23 @@ void main() {
     expect(find.text('Root: C#3'), findsOneWidget);
   });
 
+  testWidgets('mapping stepper auto-previews when enabled', (tester) async {
+    final adapter = _FakePreviewAdapter();
+    final previewService = PolyAudioPreviewService(adapter: adapter);
+    final cubit = _TestPolyMultisampleBuilderCubit(
+      previewService: previewService,
+    );
+    addTearDown(cubit.close);
+    cubit.setTestState(_selectedState(autoPreview: true));
+
+    await _pumpInspector(tester, cubit);
+    await tester.tap(find.byTooltip('Increase Root'));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pump();
+
+    expect(adapter.playedPaths, ['/tmp/Piano/Piano_C3.wav']);
+  });
+
   testWidgets('next sample navigates selection', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit();
     addTearDown(cubit.close);
@@ -316,11 +333,12 @@ Future<void> _pumpInspector(
   );
 }
 
-PolyMultisampleBuilderState _selectedState() {
-  return const PolyMultisampleBuilderState(
+PolyMultisampleBuilderState _selectedState({bool autoPreview = false}) {
+  return PolyMultisampleBuilderState(
     sourceMode: PolySampleSourceMode.local,
     status: PolyMultisampleLoadStatus.ready,
-    currentInstrument: PolySampleInstrument(
+    autoPreview: autoPreview,
+    currentInstrument: const PolySampleInstrument(
       name: 'Piano',
       sourcePath: '/tmp/Piano',
       regions: [
@@ -341,7 +359,7 @@ PolyMultisampleBuilderState _selectedState() {
         ),
       ],
     ),
-    editedRegions: [
+    editedRegions: const [
       PolySampleRegion(
         path: '/tmp/Piano/Piano_C3.wav',
         fileName: 'Piano_C3.wav',
@@ -358,7 +376,7 @@ PolyMultisampleBuilderState _selectedState() {
         rootName: 'C4',
       ),
     ],
-    selectedPaths: {'/tmp/Piano/Piano_C3.wav'},
+    selectedPaths: const {'/tmp/Piano/Piano_C3.wav'},
     focusedPath: '/tmp/Piano/Piano_C3.wav',
   );
 }
@@ -418,9 +436,11 @@ WavOverview _overview() {
 }
 
 class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
-  _TestPolyMultisampleBuilderCubit()
+  _TestPolyMultisampleBuilderCubit({PolyAudioPreviewService? previewService})
     : super(
-        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+        previewService:
+            previewService ??
+            PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
       );
 
   void setTestState(PolyMultisampleBuilderState state) {
@@ -429,11 +449,15 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
 }
 
 class _FakePreviewAdapter implements PolyAudioPreviewAdapter {
+  final playedPaths = <String>[];
+
   @override
   Stream<void> get completed => const Stream.empty();
 
   @override
-  Future<void> play(String path, {required double volume}) async {}
+  Future<void> play(String path, {required double volume}) async {
+    playedPaths.add(path);
+  }
 
   @override
   Future<void> stop() async {}

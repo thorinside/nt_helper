@@ -40,7 +40,12 @@ class PolySampleInspector extends StatelessWidget {
           const SizedBox(height: 12),
           _PreviewControls(state: state),
           const SizedBox(height: 16),
-          _MappingSection(state: state, region: region, cubit: cubit),
+          _MappingSection(
+            state: state,
+            region: region,
+            cubit: cubit,
+            manager: manager,
+          ),
           const SizedBox(height: 8),
           _WaveformSection(state: state, region: region, cubit: cubit),
         ],
@@ -172,11 +177,13 @@ class _MappingSection extends StatelessWidget {
     required this.state,
     required this.region,
     required this.cubit,
+    required this.manager,
   });
 
   final PolyMultisampleBuilderState state;
   final PolySampleRegion region;
   final PolyMultisampleBuilderCubit cubit;
+  final IDistingMidiManager? manager;
 
   @override
   Widget build(BuildContext context) {
@@ -198,34 +205,51 @@ class _MappingSection extends StatelessWidget {
           value: region.rootMidi == null
               ? 'Unset'
               : PolyMultisampleParser.midiToNoteName(root),
-          onMinus: () => cubit.updateRoot(region.path, root - 1),
-          onPlus: () => cubit.updateRoot(region.path, root + 1),
+          onMinus: () =>
+              cubit.updateRoot(region.path, root - 1, manager: manager),
+          onPlus: () =>
+              cubit.updateRoot(region.path, root + 1, manager: manager),
         ),
         _StepRow(
           label: 'Low',
           value: PolyMultisampleParser.midiToNoteName(low),
-          onMinus: () => cubit.updateRangeLow(region.path, low - 1),
-          onPlus: () => cubit.updateRangeLow(region.path, low + 1),
+          onMinus: () =>
+              cubit.updateRangeLow(region.path, low - 1, manager: manager),
+          onPlus: () =>
+              cubit.updateRangeLow(region.path, low + 1, manager: manager),
         ),
         _StepRow(
           label: 'High',
           value: PolyMultisampleParser.midiToNoteName(high),
-          onMinus: () => cubit.updateRangeHigh(region.path, high - 1),
-          onPlus: () => cubit.updateRangeHigh(region.path, high + 1),
+          onMinus: () =>
+              cubit.updateRangeHigh(region.path, high - 1, manager: manager),
+          onPlus: () =>
+              cubit.updateRangeHigh(region.path, high + 1, manager: manager),
         ),
         _StepRow(
           label: 'Velocity',
           value: '$velocity',
-          onMinus: () =>
-              cubit.updateVelocity(region.path, math.max(1, velocity - 1)),
-          onPlus: () => cubit.updateVelocity(region.path, velocity + 1),
+          onMinus: () => cubit.updateVelocity(
+            region.path,
+            math.max(1, velocity - 1),
+            manager: manager,
+          ),
+          onPlus: () =>
+              cubit.updateVelocity(region.path, velocity + 1, manager: manager),
         ),
         _StepRow(
           label: 'Round robin',
           value: '$roundRobin',
-          onMinus: () =>
-              cubit.updateRoundRobin(region.path, math.max(1, roundRobin - 1)),
-          onPlus: () => cubit.updateRoundRobin(region.path, roundRobin + 1),
+          onMinus: () => cubit.updateRoundRobin(
+            region.path,
+            math.max(1, roundRobin - 1),
+            manager: manager,
+          ),
+          onPlus: () => cubit.updateRoundRobin(
+            region.path,
+            roundRobin + 1,
+            manager: manager,
+          ),
         ),
       ],
     );
