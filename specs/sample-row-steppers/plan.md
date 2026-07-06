@@ -43,7 +43,7 @@ Make mapping edit methods clamp values, optionally focus the edited row, and rep
     - `focusedPathOverride` when it is non-null and present in `remainingPaths`
     - existing `state.focusedPath` when present in `remainingPaths`
     - `nextSelectedPaths.firstOrNull`
-11. Add private method `_autoPreviewMappingEdit(String path, {IDistingMidiManager? manager})` using the behavior in `spec.md`.
+11. Add private method `_autoPreviewMappingEdit(String path, {IDistingMidiManager? manager})` using the behavior in `spec.md`; it must increment `_mappingPreviewRequest` before returning for non-wav paths so non-wav mapping edits cancel older in-flight mapping preview requests.
 12. Add private method `_restartPreviewForMappingEdit(String path, {required int requestId, IDistingMidiManager? manager}) async` using the behavior in `spec.md`.
 13. Use the existing `PolySampleHardwareException('Connect to Disting NT to preview hardware samples.')` text for missing hardware manager inside `_restartPreviewForMappingEdit`.
 14. In `test/poly_multisample/poly_multisample_builder_cubit_test.dart`, add a test named `mapping edits clamp values and can focus the edited row` near the existing mapping edit tests. The test must:
@@ -66,13 +66,15 @@ Make mapping edit methods clamp values, optionally focus the edited row, and rep
     - assert `adapter.stopCount` is `1`
 16. Add a test named `auto-preview stops visible preview for non-wav mapping edits`. The test must:
     - create adapter/service/cubit
-    - set state with `autoPreview: true` and one edited AIF region `/tmp/b.aif`
+    - set state with `autoPreview: true` and two edited regions: one WAV region `/tmp/a.wav` and one AIF region `/tmp/b.aif`
+    - select and focus `/tmp/b.aif`
     - call `await cubit.playOrStopPreview('/tmp/a.wav')`
     - call `cubit.updateVelocity('/tmp/b.aif', 2)`
     - wait one zero-duration future
     - assert `adapter.playedPaths` equals `['/tmp/a.wav']`
     - assert `adapter.stopCount` is `1`
 17. Add a test named `stale hardware mapping auto-preview request does not play`. The test must:
+    - update `_ExposedPolyMultisampleBuilderCubit` so its constructor also accepts `super.hardwareService`
     - add a new fake class named `_QueuedPreviewHardwareService` near `_PreviewHardwareService`
     - `_QueuedPreviewHardwareService` extends `PolySampleHardwareService`
     - `_QueuedPreviewHardwareService` has `final completers = <Completer<Uint8List?>>[];`
@@ -187,9 +189,10 @@ Render compact Root/Low/High/Vel/RR steppers in each sample row and wire them to
     - tap `Increase Root`
     - wait one zero-duration future and pump
     - assert the fake adapter recorded one play for `/tmp/Piano_C3.wav`
-26. Update `_FakePreviewAdapter` in `poly_sample_inspector_test.dart` to store `playedPaths` in a list while preserving existing interface methods.
-27. Do not create a reusable public stepper widget in this step.
-28. Do not edit parser, models, apply service, waveform editor, or key map files.
+26. Update `_TestPolyMultisampleBuilderCubit` in `poly_sample_inspector_test.dart` so its constructor accepts an optional `PolyAudioPreviewService? previewService` and passes `previewService ?? PolyAudioPreviewService(adapter: _FakePreviewAdapter())` to `super`.
+27. Update `_FakePreviewAdapter` in `poly_sample_inspector_test.dart` to store `playedPaths` in a list while preserving existing interface methods.
+28. Do not create a reusable public stepper widget in this step.
+29. Do not edit parser, models, apply service, waveform editor, or key map files.
 
 ### Verification commands
 

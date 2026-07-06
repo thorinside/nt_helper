@@ -342,14 +342,15 @@ Preview restart behavior:
 1. Add private field `int _mappingPreviewRequest = 0;` to `PolyMultisampleBuilderCubit` near `_contentRevision`.
 2. Every successful mapping edit calls `_autoPreviewMappingEdit(path, manager: manager)` after `_updateRegion` returns `true`.
 3. `_autoPreviewMappingEdit` returns immediately when `state.autoPreview` is `false`.
-4. `_autoPreviewMappingEdit` stops preview for non-wav paths when `state.previewState.visiblePath != null`.
-5. `_autoPreviewMappingEdit` increments `_mappingPreviewRequest` and starts `_restartPreviewForMappingEdit` with `unawaited`.
-6. `_restartPreviewForMappingEdit` catches errors and emits `state.copyWith(error: error.toString())`.
-7. `_restartPreviewForMappingEdit` resolves hardware paths with `_cachedHardwarePreviewPath(manager, path)` using the same missing-manager error text as `playOrStopPreview`.
-8. After any awaited hardware cache operation, `_restartPreviewForMappingEdit` returns without playing when the request id no longer equals `_mappingPreviewRequest` or `_isClosing` is true.
-9. Before playing a path whose `visiblePath` already equals the edited path, `_restartPreviewForMappingEdit` awaits `_previewService.stop()` so the next call starts playback instead of toggling it off.
-10. Local paths call `_previewService.playOrStopPreview(path, gainDb: state.previewGainDb)`.
-11. Hardware paths call `_previewService.playOrStopPreview(localPath, displayPath: path, gainDb: state.previewGainDb)`.
+4. `_autoPreviewMappingEdit` increments `_mappingPreviewRequest` for every auto-preview-enabled mapping edit, including non-wav edits, so a later non-wav edit cancels any older in-flight mapping preview request.
+5. When `path.toLowerCase().endsWith('.wav')` is `false`, `_autoPreviewMappingEdit` stops preview when `state.previewState.visiblePath != null` and then returns without starting playback.
+6. For `.wav` paths, `_autoPreviewMappingEdit` starts `_restartPreviewForMappingEdit` with `unawaited`, passing the incremented request id.
+7. `_restartPreviewForMappingEdit` catches errors and emits `state.copyWith(error: error.toString())`.
+8. `_restartPreviewForMappingEdit` resolves hardware paths with `_cachedHardwarePreviewPath(manager, path)` using the same missing-manager error text as `playOrStopPreview`.
+9. After any awaited hardware cache operation, `_restartPreviewForMappingEdit` returns without playing when the request id no longer equals `_mappingPreviewRequest` or `_isClosing` is true.
+10. Before playing a path whose `visiblePath` already equals the edited path, `_restartPreviewForMappingEdit` awaits `_previewService.stop()` so the next call starts playback instead of toggling it off.
+11. Local paths call `_previewService.playOrStopPreview(path, gainDb: state.previewGainDb)`.
+12. Hardware paths call `_previewService.playOrStopPreview(localPath, displayPath: path, gainDb: state.previewGainDb)`.
 
 ## Accessibility and keyboard behavior
 
@@ -393,7 +394,7 @@ Preview restart behavior:
 | Sidebar shows a different sample after inline edit | User taps a stepper on a non-selected row | Editor callbacks pass `focusRegion: true`; cubit selects and focuses edited path in the same emit | `poly_samples_editor_view_test.dart` inline row stepper focus test |
 | Auto-preview toggles off instead of replaying the edited sample | User edits the same row while it is already previewing | Mapping preview helper stops the current same-path preview before starting it again | `poly_multisample_builder_cubit_test.dart` auto-preview restart test |
 | Stale hardware preview plays after a later step | User rapidly taps steppers while hardware cache/download is delayed | `_mappingPreviewRequest` token suppresses stale async playback after awaited cache work | `poly_multisample_builder_cubit_test.dart` stale mapping-preview request test |
-| Non-wav stale preview continues after editing a non-wav row | User edits an AIF row while a WAV preview is audible | Mapping edit preview stops current preview and does not start non-wav playback | `poly_multisample_builder_cubit_test.dart` non-wav stop test |
+| Non-wav stale preview continues after editing a non-wav row | User edits an AIF row while a WAV preview is audible | Mapping edit preview cancels older mapping-preview requests, stops current preview, and does not start non-wav playback | `poly_multisample_builder_cubit_test.dart` non-wav stop test |
 | Button semantics are too noisy or missing labels | Screen reader user tabs through a sample row | Row summary plus per-chip container labels and per-button tooltips | `poly_sample_list_test.dart` semantics/tooltip test |
 | Row becomes too tall or visually noisy | A folder has many samples and every row renders controls | Fixed `84.0` extent, compact 24x24 buttons, one Wrap line with wrapping only under narrow widths | `poly_sample_list_test.dart` renders chip labels test |
 | File rename or data corruption during inline edits | User changes Root/RR values in the list | No filesystem write occurs until existing Apply flow; this feature edits in-memory `editedRegions` only | Existing apply tests plus new cubit dirty/focus tests |
