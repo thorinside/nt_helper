@@ -490,49 +490,131 @@ void main() {
       },
     );
 
-    test('stale hardware mapping auto-preview request does not play', () async {
-      final manager = _MockDistingMidiManager();
-      final adapter = _FakePreviewAdapter();
-      final hardwareService = _QueuedPreviewHardwareService();
-      final previewService = PolyAudioPreviewService(adapter: adapter);
-      final cubit = _ExposedPolyMultisampleBuilderCubit(
-        hardwareService: hardwareService,
-        previewService: previewService,
-      );
-      addTearDown(cubit.close);
-      cubit.setTestState(
-        const PolyMultisampleBuilderState(
-          sourceMode: PolySampleSourceMode.hardware,
-          autoPreview: true,
-          editedRegions: [
-            PolySampleRegion(
-              path: '/samples/Piano/Piano_C3.wav',
-              fileName: 'Piano_C3.wav',
-              displayName: 'Piano_C3.wav',
-              rootMidi: 48,
-              rootName: 'C3',
-            ),
-          ],
-          selectedPaths: {'/samples/Piano/Piano_C3.wav'},
-          focusedPath: '/samples/Piano/Piano_C3.wav',
-        ),
-      );
+    test(
+      'hardware mapping auto-preview drops triggers while preview is in flight',
+      () async {
+        final manager = _MockDistingMidiManager();
+        final adapter = _FakePreviewAdapter();
+        final hardwareService = _QueuedPreviewHardwareService();
+        final previewService = PolyAudioPreviewService(adapter: adapter);
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          hardwareService: hardwareService,
+          previewService: previewService,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.hardware,
+            autoPreview: true,
+            editedRegions: [
+              PolySampleRegion(
+                path: '/samples/Piano/Piano_C3.wav',
+                fileName: 'Piano_C3.wav',
+                displayName: 'Piano_C3.wav',
+                rootMidi: 48,
+                rootName: 'C3',
+              ),
+            ],
+            selectedPaths: {'/samples/Piano/Piano_C3.wav'},
+            focusedPath: '/samples/Piano/Piano_C3.wav',
+          ),
+        );
 
-      cubit.updateRoot('/samples/Piano/Piano_C3.wav', 49, manager: manager);
-      await Future<void>.delayed(Duration.zero);
-      expect(hardwareService.completers.length, 1);
-      cubit.updateRoot('/samples/Piano/Piano_C3.wav', 50, manager: manager);
-      await Future<void>.delayed(Duration.zero);
-      expect(hardwareService.completers.length, 2);
-      hardwareService.complete(1, [2]);
-      await Future<void>.delayed(Duration.zero);
-      hardwareService.complete(0, [1]);
-      await _waitForCondition(() => adapter.playedPaths.length == 1);
+        cubit.updateRoot('/samples/Piano/Piano_C3.wav', 49, manager: manager);
+        await Future<void>.delayed(Duration.zero);
+        expect(hardwareService.completers.length, 1);
 
-      expect(adapter.playedPaths.length, 1);
-      expect(File(adapter.playedPaths.single).readAsBytesSync(), [2]);
-      expect(cubit.state.editedRegions.single.rootMidi, 50);
-    });
+        cubit.updateRoot('/samples/Piano/Piano_C3.wav', 50, manager: manager);
+        cubit.updateVelocity(
+          '/samples/Piano/Piano_C3.wav',
+          2,
+          manager: manager,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(hardwareService.completers.length, 1);
+
+        hardwareService.complete(0, [1]);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        expect(hardwareService.completers.length, 1);
+        expect(cubit.state.editedRegions.single.rootMidi, 50);
+        expect(cubit.state.editedRegions.single.velocityLayer, 2);
+      },
+    );
+
+    test(
+      'hardware selection auto-preview drops stale selections without backlog',
+      () async {
+        final manager = _MockDistingMidiManager();
+        final adapter = _FakePreviewAdapter();
+        final hardwareService = _QueuedPreviewHardwareService();
+        final previewService = PolyAudioPreviewService(adapter: adapter);
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          hardwareService: hardwareService,
+          previewService: previewService,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.hardware,
+            autoPreview: true,
+            editedRegions: [
+              PolySampleRegion(
+                path: '/samples/Piano/Piano_C3.wav',
+                fileName: 'Piano_C3.wav',
+                displayName: 'Piano_C3.wav',
+              ),
+              PolySampleRegion(
+                path: '/samples/Piano/Piano_D3.wav',
+                fileName: 'Piano_D3.wav',
+                displayName: 'Piano_D3.wav',
+              ),
+            ],
+          ),
+        );
+
+        cubit.selectRegion(
+          '/samples/Piano/Piano_C3.wav',
+          PolyRegionSelectionMode.replace,
+          manager: manager,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(hardwareService.completers.length, 1);
+
+        cubit.selectRegion(
+          '/samples/Piano/Piano_D3.wav',
+          PolyRegionSelectionMode.replace,
+          manager: manager,
+        );
+        cubit.selectRegion(
+          '/samples/Piano/Piano_C3.wav',
+          PolyRegionSelectionMode.replace,
+          manager: manager,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(hardwareService.completers.length, 1);
+
+        hardwareService.complete(0, [1]);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(hardwareService.completers.length, 1);
+
+        cubit.selectRegion(
+          '/samples/Piano/Piano_D3.wav',
+          PolyRegionSelectionMode.replace,
+          manager: manager,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(hardwareService.completers.length, 2);
+        hardwareService.complete(1, [2]);
+        await _waitForCondition(() => adapter.playedPaths.length == 1);
+
+        expect(File(adapter.playedPaths.single).readAsBytesSync(), [2]);
+        expect(
+          cubit.state.previewState.visiblePath,
+          '/samples/Piano/Piano_D3.wav',
+        );
+      },
+    );
 
     test('saveDestructiveWav forwards fade curve and strength', () {
       const draft = PolyWaveformDraft(

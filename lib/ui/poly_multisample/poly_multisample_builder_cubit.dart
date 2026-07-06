@@ -239,7 +239,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   var _cleanupAfterOperations = false;
   var _isClosing = false;
   var _contentRevision = 0;
-  var _mappingPreviewRequest = 0;
+  var _autoPreviewRequest = 0;
+  var _hardwarePreviewInFlight = false;
   var _importSequence = 0;
   var _waveformLoadSequence = 0;
 
@@ -546,6 +547,9 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         clearFocusedPath: selectedPath == null,
       ),
     );
+    final autoPreviewRequestId = state.autoPreview
+        ? ++_autoPreviewRequest
+        : _autoPreviewRequest;
     if (!selected.contains(path)) {
       if (state.previewState.visiblePath == path) {
         unawaited(_previewService.stop());
@@ -555,7 +559,14 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     if (state.autoPreview) {
       if (path.toLowerCase().endsWith('.wav')) {
         if (state.previewState.visiblePath != path) {
-          unawaited(playOrStopPreview(path, manager: manager));
+          unawaited(
+            _playAutoPreview(
+              path,
+              requestId: autoPreviewRequestId,
+              manager: manager,
+              restartVisiblePreview: false,
+            ),
+          );
         }
       } else if (state.previewState.visiblePath != null) {
         unawaited(_previewService.stop());
@@ -1304,6 +1315,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
           );
         }
         final localPath = await _cachedHardwarePreviewPath(manager, path);
+        if (localPath == null) return;
         await _previewService.playOrStopPreview(
           localPath,
           displayPath: path,
@@ -1330,7 +1342,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
   void _autoPreviewMappingEdit(String path, {IDistingMidiManager? manager}) {
     if (!state.autoPreview) return;
-    final requestId = ++_mappingPreviewRequest;
+    final requestId = ++_autoPreviewRequest;
     if (!path.toLowerCase().endsWith('.wav')) {
       if (state.previewState.visiblePath != null) {
         unawaited(_previewService.stop());
@@ -1338,18 +1350,20 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       return;
     }
     unawaited(
-      _restartPreviewForMappingEdit(
+      _playAutoPreview(
         path,
         requestId: requestId,
         manager: manager,
+        restartVisiblePreview: true,
       ),
     );
   }
 
-  Future<void> _restartPreviewForMappingEdit(
+  Future<void> _playAutoPreview(
     String path, {
     required int requestId,
     IDistingMidiManager? manager,
+    required bool restartVisiblePreview,
   }) async {
     try {
       if (_isHardwarePreviewPath(path)) {
@@ -1359,11 +1373,12 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
           );
         }
         final localPath = await _cachedHardwarePreviewPath(manager, path);
-        if (requestId != _mappingPreviewRequest || _isClosing) return;
-        if (state.previewState.visiblePath == path) {
+        if (localPath == null) return;
+        if (requestId != _autoPreviewRequest || _isClosing) return;
+        if (restartVisiblePreview && state.previewState.visiblePath == path) {
           await _previewService.stop();
         }
-        if (requestId != _mappingPreviewRequest || _isClosing) return;
+        if (requestId != _autoPreviewRequest || _isClosing) return;
         await _previewService.playOrStopPreview(
           localPath,
           displayPath: path,
@@ -1371,11 +1386,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         );
         return;
       }
-      if (requestId != _mappingPreviewRequest || _isClosing) return;
-      if (state.previewState.visiblePath == path) {
+      if (requestId != _autoPreviewRequest || _isClosing) return;
+      if (restartVisiblePreview && state.previewState.visiblePath == path) {
         await _previewService.stop();
       }
-      if (requestId != _mappingPreviewRequest || _isClosing) return;
+      if (requestId != _autoPreviewRequest || _isClosing) return;
       await _previewService.playOrStopPreview(
         path,
         gainDb: state.previewGainDb,
@@ -1390,6 +1405,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   }
 
   void setAutoPreview(bool enabled) {
+    if (!enabled) _autoPreviewRequest++;
     emit(state.copyWith(autoPreview: enabled));
   }
 
@@ -1491,7 +1507,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         path.startsWith('/');
   }
 
-  Future<String> _cachedHardwarePreviewPath(
+  Future<String?> _cachedHardwarePreviewPath(
     IDistingMidiManager manager,
     String path,
   ) async {
@@ -1499,21 +1515,27 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     if (existing != null && await File(existing).exists()) {
       return existing;
     }
-    final bytes = await _hardwareService.downloadSampleBytes(manager, path);
-    if (bytes == null) {
-      throw PolySampleHardwareException('Could not download $path.');
+    if (_hardwarePreviewInFlight) return null;
+    _hardwarePreviewInFlight = true;
+    try {
+      final bytes = await _hardwareService.downloadSampleBytes(manager, path);
+      if (bytes == null) {
+        throw PolySampleHardwareException('Could not download $path.');
+      }
+      final root = await Directory.systemTemp.createTemp(
+        'nt_helper_poly_preview_',
+      );
+      _hardwarePreviewRoots.add(root.path);
+      final safeName = p
+          .basename(path)
+          .replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final file = File(p.join(root.path, safeName));
+      await file.writeAsBytes(bytes, flush: true);
+      _hardwarePreviewCache[path] = file.path;
+      return file.path;
+    } finally {
+      _hardwarePreviewInFlight = false;
     }
-    final root = await Directory.systemTemp.createTemp(
-      'nt_helper_poly_preview_',
-    );
-    _hardwarePreviewRoots.add(root.path);
-    final safeName = p
-        .basename(path)
-        .replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-    final file = File(p.join(root.path, safeName));
-    await file.writeAsBytes(bytes, flush: true);
-    _hardwarePreviewCache[path] = file.path;
-    return file.path;
   }
 
   Future<void> _cleanupHardwarePreviewRoots() async {
