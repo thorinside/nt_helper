@@ -156,7 +156,17 @@ void main() {
         find.bySemanticsLabel('Keyboard map with 1 mapped samples'),
         findsOneWidget,
       );
-      expect(find.text('Root: C3'), findsOneWidget);
+      final rootRow = find.byKey(
+        const ValueKey('poly-sidebar-mapping-root-row'),
+      );
+      expect(
+        find.descendant(of: rootRow, matching: find.text('Root')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: rootRow, matching: find.text('C3')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byTooltip('Back to sample sources'));
       await tester.pumpAndSettle();

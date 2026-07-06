@@ -12,7 +12,6 @@ import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dar
 import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_sidebar_layout.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_waveform_editor.dart';
-import 'package:nt_helper/ui/widgets/split_stepper_control.dart';
 import 'package:path/path.dart' as p;
 
 class PolySampleInspector extends StatelessWidget {
@@ -415,6 +414,7 @@ class _WaveformSection extends StatelessWidget {
         ),
         if (loopDraft.loopStart != null && loopDraft.loopEnd != null) ...[
           _FrameNudgeRow(
+            rowKeySuffix: 'loop-start',
             label: 'Loop start',
             value: loopDraft.loopStart ?? 0,
             onNudge: (delta) => cubit.updateLoopDraft(
@@ -427,6 +427,7 @@ class _WaveformSection extends StatelessWidget {
             ),
           ),
           _FrameNudgeRow(
+            rowKeySuffix: 'loop-end',
             label: 'Loop end',
             value: loopDraft.loopEnd ?? maxFrame,
             onNudge: (delta) => cubit.updateLoopDraft(
@@ -452,6 +453,7 @@ class _WaveformSection extends StatelessWidget {
           ),
         ),
         _FrameNudgeRow(
+          rowKeySuffix: 'trim-start',
           label: 'Trim start',
           value: wavDraft.trimStart ?? 0,
           onNudge: (delta) => cubit.updateWavEditDraft(
@@ -464,6 +466,7 @@ class _WaveformSection extends StatelessWidget {
           ),
         ),
         _FrameNudgeRow(
+          rowKeySuffix: 'trim-end',
           label: 'Trim end',
           value: wavDraft.trimEnd ?? maxFrame,
           onNudge: (delta) => cubit.updateWavEditDraft(
@@ -516,34 +519,42 @@ class _WaveformSection extends StatelessWidget {
             wavDraft.copyWith(fadeOutStrength: strength),
           ),
         ),
-        Row(
-          children: [
-            const SizedBox(width: 92, child: Text('Gain')),
-            Expanded(
-              child: Semantics(
-                label: 'Audio gain',
-                value: '${wavDraft.gainDb.toStringAsFixed(1)} dB',
-                child: Slider(
-                  key: const ValueKey('poly-wav-gain-slider'),
-                  min: -24,
-                  max: 24,
-                  divisions: 96,
-                  value: wavDraft.gainDb,
-                  label: '${wavDraft.gainDb.toStringAsFixed(1)} dB',
-                  semanticFormatterCallback: (value) =>
-                      '${value.toStringAsFixed(1)} dB',
-                  onChanged: (value) => cubit.updateWavEditDraft(
-                    region.path,
-                    wavDraft.copyWith(gainDb: value),
+        SizedBox(
+          height: PolySampleSidebarLayout.rowHeight,
+          child: Row(
+            children: [
+              const SizedBox(
+                width: PolySampleSidebarLayout.sliderLabelWidth,
+                child: Text('Gain'),
+              ),
+              Expanded(
+                child: Semantics(
+                  label: 'Audio gain',
+                  value: '${wavDraft.gainDb.toStringAsFixed(1)} dB',
+                  child: Slider(
+                    key: const ValueKey('poly-wav-gain-slider'),
+                    min: -24,
+                    max: 24,
+                    divisions: 96,
+                    value: wavDraft.gainDb,
+                    label: '${wavDraft.gainDb.toStringAsFixed(1)} dB',
+                    semanticFormatterCallback: (value) =>
+                        '${value.toStringAsFixed(1)} dB',
+                    onChanged: (value) => cubit.updateWavEditDraft(
+                      region.path,
+                      wavDraft.copyWith(gainDb: value),
+                    ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(
-              width: 56,
-              child: Text('${wavDraft.gainDb.toStringAsFixed(1)} dB'),
-            ),
-          ],
+              PolySampleSidebarSliderValue(
+                key: const ValueKey('poly-sidebar-wav-gain-value'),
+                width: PolySampleSidebarLayout.dbValueWidth,
+                semanticLabel: 'Audio gain value',
+                value: '${wavDraft.gainDb.toStringAsFixed(1)} dB',
+              ),
+            ],
+          ),
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -557,33 +568,47 @@ class _WaveformSection extends StatelessWidget {
                 : wavDraft.copyWith(clearNormalize: true),
           ),
         ),
-        Row(
-          children: [
-            const SizedBox(width: 92, child: Text('Peak')),
-            Expanded(
-              child: Semantics(
-                label: 'Normalize peak',
-                value:
-                    '${(wavDraft.normalizePeakDb ?? -0.3).toStringAsFixed(1)} dB',
-                child: Slider(
-                  min: -24,
-                  max: 0,
-                  divisions: 48,
-                  value: wavDraft.normalizePeakDb ?? -0.3,
-                  label:
+        SizedBox(
+          height: PolySampleSidebarLayout.rowHeight,
+          child: Row(
+            children: [
+              const SizedBox(
+                width: PolySampleSidebarLayout.sliderLabelWidth,
+                child: Text('Peak'),
+              ),
+              Expanded(
+                child: Semantics(
+                  label: 'Normalize peak',
+                  value:
                       '${(wavDraft.normalizePeakDb ?? -0.3).toStringAsFixed(1)} dB',
-                  semanticFormatterCallback: (value) =>
-                      '${value.toStringAsFixed(1)} dB',
-                  onChanged: wavDraft.normalizePeakDb == null
-                      ? null
-                      : (value) => cubit.updateWavEditDraft(
-                          region.path,
-                          wavDraft.copyWith(normalizePeakDb: value),
-                        ),
+                  child: Slider(
+                    key: const ValueKey('poly-sidebar-normalize-peak-slider'),
+                    min: -24,
+                    max: 0,
+                    divisions: 48,
+                    value: wavDraft.normalizePeakDb ?? -0.3,
+                    label:
+                        '${(wavDraft.normalizePeakDb ?? -0.3).toStringAsFixed(1)} dB',
+                    semanticFormatterCallback: (value) =>
+                        '${value.toStringAsFixed(1)} dB',
+                    onChanged: wavDraft.normalizePeakDb == null
+                        ? null
+                        : (value) => cubit.updateWavEditDraft(
+                            region.path,
+                            wavDraft.copyWith(normalizePeakDb: value),
+                          ),
+                  ),
                 ),
               ),
-            ),
-          ],
+              PolySampleSidebarSliderValue(
+                key: const ValueKey('poly-sidebar-normalize-peak-value'),
+                width: PolySampleSidebarLayout.dbValueWidth,
+                semanticLabel: 'Normalize peak value',
+                value:
+                    '${(wavDraft.normalizePeakDb ?? -0.3).toStringAsFixed(1)} dB',
+              ),
+            ],
+          ),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -664,38 +689,64 @@ class _FadeRow extends StatelessWidget {
     final ms = overview.sampleRate <= 0
         ? 0.0
         : frames / overview.sampleRate * 1000;
+    final rowKeySuffix = label.toLowerCase().replaceAll(' ', '-');
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label),
-          Semantics(
-            label: '$label length',
-            value: '${ms.round()} ms',
-            child: Slider(
-              min: 0,
-              max: 5000,
-              divisions: 100,
-              value: ms.clamp(0, 5000).toDouble(),
-              label: '${ms.round()} ms',
-              semanticFormatterCallback: (value) => '${value.round()} ms',
-              onChanged: (value) {
-                onFramesChanged((value / 1000 * overview.sampleRate).round());
-              },
+          SizedBox(
+            key: ValueKey('poly-sidebar-$rowKeySuffix-length-row'),
+            height: PolySampleSidebarLayout.rowHeight,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: PolySampleSidebarLayout.sliderLabelWidth,
+                  child: ExcludeSemantics(child: Text('$label length')),
+                ),
+                Expanded(
+                  child: Semantics(
+                    label: '$label length',
+                    value: '${ms.round()} ms',
+                    child: Slider(
+                      min: 0,
+                      max: 5000,
+                      divisions: 100,
+                      value: ms.clamp(0, 5000).toDouble(),
+                      label: '${ms.round()} ms',
+                      semanticFormatterCallback: (value) =>
+                          '${value.round()} ms',
+                      onChanged: (value) {
+                        onFramesChanged(
+                          (value / 1000 * overview.sampleRate).round(),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                PolySampleSidebarSliderValue(
+                  key: ValueKey('poly-sidebar-$rowKeySuffix-length-value'),
+                  width: PolySampleSidebarLayout.msValueWidth,
+                  semanticLabel: '$label length value',
+                  value: '${ms.round()} ms',
+                ),
+              ],
             ),
           ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('$label curve:'),
-                  const SizedBox(width: 8),
-                  DropdownButton<WavFadeCurve>(
+          SizedBox(
+            height: PolySampleSidebarLayout.rowHeight,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: PolySampleSidebarLayout.sliderLabelWidth,
+                  child: ExcludeSemantics(child: Text('$label curve:')),
+                ),
+                SizedBox(
+                  width: PolySampleSidebarLayout.fadeCurveDropdownWidth,
+                  child: DropdownButton<WavFadeCurve>(
+                    key: ValueKey('poly-sidebar-$rowKeySuffix-curve-dropdown'),
+                    isExpanded: true,
                     value: curve,
                     items: [
                       for (final value in WavFadeCurve.values)
@@ -708,26 +759,43 @@ class _FadeRow extends StatelessWidget {
                       if (value != null) onCurveChanged(value);
                     },
                   ),
-                ],
-              ),
-              SizedBox(
-                width: 180,
-                child: Semantics(
-                  label: '$label strength',
-                  value: strength.toStringAsFixed(2),
-                  child: Slider(
-                    min: 0,
-                    max: 1,
-                    divisions: 20,
-                    value: strength,
-                    label: strength.toStringAsFixed(2),
-                    semanticFormatterCallback: (value) =>
-                        value.toStringAsFixed(2),
-                    onChanged: onStrengthChanged,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            key: ValueKey('poly-sidebar-$rowKeySuffix-strength-row'),
+            height: PolySampleSidebarLayout.rowHeight,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: PolySampleSidebarLayout.sliderLabelWidth,
+                  child: ExcludeSemantics(child: Text('$label strength')),
+                ),
+                Expanded(
+                  child: Semantics(
+                    label: '$label strength',
+                    value: strength.toStringAsFixed(2),
+                    child: Slider(
+                      min: 0,
+                      max: 1,
+                      divisions: 20,
+                      value: strength,
+                      label: strength.toStringAsFixed(2),
+                      semanticFormatterCallback: (value) =>
+                          value.toStringAsFixed(2),
+                      onChanged: onStrengthChanged,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                PolySampleSidebarSliderValue(
+                  key: ValueKey('poly-sidebar-$rowKeySuffix-strength-value'),
+                  width: PolySampleSidebarLayout.unitValueWidth,
+                  semanticLabel: '$label strength value',
+                  value: strength.toStringAsFixed(2),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -797,33 +865,70 @@ class _StepRow extends StatelessWidget {
 
 class _FrameNudgeRow extends StatelessWidget {
   const _FrameNudgeRow({
+    required this.rowKeySuffix,
     required this.label,
     required this.value,
     required this.onNudge,
   });
 
+  final String rowKeySuffix;
   final String label;
   final int value;
   final ValueChanged<int> onNudge;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Text('$label: $value')),
-        SplitStepperControl.largeAndSmall(
-          label: label,
-          valueLabel: '$value frames',
-          smallStepLabel: '1',
-          largeStepLabel: '100',
-          smallStepSemanticsLabel: '1 frame',
-          largeStepSemanticsLabel: '100 frames',
-          onLargeDecrement: () => onNudge(-100),
-          onSmallDecrement: () => onNudge(-1),
-          onSmallIncrement: () => onNudge(1),
-          onLargeIncrement: () => onNudge(100),
+    return SizedBox(
+      key: ValueKey('poly-sidebar-frame-$rowKeySuffix-row'),
+      height: PolySampleSidebarLayout.rowHeight,
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        label: label,
+        value: '$value frames',
+        child: Row(
+          children: [
+            SizedBox(
+              width: PolySampleSidebarLayout.frameLabelWidth,
+              child: ExcludeSemantics(
+                child: Text(label, overflow: TextOverflow.ellipsis),
+              ),
+            ),
+            PolySampleSidebarValueText(
+              key: ValueKey('poly-sidebar-frame-$rowKeySuffix-value'),
+              width: PolySampleSidebarLayout.frameValueWidth,
+              value: '$value',
+              semanticLabel: '$label frame value',
+            ),
+            const SizedBox(width: PolySampleSidebarLayout.rowGap),
+            const Spacer(),
+            PolySampleSidebarIconButton(
+              key: ValueKey('poly-sidebar-frame-$rowKeySuffix-minus100'),
+              tooltip: 'Decrease $label by 100 frames',
+              onPressed: () => onNudge(-100),
+              icon: Icons.keyboard_double_arrow_left,
+            ),
+            PolySampleSidebarIconButton(
+              key: ValueKey('poly-sidebar-frame-$rowKeySuffix-minus1'),
+              tooltip: 'Decrease $label by 1 frame',
+              onPressed: () => onNudge(-1),
+              icon: Icons.remove,
+            ),
+            PolySampleSidebarIconButton(
+              key: ValueKey('poly-sidebar-frame-$rowKeySuffix-plus1'),
+              tooltip: 'Increase $label by 1 frame',
+              onPressed: () => onNudge(1),
+              icon: Icons.add,
+            ),
+            PolySampleSidebarIconButton(
+              key: ValueKey('poly-sidebar-frame-$rowKeySuffix-plus100'),
+              tooltip: 'Increase $label by 100 frames',
+              onPressed: () => onNudge(100),
+              icon: Icons.keyboard_double_arrow_right,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

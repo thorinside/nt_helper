@@ -311,6 +311,199 @@ void main() {
     expect(wavDraft.trimEnd, 500);
   });
 
+  testWidgets(
+    'waveform nudge geometry stays fixed across frame digit changes',
+    (tester) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        _selectedState().copyWith(
+          waveformSummaries: {'/tmp/Piano/Piano_C3.wav': _overview()},
+          loopDrafts: const {
+            '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(
+              loopStart: 99,
+              loopEnd: 900,
+            ),
+          },
+          wavEditDrafts: const {
+            '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(
+              trimStart: 99,
+              trimEnd: 900,
+            ),
+          },
+        ),
+      );
+
+      await _pumpInspector(tester, cubit);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        _byStableKey('poly-sidebar-frame-loop-start-plus1'),
+        300,
+      );
+      final loopBefore = <String, Rect>{
+        for (final key in [
+          'poly-sidebar-frame-loop-start-row',
+          'poly-sidebar-frame-loop-start-plus1',
+          'poly-sidebar-frame-loop-end-minus1',
+        ])
+          key: _stableRect(tester, key),
+      };
+
+      await tester.tap(_byStableKey('poly-sidebar-frame-loop-start-plus1'));
+      await tester.pump();
+
+      for (final entry in loopBefore.entries) {
+        _expectStableRect(entry.value, _stableRect(tester, entry.key));
+      }
+
+      await tester.scrollUntilVisible(
+        _byStableKey('poly-sidebar-frame-trim-start-plus1'),
+        300,
+      );
+      final trimBefore = <String, Rect>{
+        for (final key in [
+          'poly-sidebar-frame-trim-start-row',
+          'poly-sidebar-frame-trim-start-plus1',
+          'poly-sidebar-frame-trim-end-minus1',
+        ])
+          key: _stableRect(tester, key),
+      };
+
+      await tester.tap(_byStableKey('poly-sidebar-frame-trim-start-plus1'));
+      await tester.pump();
+
+      for (final entry in trimBefore.entries) {
+        _expectStableRect(entry.value, _stableRect(tester, entry.key));
+      }
+      expect(cubit.state.loopDrafts['/tmp/Piano/Piano_C3.wav']!.loopStart, 100);
+      expect(
+        cubit.state.wavEditDrafts['/tmp/Piano/Piano_C3.wav']!.trimStart,
+        100,
+      );
+    },
+  );
+
+  testWidgets(
+    'waveform slider geometry stays fixed across gain and peak value changes',
+    (tester) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        _selectedState().copyWith(
+          waveformSummaries: {'/tmp/Piano/Piano_C3.wav': _overview()},
+          wavEditDrafts: const {
+            '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(
+              gainDb: 9.9,
+              normalizePeakDb: -9.9,
+            ),
+          },
+        ),
+      );
+
+      await _pumpInspector(tester, cubit);
+      await tester.scrollUntilVisible(
+        _byStableKey('poly-wav-gain-slider'),
+        300,
+      );
+      final gainSliderBefore = _stableRect(tester, 'poly-wav-gain-slider');
+      final gainValueBefore = _stableRect(
+        tester,
+        'poly-sidebar-wav-gain-value',
+      );
+
+      cubit.updateWavEditDraft(
+        '/tmp/Piano/Piano_C3.wav',
+        const PolyWaveformDraft(gainDb: 10.0, normalizePeakDb: -10.0),
+      );
+      await tester.pump();
+
+      _expectStableRect(
+        gainSliderBefore,
+        _stableRect(tester, 'poly-wav-gain-slider'),
+      );
+      _expectStableRect(
+        gainValueBefore,
+        _stableRect(tester, 'poly-sidebar-wav-gain-value'),
+      );
+
+      await tester.scrollUntilVisible(
+        _byStableKey('poly-sidebar-normalize-peak-slider'),
+        300,
+      );
+      final peakSliderBefore = _stableRect(
+        tester,
+        'poly-sidebar-normalize-peak-slider',
+      );
+      final peakValueBefore = _stableRect(
+        tester,
+        'poly-sidebar-normalize-peak-value',
+      );
+
+      cubit.updateWavEditDraft(
+        '/tmp/Piano/Piano_C3.wav',
+        const PolyWaveformDraft(gainDb: 10.0, normalizePeakDb: -0.3),
+      );
+      await tester.pump();
+
+      _expectStableRect(
+        peakSliderBefore,
+        _stableRect(tester, 'poly-sidebar-normalize-peak-slider'),
+      );
+      _expectStableRect(
+        peakValueBefore,
+        _stableRect(tester, 'poly-sidebar-normalize-peak-value'),
+      );
+    },
+  );
+
+  testWidgets(
+    'fade geometry stays fixed across curve and strength value changes',
+    (tester) async {
+      final cubit = _TestPolyMultisampleBuilderCubit();
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        _selectedState().copyWith(
+          waveformSummaries: {'/tmp/Piano/Piano_C3.wav': _overview()},
+          wavEditDrafts: const {
+            '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(
+              fadeInFrames: 441,
+              fadeInCurve: WavFadeCurve.linear,
+              fadeInStrength: 0.95,
+            ),
+          },
+        ),
+      );
+
+      await _pumpInspector(tester, cubit);
+      await tester.scrollUntilVisible(
+        _byStableKey('poly-sidebar-fade-in-curve-dropdown'),
+        300,
+      );
+      final before = <String, Rect>{
+        for (final key in [
+          'poly-sidebar-fade-in-curve-dropdown',
+          'poly-sidebar-fade-in-strength-row',
+          'poly-sidebar-fade-in-strength-value',
+        ])
+          key: _stableRect(tester, key),
+      };
+
+      cubit.updateWavEditDraft(
+        '/tmp/Piano/Piano_C3.wav',
+        const PolyWaveformDraft(
+          fadeInFrames: 882,
+          fadeInCurve: WavFadeCurve.equalPower,
+          fadeInStrength: 1.0,
+        ),
+      );
+      await tester.pump();
+
+      for (final entry in before.entries) {
+        _expectStableRect(entry.value, _stableRect(tester, entry.key));
+      }
+    },
+  );
+
   testWidgets('duplicate sample names show a disambiguated edit target', (
     tester,
   ) async {
@@ -389,6 +582,12 @@ void main() {
     expect(find.bySemanticsLabel('Fade in length'), findsOneWidget);
     expect(find.text('Fade in curve:'), findsOneWidget);
     expect(find.bySemanticsLabel('Fade in strength'), findsOneWidget);
+    expect(find.bySemanticsLabel('Audio gain value'), findsOneWidget);
+    expect(find.bySemanticsLabel('Normalize peak value'), findsOneWidget);
+    expect(find.bySemanticsLabel('Fade in length'), findsOneWidget);
+    expect(find.bySemanticsLabel('Fade in strength'), findsOneWidget);
+    expect(find.bySemanticsLabel('Fade in length value'), findsOneWidget);
+    expect(find.bySemanticsLabel('Fade in strength value'), findsOneWidget);
 
     semantics.dispose();
   });
