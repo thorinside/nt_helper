@@ -11,6 +11,7 @@ import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_waveform_editor.dart';
+import 'package:nt_helper/ui/widgets/split_stepper_control.dart';
 import 'package:path/path.dart' as p;
 
 class PolySampleInspector extends StatelessWidget {
@@ -714,18 +715,12 @@ class _StepRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('$label: $value'),
-          const SizedBox(width: 4),
-          IconButton(
-            tooltip: 'Decrease $label',
-            visualDensity: VisualDensity.compact,
-            onPressed: onMinus,
-            icon: const Icon(Icons.remove, size: 18),
-          ),
-          IconButton(
-            tooltip: 'Increase $label',
-            visualDensity: VisualDensity.compact,
-            onPressed: onPlus,
-            icon: const Icon(Icons.add, size: 18),
+          const SizedBox(width: 8),
+          SplitStepperControl(
+            label: label,
+            valueLabel: value,
+            onDecrement: onMinus,
+            onIncrement: onPlus,
           ),
         ],
       ),

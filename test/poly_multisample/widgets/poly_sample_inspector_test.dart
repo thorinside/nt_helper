@@ -18,7 +18,9 @@ void main() {
 
     expect(find.text('Root: C3'), findsOneWidget);
     expect(find.text('Velocity: 1'), findsOneWidget);
+    expect(find.byTooltip('Decrease Root'), findsOneWidget);
     expect(find.byTooltip('Increase Root'), findsOneWidget);
+    expect(find.byTooltip('Increase Round robin'), findsOneWidget);
   });
 
   testWidgets('root stepper updates the cubit', (tester) async {
@@ -249,6 +251,8 @@ void main() {
     await _pumpInspector(tester, cubit);
 
     expect(find.bySemanticsLabel('Preview gain'), findsOneWidget);
+    expect(find.bySemanticsLabel('Root'), findsOneWidget);
+    expect(find.bySemanticsLabel('Decrease Root'), findsOneWidget);
 
     await tester.drag(
       find.byType(SingleChildScrollView),
