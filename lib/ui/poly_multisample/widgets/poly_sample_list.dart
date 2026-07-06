@@ -48,6 +48,7 @@ class _PolySampleListState extends State<PolySampleList> {
   static const _contentGap = 4.0;
   static const _filenameStepperGap = 16.0;
   static const _minFilenameExtent = 220.0;
+  static const _minStepperStripExtent = 132.0;
   static const _stepperStripPreferredExtent = 760.0;
   static const _stepperGap = 4.0;
 
@@ -97,8 +98,15 @@ class _PolySampleListState extends State<PolySampleList> {
         _contentGap +
         _previewButtonExtent;
     final available = math.max(0.0, rowWidth - fixedWidth);
-    final widthAfterFilename = math.max(0.0, available - _minFilenameExtent);
-    return math.min(_stepperStripPreferredExtent, widthAfterFilename);
+    final widthAfterPreferredFilename = available - _minFilenameExtent;
+    final targetWidth = math.max(
+      _minStepperStripExtent,
+      widthAfterPreferredFilename,
+    );
+    return math.min(
+      _stepperStripPreferredExtent,
+      math.min(available, targetWidth),
+    );
   }
 
   void _scheduleFocusScroll() {

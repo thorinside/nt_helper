@@ -298,6 +298,61 @@ void main() {
     expect(previewRect.center.dy, closeTo(rowRect.center.dy, 0.5));
   });
 
+  testWidgets('mobile widths keep inline steppers usable after filename', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    const longName =
+        'deeply_nested_velocity_layer_round_robin_super_long_filename_C4_take_001.wav';
+    const path = '/tmp/$longName';
+    const region = PolySampleRegion(
+      path: path,
+      fileName: longName,
+      displayName: longName,
+      rootMidi: 60,
+      rootName: 'C4',
+      rangeLow: 60,
+      rangeHigh: 64,
+      velocityLayer: 1,
+      roundRobin: 1,
+    );
+
+    for (final width in <double>[360, 320]) {
+      await tester.binding.setSurfaceSize(Size(width, 600));
+      await _pumpList(tester, regions: const [region]);
+
+      final rowFinder = find.byKey(const ValueKey('poly-sample-row-$path'));
+      final filenameAreaFinder = find.byKey(
+        const ValueKey('poly-sample-filename-area-$path'),
+      );
+      final stepperStripFinder = find.byKey(
+        const ValueKey('poly-sample-stepper-strip-$path'),
+      );
+      final rootStepperFinder = find.byKey(
+        const ValueKey('poly-sample-stepper-$path-root'),
+      );
+      final previewFinder = find.byKey(
+        const ValueKey('poly-sample-preview-$path'),
+      );
+
+      final rowRect = tester.getRect(rowFinder);
+      final filenameAreaRect = tester.getRect(filenameAreaFinder);
+      final stepperStripRect = tester.getRect(stepperStripFinder);
+      final rootStepperRect = tester.getRect(rootStepperFinder);
+      final previewRect = tester.getRect(previewFinder);
+
+      expect(filenameAreaRect.width, greaterThanOrEqualTo(80));
+      expect(stepperStripRect.width, greaterThanOrEqualTo(132));
+      expect(stepperStripRect.left - filenameAreaRect.right, closeTo(16, 0.5));
+      expect(previewRect.left - stepperStripRect.right, closeTo(4, 0.5));
+      expect(filenameAreaRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+      expect(stepperStripRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+      expect(rootStepperRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+      expect(previewRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+    }
+  });
+
   testWidgets('inline steppers emit clamped mapping updates', (tester) async {
     int? root;
     int? low;
