@@ -239,6 +239,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   var _cleanupAfterOperations = false;
   var _isClosing = false;
   var _contentRevision = 0;
+  var _mappingPreviewRequest = 0;
   var _importSequence = 0;
   var _waveformLoadSequence = 0;
 
@@ -566,29 +567,99 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  void updateRoot(String path, int midi) {
-    _updateRegion(path, (region) {
-      return region.copyWith(
-        rootMidi: midi,
-        rootName: PolyMultisampleParser.midiToNoteName(midi),
-      );
-    });
+  void updateRoot(
+    String path,
+    int midi, {
+    IDistingMidiManager? manager,
+    bool focusRegion = false,
+  }) {
+    final clampedMidi = midi.clamp(0, 127).toInt();
+    final updated = _updateRegion(
+      path,
+      (region) {
+        return region.copyWith(
+          rootMidi: clampedMidi,
+          rootName: PolyMultisampleParser.midiToNoteName(clampedMidi),
+        );
+      },
+      selectedPaths: focusRegion ? {path} : null,
+      focusedPathOverride: focusRegion ? path : null,
+    );
+    if (updated) {
+      _autoPreviewMappingEdit(path, manager: manager);
+    }
   }
 
-  void updateRangeLow(String path, int midi) {
-    _updateRegion(path, (region) => region.copyWith(rangeLow: midi));
+  void updateRangeLow(
+    String path,
+    int midi, {
+    IDistingMidiManager? manager,
+    bool focusRegion = false,
+  }) {
+    final clampedMidi = midi.clamp(0, 127).toInt();
+    final updated = _updateRegion(
+      path,
+      (region) => region.copyWith(rangeLow: clampedMidi),
+      selectedPaths: focusRegion ? {path} : null,
+      focusedPathOverride: focusRegion ? path : null,
+    );
+    if (updated) {
+      _autoPreviewMappingEdit(path, manager: manager);
+    }
   }
 
-  void updateRangeHigh(String path, int midi) {
-    _updateRegion(path, (region) => region.copyWith(rangeHigh: midi));
+  void updateRangeHigh(
+    String path,
+    int midi, {
+    IDistingMidiManager? manager,
+    bool focusRegion = false,
+  }) {
+    final clampedMidi = midi.clamp(0, 127).toInt();
+    final updated = _updateRegion(
+      path,
+      (region) => region.copyWith(rangeHigh: clampedMidi),
+      selectedPaths: focusRegion ? {path} : null,
+      focusedPathOverride: focusRegion ? path : null,
+    );
+    if (updated) {
+      _autoPreviewMappingEdit(path, manager: manager);
+    }
   }
 
-  void updateVelocity(String path, int layer) {
-    _updateRegion(path, (region) => region.copyWith(velocityLayer: layer));
+  void updateVelocity(
+    String path,
+    int layer, {
+    IDistingMidiManager? manager,
+    bool focusRegion = false,
+  }) {
+    final clampedLayer = math.max(1, layer);
+    final updated = _updateRegion(
+      path,
+      (region) => region.copyWith(velocityLayer: clampedLayer),
+      selectedPaths: focusRegion ? {path} : null,
+      focusedPathOverride: focusRegion ? path : null,
+    );
+    if (updated) {
+      _autoPreviewMappingEdit(path, manager: manager);
+    }
   }
 
-  void updateRoundRobin(String path, int lane) {
-    _updateRegion(path, (region) => region.copyWith(roundRobin: lane));
+  void updateRoundRobin(
+    String path,
+    int lane, {
+    IDistingMidiManager? manager,
+    bool focusRegion = false,
+  }) {
+    final clampedLane = math.max(1, lane);
+    final updated = _updateRegion(
+      path,
+      (region) => region.copyWith(roundRobin: clampedLane),
+      selectedPaths: focusRegion ? {path} : null,
+      focusedPathOverride: focusRegion ? path : null,
+    );
+    if (updated) {
+      _autoPreviewMappingEdit(path, manager: manager);
+    }
   }
 
   void removeSelectedRegions() {
@@ -1257,6 +1328,63 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
+  void _autoPreviewMappingEdit(String path, {IDistingMidiManager? manager}) {
+    if (!state.autoPreview) return;
+    final requestId = ++_mappingPreviewRequest;
+    if (!path.toLowerCase().endsWith('.wav')) {
+      if (state.previewState.visiblePath != null) {
+        unawaited(_previewService.stop());
+      }
+      return;
+    }
+    unawaited(
+      _restartPreviewForMappingEdit(
+        path,
+        requestId: requestId,
+        manager: manager,
+      ),
+    );
+  }
+
+  Future<void> _restartPreviewForMappingEdit(
+    String path, {
+    required int requestId,
+    IDistingMidiManager? manager,
+  }) async {
+    try {
+      if (_isHardwarePreviewPath(path)) {
+        if (manager == null) {
+          throw const PolySampleHardwareException(
+            'Connect to Disting NT to preview hardware samples.',
+          );
+        }
+        final localPath = await _cachedHardwarePreviewPath(manager, path);
+        if (requestId != _mappingPreviewRequest || _isClosing) return;
+        if (state.previewState.visiblePath == path) {
+          await _previewService.stop();
+        }
+        if (requestId != _mappingPreviewRequest || _isClosing) return;
+        await _previewService.playOrStopPreview(
+          localPath,
+          displayPath: path,
+          gainDb: state.previewGainDb,
+        );
+        return;
+      }
+      if (requestId != _mappingPreviewRequest || _isClosing) return;
+      if (state.previewState.visiblePath == path) {
+        await _previewService.stop();
+      }
+      if (requestId != _mappingPreviewRequest || _isClosing) return;
+      await _previewService.playOrStopPreview(
+        path,
+        gainDb: state.previewGainDb,
+      );
+    } catch (error) {
+      emit(state.copyWith(error: error.toString()));
+    }
+  }
+
   void setPreviewGain(double db) {
     emit(state.copyWith(previewGainDb: db));
   }
@@ -1375,15 +1503,13 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     if (bytes == null) {
       throw PolySampleHardwareException('Could not download $path.');
     }
-    final root = await Directory.systemTemp.createTemp(
-      'nt_helper_poly_preview_',
-    );
+    final root = Directory.systemTemp.createTempSync('nt_helper_poly_preview_');
     _hardwarePreviewRoots.add(root.path);
     final safeName = p
         .basename(path)
         .replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
     final file = File(p.join(root.path, safeName));
-    await file.writeAsBytes(bytes, flush: true);
+    file.writeAsBytesSync(bytes, flush: true);
     _hardwarePreviewCache[path] = file.path;
     return file.path;
   }
@@ -1517,20 +1643,31 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     );
   }
 
-  void _updateRegion(
+  bool _updateRegion(
     String path,
-    PolySampleRegion Function(PolySampleRegion region) update,
-  ) {
+    PolySampleRegion Function(PolySampleRegion region) update, {
+    Set<String>? selectedPaths,
+    String? focusedPathOverride,
+  }) {
+    var matched = false;
     final next = [
       for (final region in state.editedRegions)
-        region.path == path ? update(region) : region,
+        if (region.path == path) ...[update(region)] else region,
     ];
-    _replaceEditedRegions(next);
+    matched = state.editedRegions.any((region) => region.path == path);
+    if (!matched) return false;
+    _replaceEditedRegions(
+      next,
+      selectedPaths: selectedPaths,
+      focusedPathOverride: focusedPathOverride,
+    );
+    return true;
   }
 
   void _replaceEditedRegions(
     List<PolySampleRegion> regions, {
     Set<String>? selectedPaths,
+    String? focusedPathOverride,
   }) {
     _contentRevision++;
     PolyMultisampleParser.sortRegions(regions);
@@ -1539,7 +1676,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     final nextSelectedPaths = (selectedPaths ?? state.selectedPaths)
         .where(remainingPaths.contains)
         .toSet();
-    final focusedPath = remainingPaths.contains(state.focusedPath)
+    final focusedPath =
+        focusedPathOverride != null &&
+            remainingPaths.contains(focusedPathOverride)
+        ? focusedPathOverride
+        : remainingPaths.contains(state.focusedPath)
         ? state.focusedPath
         : nextSelectedPaths.firstOrNull;
     final previewVisiblePath = state.previewState.visiblePath;

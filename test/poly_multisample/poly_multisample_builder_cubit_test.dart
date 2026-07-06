@@ -374,6 +374,167 @@ void main() {
       expect(adapter.stopCount, 1);
     });
 
+    test('mapping edits clamp values and can focus the edited row', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+            ),
+            PolySampleRegion(
+              path: '/tmp/b.wav',
+              fileName: 'b.wav',
+              displayName: 'b.wav',
+            ),
+          ],
+          selectedPaths: {'/tmp/a.wav'},
+          focusedPath: '/tmp/a.wav',
+        ),
+      );
+
+      cubit.updateRoot('/tmp/b.wav', -4, focusRegion: true);
+      cubit.updateRangeLow('/tmp/b.wav', -1);
+      cubit.updateRangeHigh('/tmp/b.wav', 200);
+      cubit.updateVelocity('/tmp/b.wav', 0);
+      cubit.updateRoundRobin('/tmp/b.wav', 0);
+
+      expect(cubit.state.selectedPaths, {'/tmp/b.wav'});
+      expect(cubit.state.focusedPath, '/tmp/b.wav');
+      final region = cubit.state.editedRegions.singleWhere(
+        (region) => region.path == '/tmp/b.wav',
+      );
+      expect(region.rootMidi, 0);
+      expect(region.rootName, 'C-1');
+      expect(region.rangeLow, 0);
+      expect(region.rangeHigh, 127);
+      expect(region.velocityLayer, 1);
+      expect(region.roundRobin, 1);
+    });
+
+    test(
+      'auto-preview restarts the edited wav after mapping changes',
+      () async {
+        final adapter = _FakePreviewAdapter();
+        final previewService = PolyAudioPreviewService(adapter: adapter);
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: previewService,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            autoPreview: true,
+            editedRegions: [
+              PolySampleRegion(
+                path: '/tmp/a.wav',
+                fileName: 'a.wav',
+                displayName: 'a.wav',
+              ),
+            ],
+            selectedPaths: {'/tmp/a.wav'},
+            focusedPath: '/tmp/a.wav',
+          ),
+        );
+
+        await cubit.playOrStopPreview('/tmp/a.wav');
+        cubit.updateRoot('/tmp/a.wav', 61);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(adapter.playedPaths, ['/tmp/a.wav', '/tmp/a.wav']);
+        expect(adapter.stopCount, 1);
+      },
+    );
+
+    test(
+      'auto-preview stops visible preview for non-wav mapping edits',
+      () async {
+        final adapter = _FakePreviewAdapter();
+        final previewService = PolyAudioPreviewService(adapter: adapter);
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: previewService,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            autoPreview: true,
+            editedRegions: [
+              PolySampleRegion(
+                path: '/tmp/a.wav',
+                fileName: 'a.wav',
+                displayName: 'a.wav',
+              ),
+              PolySampleRegion(
+                path: '/tmp/b.aif',
+                fileName: 'b.aif',
+                displayName: 'b.aif',
+              ),
+            ],
+            selectedPaths: {'/tmp/b.aif'},
+            focusedPath: '/tmp/b.aif',
+          ),
+        );
+
+        await cubit.playOrStopPreview('/tmp/a.wav');
+        cubit.updateVelocity('/tmp/b.aif', 2);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(adapter.playedPaths, ['/tmp/a.wav']);
+        expect(adapter.stopCount, 1);
+      },
+    );
+
+    test('stale hardware mapping auto-preview request does not play', () async {
+      final manager = _MockDistingMidiManager();
+      final adapter = _FakePreviewAdapter();
+      final hardwareService = _QueuedPreviewHardwareService();
+      final previewService = PolyAudioPreviewService(adapter: adapter);
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        hardwareService: hardwareService,
+        previewService: previewService,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.hardware,
+          autoPreview: true,
+          editedRegions: [
+            PolySampleRegion(
+              path: '/samples/Piano/Piano_C3.wav',
+              fileName: 'Piano_C3.wav',
+              displayName: 'Piano_C3.wav',
+              rootMidi: 48,
+              rootName: 'C3',
+            ),
+          ],
+          selectedPaths: {'/samples/Piano/Piano_C3.wav'},
+          focusedPath: '/samples/Piano/Piano_C3.wav',
+        ),
+      );
+
+      cubit.updateRoot('/samples/Piano/Piano_C3.wav', 49, manager: manager);
+      await Future<void>.delayed(Duration.zero);
+      expect(hardwareService.completers.length, 1);
+      cubit.updateRoot('/samples/Piano/Piano_C3.wav', 50, manager: manager);
+      await Future<void>.delayed(Duration.zero);
+      expect(hardwareService.completers.length, 2);
+      hardwareService.complete(1, [2]);
+      await Future<void>.delayed(Duration.zero);
+      hardwareService.complete(0, [1]);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(adapter.playedPaths.length, 1);
+      expect(File(adapter.playedPaths.single).readAsBytesSync(), [2]);
+      expect(cubit.state.editedRegions.single.rootMidi, 50);
+    });
+
     test('saveDestructiveWav forwards fade curve and strength', () {
       const draft = PolyWaveformDraft(
         fadeInCurve: WavFadeCurve.sCurve,
@@ -1817,6 +1978,24 @@ class _PreviewHardwareService extends PolySampleHardwareService {
   }
 }
 
+class _QueuedPreviewHardwareService extends PolySampleHardwareService {
+  final completers = <Completer<Uint8List?>>[];
+
+  @override
+  Future<Uint8List?> downloadSampleBytes(
+    IDistingMidiManager manager,
+    String path,
+  ) {
+    final completer = Completer<Uint8List?>();
+    completers.add(completer);
+    return completer.future;
+  }
+
+  void complete(int index, List<int> bytes) {
+    completers[index].complete(Uint8List.fromList(bytes));
+  }
+}
+
 class _DelayedHardwareService extends PolySampleHardwareService {
   final _folders = Completer<List<String>>();
   final _instrument = Completer<PolySampleInstrument>();
@@ -2178,6 +2357,7 @@ class _RecordingApplyService extends PolySampleApplyService {
 class _ExposedPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   _ExposedPolyMultisampleBuilderCubit({
     super.applyService,
+    super.hardwareService,
     super.wavService,
     super.previewService,
     super.uploadService,
