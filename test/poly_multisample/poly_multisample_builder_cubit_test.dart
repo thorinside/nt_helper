@@ -56,6 +56,31 @@ void main() {
       expect(cubit.state.lastWavExportFolder, '/tmp/b');
     });
 
+    test(
+      'loads remembered mounted upload folder into state on construction',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'poly_multisample.lastMountedUploadFolder':
+              '/Volumes/NT/samples/Piano',
+        });
+        final service = await PolySamplePreferencesService.create();
+        final cubit = PolyMultisampleBuilderCubit(
+          preferencesService: service,
+          previewService: PolyAudioPreviewService(
+            adapter: _FakePreviewAdapter(),
+          ),
+        );
+        addTearDown(cubit.close);
+
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          cubit.state.lastMountedUploadFolder,
+          '/Volumes/NT/samples/Piano',
+        );
+      },
+    );
+
     test('rememberSourceFolder persists and emits', () async {
       SharedPreferences.setMockInitialValues({});
       final service = await PolySamplePreferencesService.create();

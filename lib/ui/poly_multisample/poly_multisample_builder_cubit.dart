@@ -69,6 +69,7 @@ class PolyMultisampleBuilderState {
     this.lastImportOutputFolder,
     this.lastCustomOutputFolder,
     this.lastWavExportFolder,
+    this.lastMountedUploadFolder,
   });
 
   final PolySampleSourceMode sourceMode;
@@ -101,6 +102,7 @@ class PolyMultisampleBuilderState {
   final String? lastImportOutputFolder;
   final String? lastCustomOutputFolder;
   final String? lastWavExportFolder;
+  final String? lastMountedUploadFolder;
 
   bool get hasRegionChanges =>
       _fingerprintRegions(baselineRegions) !=
@@ -147,6 +149,7 @@ class PolyMultisampleBuilderState {
     String? lastImportOutputFolder,
     String? lastCustomOutputFolder,
     String? lastWavExportFolder,
+    String? lastMountedUploadFolder,
   }) {
     return PolyMultisampleBuilderState(
       sourceMode: sourceMode ?? this.sourceMode,
@@ -185,6 +188,8 @@ class PolyMultisampleBuilderState {
       lastCustomOutputFolder:
           lastCustomOutputFolder ?? this.lastCustomOutputFolder,
       lastWavExportFolder: lastWavExportFolder ?? this.lastWavExportFolder,
+      lastMountedUploadFolder:
+          lastMountedUploadFolder ?? this.lastMountedUploadFolder,
     );
   }
 }
@@ -253,7 +258,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         prefs.lastSourceFolder == null &&
         prefs.lastImportOutputFolder == null &&
         prefs.lastCustomOutputFolder == null &&
-        prefs.lastWavExportFolder == null) {
+        prefs.lastWavExportFolder == null &&
+        prefs.lastMountedUploadFolder == null) {
       return;
     }
     emit(
@@ -263,6 +269,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         lastImportOutputFolder: prefs.lastImportOutputFolder,
         lastCustomOutputFolder: prefs.lastCustomOutputFolder,
         lastWavExportFolder: prefs.lastWavExportFolder,
+        lastMountedUploadFolder: prefs.lastMountedUploadFolder,
       ),
     );
   }

@@ -8,6 +8,15 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
+    test('stores last mounted upload folder', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = await PolySamplePreferencesService.create();
+
+      await service.setLastMountedUploadFolder('/Volumes/NT/samples/Piano');
+
+      expect(service.lastMountedUploadFolder, '/Volumes/NT/samples/Piano');
+    });
+
     test('persists typed picker paths', () async {
       final service = await PolySamplePreferencesService.create();
 

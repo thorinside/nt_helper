@@ -10,6 +10,8 @@ class PolySamplePreferencesService {
   static const _lastCustomOutputFolderKey =
       'poly_multisample.lastCustomOutputFolder';
   static const _lastWavExportFolderKey = 'poly_multisample.lastWavExportFolder';
+  static const _lastMountedUploadFolderKey =
+      'poly_multisample.lastMountedUploadFolder';
 
   final SharedPreferences _prefs;
 
@@ -31,6 +33,9 @@ class PolySamplePreferencesService {
 
   String? get lastWavExportFolder => _prefs.getString(_lastWavExportFolderKey);
 
+  String? get lastMountedUploadFolder =>
+      _prefs.getString(_lastMountedUploadFolderKey);
+
   Future<void> setLastLocalFolder(String path) {
     return _prefs.setString(_lastLocalFolderKey, path);
   }
@@ -49,5 +54,9 @@ class PolySamplePreferencesService {
 
   Future<void> setLastWavExportFolder(String path) {
     return _prefs.setString(_lastWavExportFolderKey, path);
+  }
+
+  Future<void> setLastMountedUploadFolder(String path) {
+    return _prefs.setString(_lastMountedUploadFolderKey, path);
   }
 }
