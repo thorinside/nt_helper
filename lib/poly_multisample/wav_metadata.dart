@@ -367,9 +367,9 @@ class WavAudioRenderer {
         .toInt();
     final activeLoop =
         loop != null &&
-            loop.start >= sourceStart &&
             loop.start < frameCount &&
-            loop.end > loop.start
+            loop.end > loop.start &&
+            sourceStart <= loop.end
         ? loop
         : null;
     final defaultRenderedFrameCount = activeLoop == null

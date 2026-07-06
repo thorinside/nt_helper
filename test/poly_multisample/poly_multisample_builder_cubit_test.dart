@@ -1405,6 +1405,34 @@ void main() {
       expect(draft.loopEnd, 190);
     });
 
+    test('loop draft edits snap to distant sparse zero crossings', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          waveformSummaries: {
+            '/tmp/sparse.wav': WavOverview(
+              sampleRate: 44100,
+              frameCount: 1000,
+              peaks: const [WavPeak(min: -0.5, max: 0.5)],
+              zeroCrossings: const [20, 900],
+            ),
+          },
+        ),
+      );
+
+      cubit.updateLoopDraft(
+        '/tmp/sparse.wav',
+        const PolyWaveformDraft(loopStart: 400, loopEnd: 700),
+      );
+
+      final draft = cubit.state.loopDrafts['/tmp/sparse.wav']!;
+      expect(draft.loopStart, 20);
+      expect(draft.loopEnd, 900);
+    });
+
     test(
       'loop edit preview is debounced so rapid edits do not backlog',
       () async {

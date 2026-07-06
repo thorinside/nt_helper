@@ -114,6 +114,23 @@ void main() {
       expect(_pcm16Samples(rendered), [1000, 2000, 3000, 2000, 3000, 2000]);
     });
 
+    test('renderPitchedPreview wraps when preview starts inside loop', () {
+      final bytes = _pcm16WavWithLoop(
+        samples: [1000, 2000, 3000, 4000, 5000],
+        loopStart: 1,
+        loopEnd: 3,
+      );
+
+      final rendered = WavAudioRenderer.renderPitchedPreview(
+        bytes,
+        pitchRatio: 1,
+        previewStartFrame: 3,
+        renderedFrameLimit: 5,
+      );
+
+      expect(_pcm16Samples(rendered), [4000, 2000, 3000, 4000, 2000]);
+    });
+
     test('renderPitchedPreview lowers pitch by extending frame count', () {
       final bytes = _pcm16Wav(
         samples: [-32768, -12000, 0, 12000, 32767, 12000, 0, -12000],

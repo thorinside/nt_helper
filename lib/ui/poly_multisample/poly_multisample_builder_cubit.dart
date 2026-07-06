@@ -1259,19 +1259,58 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     if (loopStart == null || loopEnd == null) return draft;
     final maxFrame = math.max(0, overview.frameCount - 1);
     final rawStart = loopStart.clamp(0, math.max(0, loopEnd - 1)).toInt();
-    final snappedStart = overview
-        .nearestZeroCrossing(rawStart, searchRadius: 32)
-        .clamp(0, math.max(0, loopEnd - 1))
-        .toInt();
-    final rawEnd = loopEnd.clamp(
-      math.min(maxFrame, snappedStart + 1),
-      maxFrame,
+    final snappedStart = _nearestZeroCrossingInRange(
+      overview,
+      rawStart,
+      minFrame: 0,
+      maxFrame: math.max(0, loopEnd - 1),
     );
-    final snappedEnd = overview
-        .nearestZeroCrossing(rawEnd.toInt(), searchRadius: 32)
-        .clamp(math.min(maxFrame, snappedStart + 1), maxFrame)
-        .toInt();
+    final minEndFrame = math.min(maxFrame, snappedStart + 1);
+    final rawEnd = loopEnd.clamp(minEndFrame, maxFrame).toInt();
+    final snappedEnd = _nearestZeroCrossingInRange(
+      overview,
+      rawEnd,
+      minFrame: minEndFrame,
+      maxFrame: maxFrame,
+    );
     return draft.copyWith(loopStart: snappedStart, loopEnd: snappedEnd);
+  }
+
+  int _nearestZeroCrossingInRange(
+    WavOverview overview,
+    int frame, {
+    required int minFrame,
+    required int maxFrame,
+  }) {
+    final frameLimit = math.max(0, overview.frameCount - 1);
+    final lowerFrame = minFrame.clamp(0, frameLimit).toInt();
+    final upperFrame = maxFrame.clamp(lowerFrame, frameLimit).toInt();
+    final clampedFrame = frame.clamp(lowerFrame, upperFrame).toInt();
+    final zeroCrossings = overview.zeroCrossings;
+    if (zeroCrossings.isEmpty) return clampedFrame;
+
+    var low = 0;
+    var high = zeroCrossings.length;
+    while (low < high) {
+      final mid = (low + high) >> 1;
+      if (zeroCrossings[mid] < clampedFrame) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+
+    int? best;
+    for (final index in [low - 1, low]) {
+      if (index < 0 || index >= zeroCrossings.length) continue;
+      final candidate = zeroCrossings[index];
+      if (candidate < lowerFrame || candidate > upperFrame) continue;
+      final distance = (candidate - clampedFrame).abs();
+      if (best == null || distance < (best - clampedFrame).abs()) {
+        best = candidate;
+      }
+    }
+    return best ?? clampedFrame;
   }
 
   void _scheduleLoopEditPreview(

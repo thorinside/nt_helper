@@ -741,7 +741,7 @@ WavOverview _overview() {
     sampleRate: 44100,
     frameCount: 1000,
     peaks: List<WavPeak>.filled(40, const WavPeak(min: -0.5, max: 0.5)),
-    zeroCrossings: const [0, 250, 500, 750, 999],
+    zeroCrossings: const [0, 100, 250, 499, 500, 750, 999],
   );
 }
 
