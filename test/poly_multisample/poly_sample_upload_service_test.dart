@@ -166,6 +166,39 @@ void main() {
     },
   );
 
+  test('uploadSysEx continues when hardware folder already exists', () async {
+    final manager = MockDistingMidiManager();
+    final chunkCalls = <ChunkUploadCall>[];
+    final source = File('${tempRoot.path}/Piano_C3.wav')
+      ..writeAsBytesSync([1, 2, 3]);
+    when(
+      () => manager.requestDirectoryCreate('/multisamples/Piano'),
+    ).thenAnswer(
+      (_) async =>
+          SdCardStatus(success: false, message: 'Unable to create folder'),
+    );
+    when(
+      () => manager.requestDirectoryListing('/multisamples'),
+    ).thenAnswer((_) async => DirectoryListing(entries: [_dir('Piano')]));
+    _stubChunkUploads(manager, chunkCalls);
+
+    final result = await service.uploadSysEx(
+      manager: manager,
+      regions: [
+        PolySampleRegion(
+          path: source.path,
+          fileName: 'Piano_C3.wav',
+          displayName: 'Piano_C3.wav',
+          rootMidi: 48,
+        ),
+      ],
+      hardwareFolder: '/multisamples/Piano',
+    );
+
+    expect(result.filesUploaded, 1);
+    expect(chunkCalls.single.path, '/multisamples/Piano/Piano_C3.wav');
+  });
+
   test(
     'uploadSysEx writes semantic filenames into multisamples folder',
     () async {
@@ -459,6 +492,9 @@ void main() {
     },
   );
 }
+
+DirectoryEntry _dir(String name) =>
+    DirectoryEntry(name: '$name/', attributes: 0x10, date: 0, time: 0, size: 0);
 
 void _stubDirectoryCreates(MockDistingMidiManager manager) {
   when(

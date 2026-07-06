@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/debug_poly_sample_upload_command.dart';
 import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/database_integrity_service.dart';
@@ -124,6 +125,25 @@ Future<void> _bootstrapApp(List<String> args) async {
 
   if (Platform.isWindows) {
     _videoPopupDebugLog('main() Windows args=$args');
+  }
+
+  if (isDebugPolySampleUploadCommand(args)) {
+    await StartupLogService.traceAsync(
+      'SettingsService.init',
+      SettingsService().init,
+    );
+    try {
+      exitCode = await runDebugPolySampleUploadCommand(args);
+    } catch (error, stackTrace) {
+      StartupLogService.logError(
+        'Debug poly sample upload failed',
+        error,
+        stackTrace,
+      );
+      stderr.writeln('Debug poly sample upload failed: $error');
+      exitCode = 1;
+    }
+    exit(exitCode);
   }
 
   if (Platform.isWindows &&

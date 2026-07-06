@@ -230,6 +230,7 @@ class _TransferProgress {
   int completedBytes = 0;
   final PolySampleUploadProgress? onProgress;
   final Stopwatch _stopwatch;
+  Duration _lastProgressEmit = Duration.zero;
 
   void addWork(int bytes) {
     totalBytes += bytes;
@@ -243,6 +244,14 @@ class _TransferProgress {
     required int fileCount,
   }) {
     completedBytes += bytes;
+    final elapsed = _stopwatch.elapsed;
+    final shouldEmit =
+        onProgress != null &&
+        (completedBytes >= totalBytes ||
+            _lastProgressEmit == Duration.zero ||
+            elapsed - _lastProgressEmit >= const Duration(seconds: 1));
+    if (!shouldEmit) return;
+    _lastProgressEmit = elapsed;
     onProgress?.call(
       '$action $fileIndex/$fileCount $displayName '
       '(${_formatBytes(completedBytes)} of ${_formatBytes(totalBytes)}, '
@@ -430,14 +439,32 @@ Future<void> _ensureHardwareParent(
   for (final segment in segments) {
     current = current.isEmpty ? '/$segment' : p.posix.join(current, segment);
     if (_knownHardwareRoots.contains(current)) continue;
-    await _requireSuccess(
-      manager.requestDirectoryCreate(current),
-      'mkdir $current',
+    final status = await manager.requestDirectoryCreate(current);
+    if (status != null && status.success) continue;
+    if (await _hardwareDirectoryExists(manager, current)) continue;
+    throw PolySampleUploadException(
+      'Hardware mkdir $current failed: ${status?.message ?? 'no response'}',
     );
   }
 }
 
 const _knownHardwareRoots = {'/samples', '/multisamples'};
+
+Future<bool> _hardwareDirectoryExists(
+  IDistingMidiManager manager,
+  String path,
+) async {
+  final parent = p.posix.dirname(path);
+  final name = p.posix.basename(path);
+  final listing = await manager.requestDirectoryListing(parent);
+  if (listing == null) return false;
+  for (final entry in listing.entries) {
+    if (!entry.isDirectory) continue;
+    final entryName = entry.name.replaceAll(RegExp(r'/+$'), '');
+    if (entryName == name) return true;
+  }
+  return false;
+}
 
 Future<void> _requireSuccess(
   Future<SdCardStatus?> future,
