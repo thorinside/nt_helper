@@ -230,6 +230,8 @@ class _TransferProgress {
   int completedBytes = 0;
   final PolySampleUploadProgress? onProgress;
   final Stopwatch _stopwatch;
+  final AdaptiveTransferRateEstimator _etaEstimator =
+      AdaptiveTransferRateEstimator();
   Duration _lastProgressEmit = Duration.zero;
 
   void addWork(int bytes) {
@@ -245,6 +247,7 @@ class _TransferProgress {
   }) {
     completedBytes += bytes;
     final elapsed = _stopwatch.elapsed;
+    _etaEstimator.record(completedBytes: completedBytes, elapsed: elapsed);
     final shouldEmit =
         onProgress != null &&
         (completedBytes >= totalBytes ||
@@ -266,17 +269,54 @@ class _TransferProgress {
   }
 
   String _etaText() {
-    if (completedBytes <= 0) return 'estimating time remaining';
-    final elapsed = _stopwatch.elapsed;
-    if (elapsed.inMilliseconds <= 0) return 'estimating time remaining';
-    final bytesPerMs = completedBytes / elapsed.inMilliseconds;
-    if (bytesPerMs <= 0) return 'estimating time remaining';
     final remainingBytes = totalBytes - completedBytes;
     if (remainingBytes <= 0) return 'finishing now';
-    final remaining = Duration(
-      milliseconds: (remainingBytes / bytesPerMs).round(),
-    );
+    final remaining = _etaEstimator.estimate(remainingBytes: remainingBytes);
+    if (remaining == null) return 'estimating time remaining';
     return 'about ${_formatDuration(remaining)} remaining';
+  }
+}
+
+class AdaptiveTransferRateEstimator {
+  AdaptiveTransferRateEstimator({
+    this.minSampleDuration = const Duration(milliseconds: 250),
+    this.smoothingFactor = 0.25,
+  }) : assert(smoothingFactor > 0 && smoothingFactor <= 1);
+
+  final Duration minSampleDuration;
+  final double smoothingFactor;
+
+  int _lastSampleBytes = 0;
+  Duration _lastSampleElapsed = Duration.zero;
+  double? _smoothedBytesPerMillisecond;
+  int _sampleCount = 0;
+
+  int get sampleCount => _sampleCount;
+
+  void record({required int completedBytes, required Duration elapsed}) {
+    final deltaBytes = completedBytes - _lastSampleBytes;
+    final deltaElapsed = elapsed - _lastSampleElapsed;
+    if (deltaBytes <= 0 || deltaElapsed.inMilliseconds <= 0) return;
+    if (deltaElapsed < minSampleDuration) return;
+
+    final instantaneousRate = deltaBytes / deltaElapsed.inMilliseconds;
+    if (instantaneousRate <= 0) return;
+
+    final alpha = _sampleCount < 4 ? 0.5 : smoothingFactor;
+    final currentRate = _smoothedBytesPerMillisecond;
+    _smoothedBytesPerMillisecond = currentRate == null
+        ? instantaneousRate
+        : (currentRate * (1 - alpha)) + (instantaneousRate * alpha);
+    _sampleCount++;
+    _lastSampleBytes = completedBytes;
+    _lastSampleElapsed = elapsed;
+  }
+
+  Duration? estimate({required int remainingBytes}) {
+    if (remainingBytes <= 0) return Duration.zero;
+    final rate = _smoothedBytesPerMillisecond;
+    if (rate == null || rate <= 0) return null;
+    return Duration(milliseconds: (remainingBytes / rate).round());
   }
 }
 

@@ -74,6 +74,34 @@ void main() {
     );
   });
 
+  test('adaptive ETA estimator waits for a usable rate sample', () {
+    final estimator = AdaptiveTransferRateEstimator();
+
+    expect(estimator.estimate(remainingBytes: 1000), isNull);
+    estimator.record(
+      completedBytes: 512,
+      elapsed: const Duration(milliseconds: 100),
+    );
+
+    expect(estimator.sampleCount, 0);
+    expect(estimator.estimate(remainingBytes: 1000), isNull);
+  });
+
+  test('adaptive ETA estimator adjusts when later transfer rate slows', () {
+    final estimator = AdaptiveTransferRateEstimator();
+
+    estimator.record(completedBytes: 1000, elapsed: const Duration(seconds: 1));
+    final earlyEstimate = estimator.estimate(remainingBytes: 3000);
+
+    estimator.record(completedBytes: 1250, elapsed: const Duration(seconds: 2));
+    estimator.record(completedBytes: 1500, elapsed: const Duration(seconds: 3));
+    final adjustedEstimate = estimator.estimate(remainingBytes: 3000);
+
+    expect(earlyEstimate, isNotNull);
+    expect(adjustedEstimate, isNotNull);
+    expect(adjustedEstimate!, greaterThan(earlyEstimate!));
+  });
+
   test(
     'uploadMountedSd copies renamed files and preserves unrelated files',
     () async {
