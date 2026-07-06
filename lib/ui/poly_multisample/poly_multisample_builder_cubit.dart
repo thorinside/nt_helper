@@ -926,7 +926,10 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  Future<void> uploadViaSysEx(IDistingMidiManager manager) async {
+  Future<void> uploadViaSysEx(
+    IDistingMidiManager manager, {
+    bool verifyAfterUpload = false,
+  }) async {
     final instrument = state.currentInstrument;
     if (instrument == null) return;
     if (state.sourceMode == PolySampleSourceMode.hardware) {
@@ -976,12 +979,24 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         regions: editedRegions,
         manager: manager,
         hardwareFolder: hardwareFolder,
+        verifyAfterUpload: verifyAfterUpload,
         onProgress: (message) {
           if (operationRevision != _contentRevision) return;
           emit(state.copyWith(progressText: message));
         },
       );
       if (operationRevision != _contentRevision) return;
+      if (result.failedVerificationFiles > 0) {
+        emit(
+          state.copyWith(
+            activeOperation: PolyMultisampleActiveOperation.none,
+            clearProgressText: true,
+            error:
+                'Uploaded sample folder to $hardwareFolder, but verification failed for ${result.failedVerificationFiles} files.',
+          ),
+        );
+        return;
+      }
       emit(
         state.copyWith(
           activeOperation: PolyMultisampleActiveOperation.none,

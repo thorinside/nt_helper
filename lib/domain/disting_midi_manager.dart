@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
+import 'package:path/path.dart' as p;
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/domain/disting_message_scheduler.dart';
@@ -1103,6 +1104,67 @@ class DistingMidiManager implements IDistingMidiManager {
   @override
   Future<Uint8List?> requestFileDownload(String path) async {
     await _checkSdCardSupport();
+    final absolutePath = path.startsWith('/') ? path : '/$path';
+    final parent = p.posix.dirname(absolutePath);
+    final name = p.posix.basename(absolutePath);
+    final listing = await requestDirectoryListing(parent);
+    if (listing == null) return null;
+    DirectoryEntry? entry;
+    for (final candidate in listing.entries) {
+      if (!candidate.isDirectory &&
+          candidate.name.replaceAll(RegExp(r'/+$'), '') == name) {
+        entry = candidate;
+        break;
+      }
+    }
+    if (entry == null) return null;
+
+    final buffer = BytesBuilder(copy: false);
+    for (var position = 0; position < entry.size;) {
+      final nextPosition = position + 512 < entry.size
+          ? position + 512
+          : entry.size;
+      final count = nextPosition - position;
+      final chunk = await requestFileDownloadChunk(
+        absolutePath,
+        position,
+        count,
+      );
+      if (chunk == null || chunk.length != count) return null;
+      buffer.add(chunk);
+      position = nextPosition;
+    }
+    if (entry.size == 0) {
+      final chunk = await requestFileDownloadChunk(absolutePath, 0, 0);
+      if (chunk == null || chunk.isNotEmpty) return null;
+    }
+    return buffer.toBytes();
+  }
+
+  @override
+  Future<Uint8List?> requestFileDownloadChunk(
+    String path,
+    int position,
+    int count,
+  ) async {
+    if (position < 0) {
+      throw ArgumentError.value(position, 'position', 'must be non-negative');
+    }
+    if (count < 0) {
+      throw ArgumentError.value(count, 'count', 'must be non-negative');
+    }
+    if (count > 512) {
+      throw ArgumentError.value(count, 'count', 'must be 512 bytes or less');
+    }
+    return _requestFileDownload(path, position: position, count: count);
+  }
+
+  Future<Uint8List?> _requestFileDownload(
+    String path, {
+    int? position,
+    int? count,
+  }) async {
+    await _checkSdCardSupport();
     // SD card operations require absolute paths (see installFileToPath
     // in disting_cubit_plugin_delegate.dart for the same normalization).
     // Without a leading '/' the firmware can't locate the file and
@@ -1112,6 +1174,8 @@ class DistingMidiManager implements IDistingMidiManager {
     final message = RequestFileDownloadMessage(
       sysExId: sysExId,
       path: absolutePath,
+      position: position,
+      count: count,
     );
     final packet = message.encode();
 

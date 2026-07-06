@@ -58,8 +58,40 @@ class PolySampleHardwareService {
   Future<Uint8List?> downloadSampleBytes(
     IDistingMidiManager manager,
     String path,
-  ) {
-    return manager.requestFileDownload(path);
+  ) async {
+    final parent = p.posix.dirname(path);
+    final name = p.posix.basename(path);
+    final listing = await manager.requestDirectoryListing(parent);
+    if (listing == null) return null;
+    DirectoryEntry? entry;
+    for (final candidate in listing.entries) {
+      if (!candidate.isDirectory && _entryName(candidate) == name) {
+        entry = candidate;
+        break;
+      }
+    }
+    if (entry == null) return null;
+
+    final buffer = BytesBuilder(copy: false);
+    for (var position = 0; position < entry.size;) {
+      final nextPosition = position + _sysExUploadChunkSize < entry.size
+          ? position + _sysExUploadChunkSize
+          : entry.size;
+      final count = nextPosition - position;
+      final chunk = await manager.requestFileDownloadChunk(
+        path,
+        position,
+        count,
+      );
+      if (chunk == null || chunk.length != count) return null;
+      buffer.add(chunk);
+      position = nextPosition;
+    }
+    if (entry.size == 0) {
+      final chunk = await manager.requestFileDownloadChunk(path, 0, 0);
+      if (chunk == null || chunk.isNotEmpty) return null;
+    }
+    return buffer.toBytes();
   }
 
   PolySampleApplyPlan buildHardwarePlan({

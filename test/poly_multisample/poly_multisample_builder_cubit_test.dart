@@ -1877,6 +1877,59 @@ void main() {
       );
     });
 
+    test('uploadViaSysEx reports verification failures as an error', () async {
+      final uploadService = _FakeUploadService(
+        result: const PolySampleUploadResult(
+          filesUploaded: 2,
+          bytesUploaded: 6,
+          correctedFiles: 1,
+          failedVerificationFiles: 1,
+        ),
+      );
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        uploadService: uploadService,
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          currentInstrument: PolySampleInstrument(
+            name: 'Piano',
+            sourcePath: '/tmp/Piano',
+            regions: [
+              PolySampleRegion(
+                path: '/tmp/Piano/Piano_C3.wav',
+                fileName: 'Piano_C3.wav',
+                displayName: 'Piano_C3.wav',
+                rootMidi: 48,
+              ),
+            ],
+          ),
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/Piano/Piano_C3.wav',
+              fileName: 'Piano_C3.wav',
+              displayName: 'Piano_C3.wav',
+              rootMidi: 48,
+            ),
+          ],
+        ),
+      );
+
+      await cubit.uploadViaSysEx(
+        _MockDistingMidiManager(),
+        verifyAfterUpload: true,
+      );
+
+      expect(uploadService.verifyAfterUpload, isTrue);
+      expect(
+        cubit.state.error,
+        'Uploaded sample folder to /multisamples/Piano, but verification failed for 1 files.',
+      );
+      expect(cubit.state.effect, isNull);
+    });
+
     test('upload guards hardware source mode', () async {
       final uploadService = _FakeUploadService();
       final cubit = _ExposedPolyMultisampleBuilderCubit(
@@ -2878,6 +2931,7 @@ class _FakeUploadService extends PolySampleUploadService {
   final Completer<void>? completer;
   String? mountedDestination;
   String? hardwareFolder;
+  bool? verifyAfterUpload;
   int mountedCalls = 0;
   int sysexCalls = 0;
 
@@ -2906,10 +2960,12 @@ class _FakeUploadService extends PolySampleUploadService {
     required IDistingMidiManager manager,
     required List<PolySampleRegion> regions,
     required String hardwareFolder,
+    bool verifyAfterUpload = false,
     PolySampleUploadProgress? onProgress,
   }) async {
     sysexCalls++;
     this.hardwareFolder = hardwareFolder;
+    this.verifyAfterUpload = verifyAfterUpload;
     onProgress?.call('Uploading fake sample...');
     await completer?.future;
     final error = this.error;

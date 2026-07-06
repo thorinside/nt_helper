@@ -125,4 +125,7 @@ before `flutter analyze` or `flutter test`.
 - Zero tolerance for `flutter analyze` errors
 - Never add debug logging unless explicitly asked
 - Do not restart the app if already running — disrupts MCP/debugger connections
+- SysEx messages must be at most 1024 bytes. File upload and download must use
+  the SD-card chunk messages with 512-byte file data chunks; never use whole
+  WAV file upload/download over SysEx.
 - Prefer snackbars for exceptions, failures, or invalid actions; avoid success snackbars unless explicitly requested.

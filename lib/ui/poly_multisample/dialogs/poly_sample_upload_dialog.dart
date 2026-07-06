@@ -2,11 +2,21 @@ import 'package:flutter/material.dart';
 
 enum PolySampleUploadPath { sysex, mountedSd }
 
-Future<PolySampleUploadPath?> showPolySampleUploadPathDialog(
+class PolySampleUploadChoice {
+  const PolySampleUploadChoice({
+    required this.path,
+    this.verifyAfterUpload = false,
+  });
+
+  final PolySampleUploadPath path;
+  final bool verifyAfterUpload;
+}
+
+Future<PolySampleUploadChoice?> showPolySampleUploadPathDialog(
   BuildContext context, {
   required bool sysexAvailable,
 }) {
-  return showDialog<PolySampleUploadPath>(
+  return showDialog<PolySampleUploadChoice>(
     context: context,
     builder: (context) {
       return _PolySampleUploadDialog(sysexAvailable: sysexAvailable);
@@ -14,10 +24,18 @@ Future<PolySampleUploadPath?> showPolySampleUploadPathDialog(
   );
 }
 
-class _PolySampleUploadDialog extends StatelessWidget {
+class _PolySampleUploadDialog extends StatefulWidget {
   const _PolySampleUploadDialog({required this.sysexAvailable});
 
   final bool sysexAvailable;
+
+  @override
+  State<_PolySampleUploadDialog> createState() =>
+      _PolySampleUploadDialogState();
+}
+
+class _PolySampleUploadDialogState extends State<_PolySampleUploadDialog> {
+  bool _verifyAfterUpload = false;
 
   @override
   Widget build(BuildContext context) {
@@ -35,14 +53,32 @@ class _PolySampleUploadDialog extends StatelessWidget {
               leading: const Icon(Icons.cable, semanticLabel: 'SysEx upload'),
               title: const Text('SysEx to NT hardware'),
               subtitle: Text(
-                sysexAvailable
-                    ? 'Uses MIDI SysEx and verifies each uploaded file.'
+                widget.sysexAvailable
+                    ? 'Uses MIDI SysEx. Optional verification reads every uploaded WAV back in chunks.'
                     : 'Connect to Disting NT to use SysEx upload.',
               ),
-              enabled: sysexAvailable,
-              onTap: sysexAvailable
-                  ? () => Navigator.of(context).pop(PolySampleUploadPath.sysex)
+              enabled: widget.sysexAvailable,
+              onTap: widget.sysexAvailable
+                  ? () => Navigator.of(context).pop(
+                      PolySampleUploadChoice(
+                        path: PolySampleUploadPath.sysex,
+                        verifyAfterUpload: _verifyAfterUpload,
+                      ),
+                    )
                   : null,
+            ),
+            CheckboxListTile(
+              value: _verifyAfterUpload,
+              onChanged: widget.sysexAvailable
+                  ? (value) {
+                      setState(() => _verifyAfterUpload = value ?? false);
+                    }
+                  : null,
+              title: const Text('Verify after upload'),
+              subtitle: const Text(
+                'Slower, but checks the files on the NT after the upload finishes.',
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
             ),
             ListTile(
               leading: const Icon(
@@ -53,8 +89,11 @@ class _PolySampleUploadDialog extends StatelessWidget {
               subtitle: const Text(
                 'Copies files to a mounted SD-card filesystem folder.',
               ),
-              onTap: () =>
-                  Navigator.of(context).pop(PolySampleUploadPath.mountedSd),
+              onTap: () => Navigator.of(context).pop(
+                const PolySampleUploadChoice(
+                  path: PolySampleUploadPath.mountedSd,
+                ),
+              ),
             ),
           ],
         ),

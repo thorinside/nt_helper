@@ -953,6 +953,13 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       throw UnsupportedError('Not available in offline mode');
 
   @override
+  Future<Uint8List?> requestFileDownloadChunk(
+    String path,
+    int position,
+    int count,
+  ) => throw UnsupportedError('Not available in offline mode');
+
+  @override
   Future<SdCardStatus?> requestFileRename(String fromPath, String toPath) =>
       throw UnsupportedError('Not available in offline mode');
 

@@ -110,6 +110,11 @@ abstract class IDistingMidiManager {
   // SD Card Operations
   Future<DirectoryListing?> requestDirectoryListing(String path);
   Future<Uint8List?> requestFileDownload(String path);
+  Future<Uint8List?> requestFileDownloadChunk(
+    String path,
+    int position,
+    int count,
+  );
   Future<SdCardStatus?> requestFileDelete(String path);
   Future<SdCardStatus?> requestFileRename(String fromPath, String toPath);
   Future<SdCardStatus?> requestFileUpload(String path, Uint8List data);

@@ -4,7 +4,7 @@ import 'package:nt_helper/ui/poly_multisample/dialogs/poly_sample_upload_dialog.
 
 void main() {
   testWidgets('returns sysex path when SysEx tile is tapped', (tester) async {
-    PolySampleUploadPath? result;
+    PolySampleUploadChoice? result;
     await _pumpDialogButton(
       tester,
       sysexAvailable: true,
@@ -16,13 +16,33 @@ void main() {
     await tester.tap(find.text('SysEx to NT hardware'));
     await tester.pumpAndSettle();
 
-    expect(result, PolySampleUploadPath.sysex);
+    expect(result?.path, PolySampleUploadPath.sysex);
+    expect(result?.verifyAfterUpload, isFalse);
+  });
+
+  testWidgets('returns sysex choice with verification enabled', (tester) async {
+    PolySampleUploadChoice? result;
+    await _pumpDialogButton(
+      tester,
+      sysexAvailable: true,
+      onResult: (value) => result = value,
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Verify after upload'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SysEx to NT hardware'));
+    await tester.pumpAndSettle();
+
+    expect(result?.path, PolySampleUploadPath.sysex);
+    expect(result?.verifyAfterUpload, isTrue);
   });
 
   testWidgets('returns mounted path when mounted tile is tapped', (
     tester,
   ) async {
-    PolySampleUploadPath? result;
+    PolySampleUploadChoice? result;
     await _pumpDialogButton(
       tester,
       sysexAvailable: true,
@@ -34,11 +54,12 @@ void main() {
     await tester.tap(find.text('Mounted SD-card folder'));
     await tester.pumpAndSettle();
 
-    expect(result, PolySampleUploadPath.mountedSd);
+    expect(result?.path, PolySampleUploadPath.mountedSd);
+    expect(result?.verifyAfterUpload, isFalse);
   });
 
   testWidgets('disables SysEx tile without a manager', (tester) async {
-    PolySampleUploadPath? result;
+    PolySampleUploadChoice? result;
     await _pumpDialogButton(
       tester,
       sysexAvailable: false,
@@ -63,7 +84,7 @@ void main() {
 Future<void> _pumpDialogButton(
   WidgetTester tester, {
   required bool sysexAvailable,
-  required ValueChanged<PolySampleUploadPath?> onResult,
+  required ValueChanged<PolySampleUploadChoice?> onResult,
 }) async {
   await tester.pumpWidget(
     MaterialApp(

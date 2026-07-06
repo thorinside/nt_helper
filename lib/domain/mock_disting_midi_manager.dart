@@ -1304,6 +1304,13 @@ class MockDistingMidiManager implements IDistingMidiManager {
       throw UnsupportedError('Not supported in mock');
 
   @override
+  Future<Uint8List?> requestFileDownloadChunk(
+    String path,
+    int position,
+    int count,
+  ) => throw UnsupportedError('Not supported in mock');
+
+  @override
   Future<SdCardStatus?> requestFileRename(String fromPath, String toPath) =>
       throw UnsupportedError('Not supported in mock');
 
