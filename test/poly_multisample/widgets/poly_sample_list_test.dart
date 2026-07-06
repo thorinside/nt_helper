@@ -237,6 +237,67 @@ void main() {
     );
   });
 
+  testWidgets('long filenames get two lines before aligned steppers', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(900, 600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    const longName =
+        'deeply_nested_velocity_layer_round_robin_super_long_filename_C4_take_001.wav';
+    const path = '/tmp/$longName';
+    const region = PolySampleRegion(
+      path: path,
+      fileName: longName,
+      displayName: longName,
+      rootMidi: 60,
+      rootName: 'C4',
+      rangeLow: 60,
+      rangeHigh: 64,
+      velocityLayer: 1,
+      roundRobin: 1,
+    );
+
+    await _pumpList(tester, regions: const [region]);
+
+    final textWidget = tester.widget<Text>(find.text(longName));
+    expect(textWidget.maxLines, 2);
+    expect(textWidget.overflow, TextOverflow.ellipsis);
+
+    final rowFinder = find.byKey(const ValueKey('poly-sample-row-$path'));
+    final filenameAreaFinder = find.byKey(
+      const ValueKey('poly-sample-filename-area-$path'),
+    );
+    final stepperStripFinder = find.byKey(
+      const ValueKey('poly-sample-stepper-strip-$path'),
+    );
+    final rootStepperFinder = find.byKey(
+      const ValueKey('poly-sample-stepper-$path-root'),
+    );
+    final previewFinder = find.byKey(
+      const ValueKey('poly-sample-preview-$path'),
+    );
+
+    final rowRect = tester.getRect(rowFinder);
+    final filenameAreaRect = tester.getRect(filenameAreaFinder);
+    final filenameTextRect = tester.getRect(find.text(longName));
+    final stepperStripRect = tester.getRect(stepperStripFinder);
+    final rootStepperRect = tester.getRect(rootStepperFinder);
+    final previewRect = tester.getRect(previewFinder);
+    final waveformIconRect = tester.getRect(find.byIcon(Icons.graphic_eq));
+
+    expect(tester.getSize(rowFinder).height, 64);
+    expect(filenameAreaRect.width, greaterThanOrEqualTo(220));
+    expect(filenameTextRect.height, greaterThan(24));
+    expect(filenameTextRect.height, lessThanOrEqualTo(filenameAreaRect.height));
+    expect(stepperStripRect.left - filenameAreaRect.right, closeTo(16, 0.5));
+    expect(waveformIconRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+    expect(filenameAreaRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+    expect(stepperStripRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+    expect(rootStepperRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+    expect(previewRect.center.dy, closeTo(rowRect.center.dy, 0.5));
+  });
+
   testWidgets('inline steppers emit clamped mapping updates', (tester) async {
     int? root;
     int? low;

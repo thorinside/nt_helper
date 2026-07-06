@@ -46,6 +46,9 @@ class _PolySampleListState extends State<PolySampleList> {
   static const _leadingExtent = 32.0;
   static const _previewButtonExtent = 40.0;
   static const _contentGap = 4.0;
+  static const _filenameStepperGap = 16.0;
+  static const _minFilenameExtent = 220.0;
+  static const _stepperStripPreferredExtent = 760.0;
   static const _stepperGap = 4.0;
 
   final ScrollController _scrollController = ScrollController();
@@ -84,6 +87,18 @@ class _PolySampleListState extends State<PolySampleList> {
       return PolyRegionSelectionMode.toggle;
     }
     return PolyRegionSelectionMode.replace;
+  }
+
+  double _stepperStripWidth(double rowWidth) {
+    const fixedWidth =
+        _leadingExtent +
+        _contentGap +
+        _filenameStepperGap +
+        _contentGap +
+        _previewButtonExtent;
+    final available = math.max(0.0, rowWidth - fixedWidth);
+    final widthAfterFilename = math.max(0.0, available - _minFilenameExtent);
+    return math.min(_stepperStripPreferredExtent, widthAfterFilename);
   }
 
   void _scheduleFocusScroll() {
@@ -211,91 +226,108 @@ class _PolySampleListState extends State<PolySampleList> {
                   horizontal: _horizontalPadding,
                   vertical: _verticalPadding,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox.square(
-                      dimension: _leadingExtent,
-                      child: Center(
-                        child: Icon(
-                          issues.isEmpty
-                              ? Icons.graphic_eq
-                              : Icons.warning_amber,
-                          semanticLabel: issues.isEmpty
-                              ? 'Mapped sample'
-                              : 'Sample warning',
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: _contentGap),
-                    Expanded(
-                      flex: 1,
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: _contentGap),
-                    Flexible(
-                      flex: 12,
-                      child: SizedBox(
-                        key: ValueKey(
-                          'poly-sample-stepper-strip-${region.path}',
-                        ),
-                        height: _InlineSampleStepper.height,
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minWidth: constraints.maxWidth,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    for (
-                                      var stepperIndex = 0;
-                                      stepperIndex < steppers.length;
-                                      stepperIndex++
-                                    ) ...[
-                                      if (stepperIndex > 0)
-                                        const SizedBox(width: _stepperGap),
-                                      steppers[stepperIndex],
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: _contentGap),
-                    SizedBox.square(
-                      key: ValueKey('poly-sample-preview-${region.path}'),
-                      dimension: _previewButtonExtent,
-                      child: Center(
-                        child: IconButton(
-                          tooltip: playing ? 'Stop preview' : 'Preview sample',
-                          icon: Icon(playing ? Icons.stop : Icons.play_arrow),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(
-                            width: _previewButtonExtent,
-                            height: _previewButtonExtent,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final stepperStripWidth = _stepperStripWidth(
+                      constraints.maxWidth,
+                    );
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox.square(
+                          dimension: _leadingExtent,
+                          child: Center(
+                            child: Icon(
+                              issues.isEmpty
+                                  ? Icons.graphic_eq
+                                  : Icons.warning_amber,
+                              semanticLabel: issues.isEmpty
+                                  ? 'Mapped sample'
+                                  : 'Sample warning',
+                              size: 20,
+                            ),
                           ),
-                          onPressed: region.path.toLowerCase().endsWith('.wav')
-                              ? () => widget.onPreview(region.path)
-                              : null,
                         ),
-                      ),
-                    ),
-                  ],
+                        const SizedBox(width: _contentGap),
+                        Expanded(
+                          child: Align(
+                            key: ValueKey(
+                              'poly-sample-filename-area-${region.path}',
+                            ),
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              label,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: _filenameStepperGap),
+                        SizedBox(
+                          key: ValueKey(
+                            'poly-sample-stepper-strip-${region.path}',
+                          ),
+                          width: stepperStripWidth,
+                          height: _InlineSampleStepper.height,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minWidth: constraints.maxWidth,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      for (
+                                        var stepperIndex = 0;
+                                        stepperIndex < steppers.length;
+                                        stepperIndex++
+                                      ) ...[
+                                        if (stepperIndex > 0)
+                                          const SizedBox(width: _stepperGap),
+                                        steppers[stepperIndex],
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: _contentGap),
+                        SizedBox.square(
+                          key: ValueKey('poly-sample-preview-${region.path}'),
+                          dimension: _previewButtonExtent,
+                          child: Center(
+                            child: IconButton(
+                              tooltip: playing
+                                  ? 'Stop preview'
+                                  : 'Preview sample',
+                              icon: Icon(
+                                playing ? Icons.stop : Icons.play_arrow,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints.tightFor(
+                                width: _previewButtonExtent,
+                                height: _previewButtonExtent,
+                              ),
+                              onPressed:
+                                  region.path.toLowerCase().endsWith('.wav')
+                                  ? () => widget.onPreview(region.path)
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
