@@ -320,6 +320,26 @@ void main() {
       expect(find.text('Samples'), findsNothing);
     });
 
+    testWidgets(
+      'upload button opens path dialog with SysEx disabled when disconnected',
+      (tester) async {
+        final cubit = _TestPolyMultisampleBuilderCubit();
+        addTearDown(cubit.close);
+        cubit.setTestState(_pianoState());
+
+        await _pumpView(tester, cubit, distingCubit);
+        await tester.tap(find.text('Upload'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Upload sample folder'), findsOneWidget);
+        expect(find.text('Mounted SD-card folder'), findsOneWidget);
+        expect(
+          find.text('Connect to Disting NT to use SysEx upload.'),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('save as can create a new output folder', (tester) async {
       final tempRoot = Directory.systemTemp.createTempSync(
         'poly_samples_save_as_test_',

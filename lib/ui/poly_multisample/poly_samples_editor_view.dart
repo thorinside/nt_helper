@@ -16,6 +16,7 @@ class PolySamplesEditorView extends StatelessWidget {
     required this.onAddFiles,
     required this.onAddFolder,
     required this.onSaveAs,
+    required this.onUpload,
     required this.onBackToSources,
   });
 
@@ -24,6 +25,7 @@ class PolySamplesEditorView extends StatelessWidget {
   final VoidCallback onAddFiles;
   final VoidCallback onAddFolder;
   final VoidCallback onSaveAs;
+  final VoidCallback onUpload;
   final VoidCallback onBackToSources;
 
   @override
@@ -40,6 +42,7 @@ class PolySamplesEditorView extends StatelessWidget {
           onAddFiles: onAddFiles,
           onAddFolder: onAddFolder,
           onSaveAs: onSaveAs,
+          onUpload: onUpload,
           onBackToSources: onBackToSources,
         ),
         if (state.warnings.isNotEmpty)
@@ -60,6 +63,7 @@ class _Toolbar extends StatelessWidget {
     required this.onAddFiles,
     required this.onAddFolder,
     required this.onSaveAs,
+    required this.onUpload,
     required this.onBackToSources,
   });
 
@@ -69,6 +73,7 @@ class _Toolbar extends StatelessWidget {
   final VoidCallback onAddFiles;
   final VoidCallback onAddFolder;
   final VoidCallback onSaveAs;
+  final VoidCallback onUpload;
   final VoidCallback onBackToSources;
 
   @override
@@ -78,6 +83,15 @@ class _Toolbar extends StatelessWidget {
         state.activeOperation == PolyMultisampleActiveOperation.applying;
     final saving =
         state.activeOperation == PolyMultisampleActiveOperation.saving;
+    final uploading =
+        state.activeOperation == PolyMultisampleActiveOperation.uploading;
+    final canUpload =
+        state.sourceMode != PolySampleSourceMode.hardware &&
+        state.editedRegions.isNotEmpty &&
+        !state.hasWaveformDrafts &&
+        state.activeOperation != PolyMultisampleActiveOperation.uploading &&
+        state.activeOperation != PolyMultisampleActiveOperation.applying &&
+        state.activeOperation != PolyMultisampleActiveOperation.saving;
     final draftMode =
         state.sourceMode == PolySampleSourceMode.importDraft ||
         state.sourceMode == PolySampleSourceMode.customDraft;
@@ -113,6 +127,16 @@ class _Toolbar extends StatelessWidget {
               if (instrument.warningCount > 0)
                 Text('${instrument.warningCount} warnings'),
               if (state.isDirty) const Chip(label: Text('Unsaved changes')),
+              FilledButton.tonalIcon(
+                onPressed: canUpload ? onUpload : null,
+                icon: uploading
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.upload_file),
+                label: const Text('Upload'),
+              ),
               if (draftMode)
                 FilledButton.icon(
                   onPressed:
@@ -184,6 +208,13 @@ class _Toolbar extends StatelessWidget {
               ),
             ],
           ),
+          if (uploading) ...[
+            const SizedBox(height: 8),
+            Semantics(
+              liveRegion: true,
+              child: Text(state.progressText ?? 'Uploading sample folder...'),
+            ),
+          ],
           if (state.hasWaveformDrafts) ...[
             const SizedBox(height: 8),
             Semantics(

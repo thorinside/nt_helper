@@ -8,6 +8,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/ui/poly_multisample/dialogs/poly_decent_import_dialog.dart';
 import 'package:nt_helper/ui/poly_multisample/dialogs/poly_loose_wav_import_dialog.dart';
+import 'package:nt_helper/ui/poly_multisample/dialogs/poly_sample_upload_dialog.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_samples_editor_view.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_samples_landing_view.dart';
@@ -162,6 +163,7 @@ class PolySamplesView extends StatelessWidget {
       onAddFiles: () => _addFiles(context),
       onAddFolder: () => _addFolder(context),
       onSaveAs: () => _saveAs(context),
+      onUpload: () => _upload(context),
       onBackToSources: () => _backToSources(context, state),
     );
   }
@@ -293,6 +295,34 @@ class PolySamplesView extends StatelessWidget {
       staged = await showPolyLooseWavImportDialog(context, paths: paths);
     }
     if (staged != null) await cubit.addStagedRegions(staged);
+  }
+
+  Future<void> _upload(BuildContext context) async {
+    final cubit = context.read<PolyMultisampleBuilderCubit>();
+    final manager = distingCubit.disting();
+    final path = await showPolySampleUploadPathDialog(
+      context,
+      sysexAvailable: manager != null,
+    );
+    if (path == null || !context.mounted) return;
+    switch (path) {
+      case PolySampleUploadPath.sysex:
+        await cubit.uploadViaSysEx(manager!);
+        break;
+      case PolySampleUploadPath.mountedSd:
+        final destination = await FilePicker.getDirectoryPath(
+          dialogTitle: 'Upload samples to mounted SD-card folder',
+          initialDirectory:
+              cubit.state.lastMountedUploadFolder ??
+              cubit.state.lastCustomOutputFolder ??
+              (cubit.state.lastLocalFolder == null
+                  ? null
+                  : p.dirname(cubit.state.lastLocalFolder!)),
+        );
+        if (destination == null || !context.mounted) return;
+        await cubit.uploadViaMountedSd(destination);
+        break;
+    }
   }
 
   Future<void> _saveAs(BuildContext context) async {

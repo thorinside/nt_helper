@@ -92,6 +92,52 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('toolbar Upload button invokes callback for local sample sets', (
+    tester,
+  ) async {
+    var uploadCount = 0;
+    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit, onUpload: () => uploadCount++);
+
+    await tester.tap(find.text('Upload'));
+    await tester.pump();
+
+    expect(uploadCount, 1);
+  });
+
+  testWidgets('toolbar Upload button is disabled for hardware sample sets', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(_state(sourceMode: PolySampleSourceMode.hardware));
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    final upload = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Upload'),
+    );
+    expect(upload.onPressed, isNull);
+  });
+
+  testWidgets('toolbar shows upload progress as a live status', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(
+        _state(
+          activeOperation: PolyMultisampleActiveOperation.uploading,
+          progressText: 'Uploading fake sample...',
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    expect(find.text('Uploading fake sample...'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
   testWidgets('landing shows three source cards and empty draft', (
     tester,
   ) async {
@@ -123,8 +169,9 @@ void main() {
 
 Future<void> _pumpEditor(
   WidgetTester tester,
-  PolyMultisampleBuilderCubit cubit,
-) async {
+  PolyMultisampleBuilderCubit cubit, {
+  VoidCallback? onUpload,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
@@ -145,6 +192,7 @@ Future<void> _pumpEditor(
                       onAddFiles: () {},
                       onAddFolder: () {},
                       onSaveAs: () {},
+                      onUpload: onUpload ?? () {},
                       onBackToSources: () {},
                     );
                   },
@@ -160,6 +208,9 @@ PolyMultisampleBuilderState _state({
   PolySampleSourceMode sourceMode = PolySampleSourceMode.local,
   bool dirty = false,
   Map<String, PolyWaveformDraft> wavEditDrafts = const {},
+  PolyMultisampleActiveOperation activeOperation =
+      PolyMultisampleActiveOperation.none,
+  String? progressText,
 }) {
   final baseline = dirty
       ? const [
@@ -180,6 +231,8 @@ PolyMultisampleBuilderState _state({
   return PolyMultisampleBuilderState(
     sourceMode: sourceMode,
     status: PolyMultisampleLoadStatus.ready,
+    activeOperation: activeOperation,
+    progressText: progressText,
     currentInstrument: const PolySampleInstrument(
       name: 'Piano',
       sourcePath: '/tmp/Piano',
