@@ -27,12 +27,8 @@ class ContextualHelpTooltipScope extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: SettingsService().contextualHelpEnabledNotifier,
       builder: (context, enabled, child) {
-        if (enabled) {
-          return child ?? const SizedBox.shrink();
-        }
-
         return TooltipTheme(
-          data: _hiddenVisualTooltipTheme,
+          data: enabled ? const TooltipThemeData() : _hiddenVisualTooltipTheme,
           child: child ?? const SizedBox.shrink(),
         );
       },

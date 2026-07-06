@@ -160,6 +160,40 @@ void main() {
     },
   );
 
+  testWidgets('contextual help toggle preserves descendant state', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'show_contextual_help': true});
+    await SettingsService().init();
+    var disposeCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ContextualHelpTooltipScope(
+          child: Scaffold(
+            body: _StatefulProbe(onDispose: () => disposeCount++),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('probe 0'));
+    await tester.pump();
+    expect(find.text('probe 1'), findsOneWidget);
+
+    await SettingsService().setShowContextualHelp(false);
+    await tester.pump();
+
+    expect(disposeCount, 0);
+    expect(find.text('probe 1'), findsOneWidget);
+
+    await SettingsService().setShowContextualHelp(true);
+    await tester.pump();
+
+    expect(disposeCount, 0);
+    expect(find.text('probe 1'), findsOneWidget);
+  });
+
   testWidgets('split stepper supports keyboard focus activation', (
     tester,
   ) async {
@@ -189,4 +223,31 @@ void main() {
     expect(decrementCount, 1);
     expect(incrementCount, 1);
   });
+}
+
+class _StatefulProbe extends StatefulWidget {
+  const _StatefulProbe({required this.onDispose});
+
+  final VoidCallback onDispose;
+
+  @override
+  State<_StatefulProbe> createState() => _StatefulProbeState();
+}
+
+class _StatefulProbeState extends State<_StatefulProbe> {
+  var _value = 0;
+
+  @override
+  void dispose() {
+    widget.onDispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: () => setState(() => _value++),
+      child: Text('probe $_value'),
+    );
+  }
 }
