@@ -1014,6 +1014,10 @@ for i in range(0, len(data), 2):
     byte = (data[i] << 4) | data[i+1]
 ```
 
+The Disting NT protocol does not define offset/count fields for operation
+`0x02`. Do not send chunked download requests; the canonical tools and manual
+define this operation as a whole-file download.
+
 ---
 
 ### Operation `0x03` — File Delete

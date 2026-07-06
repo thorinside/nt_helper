@@ -182,7 +182,7 @@ class PolySampleUploadService {
       totalBytes += await File(file.sourcePath).length();
     }
     final progress = _TransferProgress(
-      totalBytes: totalBytes * (verifyAfterUpload ? 2 : 1),
+      totalBytes: totalBytes,
       onProgress: onProgress,
     );
 
@@ -247,11 +247,6 @@ class PolySampleUploadService {
         _UploadedHardwareFile(file: file, byteLength: byteLength),
       );
     }
-    final progress = _TransferProgress(
-      totalBytes: totalBytes,
-      onProgress: onProgress,
-    );
-
     onProgress?.call('Validating ${files.length} uploaded sample(s)...');
     final preflight = await _preflightHardwareFiles(
       manager,
@@ -271,15 +266,10 @@ class PolySampleUploadService {
         failedFiles: preflight.failedFiles,
       );
     }
-    final mismatches = await _findMismatches(
-      manager,
-      preflight.contentCheckFiles,
-      progress,
-    );
-    return PolySampleUploadValidationResult(
-      filesChecked: files.length,
-      bytesChecked: totalBytes,
-      failedFiles: preflight.failedFiles + mismatches.length,
+    throw const PolySampleUploadException(
+      'SysEx content validation is not supported by the Disting NT SD-card '
+      'protocol. File download returns whole files only, so WAV verification '
+      'must use mounted SD-card access instead.',
     );
   }
 }
@@ -302,10 +292,6 @@ class _TransferProgress {
   final AdaptiveTransferRateEstimator _etaEstimator =
       AdaptiveTransferRateEstimator();
   Duration _lastProgressEmit = Duration.zero;
-
-  void addWork(int bytes) {
-    totalBytes += bytes;
-  }
 
   void advance({
     required int bytes,
@@ -400,12 +386,8 @@ class _HardwareVerificationResult {
 }
 
 class _HardwarePreflightResult {
-  const _HardwarePreflightResult({
-    required this.contentCheckFiles,
-    required this.failedFiles,
-  });
+  const _HardwarePreflightResult({required this.failedFiles});
 
-  final List<_UploadedHardwareFile> contentCheckFiles;
   final int failedFiles;
 }
 
@@ -416,10 +398,7 @@ Future<_HardwarePreflightResult> _preflightHardwareFiles(
 ) async {
   final listing = await manager.requestDirectoryListing(hardwareFolder);
   if (listing == null) {
-    return _HardwarePreflightResult(
-      contentCheckFiles: const [],
-      failedFiles: files.length,
-    );
+    return _HardwarePreflightResult(failedFiles: files.length);
   }
 
   final entriesByName = <String, DirectoryEntry>{};
@@ -429,20 +408,14 @@ Future<_HardwarePreflightResult> _preflightHardwareFiles(
     }
   }
 
-  final contentCheckFiles = <_UploadedHardwareFile>[];
   var failedFiles = 0;
   for (final file in files) {
     final entry = entriesByName[p.posix.basename(file.file.targetPath)];
     if (entry == null || entry.size != file.byteLength) {
       failedFiles++;
-    } else {
-      contentCheckFiles.add(file);
     }
   }
-  return _HardwarePreflightResult(
-    contentCheckFiles: contentCheckFiles,
-    failedFiles: failedFiles,
-  );
+  return _HardwarePreflightResult(failedFiles: failedFiles);
 }
 
 Future<_HardwareVerificationResult> _verifyHardwareFiles(
@@ -454,100 +427,17 @@ Future<_HardwareVerificationResult> _verifyHardwareFiles(
     return const _HardwareVerificationResult(correctedFiles: 0, failedFiles: 0);
   }
 
-  progress.onProgress?.call('Verifying uploaded samples...');
-  final mismatches = await _findMismatches(manager, files, progress);
-  if (mismatches.isEmpty) {
-    return const _HardwareVerificationResult(correctedFiles: 0, failedFiles: 0);
-  }
-
-  var correctedFiles = 0;
-  for (var index = 0; index < mismatches.length; index++) {
-    final mismatch = mismatches[index];
-    progress.addWork(mismatch.byteLength * 2);
-    progress.onProgress?.call('Correcting ${mismatch.file.displayName}...');
-    final bytes = await File(mismatch.file.sourcePath).readAsBytes();
-    await _uploadHardwareFile(
-      manager,
-      mismatch.file.targetPath,
-      bytes,
-      onChunkTransferred: (byteCount) {
-        progress.advance(
-          bytes: byteCount,
-          action: 'Correcting',
-          displayName: mismatch.file.displayName,
-          fileIndex: index + 1,
-          fileCount: mismatches.length,
-        );
-      },
-    );
-    correctedFiles++;
-  }
-
-  progress.onProgress?.call('Verifying corrections...');
-  final failedFiles = await _findMismatches(manager, mismatches, progress);
+  progress.onProgress?.call('Verifying uploaded sample names and sizes...');
+  final hardwareFolder = p.posix.dirname(files.first.file.targetPath);
+  final preflight = await _preflightHardwareFiles(
+    manager,
+    hardwareFolder,
+    files,
+  );
   return _HardwareVerificationResult(
-    correctedFiles: correctedFiles,
-    failedFiles: failedFiles.length,
+    correctedFiles: 0,
+    failedFiles: preflight.failedFiles,
   );
-}
-
-Future<List<_UploadedHardwareFile>> _findMismatches(
-  IDistingMidiManager manager,
-  List<_UploadedHardwareFile> files,
-  _TransferProgress progress,
-) async {
-  final mismatches = <_UploadedHardwareFile>[];
-  for (var index = 0; index < files.length; index++) {
-    final file = files[index];
-    final fileIndex = index + 1;
-    if (!await _downloadMatchesSource(
-      manager,
-      file,
-      progress,
-      fileIndex,
-      files.length,
-    )) {
-      mismatches.add(file);
-    }
-  }
-  return mismatches;
-}
-
-Future<bool> _downloadMatchesSource(
-  IDistingMidiManager manager,
-  _UploadedHardwareFile file,
-  _TransferProgress progress,
-  int fileIndex,
-  int fileCount,
-) async {
-  final source = await File(file.file.sourcePath).readAsBytes();
-  for (var position = 0; position < source.length;) {
-    final nextPosition = position + _sysExUploadChunkSize < source.length
-        ? position + _sysExUploadChunkSize
-        : source.length;
-    final expected = source.sublist(position, nextPosition);
-    final actual = await manager.requestFileDownloadChunk(
-      file.file.targetPath,
-      position,
-      expected.length,
-    );
-    if (!_bytesEqual(actual, expected)) return false;
-    progress.advance(
-      bytes: expected.length,
-      action: 'Verifying',
-      displayName: file.file.displayName,
-      fileIndex: fileIndex,
-      fileCount: fileCount,
-    );
-    position = nextPosition;
-  }
-  if (source.isNotEmpty) return true;
-  final actual = await manager.requestFileDownloadChunk(
-    file.file.targetPath,
-    0,
-    0,
-  );
-  return _bytesEqual(actual, source);
 }
 
 String _entryName(DirectoryEntry entry) =>
@@ -634,15 +524,6 @@ Future<void> _requireSuccess(
       'Hardware $operation failed: ${status?.message ?? 'no response'}',
     );
   }
-}
-
-bool _bytesEqual(Uint8List? actual, Uint8List expected) {
-  if (actual == null) return false;
-  if (actual.length != expected.length) return false;
-  for (var index = 0; index < expected.length; index++) {
-    if (actual[index] != expected[index]) return false;
-  }
-  return true;
 }
 
 String _formatBytes(int bytes) {

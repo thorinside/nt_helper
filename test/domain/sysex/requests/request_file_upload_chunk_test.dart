@@ -7,12 +7,10 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 void main() {
   group('RequestFileDownloadMessage', () {
-    test('encodes chunked SD download format', () {
+    test('encodes canonical whole-file SD download format', () {
       final message = RequestFileDownloadMessage(
         sysExId: 2,
         path: '/multisamples/Piano/C3.wav',
-        position: 512,
-        count: 512,
       );
 
       final encoded = message.encode();
@@ -22,33 +20,7 @@ void main() {
       expect(encoded.sublist(0, 7), [0xF0, 0x00, 0x21, 0x27, 0x6D, 2, 0x7A]);
       expect(payload.first, 2);
       expect(payload.sublist(1, 1 + pathBytes.length), pathBytes);
-      var offset = 1 + pathBytes.length;
-      expect(payload[offset++], 0);
-      expect(payload.sublist(offset, offset + 10), [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        4,
-        0,
-      ]);
-      offset += 10;
-      expect(payload.sublist(offset, offset + 10), [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        4,
-        0,
-      ]);
+      expect(payload, [2, ...pathBytes]);
       expect(encoded[encoded.length - 2], calculateChecksum(payload));
       expect(encoded.last, 0xF7);
     });

@@ -72,26 +72,9 @@ class PolySampleHardwareService {
     }
     if (entry == null) return null;
 
-    final buffer = BytesBuilder(copy: false);
-    for (var position = 0; position < entry.size;) {
-      final nextPosition = position + _sysExUploadChunkSize < entry.size
-          ? position + _sysExUploadChunkSize
-          : entry.size;
-      final count = nextPosition - position;
-      final chunk = await manager.requestFileDownloadChunk(
-        path,
-        position,
-        count,
-      );
-      if (chunk == null || chunk.length != count) return null;
-      buffer.add(chunk);
-      position = nextPosition;
-    }
-    if (entry.size == 0) {
-      final chunk = await manager.requestFileDownloadChunk(path, 0, 0);
-      if (chunk == null || chunk.isNotEmpty) return null;
-    }
-    return buffer.toBytes();
+    final bytes = await manager.requestFileDownload(path);
+    if (bytes == null || bytes.length != entry.size) return null;
+    return bytes;
   }
 
   PolySampleApplyPlan buildHardwarePlan({

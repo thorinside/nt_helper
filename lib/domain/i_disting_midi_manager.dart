@@ -110,6 +110,12 @@ abstract class IDistingMidiManager {
   // SD Card Operations
   Future<DirectoryListing?> requestDirectoryListing(String path);
   Future<Uint8List?> requestFileDownload(String path);
+
+  /// Compatibility helper only.
+  ///
+  /// The Disting NT SD-card download protocol returns whole files and has no
+  /// offset/count request fields. Live implementations must not send invented
+  /// chunked download SysEx messages.
   Future<Uint8List?> requestFileDownloadChunk(
     String path,
     int position,

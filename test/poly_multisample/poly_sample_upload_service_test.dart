@@ -17,8 +17,6 @@ typedef ChunkUploadCall = ({
   bool createAlways,
 });
 
-typedef ChunkDownloadCall = ({String path, int position, int count});
-
 void main() {
   late Directory tempRoot;
   late PolySampleUploadService service;
@@ -227,20 +225,14 @@ void main() {
     expect(chunkCalls.single.path, '/multisamples/Piano/Piano_C3.wav');
   });
 
-  test('validateSysEx checks uploaded files with chunked downloads', () async {
+  test('validateSysEx checks uploaded files with directory listing', () async {
     final manager = MockDistingMidiManager();
     final source = File('${tempRoot.path}/Piano_C3.wav')
       ..writeAsBytesSync([1, 2, 3]);
-    final downloadCalls = <ChunkDownloadCall>[];
     when(
       () => manager.requestDirectoryListing('/multisamples/Piano'),
     ).thenAnswer(
       (_) async => DirectoryListing(entries: [_file('Piano_C3.wav', 3)]),
-    );
-    _stubChunkDownloads(
-      manager,
-      downloadCalls,
-      (call, _) => Uint8List.fromList([1, 2, 3]),
     );
 
     final result = await service.validateSysEx(
@@ -254,15 +246,12 @@ void main() {
         ),
       ],
       hardwareFolder: '/multisamples/Piano',
-      verifyContent: true,
     );
 
     expect(result.filesChecked, 1);
     expect(result.bytesChecked, 3);
     expect(result.failedFiles, 0);
-    expect(downloadCalls.single.path, '/multisamples/Piano/Piano_C3.wav');
-    expect(downloadCalls.single.position, 0);
-    expect(downloadCalls.single.count, 3);
+    verifyNever(() => manager.requestFileDownloadChunk(any(), any(), any()));
     verifyNever(
       () => manager.requestFileUploadChunk(
         any(),
@@ -273,7 +262,7 @@ void main() {
     );
   });
 
-  test('validateSysEx reports mismatched uploaded files', () async {
+  test('validateSysEx rejects unsupported content validation', () async {
     final manager = MockDistingMidiManager();
     final source = File('${tempRoot.path}/Piano_C3.wav')
       ..writeAsBytesSync([1, 2, 3]);
@@ -282,28 +271,30 @@ void main() {
     ).thenAnswer(
       (_) async => DirectoryListing(entries: [_file('Piano_C3.wav', 3)]),
     );
-    _stubChunkDownloads(
-      manager,
-      <ChunkDownloadCall>[],
-      (call, _) => Uint8List.fromList([1, 9, 3]),
-    );
 
-    final result = await service.validateSysEx(
-      manager: manager,
-      regions: [
-        PolySampleRegion(
-          path: source.path,
-          fileName: 'Piano_C3.wav',
-          displayName: 'Piano_C3.wav',
-          rootMidi: 48,
+    await expectLater(
+      service.validateSysEx(
+        manager: manager,
+        regions: [
+          PolySampleRegion(
+            path: source.path,
+            fileName: 'Piano_C3.wav',
+            displayName: 'Piano_C3.wav',
+            rootMidi: 48,
+          ),
+        ],
+        hardwareFolder: '/multisamples/Piano',
+        verifyContent: true,
+      ),
+      throwsA(
+        isA<PolySampleUploadException>().having(
+          (error) => error.message,
+          'message',
+          contains('whole files only'),
         ),
-      ],
-      hardwareFolder: '/multisamples/Piano',
-      verifyContent: true,
+      ),
     );
-
-    expect(result.filesChecked, 1);
-    expect(result.failedFiles, 1);
+    verifyNever(() => manager.requestFileDownloadChunk(any(), any(), any()));
   });
 
   test('validateSysEx reports size mismatches before downloading', () async {
@@ -415,72 +406,59 @@ void main() {
     },
   );
 
-  test('uploadSysEx correction retry uses chunks', () async {
-    final manager = MockDistingMidiManager();
-    final chunkCalls = <ChunkUploadCall>[];
-    final bytes = Uint8List.fromList(
-      List<int>.generate(1025, (index) => (index * 7) % 256),
-    );
-    final source = File('${tempRoot.path}/Piano_C3.wav')
-      ..writeAsBytesSync(bytes);
-    final downloadCalls = <ChunkDownloadCall>[];
-    _stubDirectoryCreates(manager);
-    _stubChunkUploads(manager, chunkCalls);
-    _stubChunkDownloads(manager, downloadCalls, (call, callIndex) {
-      if (callIndex == 1) {
-        return Uint8List.fromList(List<int>.filled(call.count, 9));
-      }
-      return Uint8List.fromList(
-        bytes.sublist(call.position, call.position + call.count),
+  test(
+    'uploadSysEx verifies uploaded files by listing names and sizes',
+    () async {
+      final manager = MockDistingMidiManager();
+      final chunkCalls = <ChunkUploadCall>[];
+      final bytes = Uint8List.fromList(
+        List<int>.generate(1025, (index) => (index * 7) % 256),
       );
-    });
+      final source = File('${tempRoot.path}/Piano_C3.wav')
+        ..writeAsBytesSync(bytes);
+      _stubDirectoryCreates(manager);
+      _stubChunkUploads(manager, chunkCalls);
+      when(
+        () => manager.requestDirectoryListing('/multisamples/Piano'),
+      ).thenAnswer(
+        (_) async =>
+            DirectoryListing(entries: [_file('Piano_C3.wav', bytes.length)]),
+      );
 
-    final result = await service.uploadSysEx(
-      manager: manager,
-      regions: [
-        PolySampleRegion(
-          path: source.path,
-          fileName: 'Piano_C3.wav',
-          displayName: 'Piano_C3.wav',
-          rootMidi: 48,
-        ),
-      ],
-      hardwareFolder: '/multisamples/Piano',
-      verifyAfterUpload: true,
-    );
+      final result = await service.uploadSysEx(
+        manager: manager,
+        regions: [
+          PolySampleRegion(
+            path: source.path,
+            fileName: 'Piano_C3.wav',
+            displayName: 'Piano_C3.wav',
+            rootMidi: 48,
+          ),
+        ],
+        hardwareFolder: '/multisamples/Piano',
+        verifyAfterUpload: true,
+      );
 
-    expect(chunkCalls.map((call) => call.position), [
-      0,
-      512,
-      1024,
-      0,
-      512,
-      1024,
-    ]);
-    expect(chunkCalls.map((call) => call.createAlways), [
-      true,
-      false,
-      false,
-      true,
-      false,
-      false,
-    ]);
-    expect(downloadCalls.map((call) => call.position), [0, 0, 512, 1024]);
-    verifyNever(() => manager.requestFileUpload(any(), any()));
-    expect(result.correctedFiles, 1);
-  });
+      expect(chunkCalls.map((call) => call.position), [0, 512, 1024]);
+      expect(chunkCalls.map((call) => call.createAlways), [true, false, false]);
+      verifyNever(() => manager.requestFileUpload(any(), any()));
+      verifyNever(() => manager.requestFileDownloadChunk(any(), any(), any()));
+      expect(result.correctedFiles, 0);
+      expect(result.failedVerificationFiles, 0);
+    },
+  );
 
-  test('uploadSysEx reports failed verification after correction', () async {
+  test('uploadSysEx reports listing verification failures', () async {
     final manager = MockDistingMidiManager();
     final chunkCalls = <ChunkUploadCall>[];
     final source = File('${tempRoot.path}/Piano_C3.wav')
       ..writeAsBytesSync([1, 2, 3]);
     _stubDirectoryCreates(manager);
     _stubChunkUploads(manager, chunkCalls);
-    _stubChunkDownloads(
-      manager,
-      <ChunkDownloadCall>[],
-      (call, _) => Uint8List.fromList(List<int>.filled(call.count, 9)),
+    when(
+      () => manager.requestDirectoryListing('/multisamples/Piano'),
+    ).thenAnswer(
+      (_) async => DirectoryListing(entries: [_file('Piano_C3.wav', 2)]),
     );
 
     final result = await service.uploadSysEx(
@@ -497,8 +475,8 @@ void main() {
       verifyAfterUpload: true,
     );
 
-    expect(chunkCalls, hasLength(2));
-    expect(result.correctedFiles, 1);
+    expect(chunkCalls, hasLength(1));
+    expect(result.correctedFiles, 0);
     expect(result.failedVerificationFiles, 1);
   });
 
@@ -513,12 +491,11 @@ void main() {
         ..writeAsBytesSync([4, 5, 6]);
       _stubDirectoryCreates(manager);
       _stubChunkUploads(manager, chunkCalls);
-      _stubChunkDownloads(manager, <ChunkDownloadCall>[], (call, callIndex) {
-        if (call.path.endsWith('Piano_C3.wav')) {
-          return Uint8List.fromList(List<int>.filled(call.count, 9));
-        }
-        return Uint8List.fromList([4, 5, 6]);
-      });
+      when(
+        () => manager.requestDirectoryListing('/multisamples/Piano'),
+      ).thenAnswer(
+        (_) async => DirectoryListing(entries: [_file('Piano_D3.wav', 3)]),
+      );
 
       final result = await service.uploadSysEx(
         manager: manager,
@@ -549,38 +526,9 @@ void main() {
       );
       expect(result.filesUploaded, 2);
       expect(result.failedVerificationFiles, 1);
+      verifyNever(() => manager.requestFileDownloadChunk(any(), any(), any()));
     },
   );
-
-  test('uploadSysEx treats null download as a correctable mismatch', () async {
-    final manager = MockDistingMidiManager();
-    final chunkCalls = <ChunkUploadCall>[];
-    final source = File('${tempRoot.path}/Piano_C3.wav')
-      ..writeAsBytesSync([1, 2, 3]);
-    _stubDirectoryCreates(manager);
-    _stubChunkUploads(manager, chunkCalls);
-    _stubChunkDownloads(manager, <ChunkDownloadCall>[], (call, callIndex) {
-      if (callIndex == 1) return null;
-      return Uint8List.fromList([1, 2, 3]);
-    });
-
-    final result = await service.uploadSysEx(
-      manager: manager,
-      regions: [
-        PolySampleRegion(
-          path: source.path,
-          fileName: 'Piano_C3.wav',
-          displayName: 'Piano_C3.wav',
-          rootMidi: 48,
-        ),
-      ],
-      hardwareFolder: '/multisamples/Piano',
-      verifyAfterUpload: true,
-    );
-
-    expect(chunkCalls, hasLength(2));
-    expect(result.correctedFiles, 1);
-  });
 
   test(
     'uploadSysEx failed chunk upload surfaces PolySampleUploadException',
@@ -660,26 +608,6 @@ void _stubChunkUploads(
         : SdCardStatus(success: true, message: 'uploaded');
     uploadCount++;
     return status;
-  });
-}
-
-void _stubChunkDownloads(
-  MockDistingMidiManager manager,
-  List<ChunkDownloadCall> calls,
-  Uint8List? Function(ChunkDownloadCall call, int callIndex) read,
-) {
-  var downloadCount = 0;
-  when(() => manager.requestFileDownloadChunk(any(), any(), any())).thenAnswer((
-    invocation,
-  ) async {
-    final call = (
-      path: invocation.positionalArguments[0] as String,
-      position: invocation.positionalArguments[1] as int,
-      count: invocation.positionalArguments[2] as int,
-    );
-    calls.add(call);
-    downloadCount++;
-    return read(call, downloadCount);
   });
 }
 

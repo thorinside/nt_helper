@@ -73,8 +73,8 @@ Mechanical edits:
 3. Implement the private field `final PolySampleApplyService _applyService;` and constructor initializer from the spec.
 4. Implement `buildUploadFiles` using `_applyService.buildTargetFileName` and duplicate-target detection from the spec.
 5. Implement `uploadMountedSd` with temp-copy replacement, same-source skip, parent directory creation, host path context, and temp cleanup on failure.
-6. Implement `uploadSysEx` with POSIX path context, parent directory creation, 512-byte chunked upload, byte-count/ETA progress text, optional post-upload 512-byte chunked download verification, exactly one corrective re-upload per mismatched file, and failed verification counts instead of aborting the folder upload.
-7. Private helper names in this file: `_ensureHardwareParent`, `_requireSuccess`, `_bytesEqual`, `_uniqueTempPath`; use the exact `_requireSuccess` and `_bytesEqual` signatures from the spec.
+6. Implement `uploadSysEx` with POSIX path context, parent directory creation, 512-byte chunked upload, byte-count/ETA progress text, optional post-upload directory-listing verification of planned target names/sizes, and failed verification counts instead of aborting the folder upload. Do not implement chunked SysEx download; the canonical NT SD-card download operation is whole-file only.
+7. Private helper names in this file: `_ensureHardwareParent`, `_requireSuccess`, `_uniqueTempPath`; use the exact `_requireSuccess` signature from the spec.
 8. Create `test/poly_multisample/poly_sample_upload_service_test.dart` with `MockDistingMidiManager extends Mock implements IDistingMidiManager`. Register `Uint8List(0)` fallback in `setUpAll`.
 9. Add these tests exactly:
    - `test('buildUploadFiles rejects duplicate target names', ...)`: two regions that both target `Piano_C3.wav`; expect `PolySampleUploadException` and message contains `Multiple samples target Piano_C3.wav`.
@@ -82,10 +82,9 @@ Mechanical edits:
    - `test('uploadMountedSd skips same source and target path without deleting', ...)`: source path is already the computed target in destination; upload; expect file bytes unchanged.
    - `test('uploadSysEx creates parents and uploads chunk without verification by default', ...)`: nested hardware folder `/multisamples/Piano/Nested`, mock mkdir success, upload chunk success; verify `requestDirectoryCreate('/multisamples/Piano')`, `requestDirectoryCreate('/multisamples/Piano/Nested')`, one chunk upload, no chunk download, and result `correctedFiles == 0`.
    - `test('uploadSysEx writes semantic filenames into multisamples folder', ...)`: two edited regions with changed root, switch point, velocity, and round robin upload to `/multisamples/Piano/<semantic filename>.wav`; expect target paths contain the generated root/SW/V/RR tags used by the NT PolyMultisample player.
-   - `test('uploadSysEx correction retry uses chunks', ...)`: with `verifyAfterUpload: true`, first chunk download returns different bytes, second verification returns source bytes; verify both upload attempts use ordered chunks and result `correctedFiles == 1`.
-   - `test('uploadSysEx reports failed verification after correction', ...)`: both chunked downloads differ; expect `failedVerificationFiles == 1`.
-   - `test('uploadSysEx uploads remaining files before verification failures', ...)`: two files upload first, then one verification failure is reported; expect `filesUploaded == 2`.
-   - `test('uploadSysEx treats null download as a correctable mismatch', ...)`: first chunk download null, second matches; expect `correctedFiles == 1`.
+   - `test('uploadSysEx verifies uploaded files by listing names and sizes', ...)`: with `verifyAfterUpload: true`, directory listing contains the planned filename and byte size; expect `failedVerificationFiles == 0`, `correctedFiles == 0`, and no chunk downloads.
+   - `test('uploadSysEx reports listing verification failures', ...)`: directory listing has a missing or size-mismatched planned file; expect `failedVerificationFiles == 1`.
+   - `test('uploadSysEx uploads remaining files before verification failures', ...)`: two files upload first, then one listing verification failure is reported; expect `filesUploaded == 2`.
    - `test('uploadSysEx failed chunk upload surfaces PolySampleUploadException', ...)`: a later chunk returns `SdCardStatus(success: false, message: 'nope')`; expect message contains `Hardware upload chunk at 512 for /multisamples/Piano/Piano_C3.wav failed: nope`.
 
 Verification commands:

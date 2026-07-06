@@ -71,7 +71,7 @@ void main() {
       expect(instrument.regions.last.velocityLayer, 2);
     });
 
-    test('downloads sample bytes in 512-byte chunks', () async {
+    test('downloads sample bytes with canonical whole-file request', () async {
       final bytes = Uint8List.fromList(
         List<int>.generate(1200, (index) => index % 256),
       );
@@ -80,16 +80,8 @@ void main() {
             DirectoryListing(entries: [_file('Piano_C3.wav', size: 1200)]),
       );
       when(
-        () => manager.requestFileDownloadChunk(
-          '/samples/Piano/Piano_C3.wav',
-          any(),
-          any(),
-        ),
-      ).thenAnswer((invocation) async {
-        final position = invocation.positionalArguments[1] as int;
-        final count = invocation.positionalArguments[2] as int;
-        return Uint8List.fromList(bytes.sublist(position, position + count));
-      });
+        () => manager.requestFileDownload('/samples/Piano/Piano_C3.wav'),
+      ).thenAnswer((_) async => bytes);
 
       final result = await service.downloadSampleBytes(
         manager,
@@ -97,28 +89,10 @@ void main() {
       );
 
       expect(result, bytes);
-      verifyNever(() => manager.requestFileDownload(any()));
       verify(
-        () => manager.requestFileDownloadChunk(
-          '/samples/Piano/Piano_C3.wav',
-          0,
-          512,
-        ),
+        () => manager.requestFileDownload('/samples/Piano/Piano_C3.wav'),
       ).called(1);
-      verify(
-        () => manager.requestFileDownloadChunk(
-          '/samples/Piano/Piano_C3.wav',
-          512,
-          512,
-        ),
-      ).called(1);
-      verify(
-        () => manager.requestFileDownloadChunk(
-          '/samples/Piano/Piano_C3.wav',
-          1024,
-          176,
-        ),
-      ).called(1);
+      verifyNever(() => manager.requestFileDownloadChunk(any(), any(), any()));
     });
 
     test('delegates apply operations through the MIDI manager', () async {

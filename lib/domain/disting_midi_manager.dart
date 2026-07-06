@@ -1120,26 +1120,9 @@ class DistingMidiManager implements IDistingMidiManager {
     }
     if (entry == null) return null;
 
-    final buffer = BytesBuilder(copy: false);
-    for (var position = 0; position < entry.size;) {
-      final nextPosition = position + 512 < entry.size
-          ? position + 512
-          : entry.size;
-      final count = nextPosition - position;
-      final chunk = await requestFileDownloadChunk(
-        absolutePath,
-        position,
-        count,
-      );
-      if (chunk == null || chunk.length != count) return null;
-      buffer.add(chunk);
-      position = nextPosition;
-    }
-    if (entry.size == 0) {
-      final chunk = await requestFileDownloadChunk(absolutePath, 0, 0);
-      if (chunk == null || chunk.isNotEmpty) return null;
-    }
-    return buffer.toBytes();
+    final bytes = await _requestFileDownload(absolutePath);
+    if (bytes == null || bytes.length != entry.size) return null;
+    return bytes;
   }
 
   @override
@@ -1157,14 +1140,17 @@ class DistingMidiManager implements IDistingMidiManager {
     if (count > 512) {
       throw ArgumentError.value(count, 'count', 'must be 512 bytes or less');
     }
-    return _requestFileDownload(path, position: position, count: count);
+    // The NT protocol has no chunked download operation. Keep this interface
+    // method as a local slicing helper so older call sites do not emit invalid
+    // offset/count bytes on the wire.
+    final bytes = await requestFileDownload(path);
+    if (bytes == null) return null;
+    final end = position + count;
+    if (position > bytes.length || end > bytes.length) return null;
+    return Uint8List.fromList(bytes.sublist(position, end));
   }
 
-  Future<Uint8List?> _requestFileDownload(
-    String path, {
-    int? position,
-    int? count,
-  }) async {
+  Future<Uint8List?> _requestFileDownload(String path) async {
     await _checkSdCardSupport();
     // SD card operations require absolute paths (see installFileToPath
     // in disting_cubit_plugin_delegate.dart for the same normalization).
@@ -1175,15 +1161,13 @@ class DistingMidiManager implements IDistingMidiManager {
     final message = RequestFileDownloadMessage(
       sysExId: sysExId,
       path: absolutePath,
-      position: position,
-      count: count,
     );
     final packet = message.encode();
 
     // File downloads return the entire file in a single response.
     // The NT reuses message type 0x7A for both directory listings and
     // file download responses, differentiated by the operation byte
-    // (1 = listing, 2 = file chunk — see response_factory.dart).
+    // (1 = listing, 2 = file download — see response_factory.dart).
     //
     // When the path doesn't resolve to a readable file the firmware can
     // respond with a directory listing instead of a FileChunk; the
