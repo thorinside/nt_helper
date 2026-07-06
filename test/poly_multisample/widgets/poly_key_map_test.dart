@@ -273,6 +273,57 @@ void main() {
     expect(previewedNote, isNull);
   });
 
+  testWidgets(
+    'played key uses tertiary highlight without replacing selection',
+    (tester) async {
+      const tertiary = Color(0xff00aa55);
+      const region = PolySampleRegion(
+        path: '/tmp/c4.wav',
+        fileName: 'c4.wav',
+        displayName: 'c4.wav',
+        rootMidi: 60,
+        rangeLow: 60,
+        rangeHigh: 60,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorScheme: const ColorScheme.light(tertiary: tertiary),
+          ),
+          home: Scaffold(
+            body: SizedBox(
+              width: 800,
+              height: 200,
+              child: PolyKeyMap(
+                height: 200,
+                regions: const [region],
+                selectedPath: region.path,
+                playedMidiNote: 60,
+                onSelect: (_) {},
+                onPreviewNote: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final customPaint = find.descendant(
+        of: find.byType(PolyKeyMap),
+        matching: find.byType(CustomPaint),
+      );
+      expect(
+        customPaint,
+        paints..rect(color: tertiary.withValues(alpha: 0.70)),
+      );
+
+      final customPaintWidget = tester.widget<CustomPaint>(customPaint);
+      final painter = customPaintWidget.painter as dynamic;
+      expect(painter.playedMidiNote, 60);
+      expect(painter.colorScheme.tertiary, tertiary);
+    },
+  );
+
   testWidgets('exposes piano note preview semantics', (tester) async {
     final semantics = tester.ensureSemantics();
 

@@ -314,6 +314,8 @@ class WavAudioRenderer {
   static Uint8List renderPitchedPreview(
     Uint8List bytes, {
     required double pitchRatio,
+    int? previewStartFrame,
+    int? renderedFrameLimit,
   }) {
     if (bytes.length < 44) {
       throw const FormatException('WAV file is too small.');
@@ -327,11 +329,18 @@ class WavAudioRenderer {
     final chunks = _readChunks(bytes, data);
     _FmtChunk? fmt;
     _DataChunk? audio;
+    _SampleLoop? loop;
     for (final chunk in chunks) {
       if (chunk.id == 'fmt ') {
         fmt = WavMetadataReader._readFmt(data, chunk.start, chunk.size);
       } else if (chunk.id == 'data') {
         audio = _DataChunk(start: chunk.start, size: chunk.size);
+      } else if (chunk.id == 'smpl') {
+        loop = WavMetadataReader._readFirstSampleLoop(
+          data,
+          chunk.start,
+          chunk.size,
+        );
       }
     }
     if (fmt == null || audio == null) {
@@ -353,9 +362,35 @@ class WavAudioRenderer {
     final safePitchRatio = pitchRatio.isFinite && pitchRatio > 0
         ? pitchRatio
         : 1.0;
+    final sourceStart = (previewStartFrame ?? 0)
+        .clamp(0, frameCount - 1)
+        .toInt();
+    final activeLoop =
+        loop != null &&
+            loop.start >= sourceStart &&
+            loop.start < frameCount &&
+            loop.end > loop.start
+        ? loop
+        : null;
+    final defaultRenderedFrameCount = activeLoop == null
+        ? ((frameCount - sourceStart) / safePitchRatio).ceil()
+        : math
+              .max(
+                (frameCount - sourceStart) / safePitchRatio,
+                (activeLoop.end -
+                        sourceStart +
+                        (activeLoop.end - activeLoop.start + 1) * 2) /
+                    safePitchRatio,
+              )
+              .ceil();
     final renderedFrameCount = math.max(
       1,
-      (frameCount / safePitchRatio).ceil(),
+      math.min(
+        defaultRenderedFrameCount,
+        renderedFrameLimit == null
+            ? defaultRenderedFrameCount
+            : math.max(1, renderedFrameLimit),
+      ),
     );
     final renderedSamples = List<double>.filled(
       renderedFrameCount * fmt.channels,
@@ -363,7 +398,13 @@ class WavAudioRenderer {
     );
 
     for (var frame = 0; frame < renderedFrameCount; frame++) {
-      final sourcePosition = frame * safePitchRatio;
+      var sourcePosition = sourceStart + frame * safePitchRatio;
+      if (activeLoop != null && sourcePosition > activeLoop.end) {
+        final loopLength = activeLoop.end - activeLoop.start + 1;
+        sourcePosition =
+            activeLoop.start +
+            ((sourcePosition - activeLoop.start) % loopLength);
+      }
       final lowerFrame = sourcePosition.floor().clamp(0, frameCount - 1);
       final upperFrame = (lowerFrame + 1).clamp(0, frameCount - 1);
       final fraction = (sourcePosition - lowerFrame).clamp(0.0, 1.0);

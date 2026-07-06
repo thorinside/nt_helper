@@ -492,6 +492,43 @@ void main() {
       },
     );
 
+    test(
+      'keyboard note preview includes waveform fade envelope draft',
+      () async {
+        final source = File('${tempRoot.path}/Piano_C4.wav');
+        _writeTinyPreviewWav(source, frames: 8);
+        final adapter = _FakePreviewAdapter();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            editedRegions: [
+              PolySampleRegion(
+                path: source.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+              ),
+            ],
+            wavEditDrafts: {
+              source.path: const PolyWaveformDraft(fadeInFrames: 4),
+            },
+          ),
+        );
+
+        await cubit.playKeyboardNotePreview(60);
+
+        final renderedSamples = _pcm16Samples(File(adapter.playedPaths.single));
+        expect(renderedSamples.first, 0);
+        expect(renderedSamples[1].abs(), lessThan(1000));
+      },
+    );
+
     test('keyboard note preview rotates same-range round robins', () async {
       final sourceA = File('${tempRoot.path}/Piano_C4_rr1.wav');
       final sourceB = File('${tempRoot.path}/Piano_C4_rr2.wav');
@@ -1337,6 +1374,79 @@ void main() {
       expect(cubit.state.loopDrafts, isNot(contains('/tmp/a.wav')));
       expect(cubit.state.isDirty, isFalse);
     });
+
+    test('loop draft edits automatically snap to nearest zero crossings', () {
+      final source = File('${tempRoot.path}/snap.wav');
+      _writeTinyPreviewWav(source, frames: 200);
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          waveformSummaries: {
+            source.path: WavOverview(
+              sampleRate: 44100,
+              frameCount: 200,
+              peaks: const [WavPeak(min: -0.5, max: 0.5)],
+              zeroCrossings: const [10, 100, 190],
+            ),
+          },
+        ),
+      );
+
+      cubit.updateLoopDraft(
+        source.path,
+        const PolyWaveformDraft(loopStart: 96, loopEnd: 188),
+      );
+
+      final draft = cubit.state.loopDrafts[source.path]!;
+      expect(draft.loopStart, 100);
+      expect(draft.loopEnd, 190);
+    });
+
+    test(
+      'loop edit preview is debounced so rapid edits do not backlog',
+      () async {
+        final source = File('${tempRoot.path}/loop-preview.wav');
+        _writeTinyPreviewWav(source, frames: 240);
+        final adapter = _FakePreviewAdapter();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            waveformSummaries: {
+              source.path: WavOverview(
+                sampleRate: 44100,
+                frameCount: 240,
+                peaks: const [WavPeak(min: -0.5, max: 0.5)],
+                zeroCrossings: const [20, 80, 120, 160, 220],
+              ),
+            },
+          ),
+        );
+
+        cubit.updateLoopDraft(
+          source.path,
+          const PolyWaveformDraft(loopStart: 70, loopEnd: 118),
+        );
+        cubit.updateLoopDraft(
+          source.path,
+          const PolyWaveformDraft(loopStart: 78, loopEnd: 158),
+        );
+        cubit.updateLoopDraft(
+          source.path,
+          const PolyWaveformDraft(loopStart: 82, loopEnd: 162),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 160));
+
+        expect(adapter.playedPaths, hasLength(1));
+        expect(adapter.playedPaths.single, isNot(source.path));
+        expect(cubit.state.previewState.visiblePath, source.path);
+      },
+    );
 
     test('discardChanges clears waveform drafts', () {
       final cubit = _ExposedPolyMultisampleBuilderCubit(
@@ -3152,6 +3262,29 @@ Uint8List _tinyPreviewWavBytes({int frames = 8}) {
         ..add(_u32(bodyBytes.length))
         ..add(bodyBytes))
       .toBytes();
+}
+
+List<int> _pcm16Samples(File file) {
+  final bytes = file.readAsBytesSync();
+  final data = ByteData.sublistView(bytes);
+  var offset = 12;
+  while (offset + 8 <= bytes.length) {
+    final id = String.fromCharCodes(bytes.sublist(offset, offset + 4));
+    final size = data.getUint32(offset + 4, Endian.little);
+    final start = offset + 8;
+    if (id == 'data') {
+      return [
+        for (
+          var sampleOffset = start;
+          sampleOffset < start + size;
+          sampleOffset += 2
+        )
+          data.getInt16(sampleOffset, Endian.little),
+      ];
+    }
+    offset = start + size + (size.isOdd ? 1 : 0);
+  }
+  return const [];
 }
 
 Uint8List _ascii(String value) => Uint8List.fromList(value.codeUnits);

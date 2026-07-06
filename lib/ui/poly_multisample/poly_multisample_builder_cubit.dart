@@ -257,6 +257,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   var _isClosing = false;
   var _contentRevision = 0;
   var _autoPreviewRequest = 0;
+  var _loopEditPreviewRequest = 0;
+  Timer? _loopEditPreviewDebounce;
   var _hardwarePreviewInFlight = false;
   var _importSequence = 0;
   var _waveformLoadSequence = 0;
@@ -722,6 +724,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   Future<void> returnToSources() async {
     _contentRevision++;
     _notePreviewRequest++;
+    _loopEditPreviewRequest++;
+    _loopEditPreviewDebounce?.cancel();
     await _previewService.stop();
     await _cleanupHardwarePreviewRoots();
     await _cleanupNotePreviewRoots();
@@ -1217,13 +1221,133 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
   void updateLoopDraft(String path, PolyWaveformDraft draft) {
     final overview = state.waveformSummaries[path];
+    final snappedDraft = overview == null
+        ? draft
+        : _snapLoopDraftToZeroCrossings(draft, overview);
+    final previousDraft = overview == null
+        ? state.loopDrafts[path]
+        : state.loopDrafts[path] ??
+              PolyWaveformDraft(
+                loopStart: overview.loopStart,
+                loopEnd: overview.loopEnd,
+              );
+    final loopPointsChanged =
+        previousDraft?.loopStart != snappedDraft.loopStart ||
+        previousDraft?.loopEnd != snappedDraft.loopEnd;
     final nextDrafts = Map<String, PolyWaveformDraft>.from(state.loopDrafts);
-    if (overview != null && !_loopDraftChanged(draft, overview)) {
+    if (overview != null && !_loopDraftChanged(snappedDraft, overview)) {
       nextDrafts.remove(path);
     } else {
-      nextDrafts[path] = draft;
+      nextDrafts[path] = snappedDraft;
     }
     emit(state.copyWith(loopDrafts: nextDrafts));
+    if (overview != null &&
+        loopPointsChanged &&
+        snappedDraft.loopStart != null &&
+        snappedDraft.loopEnd != null &&
+        File(path).existsSync()) {
+      _scheduleLoopEditPreview(path, snappedDraft, overview);
+    }
+  }
+
+  PolyWaveformDraft _snapLoopDraftToZeroCrossings(
+    PolyWaveformDraft draft,
+    WavOverview overview,
+  ) {
+    final loopStart = draft.loopStart;
+    final loopEnd = draft.loopEnd;
+    if (loopStart == null || loopEnd == null) return draft;
+    final maxFrame = math.max(0, overview.frameCount - 1);
+    final rawStart = loopStart.clamp(0, math.max(0, loopEnd - 1)).toInt();
+    final snappedStart = overview
+        .nearestZeroCrossing(rawStart, searchRadius: 32)
+        .clamp(0, math.max(0, loopEnd - 1))
+        .toInt();
+    final rawEnd = loopEnd.clamp(
+      math.min(maxFrame, snappedStart + 1),
+      maxFrame,
+    );
+    final snappedEnd = overview
+        .nearestZeroCrossing(rawEnd.toInt(), searchRadius: 32)
+        .clamp(math.min(maxFrame, snappedStart + 1), maxFrame)
+        .toInt();
+    return draft.copyWith(loopStart: snappedStart, loopEnd: snappedEnd);
+  }
+
+  void _scheduleLoopEditPreview(
+    String path,
+    PolyWaveformDraft draft,
+    WavOverview overview,
+  ) {
+    final requestId = ++_loopEditPreviewRequest;
+    _loopEditPreviewDebounce?.cancel();
+    _loopEditPreviewDebounce = Timer(const Duration(milliseconds: 80), () {
+      unawaited(
+        _playLoopEditPreview(path, draft, overview, requestId: requestId),
+      );
+    });
+  }
+
+  Future<void> _playLoopEditPreview(
+    String path,
+    PolyWaveformDraft draft,
+    WavOverview overview, {
+    required int requestId,
+  }) async {
+    try {
+      if (_isHardwarePreviewPath(path) ||
+          !path.toLowerCase().endsWith('.wav')) {
+        return;
+      }
+      final loopStart = draft.loopStart;
+      final loopEnd = draft.loopEnd;
+      if (loopStart == null || loopEnd == null) return;
+      final bytes = await File(path).readAsBytes();
+      if (requestId != _loopEditPreviewRequest || _isClosing) return;
+      final prepared = _preparedKeyboardPreviewBytes(path, bytes);
+      final looped = WavMetadataWriter.writeSmplLoop(
+        prepared,
+        loopStart: loopStart,
+        loopEnd: loopEnd,
+      );
+      final preRollFrames = math.min(512, math.max(0, loopEnd - loopStart));
+      final previewStart = math.max(0, loopEnd - preRollFrames);
+      final loopLength = math.max(1, loopEnd - loopStart + 1);
+      final rendered = WavAudioRenderer.renderPitchedPreview(
+        looped,
+        pitchRatio: 1,
+        previewStartFrame: previewStart,
+        renderedFrameLimit: math.min(
+          math.max(overview.sampleRate ~/ 2, 1),
+          preRollFrames + loopLength * 2,
+        ),
+      );
+      if (requestId != _loopEditPreviewRequest || _isClosing) return;
+      final root = await Directory.systemTemp.createTemp(
+        'nt_helper_poly_note_preview_',
+      );
+      if (requestId != _loopEditPreviewRequest || _isClosing) {
+        await _deleteNotePreviewRoot(root.path);
+        return;
+      }
+      _notePreviewRoots.add(root.path);
+      final output = File(p.join(root.path, 'loop-preview.wav'));
+      await output.writeAsBytes(rendered, flush: true);
+      if (requestId != _loopEditPreviewRequest || _isClosing) {
+        _notePreviewRoots.remove(root.path);
+        await _deleteNotePreviewRoot(root.path);
+        return;
+      }
+      await _previewService.restartPreview(
+        output.path,
+        displayPath: path,
+        gainDb: state.previewGainDb,
+      );
+    } catch (error) {
+      if (requestId == _loopEditPreviewRequest && !_isClosing) {
+        emit(state.copyWith(error: error.toString()));
+      }
+    }
   }
 
   Future<void> saveLoopMetadata(String path) async {
@@ -1327,6 +1451,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     String path, {
     IDistingMidiManager? manager,
   }) async {
+    _loopEditPreviewRequest++;
+    _loopEditPreviewDebounce?.cancel();
     try {
       if (_isHardwarePreviewPath(path)) {
         if (manager == null) {
@@ -1354,6 +1480,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
   Future<void> playKeyboardNotePreview(int midi) async {
     final clampedMidi = midi.clamp(0, 127).toInt();
+    _loopEditPreviewRequest++;
+    _loopEditPreviewDebounce?.cancel();
     final requestId = ++_notePreviewRequest;
     try {
       if (_hasDirectHardwareWavPreviewCandidate(clampedMidi)) {
@@ -1396,6 +1524,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       await _previewService.restartPreview(
         renderedPath,
         displayPath: match.region.path,
+        playingMidiNote: clampedMidi,
         gainDb: state.previewGainDb,
       );
     } on _StaleNotePreviewRequest {
@@ -1488,6 +1617,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   Future<void> close() async {
     _isClosing = true;
     _notePreviewRequest++;
+    _loopEditPreviewRequest++;
+    _loopEditPreviewDebounce?.cancel();
     await _previewSub.cancel();
     await _previewService.dispose();
     await _cleanupHardwarePreviewRoots();
@@ -1715,6 +1846,63 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     );
   }
 
+  String _previewDraftFingerprint(String path) {
+    final loop = state.loopDrafts[path];
+    final edit = state.wavEditDrafts[path];
+    return [
+      loop?.loopStart,
+      loop?.loopEnd,
+      edit?.trimStart,
+      edit?.trimEnd,
+      edit?.fadeInFrames,
+      edit?.fadeOutFrames,
+      edit?.fadeInCurve.name,
+      edit?.fadeOutCurve.name,
+      edit?.fadeInStrength,
+      edit?.fadeOutStrength,
+      edit?.gainDb,
+      edit?.normalizePeakDb,
+    ].join(':');
+  }
+
+  Uint8List _preparedKeyboardPreviewBytes(String path, Uint8List bytes) {
+    var prepared = bytes;
+    final overview =
+        state.waveformSummaries[path] ?? WavMetadataReader.parse(bytes);
+    final loopDraft = state.loopDrafts[path];
+    final loopStart = loopDraft?.loopStart ?? overview?.loopStart;
+    final loopEnd = loopDraft?.loopEnd ?? overview?.loopEnd;
+    if (loopDraft != null &&
+        (loopDraft.loopStart == null || loopDraft.loopEnd == null)) {
+      prepared = WavMetadataWriter.removeSmplLoop(prepared);
+    } else if (loopStart != null && loopEnd != null) {
+      prepared = WavMetadataWriter.writeSmplLoop(
+        prepared,
+        loopStart: loopStart,
+        loopEnd: loopEnd,
+      );
+    }
+
+    final edit = state.wavEditDrafts[path];
+    if (edit == null) return prepared;
+    final maxFrame = math.max(0, (overview?.frameCount ?? 1) - 1);
+    return WavAudioRenderer.render(
+      prepared,
+      WavRenderOptions(
+        trimStartFrame: edit.trimStart ?? 0,
+        trimEndFrame: edit.trimEnd ?? maxFrame,
+        fadeInFrames: edit.fadeInFrames,
+        fadeOutFrames: edit.fadeOutFrames,
+        fadeInCurve: edit.fadeInCurve,
+        fadeOutCurve: edit.fadeOutCurve,
+        fadeInStrength: edit.fadeInStrength,
+        fadeOutStrength: edit.fadeOutStrength,
+        gainDb: edit.gainDb,
+        normalizePeakDb: edit.normalizePeakDb,
+      ),
+    );
+  }
+
   Future<String> _renderedKeyboardNotePreviewPath(
     PolySampleRegion region,
     int midi,
@@ -1728,6 +1916,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       stat.size,
       region.rootMidi,
       midi,
+      _previewDraftFingerprint(region.path),
     ].join('|');
     final cachedPath = _notePreviewCache[cacheKey];
     if (cachedPath != null && await File(cachedPath).exists()) {
@@ -1738,9 +1927,10 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
     final future = (() async {
       final bytes = await file.readAsBytes();
+      final preparedBytes = _preparedKeyboardPreviewBytes(region.path, bytes);
       final pitchRatio = math.pow(2, (midi - region.rootMidi!) / 12).toDouble();
       final rendered = await Future<Uint8List>.value(
-        _notePreviewRenderer(bytes, pitchRatio),
+        _notePreviewRenderer(preparedBytes, pitchRatio),
       );
       if (generation != _notePreviewGeneration || _isClosing) {
         throw const _StaleNotePreviewRequest();

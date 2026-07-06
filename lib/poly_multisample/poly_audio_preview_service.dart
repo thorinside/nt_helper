@@ -39,11 +39,13 @@ class PolyAudioPreviewState {
   const PolyAudioPreviewState({
     this.playingPath,
     this.displayPath,
+    this.playingMidiNote,
     this.gainDb = 0,
   });
 
   final String? playingPath;
   final String? displayPath;
+  final int? playingMidiNote;
   final double gainDb;
 
   bool get isPlaying => playingPath != null;
@@ -77,6 +79,7 @@ class PolyAudioPreviewService {
     String path, {
     double gainDb = 0,
     String? displayPath,
+    int? playingMidiNote,
   }) async {
     final adapter = _ensureAdapter();
     final visiblePath = displayPath ?? path;
@@ -93,6 +96,7 @@ class PolyAudioPreviewService {
       PolyAudioPreviewState(
         playingPath: path,
         displayPath: displayPath,
+        playingMidiNote: playingMidiNote,
         gainDb: gainDb,
       ),
     );
@@ -102,6 +106,7 @@ class PolyAudioPreviewService {
     String path, {
     double gainDb = 0,
     String? displayPath,
+    int? playingMidiNote,
   }) async {
     final adapter = _ensureAdapter();
     if (state.isPlaying) {
@@ -113,6 +118,7 @@ class PolyAudioPreviewService {
       PolyAudioPreviewState(
         playingPath: path,
         displayPath: displayPath,
+        playingMidiNote: playingMidiNote,
         gainDb: gainDb,
       ),
     );

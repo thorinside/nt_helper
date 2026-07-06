@@ -247,6 +247,7 @@ class _EditorBody extends StatelessWidget {
         final keyMap = PolyKeyMap(
           regions: state.editedRegions,
           selectedPath: selected?.path,
+          playedMidiNote: state.previewState.playingMidiNote,
           onSelect: (region) => cubit.selectRegion(
             region.path,
             PolyRegionSelectionMode.replace,
@@ -314,6 +315,7 @@ class _EditorBody extends StatelessWidget {
               height: 140,
               regions: state.editedRegions,
               selectedPath: selected?.path,
+              playedMidiNote: state.previewState.playingMidiNote,
               onSelect: (region) => cubit.selectRegion(
                 region.path,
                 PolyRegionSelectionMode.replace,

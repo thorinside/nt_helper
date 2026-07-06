@@ -98,6 +98,22 @@ void main() {
       expect(_pcm16Samples(rendered), hasLength(4));
     });
 
+    test('renderPitchedPreview respects smpl loop points', () {
+      final bytes = _pcm16WavWithLoop(
+        samples: [1000, 2000, 3000, 4000],
+        loopStart: 1,
+        loopEnd: 2,
+      );
+
+      final rendered = WavAudioRenderer.renderPitchedPreview(
+        bytes,
+        pitchRatio: 1,
+        renderedFrameLimit: 6,
+      );
+
+      expect(_pcm16Samples(rendered), [1000, 2000, 3000, 2000, 3000, 2000]);
+    });
+
     test('renderPitchedPreview lowers pitch by extending frame count', () {
       final bytes = _pcm16Wav(
         samples: [-32768, -12000, 0, 12000, 32767, 12000, 0, -12000],

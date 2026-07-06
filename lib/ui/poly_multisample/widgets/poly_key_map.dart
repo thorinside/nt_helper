@@ -15,6 +15,7 @@ class PolyKeyMap extends StatefulWidget {
     required this.onSelect,
     this.height = 180,
     this.onPreviewNote,
+    this.playedMidiNote,
   });
 
   final List<PolySampleRegion> regions;
@@ -22,6 +23,7 @@ class PolyKeyMap extends StatefulWidget {
   final ValueChanged<PolySampleRegion> onSelect;
   final double height;
   final ValueChanged<int>? onPreviewNote;
+  final int? playedMidiNote;
 
   @override
   State<PolyKeyMap> createState() => _PolyKeyMapState();
@@ -286,6 +288,7 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
                             painter: _PolyKeyMapPainter(
                               regions: widget.regions,
                               selectedPath: widget.selectedPath,
+                              playedMidiNote: widget.playedMidiNote,
                               minMidi: minMidi,
                               maxMidi: maxMidi,
                               colorScheme: Theme.of(context).colorScheme,
@@ -608,6 +611,7 @@ class _PolyKeyMapPainter extends CustomPainter {
   _PolyKeyMapPainter({
     required this.regions,
     required this.selectedPath,
+    required this.playedMidiNote,
     required this.minMidi,
     required this.maxMidi,
     required this.colorScheme,
@@ -615,6 +619,7 @@ class _PolyKeyMapPainter extends CustomPainter {
 
   final List<PolySampleRegion> regions;
   final String? selectedPath;
+  final int? playedMidiNote;
   final int minMidi;
   final int maxMidi;
   final ColorScheme colorScheme;
@@ -753,6 +758,8 @@ class _PolyKeyMapPainter extends CustomPainter {
       maxMidi: maxMidi,
     );
     final whiteFillPaint = Paint()..color = colorScheme.surface;
+    final playedWhiteFillPaint = Paint()
+      ..color = colorScheme.tertiary.withValues(alpha: 0.72);
     final keyStrokePaint = Paint()
       ..color = colorScheme.outlineVariant
       ..style = PaintingStyle.stroke
@@ -765,7 +772,10 @@ class _PolyKeyMapPainter extends CustomPainter {
       Paint()..color = colorScheme.surfaceContainerHighest,
     );
     for (final key in keyboardGeometry.whiteKeys) {
-      canvas.drawRect(key.rect, whiteFillPaint);
+      canvas.drawRect(
+        key.rect,
+        key.midi == playedMidiNote ? playedWhiteFillPaint : whiteFillPaint,
+      );
     }
     canvas.drawRect(keyboardRect, keyStrokePaint);
     for (final boundary in keyboardGeometry.whiteBoundaries) {
@@ -779,7 +789,10 @@ class _PolyKeyMapPainter extends CustomPainter {
           bottomLeft: radius,
           bottomRight: radius,
         ),
-        Paint()..color = colorScheme.onSurface,
+        Paint()
+          ..color = key.midi == playedMidiNote
+              ? colorScheme.tertiary
+              : colorScheme.onSurface,
       );
     }
     for (final key in keyboardGeometry.whiteKeys) {
@@ -803,6 +816,7 @@ class _PolyKeyMapPainter extends CustomPainter {
   bool shouldRepaint(covariant _PolyKeyMapPainter oldDelegate) {
     return oldDelegate.regions != regions ||
         oldDelegate.selectedPath != selectedPath ||
+        oldDelegate.playedMidiNote != playedMidiNote ||
         oldDelegate.minMidi != minMidi ||
         oldDelegate.maxMidi != maxMidi ||
         oldDelegate.colorScheme != colorScheme;
