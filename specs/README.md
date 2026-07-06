@@ -18,6 +18,7 @@ recovery rule instead of asking for judgment.
 | `poly-samples-ui/` | Rebuild the multisample (Samples) editor UI as a standalone pushed screen with feature parity to the fork implementation | 14 | steps 1–8 easy/medium, 9–14 medium/hard |
 | `poly-sample-upload/` | Add Samples editor upload through SysEx with verification/correction and mounted SD-card filesystem copy with remembered destination | 4 | steps 1–2 medium, 3–4 medium/hard |
 | `split-stepper-control/` | Add a reusable compact split stepper and apply it to poly multisample sidebar jog controls | 3 | steps 1–3 easy/medium |
+| `sample-row-steppers/` | Add compact inline Root/Low/High/Vel/RR steppers to poly multisample sample rows with focus sync and auto-preview | 2 | step 1 medium, step 2 medium/hard |
 
 ## Target executor
 
