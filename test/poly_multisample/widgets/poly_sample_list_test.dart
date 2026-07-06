@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction, Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
@@ -34,6 +36,39 @@ void main() {
       ),
       findsOneWidget,
     );
+    semantics.dispose();
+  });
+
+  testWidgets('sample rows expose selected button tap semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    const region = PolySampleRegion(
+      path: '/tmp/mapped.wav',
+      fileName: 'mapped.wav',
+      displayName: 'mapped.wav',
+      rootMidi: 48,
+      rootName: 'C3',
+    );
+
+    await _pumpList(
+      tester,
+      regions: const [region],
+      selectedPaths: const {'/tmp/mapped.wav'},
+    );
+
+    final data = tester
+        .getSemantics(
+          find.bySemanticsLabel(
+            'mapped.wav, root C3, low C3, high G9, velocity 1, RR 1',
+          ),
+        )
+        .getSemanticsData();
+
+    expect(data.flagsCollection.isButton, isTrue);
+    expect(data.flagsCollection.isSelected, Tristate.isTrue);
+    expect(data.flagsCollection.isEnabled, Tristate.isTrue);
+    expect(data.hasAction(SemanticsAction.tap), isTrue);
     semantics.dispose();
   });
 

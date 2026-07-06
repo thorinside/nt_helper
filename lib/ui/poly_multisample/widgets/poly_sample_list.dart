@@ -191,8 +191,11 @@ class _PolySampleListState extends State<PolySampleList> {
           container: true,
           explicitChildNodes: true,
           selected: selected,
+          button: true,
+          enabled: true,
           label:
               '$label, root $rootLabel, low $lowLabel, high $highLabel, velocity $velocity, RR $roundRobin',
+          onTap: () => widget.onSelect(region.path, _selectionMode()),
           child: Material(
             color: selected
                 ? Theme.of(
@@ -200,6 +203,7 @@ class _PolySampleListState extends State<PolySampleList> {
                   ).colorScheme.secondaryContainer.withValues(alpha: 0.36)
                 : Colors.transparent,
             child: InkWell(
+              excludeFromSemantics: true,
               onTap: () => widget.onSelect(region.path, _selectionMode()),
               child: Padding(
                 key: ValueKey('poly-sample-row-${region.path}'),
