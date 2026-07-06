@@ -43,6 +43,11 @@ class SettingsService {
     defaultVideoToolbarAlwaysVisible,
   );
 
+  /// Notifier for contextual help hint visibility changes.
+  final contextualHelpEnabledNotifier = ValueNotifier<bool>(
+    defaultShowContextualHelp,
+  );
+
   // Keys for storing settings
   static const String _requestTimeoutKey = 'request_timeout_ms';
   static const String _interMessageDelayKey = 'inter_message_delay_ms';
@@ -199,6 +204,7 @@ class SettingsService {
     cpuMonitorEnabledNotifier.value = cpuMonitorEnabled;
     uiScaleNotifier.value = uiScale;
     videoToolbarAlwaysVisibleNotifier.value = videoToolbarAlwaysVisible;
+    contextualHelpEnabledNotifier.value = showContextualHelp;
     showBackwardConnectionsNotifier.value = showBackwardConnections;
   }
 
@@ -447,7 +453,12 @@ class SettingsService {
 
   /// Set whether contextual help hints should be shown
   Future<bool> setShowContextualHelp(bool value) async {
-    return await _prefs?.setBool(_showContextualHelpKey, value) ?? false;
+    final result =
+        await _prefs?.setBool(_showContextualHelpKey, value) ?? false;
+    if (result) {
+      contextualHelpEnabledNotifier.value = value;
+    }
+    return result;
   }
 
   /// Get the algorithm cache freshness duration in days
@@ -732,6 +743,7 @@ class SettingsService {
     cpuMonitorEnabledNotifier.value = defaultCpuMonitorEnabled;
     uiScaleNotifier.value = defaultUiScale;
     videoToolbarAlwaysVisibleNotifier.value = defaultVideoToolbarAlwaysVisible;
+    contextualHelpEnabledNotifier.value = defaultShowContextualHelp;
     showBackwardConnectionsNotifier.value = defaultShowBackwardConnections;
   }
 }

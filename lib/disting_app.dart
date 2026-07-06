@@ -18,6 +18,7 @@ import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/widgets/contextual_help_tooltip_scope.dart';
 import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 import 'package:nt_helper/utils/build_config.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
@@ -201,23 +202,25 @@ class _DistingAppState extends State<DistingApp> {
           valueListenable: SettingsService().uiScaleNotifier,
           builder: (context, scale, _) {
             final mediaQuery = MediaQuery.of(context);
-            return MediaQuery(
-              data: mediaQuery.copyWith(textScaler: TextScaler.linear(scale)),
-              child: Shortcuts(
-                shortcuts: _keyBindingService.desktopZoomShortcuts,
-                child: Actions(
-                  actions: _keyBindingService.buildZoomActions(
-                    onZoomIn: () {
-                      SettingsService().zoomInUi();
-                    },
-                    onZoomOut: () {
-                      SettingsService().zoomOutUi();
-                    },
-                    onResetZoom: () {
-                      SettingsService().resetUiScale();
-                    },
+            return ContextualHelpTooltipScope(
+              child: MediaQuery(
+                data: mediaQuery.copyWith(textScaler: TextScaler.linear(scale)),
+                child: Shortcuts(
+                  shortcuts: _keyBindingService.desktopZoomShortcuts,
+                  child: Actions(
+                    actions: _keyBindingService.buildZoomActions(
+                      onZoomIn: () {
+                        SettingsService().zoomInUi();
+                      },
+                      onZoomOut: () {
+                        SettingsService().zoomOutUi();
+                      },
+                      onResetZoom: () {
+                        SettingsService().resetUiScale();
+                      },
+                    ),
+                    child: child ?? const SizedBox.shrink(),
                   ),
-                  child: child ?? const SizedBox.shrink(),
                 ),
               ),
             );

@@ -159,7 +159,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
 
     // Initialize contextual help setting
-    _showContextualHelp = SettingsService().showContextualHelp;
+    final settings = SettingsService();
+    _showContextualHelp = settings.showContextualHelp;
+    settings.contextualHelpEnabledNotifier.addListener(
+      _handleContextualHelpSettingChanged,
+    );
 
     // Initialize split divider position
     _splitDividerPosition = SettingsService().splitDividerPosition;
@@ -242,8 +246,22 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
   }
 
+  void _handleContextualHelpSettingChanged() {
+    final enabled = SettingsService().contextualHelpEnabledNotifier.value;
+    if (!mounted || _showContextualHelp == enabled) return;
+    setState(() {
+      _showContextualHelp = enabled;
+      if (!enabled) {
+        _contextualHelpText = null;
+      }
+    });
+  }
+
   @override
   void dispose() {
+    SettingsService().contextualHelpEnabledNotifier.removeListener(
+      _handleContextualHelpSettingChanged,
+    );
     _screenFocusNode.removeListener(_reclaimFocusIfLost);
     _screenFocusNode.dispose();
     _routingFocusSub?.cancel();

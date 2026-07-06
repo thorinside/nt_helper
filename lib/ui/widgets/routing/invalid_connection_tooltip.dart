@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/services/settings_service.dart';
 
 /// A specialized tooltip widget for explaining invalid connections
 ///
@@ -79,7 +80,11 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
 
   /// Show the tooltip with animation
   void _showTooltip() {
-    if (!widget.show || _isShowingTooltip) return;
+    if (!widget.show ||
+        !SettingsService().showContextualHelp ||
+        _isShowingTooltip) {
+      return;
+    }
 
     setState(() {
       _isShowingTooltip = true;

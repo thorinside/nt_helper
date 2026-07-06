@@ -1,10 +1,50 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/ui/widgets/contextual_help_tooltip_scope.dart';
 import 'package:nt_helper/ui/widgets/split_stepper_control.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  Future<void> pumpScopedSplitStepper(
+    WidgetTester tester, {
+    required bool contextualHelpEnabled,
+  }) async {
+    SharedPreferences.setMockInitialValues({
+      'show_contextual_help': contextualHelpEnabled,
+    });
+    await SettingsService().init();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ContextualHelpTooltipScope(
+          child: Scaffold(
+            body: Center(
+              child: SplitStepperControl(
+                label: 'Root',
+                valueLabel: 'C3',
+                onDecrement: () {},
+                onIncrement: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> hoverOver(WidgetTester tester, Finder finder) async {
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(gesture.removePointer);
+    await gesture.addPointer(location: Offset.zero);
+    await tester.pump();
+    await gesture.moveTo(tester.getCenter(finder));
+  }
+
   testWidgets(
     'compact split stepper renders two semantic buttons and fires callbacks',
     (tester) async {
@@ -90,6 +130,35 @@ void main() {
 
     expect(deltas, [-100, -1, 1, 100]);
   });
+
+  testWidgets('contextual help setting shows visual tooltips when enabled', (
+    tester,
+  ) async {
+    await pumpScopedSplitStepper(tester, contextualHelpEnabled: true);
+
+    await hoverOver(tester, find.byTooltip('Increase Root'));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.text('Increase Root', findRichText: true), findsOneWidget);
+  });
+
+  testWidgets(
+    'contextual help setting suppresses visual tooltips when disabled without removing semantics',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await pumpScopedSplitStepper(tester, contextualHelpEnabled: false);
+
+        await hoverOver(tester, find.byTooltip('Increase Root'));
+        await tester.pump(const Duration(milliseconds: 600));
+
+        expect(find.text('Increase Root', findRichText: true), findsNothing);
+        expect(find.bySemanticsLabel('Increase Root'), findsOneWidget);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
 
   testWidgets('split stepper supports keyboard focus activation', (
     tester,

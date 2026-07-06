@@ -13,6 +13,7 @@ import 'package:nt_helper/domain/video/usb_video_manager.dart';
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/video_popup_window_service.dart';
+import 'package:nt_helper/ui/widgets/contextual_help_tooltip_scope.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -34,6 +35,8 @@ class VideoPopupApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: appTheme(),
+      builder: (context, child) =>
+          ContextualHelpTooltipScope(child: child ?? const SizedBox.shrink()),
       home: const VideoPopupWindow(),
     );
   }
