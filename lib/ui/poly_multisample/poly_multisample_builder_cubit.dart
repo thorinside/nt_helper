@@ -251,6 +251,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   final List<String> _notePreviewRoots = [];
   final Map<String, int> _notePreviewRoundRobinCursor = {};
   var _notePreviewRequest = 0;
+  var _notePreviewGeneration = 0;
   var _rootConsumingOperationCount = 0;
   var _cleanupAfterOperations = false;
   var _isClosing = false;
@@ -720,6 +721,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
   Future<void> returnToSources() async {
     _contentRevision++;
+    _notePreviewRequest++;
     await _previewService.stop();
     await _cleanupHardwarePreviewRoots();
     await _cleanupNotePreviewRoots();
@@ -1396,8 +1398,12 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         displayPath: match.region.path,
         gainDb: state.previewGainDb,
       );
+    } on _StaleNotePreviewRequest {
+      return;
     } catch (error) {
-      emit(state.copyWith(error: error.toString()));
+      if (requestId == _notePreviewRequest && !_isClosing) {
+        emit(state.copyWith(error: error.toString()));
+      }
     }
   }
 
@@ -1481,6 +1487,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   @override
   Future<void> close() async {
     _isClosing = true;
+    _notePreviewRequest++;
     await _previewSub.cancel();
     await _previewService.dispose();
     await _cleanupHardwarePreviewRoots();
@@ -1712,6 +1719,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     PolySampleRegion region,
     int midi,
   ) async {
+    final generation = _notePreviewGeneration;
     final file = File(region.path);
     final stat = await file.stat();
     final cacheKey = [
@@ -1734,12 +1742,24 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       final rendered = await Future<Uint8List>.value(
         _notePreviewRenderer(bytes, pitchRatio),
       );
+      if (generation != _notePreviewGeneration || _isClosing) {
+        throw const _StaleNotePreviewRequest();
+      }
       final root = await Directory.systemTemp.createTemp(
         'nt_helper_poly_note_preview_',
       );
+      if (generation != _notePreviewGeneration || _isClosing) {
+        await _deleteNotePreviewRoot(root.path);
+        throw const _StaleNotePreviewRequest();
+      }
       _notePreviewRoots.add(root.path);
       final output = File(p.join(root.path, 'preview.wav'));
       await output.writeAsBytes(rendered, flush: true);
+      if (generation != _notePreviewGeneration || _isClosing) {
+        _notePreviewRoots.remove(root.path);
+        await _deleteNotePreviewRoot(root.path);
+        throw const _StaleNotePreviewRequest();
+      }
       _notePreviewCache[cacheKey] = output.path;
       return output.path;
     })();
@@ -1747,24 +1767,31 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     try {
       return await future;
     } finally {
-      _notePreviewRenderInFlight.remove(cacheKey);
+      if (identical(_notePreviewRenderInFlight[cacheKey], future)) {
+        _notePreviewRenderInFlight.remove(cacheKey);
+      }
     }
   }
 
   Future<void> _cleanupNotePreviewRoots() async {
+    _notePreviewGeneration++;
     final roots = List<String>.from(_notePreviewRoots);
     _notePreviewRoots.clear();
     _notePreviewCache.clear();
     _notePreviewRenderInFlight.clear();
     for (final root in roots) {
-      try {
-        final dir = Directory(root);
-        if (await dir.exists()) {
-          await dir.delete(recursive: true);
-        }
-      } on FileSystemException {
-        // Best-effort cleanup only.
+      await _deleteNotePreviewRoot(root);
+    }
+  }
+
+  Future<void> _deleteNotePreviewRoot(String root) async {
+    try {
+      final dir = Directory(root);
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
       }
+    } on FileSystemException {
+      // Best-effort cleanup only.
     }
   }
 
@@ -2076,6 +2103,10 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       p.join(outputFolder, 'poly_multisample_build_report.txt'),
     ).writeAsString(buffer.toString(), flush: true);
   }
+}
+
+class _StaleNotePreviewRequest implements Exception {
+  const _StaleNotePreviewRequest();
 }
 
 class _KeyboardNotePreviewMatch {

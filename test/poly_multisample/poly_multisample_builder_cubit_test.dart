@@ -847,6 +847,59 @@ void main() {
     });
 
     test(
+      'keyboard note preview ignores stale render failures after newer success',
+      () async {
+        final c4 = File('${tempRoot.path}/Piano_C4.wav');
+        final d4 = File('${tempRoot.path}/Piano_D4.wav');
+        _writeTinyPreviewWav(c4);
+        _writeTinyPreviewWav(d4);
+        final adapter = _FakePreviewAdapter();
+        final renderer = _QueuedNotePreviewRenderer();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+          notePreviewRenderer: renderer.render,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            editedRegions: [
+              PolySampleRegion(
+                path: c4.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+              ),
+              PolySampleRegion(
+                path: d4.path,
+                fileName: 'Piano_D4.wav',
+                displayName: 'Piano_D4.wav',
+                rootMidi: 62,
+                rangeLow: 62,
+                rangeHigh: 62,
+              ),
+            ],
+          ),
+        );
+
+        final first = cubit.playKeyboardNotePreview(60);
+        await _waitForCondition(() => renderer.completers.length == 1);
+        final second = cubit.playKeyboardNotePreview(62);
+        await _waitForCondition(() => renderer.completers.length == 2);
+        renderer.completers[1].complete(_tinyPreviewWavBytes());
+        await second;
+        renderer.completers[0].completeError(StateError('stale render failed'));
+        await first;
+
+        expect(adapter.playedPaths, hasLength(1));
+        expect(cubit.state.previewState.visiblePath, d4.path);
+        expect(cubit.state.error, isNull);
+      },
+    );
+
+    test(
       'keyboard note preview invalidates cache when source file changes',
       () async {
         final source = File('${tempRoot.path}/Piano_C4.wav');
@@ -881,6 +934,50 @@ void main() {
 
         expect(adapter.playedPaths.last, isNot(firstPath));
         expect(renderer.calls, 2);
+      },
+    );
+
+    test(
+      'keyboard note preview returnToSources invalidates in-flight renders',
+      () async {
+        final source = File('${tempRoot.path}/Piano_C4.wav');
+        _writeTinyPreviewWav(source);
+        final existingPreviewRoots = _existingNotePreviewTempRoots();
+        final adapter = _FakePreviewAdapter();
+        final renderer = _QueuedNotePreviewRenderer();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(adapter: adapter),
+          notePreviewRenderer: renderer.render,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            editedRegions: [
+              PolySampleRegion(
+                path: source.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+                rootMidi: 60,
+                rangeLow: 60,
+                rangeHigh: 60,
+              ),
+            ],
+          ),
+        );
+
+        final preview = cubit.playKeyboardNotePreview(60);
+        await _waitForCondition(() => renderer.completers.length == 1);
+        await cubit.returnToSources();
+        renderer.completers.single.complete(_tinyPreviewWavBytes());
+        await preview;
+
+        expect(adapter.playedPaths, isEmpty);
+        expect(cubit.state.sourceMode, PolySampleSourceMode.none);
+        expect(
+          _existingNotePreviewTempRoots().difference(existingPreviewRoots),
+          isEmpty,
+        );
       },
     );
 
@@ -3009,6 +3106,19 @@ class _QueuedNotePreviewRenderer {
 
 void _writeTinyPreviewWav(File file, {int frames = 8}) {
   file.writeAsBytesSync(_tinyPreviewWavBytes(frames: frames), flush: true);
+}
+
+Set<String> _existingNotePreviewTempRoots() {
+  return Directory.systemTemp
+      .listSync()
+      .whereType<Directory>()
+      .where(
+        (dir) => dir.uri.pathSegments.last.startsWith(
+          'nt_helper_poly_note_preview_',
+        ),
+      )
+      .map((dir) => dir.path)
+      .toSet();
 }
 
 Uint8List _tinyPreviewWavBytes({int frames = 8}) {
