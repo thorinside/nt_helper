@@ -29,7 +29,7 @@ Prerequisites: none.
    - `PolySampleSidebarIconButton`
    - `PolySampleSidebarSliderValue`
 2. Put the exact constants from `spec.md` in `PolySampleSidebarLayout`.
-3. Import `dart:ui` with `show FontFeature` in the helper file and use `const [FontFeature.tabularFigures()]` in the helper text style.
+3. Import `dart:ui` with `show FontFeature` in the helper file and use `const [FontFeature.tabularFigures()]` in the helper text style. Implement `PolySampleSidebarValueText` so the `semanticLabel != null` branch uses `ExcludeSemantics` exactly as specified in `spec.md`.
 4. Import `package:nt_helper/ui/poly_multisample/widgets/poly_sample_sidebar_layout.dart` in `poly_sample_inspector.dart`.
 5. Replace `SingleChildScrollView(padding: const EdgeInsets.all(12), ...)` with `EdgeInsets.all(PolySampleSidebarLayout.outerPadding)`.
 6. Rewrite `_PreviewControls` gain row only:
@@ -92,13 +92,11 @@ void _expectStableRect(Rect before, Rect after) {
     - Assert the first edited region velocity is `3`.
     - Assert `FocusManager.instance.primaryFocus` is the same object captured before Enter.
     - Assert the button rectangle is unchanged with `_expectStableRect`.
-19. Add semantics expectations to the existing inspector semantics test:
-    - `find.bySemanticsLabel('Preview gain value')` finds one widget.
-    - `find.bySemanticsLabel('Root value')` finds one widget.
-20. Update `poly_samples_editor_view_test.dart` with one assertion in the desktop editor test or add a new desktop-width test:
-    - Pump an editor at width at least 900.
-    - Assert `tester.getSize(find.byType(PolySampleInspector)).width` equals `PolySampleSidebarLayout.panelWidth`.
-    - Add the helper import to the test file.
+19. Add semantics expectations to the existing inspector semantics test named `labels preview and destructive edit controls for semantics` immediately after the existing `expect(find.bySemanticsLabel('Preview gain'), findsOneWidget);` line:
+    - `expect(find.bySemanticsLabel('Preview gain value'), findsOneWidget);`
+    - `expect(find.bySemanticsLabel('Root value'), findsOneWidget);`
+20. Update `poly_samples_editor_view_test.dart` by adding the helper import `import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_sidebar_layout.dart';` and adding this assertion to the existing desktop test named `shows toolbar stats, key map, list and inspector` immediately after `expect(find.byType(PolySampleInspector), findsOneWidget);`:
+    - `expect(tester.getSize(find.byType(PolySampleInspector)).width, PolySampleSidebarLayout.panelWidth);`
 
 ### Leftover checks
 
@@ -111,6 +109,10 @@ grep -n "Root: \\$value\|Velocity: \\$value\|Round robin: \\$value" lib/ui/poly_
 ```
 
 Expected output: no matching lines from either grep command. Zero symbols are moved in this step.
+
+### Commit message
+
+`fix(poly-samples): stabilize mapping sidebar rows`
 
 ### Verification commands
 
@@ -200,14 +202,14 @@ Only the five named files may appear in `git status --short` before commit.
     - Capture rectangles for `poly-sidebar-fade-in-curve-dropdown`, `poly-sidebar-fade-in-strength-row`, and `poly-sidebar-fade-in-strength-value`.
     - Call `cubit.updateWavEditDraft('/tmp/Piano/Piano_C3.wav', const PolyWaveformDraft(fadeInFrames: 882, fadeInCurve: WavFadeCurve.equalPower, fadeInStrength: 1.0));` and pump.
     - Capture and assert every rectangle is stable.
-18. Extend the existing semantics test after scrolling to waveform controls:
-    - `find.bySemanticsLabel('Audio gain value')` finds one widget.
-    - `find.bySemanticsLabel('Normalize peak value')` finds one widget.
-    - `find.bySemanticsLabel('Fade in length')` remains one widget.
-    - `find.bySemanticsLabel('Fade in strength')` remains one widget.
-    - `find.bySemanticsLabel('Fade in length value')` finds one widget.
-    - `find.bySemanticsLabel('Fade in strength value')` finds one widget.
-19. Keep all existing inspector tests green by updating finders from combined frame text to row/value keys where the rewritten layout removed combined text.
+18. Extend the existing semantics test named `labels preview and destructive edit controls for semantics` after the existing waveform-control expectations that follow the `await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -420));` block:
+    - `expect(find.bySemanticsLabel('Audio gain value'), findsOneWidget);`
+    - `expect(find.bySemanticsLabel('Normalize peak value'), findsOneWidget);`
+    - `expect(find.bySemanticsLabel('Fade in length'), findsOneWidget);`
+    - `expect(find.bySemanticsLabel('Fade in strength'), findsOneWidget);`
+    - `expect(find.bySemanticsLabel('Fade in length value'), findsOneWidget);`
+    - `expect(find.bySemanticsLabel('Fade in strength value'), findsOneWidget);`
+19. Keep all existing inspector tests green by replacing any removed combined frame text finder with the matching row/value key from `spec.md`; do not change expected cubit state values.
 
 ### Leftover checks
 
@@ -220,6 +222,10 @@ grep -n "\\$label: \\$value" lib/ui/poly_multisample/widgets/poly_sample_inspect
 ```
 
 Expected output: no matching lines from either grep command. Zero symbols are moved in this step.
+
+### Commit message
+
+`fix(poly-samples): stabilize waveform sidebar rows`
 
 ### Verification commands
 

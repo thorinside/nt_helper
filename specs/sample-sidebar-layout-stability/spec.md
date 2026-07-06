@@ -77,7 +77,7 @@ No compatibility re-export is needed because the helper file is new and has no e
 | `mappingLabelWidth` | `92.0` | Mapping row label column. |
 | `mappingValueWidth` | `64.0` | Mapping row value column. |
 | `frameLabelWidth` | `72.0` | Loop and trim frame row label column. |
-| `frameValueWidth` | `64.0` | Loop and trim frame value column. |
+| `frameValueWidth` | `60.0` | Loop and trim frame value column. This keeps frame rows within the 296 px content width: 72 label + 60 value + 4 gap + four 40 px buttons = 296. |
 | `sliderLabelWidth` | `92.0` | Preview, gain, peak, fade length, fade strength labels. |
 | `dbValueWidth` | `64.0` | dB value columns. |
 | `msValueWidth` | `64.0` | millisecond value columns. |
@@ -112,8 +112,8 @@ Build rules:
 2. Align the text using `alignment`.
 3. Use `maxLines: 1` and `overflow: TextOverflow.fade`.
 4. Apply `FontFeature.tabularFigures()` to the effective text style.
-5. Wrap with `Semantics(label: semanticLabel, value: value)` when `semanticLabel` is non-null.
-6. Preserve visual text semantics when `semanticLabel` is null.
+5. When `semanticLabel` is non-null, wrap the text with `Semantics(label: semanticLabel, value: value, child: ExcludeSemantics(child: textWidget))` so assistive technology receives the full fixed value exactly once.
+6. Preserve visual text semantics when `semanticLabel` is null by not adding `ExcludeSemantics` in that case.
 
 `PolySampleSidebarSliderValue` constructor:
 
@@ -204,28 +204,28 @@ Loop-enabled insertion and waveform-loading insertion are intentionally outside 
 `_StepRow` remains private in `poly_sample_inspector.dart` and gains a required `rowKeySuffix` string parameter. It builds:
 
 ```text
-SizedBox(height: rowHeight)
-  Semantics(container: true, label: label, value: value)
+SizedBox(key: ValueKey('poly-sidebar-mapping-$rowKeySuffix-row'), height: rowHeight)
+  Semantics(container: true, explicitChildNodes: true, label: label, value: value)
     Row
       SizedBox(width: mappingLabelWidth, child: Text(label, overflow ellipsis))
-      PolySampleSidebarValueText(width: mappingValueWidth, value: value, semanticLabel: '$label value')
+      PolySampleSidebarValueText(key: ValueKey('poly-sidebar-mapping-$rowKeySuffix-value'), width: mappingValueWidth, value: value, semanticLabel: '$label value')
       SizedBox(width: rowGap)
       Spacer()
-      PolySampleSidebarIconButton(decrease)
-      PolySampleSidebarIconButton(increase)
+      PolySampleSidebarIconButton(key: ValueKey('poly-sidebar-mapping-$rowKeySuffix-decrease'), tooltip: 'Decrease $label')
+      PolySampleSidebarIconButton(key: ValueKey('poly-sidebar-mapping-$rowKeySuffix-increase'), tooltip: 'Increase $label')
 ```
 
 `_FrameNudgeRow` remains private and gains a required `rowKeySuffix` string parameter. It builds:
 
 ```text
-SizedBox(height: rowHeight)
-  Semantics(container: true, label: label, value: '$value frames')
+SizedBox(key: ValueKey('poly-sidebar-frame-$rowKeySuffix-row'), height: rowHeight)
+  Semantics(container: true, explicitChildNodes: true, label: label, value: '$value frames')
     Row
       SizedBox(width: frameLabelWidth, child: Text(label, overflow ellipsis))
-      PolySampleSidebarValueText(width: frameValueWidth, value: '$value', semanticLabel: '$label frame value')
+      PolySampleSidebarValueText(key: ValueKey('poly-sidebar-frame-$rowKeySuffix-value'), width: frameValueWidth, value: '$value', semanticLabel: '$label frame value')
       SizedBox(width: rowGap)
       Spacer()
-      fixed buttons for -100, -1, +1, +100 in that order
+      PolySampleSidebarIconButton keys in order: poly-sidebar-frame-$rowKeySuffix-minus100, poly-sidebar-frame-$rowKeySuffix-minus1, poly-sidebar-frame-$rowKeySuffix-plus1, poly-sidebar-frame-$rowKeySuffix-plus100
 ```
 
 Button tooltips stay byte-for-byte equal to current tooltip strings for frame rows. Mapping button tooltips stay byte-for-byte equal to current tooltip strings.
