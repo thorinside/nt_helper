@@ -109,12 +109,11 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
       layout.right,
       layout.keyboardBottom,
     );
-    if (!keyboardRect.contains(position)) return null;
-    final span = math.max(1, maxMidi - minMidi + 1);
-    return (minMidi + ((position.dx - layout.left) / layout.width) * span)
-        .floor()
-        .clamp(minMidi, maxMidi)
-        .toInt();
+    return PolyKeyboardGeometry(
+      keyboardRect: keyboardRect,
+      minMidi: minMidi,
+      maxMidi: maxMidi,
+    ).hitTest(position);
   }
 
   List<Widget> _regionSemanticTargets(
@@ -179,16 +178,22 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     final onPreviewNote = widget.onPreviewNote;
     if (onPreviewNote == null) return const [];
     final layout = _PolyKeyMapLayout(canvasSize, velocityLanes(widget.regions));
-    final span = math.max(1, maxMidi - minMidi + 1);
+    final keyboardRect = Rect.fromLTRB(
+      layout.left,
+      layout.keyboardTop,
+      layout.right,
+      layout.keyboardBottom,
+    );
+    final geometry = PolyKeyboardGeometry(
+      keyboardRect: keyboardRect,
+      minMidi: minMidi,
+      maxMidi: maxMidi,
+    );
+    final keys = [...geometry.whiteKeys, ...geometry.blackKeys];
     return [
-      for (var midi = minMidi; midi <= maxMidi; midi++)
+      for (final key in keys)
         Positioned.fromRect(
-          rect: Rect.fromLTRB(
-            layout.left + ((midi - minMidi) / span) * layout.width,
-            layout.keyboardTop,
-            layout.left + ((midi + 1 - minMidi) / span) * layout.width,
-            layout.keyboardBottom,
-          ),
+          rect: key.rect,
           child: FocusableActionDetector(
             mouseCursor: SystemMouseCursors.click,
             shortcuts: const {
@@ -198,18 +203,19 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
             actions: {
               ActivateIntent: CallbackAction<ActivateIntent>(
                 onInvoke: (_) {
-                  onPreviewNote(midi);
+                  onPreviewNote(key.midi);
                   return null;
                 },
               ),
             },
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => onPreviewNote(midi),
+              onTap: () => onPreviewNote(key.midi),
               child: Semantics(
                 button: true,
-                label: 'Preview ${PolyMultisampleParser.midiToNoteName(midi)}',
-                onTap: () => onPreviewNote(midi),
+                label:
+                    'Preview ${PolyMultisampleParser.midiToNoteName(key.midi)}',
+                onTap: () => onPreviewNote(key.midi),
                 child: const SizedBox.expand(),
               ),
             ),
@@ -398,6 +404,206 @@ class _PolyKeyMapLayout {
   late final Rect zoneRect;
 }
 
+class PolyPianoKeyGeometry {
+  const PolyPianoKeyGeometry({
+    required this.midi,
+    required this.pitchClass,
+    required this.rect,
+    required this.isBlack,
+  });
+
+  final int midi;
+  final int pitchClass;
+  final Rect rect;
+  final bool isBlack;
+}
+
+class PolyPianoKeyBoundary {
+  const PolyPianoKeyBoundary({required this.start, required this.end});
+
+  final Offset start;
+  final Offset end;
+}
+
+class PolyKeyboardGeometry {
+  PolyKeyboardGeometry({
+    required this.keyboardRect,
+    required this.minMidi,
+    required this.maxMidi,
+    this.blackKeyWidthRatio = 0.62,
+    this.blackKeyHeightRatio = 0.62,
+  }) : assert(minMidi <= maxMidi),
+       assert(blackKeyWidthRatio > 0 && blackKeyWidthRatio < 1),
+       assert(blackKeyHeightRatio > 0 && blackKeyHeightRatio < 1);
+
+  static const List<int> naturalPitchClasses = [0, 2, 4, 5, 7, 9, 11];
+  static const Set<int> blackPitchClasses = {1, 3, 6, 8, 10};
+
+  final Rect keyboardRect;
+  final int minMidi;
+  final int maxMidi;
+  final double blackKeyWidthRatio;
+  final double blackKeyHeightRatio;
+
+  late final _KeyboardUnitSpan _unitSpan = _keyboardUnitSpan();
+
+  late final List<PolyPianoKeyGeometry> whiteKeys = [
+    for (var midi = minMidi; midi <= maxMidi; midi++)
+      if (!isBlackMidi(midi))
+        PolyPianoKeyGeometry(
+          midi: midi,
+          pitchClass: pitchClassForMidi(midi),
+          rect: _rectForUnitSpan(_noteUnitSpan(midi)),
+          isBlack: false,
+        ),
+  ];
+
+  late final List<PolyPianoKeyGeometry> blackKeys = [
+    for (var midi = minMidi; midi <= maxMidi; midi++)
+      if (isBlackMidi(midi))
+        PolyPianoKeyGeometry(
+          midi: midi,
+          pitchClass: pitchClassForMidi(midi),
+          rect: _blackRectForMidi(midi),
+          isBlack: true,
+        ),
+  ];
+
+  late final List<PolyPianoKeyBoundary> whiteBoundaries =
+      _buildWhiteBoundaries();
+
+  static int pitchClassForMidi(int midi) => midi.remainder(12);
+
+  static bool isBlackMidi(int midi) =>
+      blackPitchClasses.contains(pitchClassForMidi(midi));
+
+  int? hitTest(Offset position) {
+    if (!keyboardRect.contains(position)) return null;
+    for (final key in blackKeys.reversed) {
+      if (key.rect.contains(position)) return key.midi;
+    }
+    for (final key in whiteKeys) {
+      if (key.rect.contains(position)) return key.midi;
+    }
+    return null;
+  }
+
+  Rect _blackRectForMidi(int midi) {
+    final unitSpan = _noteUnitSpan(midi);
+    return _rectForUnitSpan(
+      unitSpan,
+      bottom: keyboardRect.top + keyboardRect.height * blackKeyHeightRatio,
+    );
+  }
+
+  List<PolyPianoKeyBoundary> _buildWhiteBoundaries() {
+    final boundaries = <PolyPianoKeyBoundary>[];
+    for (var i = 0; i < whiteKeys.length - 1; i++) {
+      final left = whiteKeys[i];
+      final right = whiteKeys[i + 1];
+      final expectedNextNatural = _nextNaturalMidi(left.midi);
+      if (right.midi != expectedNextNatural) continue;
+      final x = right.rect.left;
+      final blackBetween = _blackMidiBetween(left.midi, right.midi);
+      final startY = blackBetween == null
+          ? keyboardRect.top
+          : keyboardRect.top + keyboardRect.height * blackKeyHeightRatio;
+      boundaries.add(
+        PolyPianoKeyBoundary(
+          start: Offset(x, startY),
+          end: Offset(x, keyboardRect.bottom),
+        ),
+      );
+    }
+    return boundaries;
+  }
+
+  int? _blackMidiBetween(int leftWhiteMidi, int rightWhiteMidi) {
+    final candidate = leftWhiteMidi + 1;
+    if (candidate < rightWhiteMidi &&
+        candidate >= minMidi &&
+        candidate <= maxMidi &&
+        isBlackMidi(candidate)) {
+      return candidate;
+    }
+    return null;
+  }
+
+  Rect _rectForUnitSpan(_KeyboardUnitSpan unitSpan, {double? bottom}) {
+    final unitWidth = _unitSpan.end - _unitSpan.start;
+    final left =
+        keyboardRect.left +
+        ((unitSpan.start - _unitSpan.start) / unitWidth) * keyboardRect.width;
+    final right =
+        keyboardRect.left +
+        ((unitSpan.end - _unitSpan.start) / unitWidth) * keyboardRect.width;
+    return Rect.fromLTRB(
+      left.clamp(keyboardRect.left, keyboardRect.right).toDouble(),
+      keyboardRect.top,
+      right.clamp(keyboardRect.left, keyboardRect.right).toDouble(),
+      bottom ?? keyboardRect.bottom,
+    );
+  }
+
+  _KeyboardUnitSpan _keyboardUnitSpan() {
+    var start = double.infinity;
+    var end = double.negativeInfinity;
+    for (var midi = minMidi; midi <= maxMidi; midi++) {
+      final span = _noteUnitSpan(midi);
+      start = math.min(start, span.start);
+      end = math.max(end, span.end);
+    }
+    return _KeyboardUnitSpan(start, end);
+  }
+
+  _KeyboardUnitSpan _noteUnitSpan(int midi) {
+    if (!isBlackMidi(midi)) {
+      final index = _whiteIndexForNaturalMidi(midi);
+      return _KeyboardUnitSpan(index.toDouble(), index + 1.0);
+    }
+    final boundary = _previousWhiteIndexForBlackMidi(midi) + 1.0;
+    final halfWidth = blackKeyWidthRatio / 2;
+    return _KeyboardUnitSpan(boundary - halfWidth, boundary + halfWidth);
+  }
+
+  static int _whiteIndexForNaturalMidi(int midi) {
+    final octave = midi ~/ 12;
+    final pitchClass = pitchClassForMidi(midi);
+    final naturalIndex = naturalPitchClasses.indexOf(pitchClass);
+    assert(naturalIndex >= 0);
+    return octave * naturalPitchClasses.length + naturalIndex;
+  }
+
+  static int _previousWhiteIndexForBlackMidi(int midi) {
+    final octave = midi ~/ 12;
+    final pitchClass = pitchClassForMidi(midi);
+    final naturalIndex = switch (pitchClass) {
+      1 => 0,
+      3 => 1,
+      6 => 3,
+      8 => 4,
+      10 => 5,
+      _ => throw ArgumentError.value(midi, 'midi', 'Expected a black key'),
+    };
+    return octave * naturalPitchClasses.length + naturalIndex;
+  }
+
+  static int _nextNaturalMidi(int midi) {
+    var next = midi + 1;
+    while (isBlackMidi(next)) {
+      next++;
+    }
+    return next;
+  }
+}
+
+class _KeyboardUnitSpan {
+  const _KeyboardUnitSpan(this.start, this.end);
+
+  final double start;
+  final double end;
+}
+
 class _PolyKeyMapPainter extends CustomPainter {
   _PolyKeyMapPainter({
     required this.regions,
@@ -541,45 +747,54 @@ class _PolyKeyMapPainter extends CustomPainter {
       layout.right,
       layout.keyboardBottom,
     );
+    final keyboardGeometry = PolyKeyboardGeometry(
+      keyboardRect: keyboardRect,
+      minMidi: minMidi,
+      maxMidi: maxMidi,
+    );
+    final whiteFillPaint = Paint()..color = colorScheme.surface;
+    final keyStrokePaint = Paint()
+      ..color = colorScheme.outlineVariant
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+    final whiteBoundaryPaint = Paint()
+      ..color = colorScheme.outlineVariant
+      ..strokeWidth = 0.8;
     canvas.drawRect(
       keyboardRect,
       Paint()..color = colorScheme.surfaceContainerHighest,
     );
-    for (var midi = minMidi; midi <= maxMidi; midi++) {
-      final x0 = layout.left + ((midi - minMidi) / span) * layout.width;
-      final x1 = layout.left + ((midi + 1 - minMidi) / span) * layout.width;
-      final note = midi % 12;
-      final black =
-          note == 1 || note == 3 || note == 6 || note == 8 || note == 10;
-      if (black) {
-        canvas.drawRect(
-          Rect.fromLTRB(
-            x0 + (x1 - x0) * 0.18,
-            layout.keyboardTop,
-            x1 - (x1 - x0) * 0.18,
-            layout.keyboardTop +
-                (layout.keyboardBottom - layout.keyboardTop) * 0.62,
-          ),
-          Paint()..color = colorScheme.onSurface,
-        );
-      } else {
-        canvas.drawRect(
-          Rect.fromLTRB(x0, layout.keyboardTop, x1, layout.keyboardBottom),
-          Paint()
-            ..color = colorScheme.surface
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 0.8,
-        );
-      }
-      if (midi % 12 == 0) {
+    for (final key in keyboardGeometry.whiteKeys) {
+      canvas.drawRect(key.rect, whiteFillPaint);
+    }
+    canvas.drawRect(keyboardRect, keyStrokePaint);
+    for (final boundary in keyboardGeometry.whiteBoundaries) {
+      canvas.drawLine(boundary.start, boundary.end, whiteBoundaryPaint);
+    }
+    for (final key in keyboardGeometry.blackKeys) {
+      final radius = Radius.circular(math.min(2, key.rect.width * 0.15));
+      canvas.drawRRect(
+        RRect.fromRectAndCorners(
+          key.rect,
+          bottomLeft: radius,
+          bottomRight: radius,
+        ),
+        Paint()..color = colorScheme.onSurface,
+      );
+    }
+    for (final key in keyboardGeometry.whiteKeys) {
+      if (key.pitchClass == 0) {
         final octave = TextPainter(
           text: TextSpan(
-            text: PolyMultisampleParser.midiToNoteName(midi),
+            text: PolyMultisampleParser.midiToNoteName(key.midi),
             style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 10),
           ),
           textDirection: TextDirection.ltr,
         )..layout();
-        octave.paint(canvas, Offset(x0 + 3, layout.keyboardBottom - 15));
+        octave.paint(
+          canvas,
+          Offset(key.rect.left + 3, layout.keyboardBottom - 15),
+        );
       }
     }
   }

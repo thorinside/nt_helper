@@ -5,6 +5,112 @@ import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_key_map.dart';
 
 void main() {
+  test('piano geometry renders black keys only at standard pitch classes', () {
+    final geometry = PolyKeyboardGeometry(
+      keyboardRect: const Rect.fromLTWH(0, 0, 700, 100),
+      minMidi: 48,
+      maxMidi: 71,
+    );
+
+    expect(geometry.blackKeys.map((key) => key.pitchClass).toSet(), {
+      1,
+      3,
+      6,
+      8,
+      10,
+    });
+    expect(geometry.blackKeys, hasLength(10));
+    expect(
+      geometry.blackKeys.every(
+        (key) =>
+            PolyKeyboardGeometry.blackPitchClasses.contains(key.pitchClass),
+      ),
+      isTrue,
+    );
+  });
+
+  test('piano geometry leaves no black key between E-F or B-C', () {
+    final keyboardRect = const Rect.fromLTWH(0, 0, 700, 100);
+    final geometry = PolyKeyboardGeometry(
+      keyboardRect: keyboardRect,
+      minMidi: 48,
+      maxMidi: 71,
+    );
+
+    final e3 = geometry.whiteKeys.singleWhere((key) => key.midi == 52);
+    final f3 = geometry.whiteKeys.singleWhere((key) => key.midi == 53);
+    final b3 = geometry.whiteKeys.singleWhere((key) => key.midi == 59);
+    final c4 = geometry.whiteKeys.singleWhere((key) => key.midi == 60);
+    final blackKeyY = keyboardRect.top + keyboardRect.height * 0.31;
+
+    expect(e3.rect.right, closeTo(f3.rect.left, 0.001));
+    expect(b3.rect.right, closeTo(c4.rect.left, 0.001));
+    expect(
+      geometry.blackKeys.any(
+        (key) => key.rect.contains(Offset(f3.rect.left, blackKeyY)),
+      ),
+      isFalse,
+    );
+    expect(
+      geometry.blackKeys.any(
+        (key) => key.rect.contains(Offset(c4.rect.left, blackKeyY)),
+      ),
+      isFalse,
+    );
+  });
+
+  test('piano geometry lays out white keys in C-D-E-F-G-A-B order', () {
+    final geometry = PolyKeyboardGeometry(
+      keyboardRect: const Rect.fromLTWH(0, 0, 700, 100),
+      minMidi: 48,
+      maxMidi: 71,
+    );
+
+    expect(geometry.whiteKeys, hasLength(14));
+    expect(geometry.whiteKeys.map((key) => key.pitchClass), [
+      0,
+      2,
+      4,
+      5,
+      7,
+      9,
+      11,
+      0,
+      2,
+      4,
+      5,
+      7,
+      9,
+      11,
+    ]);
+    for (var i = 0; i < geometry.whiteKeys.length - 1; i++) {
+      expect(
+        geometry.whiteKeys[i].rect.right,
+        closeTo(geometry.whiteKeys[i + 1].rect.left, 0.001),
+      );
+    }
+  });
+
+  test('piano geometry hit testing prefers raised black key overlays', () {
+    final geometry = PolyKeyboardGeometry(
+      keyboardRect: const Rect.fromLTWH(0, 0, 700, 100),
+      minMidi: 48,
+      maxMidi: 71,
+    );
+
+    final c3 = geometry.whiteKeys.singleWhere((key) => key.midi == 48);
+    final cSharp3 = geometry.blackKeys.singleWhere((key) => key.midi == 49);
+
+    expect(geometry.hitTest(c3.rect.center), 48);
+    expect(geometry.hitTest(cSharp3.rect.center), 49);
+    expect(
+      geometry.hitTest(
+        Offset(cSharp3.rect.center.dx, cSharp3.rect.bottom + 10),
+      ),
+      50,
+    );
+  });
+
   testWidgets('exposes a keyboard map semantics label', (tester) async {
     final semantics = tester.ensureSemantics();
 
@@ -116,9 +222,13 @@ void main() {
     );
 
     final topLeft = tester.getTopLeft(find.byType(PolyKeyMap));
-    await tester.tapAt(
-      topLeft + const Offset(16 + ((60.5) / 128) * (800 - 32), 176),
+    final geometry = PolyKeyboardGeometry(
+      keyboardRect: const Rect.fromLTRB(16, 158, 784, 192),
+      minMidi: 0,
+      maxMidi: 127,
     );
+    final c4 = geometry.whiteKeys.singleWhere((key) => key.midi == 60);
+    await tester.tapAt(topLeft + c4.rect.center);
 
     expect(previewedNote, 60);
     expect(selected, isNull);
