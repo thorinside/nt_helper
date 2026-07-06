@@ -1518,6 +1518,10 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   }
 
   Future<void> playKeyboardNotePreview(int midi) async {
+    await startKeyboardNotePreview(midi);
+  }
+
+  Future<void> startKeyboardNotePreview(int midi) async {
     final clampedMidi = midi.clamp(0, 127).toInt();
     _loopEditPreviewRequest++;
     _loopEditPreviewDebounce?.cancel();
@@ -1560,10 +1564,16 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       final nextCursor =
           (_notePreviewRoundRobinCursor[match.roundRobinCursorKey] ?? 0) + 1;
       _notePreviewRoundRobinCursor[match.roundRobinCursorKey] = nextCursor;
+      final sourcePlayback = await _keyboardPreviewSourcePlayback(
+        match.region,
+        clampedMidi,
+      );
+      if (requestId != _notePreviewRequest || _isClosing) return;
       await _previewService.restartPreview(
         renderedPath,
         displayPath: match.region.path,
         playingMidiNote: clampedMidi,
+        sourcePlayback: sourcePlayback,
         gainDb: state.previewGainDb,
       );
     } on _StaleNotePreviewRequest {
@@ -1572,6 +1582,20 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       if (requestId == _notePreviewRequest && !_isClosing) {
         emit(state.copyWith(error: error.toString()));
       }
+    }
+  }
+
+  Future<void> stopKeyboardNotePreview() async {
+    _notePreviewRequest++;
+    _loopEditPreviewRequest++;
+    _loopEditPreviewDebounce?.cancel();
+    if (state.previewState.playingMidiNote == null) {
+      return;
+    }
+    try {
+      await _previewService.stop();
+    } catch (error) {
+      emit(state.copyWith(error: error.toString()));
     }
   }
 
@@ -1939,6 +1963,36 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         gainDb: edit.gainDb,
         normalizePeakDb: edit.normalizePeakDb,
       ),
+    );
+  }
+
+  Future<PolyAudioPreviewSourcePlayback?> _keyboardPreviewSourcePlayback(
+    PolySampleRegion region,
+    int midi,
+  ) async {
+    final overview =
+        state.waveformSummaries[region.path] ??
+        WavMetadataReader.parse(await File(region.path).readAsBytes());
+    if (overview == null || region.rootMidi == null) return null;
+    final maxFrame = math.max(0, overview.frameCount - 1);
+    final edit = state.wavEditDrafts[region.path];
+    final startFrame = (edit?.trimStart ?? 0).clamp(0, maxFrame).toInt();
+    final endFrame = (edit?.trimEnd ?? maxFrame)
+        .clamp(startFrame, maxFrame)
+        .toInt();
+    final loopDraft = state.loopDrafts[region.path];
+    final (loopStart, loopEnd) = loopDraft != null
+        ? (loopDraft.loopStart, loopDraft.loopEnd)
+        : (overview.loopStart, overview.loopEnd);
+    return PolyAudioPreviewSourcePlayback(
+      sourcePath: region.path,
+      startedAt: DateTime.now(),
+      startFrame: startFrame,
+      endFrame: endFrame,
+      sampleRate: overview.sampleRate,
+      pitchRatio: math.pow(2, (midi - region.rootMidi!) / 12).toDouble(),
+      loopStartFrame: loopStart,
+      loopEndFrame: loopEnd,
     );
   }
 

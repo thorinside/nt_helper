@@ -40,7 +40,7 @@ void main() {
 
     await _pumpEditor(tester, cubit);
 
-    await tester.tap(find.bySemanticsLabel('Preview C4'));
+    await tester.tap(find.bySemanticsLabel('Preview C4'), warnIfMissed: false);
     await tester.pump();
 
     expect(cubit.previewedNotes, [60]);
@@ -429,6 +429,11 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
 
   @override
   Future<void> playKeyboardNotePreview(int midi) async {
+    previewedNotes.add(midi);
+  }
+
+  @override
+  Future<void> startKeyboardNotePreview(int midi) async {
     previewedNotes.add(midi);
   }
 

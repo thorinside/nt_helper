@@ -72,6 +72,35 @@ void main() {
       expect(service.state.visiblePath, isNull);
       expect(adapter.stopCount, 1);
     });
+
+    test(
+      'source playback maps elapsed time to source frames and loop wrap',
+      () {
+        final playback = PolyAudioPreviewSourcePlayback(
+          sourcePath: '/tmp/source.wav',
+          startedAt: DateTime(2026),
+          startFrame: 100,
+          endFrame: 999,
+          sampleRate: 1000,
+          pitchRatio: 2,
+          loopStartFrame: 300,
+          loopEndFrame: 399,
+        );
+
+        expect(
+          playback.frameAt(
+            DateTime(2026).add(const Duration(milliseconds: 100)),
+          ),
+          300,
+        );
+        expect(
+          playback.frameAt(
+            DateTime(2026).add(const Duration(milliseconds: 200)),
+          ),
+          300,
+        );
+      },
+    );
   });
 }
 

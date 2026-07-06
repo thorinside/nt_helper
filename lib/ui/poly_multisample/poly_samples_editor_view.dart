@@ -254,6 +254,8 @@ class _EditorBody extends StatelessWidget {
             manager: manager,
           ),
           onPreviewNote: cubit.playKeyboardNotePreview,
+          onPreviewNoteStart: cubit.startKeyboardNotePreview,
+          onPreviewNoteEnd: cubit.stopKeyboardNotePreview,
         );
         final sampleList = PolySampleList(
           regions: state.editedRegions,
@@ -322,6 +324,8 @@ class _EditorBody extends StatelessWidget {
                 manager: manager,
               ),
               onPreviewNote: cubit.playKeyboardNotePreview,
+              onPreviewNoteStart: cubit.startKeyboardNotePreview,
+              onPreviewNoteEnd: cubit.stopKeyboardNotePreview,
             ),
             Expanded(flex: 3, child: sampleList),
             const Divider(height: 1),

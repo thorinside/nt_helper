@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
@@ -297,6 +298,11 @@ class _WaveformSection extends StatelessWidget {
     final overview = state.waveformSummaries[region.path];
     final loading = state.waveformLoadingPaths.contains(region.path);
     final failed = state.waveformFailedPaths.contains(region.path);
+    final playback =
+        p.normalize(state.previewState.sourcePlayback?.sourcePath ?? '') ==
+            p.normalize(region.path)
+        ? state.previewState.sourcePlayback
+        : null;
     if (overview == null) {
       if (!loading && !failed) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -315,6 +321,8 @@ class _WaveformSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text('Editing ${sampleDisplayLabel(region, state.editedRegions)}'),
+          const SizedBox(height: 8),
+          _WaveformLoadingPlaceholder(failed: failed, playback: playback),
           const SizedBox(height: 8),
           if (failed)
             Semantics(
@@ -378,6 +386,7 @@ class _WaveformSection extends StatelessWidget {
             endFrame: wavDraft.trimEnd ?? maxFrame,
             loopStartFrame: loopDraft.loopStart,
             loopEndFrame: loopDraft.loopEnd,
+            playback: playback,
             onChanged: (start, end) {
               cubit.updateWavEditDraft(
                 region.path,
@@ -858,6 +867,51 @@ class _StepRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WaveformLoadingPlaceholder extends StatelessWidget {
+  const _WaveformLoadingPlaceholder({
+    required this.failed,
+    required this.playback,
+  });
+
+  final bool failed;
+  final PolyAudioPreviewSourcePlayback? playback;
+
+  @override
+  Widget build(BuildContext context) {
+    final frameCount = math.max(1, (playback?.endFrame ?? 1) + 1);
+    final overview = WavOverview(
+      sampleRate: math.max(1, playback?.sampleRate ?? 44100),
+      frameCount: frameCount,
+      peaks: const [],
+      zeroCrossings: const [],
+    );
+    return IgnorePointer(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+            child: const SizedBox(height: 120, width: double.infinity),
+          ),
+          PolyWaveformEditor(
+            overview: overview,
+            mode: PolyWaveformEditorMode.trim,
+            startFrame: 0,
+            endFrame: frameCount - 1,
+            playback: playback,
+            onChanged: (_, _) {},
+          ),
+          failed
+              ? const Icon(Icons.error_outline)
+              : const Icon(Icons.hourglass_empty),
+        ],
       ),
     );
   }

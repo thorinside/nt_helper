@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 
 enum PolyWaveformEditorMode { loop, trim }
@@ -19,6 +20,7 @@ class PolyWaveformEditor extends StatefulWidget {
     this.loopStartFrame,
     this.loopEndFrame,
     this.onLoopChanged,
+    this.playback,
     this.height = 120,
   });
 
@@ -30,22 +32,57 @@ class PolyWaveformEditor extends StatefulWidget {
   final int? loopStartFrame;
   final int? loopEndFrame;
   final void Function(int loopStartFrame, int loopEndFrame)? onLoopChanged;
+  final PolyAudioPreviewSourcePlayback? playback;
   final double height;
 
   @override
   State<PolyWaveformEditor> createState() => _PolyWaveformEditorState();
 }
 
-class _PolyWaveformEditorState extends State<PolyWaveformEditor> {
+class _PolyWaveformEditorState extends State<PolyWaveformEditor>
+    with SingleTickerProviderStateMixin {
   _WaveformHandle? _activeHandle;
   var _showFocusHighlight = false;
   var _secondaryDragActive = false;
+  late final AnimationController _playheadTicker;
 
   int get _start => widget.startFrame ?? 0;
   int get _end =>
       widget.endFrame ?? math.max(0, widget.overview.frameCount - 1);
   int? get _loopStart => widget.loopStartFrame;
   int? get _loopEnd => widget.loopEndFrame;
+
+  @override
+  void initState() {
+    super.initState();
+    _playheadTicker = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _syncPlayheadTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant PolyWaveformEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncPlayheadTicker();
+  }
+
+  @override
+  void dispose() {
+    _playheadTicker.dispose();
+    super.dispose();
+  }
+
+  void _syncPlayheadTicker() {
+    if (widget.playback == null) {
+      _playheadTicker.stop();
+      return;
+    }
+    if (!_playheadTicker.isAnimating) {
+      _playheadTicker.repeat();
+    }
+  }
 
   bool get _loopModifierPressed {
     final keys = HardwareKeyboard.instance.logicalKeysPressed;
@@ -217,6 +254,7 @@ class _PolyWaveformEditorState extends State<PolyWaveformEditor> {
   Widget build(BuildContext context) {
     final loopStart = _loopStart;
     final loopEnd = _loopEnd;
+    final playbackFrame = widget.playback?.frameAt(DateTime.now());
     final semanticsValue = [
       'Start $_start frames',
       'end $_end frames',
@@ -224,6 +262,7 @@ class _PolyWaveformEditorState extends State<PolyWaveformEditor> {
         'loop start $loopStart frames',
         'loop end $loopEnd frames',
       ],
+      if (playbackFrame != null) 'playback head $playbackFrame frames',
     ].join(', ');
     final customActions = <CustomSemanticsAction, VoidCallback>{
       const CustomSemanticsAction(label: 'Move start earlier'): () =>
@@ -388,16 +427,25 @@ class _PolyWaveformEditorState extends State<PolyWaveformEditor> {
                           width: 2,
                         ),
                       ),
-                      child: CustomPaint(
-                        painter: _PolyWaveformPainter(
-                          overview: widget.overview,
-                          mode: widget.mode,
-                          startFrame: _start,
-                          endFrame: _end,
-                          loopStartFrame: _loopStart,
-                          loopEndFrame: _loopEnd,
-                          colorScheme: Theme.of(context).colorScheme,
-                        ),
+                      child: AnimatedBuilder(
+                        animation: _playheadTicker,
+                        builder: (context, child) {
+                          return CustomPaint(
+                            painter: _PolyWaveformPainter(
+                              overview: widget.overview,
+                              mode: widget.mode,
+                              startFrame: _start,
+                              endFrame: _end,
+                              loopStartFrame: _loopStart,
+                              loopEndFrame: _loopEnd,
+                              playbackHeadFrame: widget.playback?.frameAt(
+                                DateTime.now(),
+                              ),
+                              colorScheme: Theme.of(context).colorScheme,
+                            ),
+                            child: child,
+                          );
+                        },
                         child: const SizedBox.expand(),
                       ),
                     ),
@@ -454,6 +502,7 @@ class _PolyWaveformPainter extends CustomPainter {
     required this.endFrame,
     required this.loopStartFrame,
     required this.loopEndFrame,
+    required this.playbackHeadFrame,
     required this.colorScheme,
   });
 
@@ -463,6 +512,7 @@ class _PolyWaveformPainter extends CustomPainter {
   final int endFrame;
   final int? loopStartFrame;
   final int? loopEndFrame;
+  final int? playbackHeadFrame;
   final ColorScheme colorScheme;
 
   @override
@@ -531,6 +581,20 @@ class _PolyWaveformPainter extends CustomPainter {
       handlePaint,
     );
     canvas.drawLine(Offset(endX, 0), Offset(endX, size.height), handlePaint);
+
+    final playbackHead = playbackHeadFrame;
+    if (playbackHead != null) {
+      final playbackX =
+          (playbackHead.clamp(0, overview.frameCount) / maxFrame) * size.width;
+      final playbackPaint = Paint()
+        ..color = colorScheme.secondary
+        ..strokeWidth = 2;
+      canvas.drawLine(
+        Offset(playbackX, 0),
+        Offset(playbackX, size.height),
+        playbackPaint,
+      );
+    }
   }
 
   @override
@@ -541,6 +605,7 @@ class _PolyWaveformPainter extends CustomPainter {
         oldDelegate.endFrame != endFrame ||
         oldDelegate.loopStartFrame != loopStartFrame ||
         oldDelegate.loopEndFrame != loopEndFrame ||
+        oldDelegate.playbackHeadFrame != playbackHeadFrame ||
         oldDelegate.colorScheme != colorScheme;
   }
 }

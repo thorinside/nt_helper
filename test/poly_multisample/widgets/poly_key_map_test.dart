@@ -234,6 +234,56 @@ void main() {
     expect(selected, isNull);
   });
 
+  testWidgets('keyboard note preview starts on pointer down and stops on up', (
+    tester,
+  ) async {
+    final startedNotes = <int>[];
+    var stopCount = 0;
+    const region = PolySampleRegion(
+      path: '/tmp/c3.wav',
+      fileName: 'c3.wav',
+      displayName: 'c3.wav',
+      rootMidi: 60,
+      rangeLow: 0,
+      rangeHigh: 127,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 800,
+            height: 200,
+            child: PolyKeyMap(
+              height: 200,
+              regions: const [region],
+              selectedPath: null,
+              onSelect: (_) {},
+              onPreviewNoteStart: startedNotes.add,
+              onPreviewNoteEnd: () => stopCount++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final topLeft = tester.getTopLeft(find.byType(PolyKeyMap));
+    final geometry = PolyKeyboardGeometry(
+      keyboardRect: const Rect.fromLTRB(16, 158, 784, 192),
+      minMidi: 0,
+      maxMidi: 127,
+    );
+    final c4 = geometry.whiteKeys.singleWhere((key) => key.midi == 60);
+    final gesture = await tester.startGesture(topLeft + c4.rect.center);
+
+    expect(startedNotes, [60]);
+    expect(stopCount, 0);
+
+    await gesture.up();
+
+    expect(stopCount, 1);
+  });
+
   testWidgets('tap on mapped zone still selects without previewing', (
     tester,
   ) async {

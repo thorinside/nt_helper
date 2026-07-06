@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_waveform_editor.dart';
 
@@ -97,6 +98,39 @@ void main() {
       'Start 0 frames, end 999 frames, loop start 250 frames, loop end 750 frames',
     );
     expect(data.customSemanticsActionIds, hasLength(greaterThanOrEqualTo(8)));
+    semantics.dispose();
+  });
+
+  testWidgets('waveform semantics include active playback head', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PolyWaveformEditor(
+            overview: _overview(),
+            mode: PolyWaveformEditorMode.trim,
+            startFrame: 0,
+            endFrame: 999,
+            playback: PolyAudioPreviewSourcePlayback(
+              sourcePath: '/tmp/Piano_C4.wav',
+              startedAt: DateTime.now(),
+              startFrame: 0,
+              endFrame: 999,
+              sampleRate: 1000,
+            ),
+            onChanged: (_, _) {},
+          ),
+        ),
+      ),
+    );
+
+    final data = tester
+        .getSemantics(find.bySemanticsLabel('Waveform editor'))
+        .getSemanticsData();
+    expect(data.value, contains('playback head'));
     semantics.dispose();
   });
 

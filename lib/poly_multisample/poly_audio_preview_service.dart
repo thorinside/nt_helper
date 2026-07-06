@@ -40,17 +40,64 @@ class PolyAudioPreviewState {
     this.playingPath,
     this.displayPath,
     this.playingMidiNote,
+    this.sourcePlayback,
     this.gainDb = 0,
   });
 
   final String? playingPath;
   final String? displayPath;
   final int? playingMidiNote;
+  final PolyAudioPreviewSourcePlayback? sourcePlayback;
   final double gainDb;
 
   bool get isPlaying => playingPath != null;
 
   String? get visiblePath => displayPath ?? playingPath;
+}
+
+class PolyAudioPreviewSourcePlayback {
+  const PolyAudioPreviewSourcePlayback({
+    required this.sourcePath,
+    required this.startedAt,
+    required this.startFrame,
+    required this.endFrame,
+    required this.sampleRate,
+    this.pitchRatio = 1,
+    this.loopStartFrame,
+    this.loopEndFrame,
+  });
+
+  final String sourcePath;
+  final DateTime startedAt;
+  final int startFrame;
+  final int endFrame;
+  final int sampleRate;
+  final double pitchRatio;
+  final int? loopStartFrame;
+  final int? loopEndFrame;
+
+  int frameAt(DateTime now) {
+    final boundedStart = math.max(0, startFrame);
+    final boundedEnd = math.max(boundedStart, endFrame);
+    if (sampleRate <= 0) return boundedStart;
+    final elapsedSeconds =
+        now.difference(startedAt).inMicroseconds /
+        Duration.microsecondsPerSecond;
+    final sourceFrames =
+        elapsedSeconds * sampleRate * (pitchRatio.isFinite ? pitchRatio : 1);
+    var frame = boundedStart + sourceFrames.floor();
+    final loopStart = loopStartFrame;
+    final loopEnd = loopEndFrame;
+    if (loopStart != null &&
+        loopEnd != null &&
+        loopEnd > loopStart &&
+        boundedStart <= loopEnd &&
+        frame > loopEnd) {
+      final loopLength = loopEnd - loopStart + 1;
+      frame = loopStart + ((frame - loopStart) % loopLength);
+    }
+    return frame.clamp(boundedStart, boundedEnd).toInt();
+  }
 }
 
 class PolyAudioPreviewService {
@@ -80,6 +127,7 @@ class PolyAudioPreviewService {
     double gainDb = 0,
     String? displayPath,
     int? playingMidiNote,
+    PolyAudioPreviewSourcePlayback? sourcePlayback,
   }) async {
     final adapter = _ensureAdapter();
     final visiblePath = displayPath ?? path;
@@ -97,6 +145,7 @@ class PolyAudioPreviewService {
         playingPath: path,
         displayPath: displayPath,
         playingMidiNote: playingMidiNote,
+        sourcePlayback: sourcePlayback,
         gainDb: gainDb,
       ),
     );
@@ -107,6 +156,7 @@ class PolyAudioPreviewService {
     double gainDb = 0,
     String? displayPath,
     int? playingMidiNote,
+    PolyAudioPreviewSourcePlayback? sourcePlayback,
   }) async {
     final adapter = _ensureAdapter();
     if (state.isPlaying) {
@@ -119,6 +169,7 @@ class PolyAudioPreviewService {
         playingPath: path,
         displayPath: displayPath,
         playingMidiNote: playingMidiNote,
+        sourcePlayback: sourcePlayback,
         gainDb: gainDb,
       ),
     );

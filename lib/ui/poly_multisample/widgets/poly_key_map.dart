@@ -15,6 +15,8 @@ class PolyKeyMap extends StatefulWidget {
     required this.onSelect,
     this.height = 180,
     this.onPreviewNote,
+    this.onPreviewNoteStart,
+    this.onPreviewNoteEnd,
     this.playedMidiNote,
   });
 
@@ -23,6 +25,8 @@ class PolyKeyMap extends StatefulWidget {
   final ValueChanged<PolySampleRegion> onSelect;
   final double height;
   final ValueChanged<int>? onPreviewNote;
+  final ValueChanged<int>? onPreviewNoteStart;
+  final VoidCallback? onPreviewNoteEnd;
   final int? playedMidiNote;
 
   @override
@@ -177,8 +181,9 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
   }
 
   List<Widget> _noteSemanticTargets(Size canvasSize, int minMidi, int maxMidi) {
-    final onPreviewNote = widget.onPreviewNote;
-    if (onPreviewNote == null) return const [];
+    final onPreviewNoteStart =
+        widget.onPreviewNoteStart ?? widget.onPreviewNote;
+    if (onPreviewNoteStart == null) return const [];
     final layout = _PolyKeyMapLayout(canvasSize, velocityLanes(widget.regions));
     final keyboardRect = Rect.fromLTRB(
       layout.left,
@@ -205,19 +210,21 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
             actions: {
               ActivateIntent: CallbackAction<ActivateIntent>(
                 onInvoke: (_) {
-                  onPreviewNote(key.midi);
+                  onPreviewNoteStart(key.midi);
                   return null;
                 },
               ),
             },
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => onPreviewNote(key.midi),
+              onTapDown: (_) => onPreviewNoteStart(key.midi),
+              onTapUp: (_) => widget.onPreviewNoteEnd?.call(),
+              onTapCancel: () => widget.onPreviewNoteEnd?.call(),
               child: Semantics(
                 button: true,
                 label:
                     'Preview ${PolyMultisampleParser.midiToNoteName(key.midi)}',
-                onTap: () => onPreviewNote(key.midi),
+                onTap: () => onPreviewNoteStart(key.midi),
                 child: const SizedBox.expand(),
               ),
             ),
@@ -261,6 +268,19 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
                       Positioned.fill(
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
+                          onTapDown: (details) {
+                            final midi = _midiAtKeyboardPosition(
+                              details.localPosition,
+                              canvasSize,
+                              minMidi,
+                              maxMidi,
+                            );
+                            if (midi == null) return;
+                            final onPreviewNoteStart =
+                                widget.onPreviewNoteStart ??
+                                widget.onPreviewNote;
+                            onPreviewNoteStart?.call(midi);
+                          },
                           onTapUp: (details) {
                             final region = _regionAtPosition(
                               details.localPosition,
@@ -280,10 +300,11 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
                               maxMidi,
                             );
                             if (midi != null) {
-                              widget.onPreviewNote?.call(midi);
+                              widget.onPreviewNoteEnd?.call();
                               return;
                             }
                           },
+                          onTapCancel: () => widget.onPreviewNoteEnd?.call(),
                           child: CustomPaint(
                             painter: _PolyKeyMapPainter(
                               regions: widget.regions,
