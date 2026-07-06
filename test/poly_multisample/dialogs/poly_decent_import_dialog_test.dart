@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -241,9 +242,10 @@ void main() {
   });
 
   testWidgets('cancel stops an active Decent preview', (tester) async {
+    final fixture = _previewFixture();
     final cubit = _TestPolyDecentImportCubit()
       ..setTestState(
-        _readyState().copyWith(
+        fixture.state.copyWith(
           groupHandling: DecentSamplerGroupHandling.velocityLayers,
         ),
       );
@@ -259,7 +261,7 @@ void main() {
     await tester.pumpAndSettle();
     await _startSoftPreview(tester);
 
-    expect(adapter.playedPaths, ['soft_c4.wav']);
+    expect(adapter.playedPaths, [fixture.softPreviewPath]);
 
     await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
     await tester.pumpAndSettle();
@@ -268,10 +270,48 @@ void main() {
     expect(find.text('Import Decent Sampler'), findsNothing);
   });
 
-  testWidgets('route dismissal stops an active Decent preview', (tester) async {
+  testWidgets('archive source disables Decent preview buttons', (tester) async {
+    final semantics = tester.ensureSemantics();
     final cubit = _TestPolyDecentImportCubit()
       ..setTestState(
-        _readyState().copyWith(
+        _readyState(
+          sourcePath: '/tmp/Layered.dslibrary',
+        ).copyWith(groupHandling: DecentSamplerGroupHandling.velocityLayers),
+      );
+    addTearDown(cubit.close);
+    final previewCubit = PolyMultisampleBuilderCubit(
+      previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+    );
+    addTearDown(previewCubit.close);
+
+    await _pumpDialogButton(tester, cubit, previewCubit: previewCubit);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    final disabledPreview = find.byWidgetPredicate(
+      (widget) =>
+          widget is IconButton && widget.tooltip == 'Preview unavailable: Soft',
+    );
+    expect(disabledPreview, findsOneWidget);
+    expect(tester.widget<IconButton>(disabledPreview).onPressed, isNull);
+    expect(find.byTooltip('Preview sample: Soft'), findsNothing);
+    expect(find.bySemanticsLabel('Preview unavailable: Soft'), findsOneWidget);
+    expect(
+      tester
+          .getSemantics(find.bySemanticsLabel('Preview unavailable: Soft'))
+          .getSemanticsData()
+          .hasAction(SemanticsAction.tap),
+      isFalse,
+    );
+
+    semantics.dispose();
+  });
+
+  testWidgets('route dismissal stops an active Decent preview', (tester) async {
+    final fixture = _previewFixture();
+    final cubit = _TestPolyDecentImportCubit()
+      ..setTestState(
+        fixture.state.copyWith(
           groupHandling: DecentSamplerGroupHandling.velocityLayers,
         ),
       );
@@ -295,9 +335,10 @@ void main() {
   });
 
   testWidgets('failed import stops an active Decent preview', (tester) async {
+    final fixture = _previewFixture();
     final cubit = _FailingPolyDecentImportCubit()
       ..setTestState(
-        _readyState().copyWith(
+        fixture.state.copyWith(
           groupHandling: DecentSamplerGroupHandling.velocityLayers,
         ),
       );
@@ -321,11 +362,41 @@ void main() {
   });
 }
 
+_PreviewFixture _previewFixture() {
+  final tempDir = Directory.systemTemp.createTempSync(
+    'poly_decent_import_preview_test_',
+  );
+  addTearDown(() {
+    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+  });
+  final samplesDir = Directory('${tempDir.path}/Samples')..createSync();
+  final softSample = File('${samplesDir.path}/soft_c4.wav')
+    ..writeAsBytesSync(const []);
+  File('${samplesDir.path}/hard_e4.wav').writeAsBytesSync(const []);
+  final preset = File('${tempDir.path}/Layered.dspreset')
+    ..writeAsStringSync('<DecentSampler/>');
+  return _PreviewFixture(
+    state: _readyState(
+      sourcePath: preset.path,
+      softPreviewPath: 'Samples/soft_c4.wav',
+      hardPreviewPath: 'Samples/hard_e4.wav',
+    ),
+    softPreviewPath: softSample.absolute.path,
+  );
+}
+
+class _PreviewFixture {
+  const _PreviewFixture({required this.state, required this.softPreviewPath});
+
+  final PolyDecentImportState state;
+  final String softPreviewPath;
+}
+
 Future<void> _startSoftPreview(WidgetTester tester) async {
   await tester.ensureVisible(find.byTooltip('Preview sample: Soft'));
-  await tester.pumpAndSettle();
+  await tester.pump();
   await tester.tap(find.byTooltip('Preview sample: Soft'));
-  await tester.pumpAndSettle();
+  await tester.pump();
 }
 
 Future<void> _pumpDialogButton(
@@ -356,11 +427,18 @@ Future<void> _pumpDialogButton(
   );
 }
 
-PolyDecentImportState _readyState() {
+PolyDecentImportState _readyState({
+  String sourcePath = '/tmp/Layered.dspreset',
+  String softPreviewPath = 'soft_c4.wav',
+  String hardPreviewPath = 'hard_e4.wav',
+}) {
   return PolyDecentImportState(
     status: PolyDecentImportStatus.ready,
-    sourcePath: '/tmp/Layered.dspreset',
-    analysis: _analysis(),
+    sourcePath: sourcePath,
+    analysis: _analysis(
+      softPreviewPath: softPreviewPath,
+      hardPreviewPath: hardPreviewPath,
+    ),
     groupHandling: DecentSamplerGroupHandling.auto,
     manualGroupRanges: const {
       'group:soft': DecentSamplerTagKeyRange(
@@ -390,8 +468,11 @@ PolyDecentImportState _readyState() {
   );
 }
 
-DecentSamplerImportAnalysis _analysis() {
-  return const DecentSamplerImportAnalysis(
+DecentSamplerImportAnalysis _analysis({
+  String softPreviewPath = 'soft_c4.wav',
+  String hardPreviewPath = 'hard_e4.wav',
+}) {
+  return DecentSamplerImportAnalysis(
     presetName: 'Layered',
     presets: [
       DecentSamplerPresetInfo(
@@ -423,7 +504,7 @@ DecentSamplerImportAnalysis _analysis() {
         defaultRootMidi: 60,
         defaultHighMidi: 61,
         defaultVelocityLayer: 1,
-        previewSourcePath: 'soft_c4.wav',
+        previewSourcePath: softPreviewPath,
       ),
       DecentSamplerGroupInfo(
         key: 'group:hard',
@@ -440,7 +521,7 @@ DecentSamplerImportAnalysis _analysis() {
         defaultRootMidi: 62,
         defaultHighMidi: 63,
         defaultVelocityLayer: 1,
-        previewSourcePath: 'hard_e4.wav',
+        previewSourcePath: hardPreviewPath,
       ),
     ],
     tags: [
@@ -459,7 +540,7 @@ DecentSamplerImportAnalysis _analysis() {
         defaultRootMidi: 60,
         defaultHighMidi: 61,
         defaultVelocityLayer: 1,
-        previewSourcePath: 'soft_c4.wav',
+        previewSourcePath: softPreviewPath,
       ),
       DecentSamplerTag(
         key: 'tag:hard',
@@ -476,7 +557,7 @@ DecentSamplerImportAnalysis _analysis() {
         defaultRootMidi: 62,
         defaultHighMidi: 63,
         defaultVelocityLayer: 1,
-        previewSourcePath: 'hard_e4.wav',
+        previewSourcePath: hardPreviewPath,
       ),
     ],
     hasAmbiguousOverlaps: false,

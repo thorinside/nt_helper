@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_decent_import_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
+import 'package:path/path.dart' as p;
 
 Future<PolyStagedImport?> showPolyDecentImportDialog(
   BuildContext context, {
@@ -223,6 +225,7 @@ class _DialogBody extends StatelessWidget {
                 analysis: analysis,
                 cubit: cubit,
                 previewCubit: previewCubit,
+                sourcePath: state.sourcePath,
                 enabled: optionsEnabled,
               ),
               SwitchListTile(
@@ -262,6 +265,7 @@ class _ModeEditor extends StatelessWidget {
     required this.analysis,
     required this.cubit,
     required this.previewCubit,
+    required this.sourcePath,
     required this.enabled,
   });
 
@@ -269,6 +273,7 @@ class _ModeEditor extends StatelessWidget {
   final DecentSamplerImportAnalysis analysis;
   final PolyDecentImportCubit cubit;
   final PolyMultisampleBuilderCubit? previewCubit;
+  final String? sourcePath;
   final bool enabled;
 
   @override
@@ -280,6 +285,7 @@ class _ModeEditor extends StatelessWidget {
             _GroupRow(
               group: group,
               previewCubit: previewCubit,
+              sourcePath: sourcePath,
               trailing: _IntStepper(
                 label: 'Velocity',
                 value:
@@ -299,6 +305,7 @@ class _ModeEditor extends StatelessWidget {
               state: state,
               cubit: cubit,
               previewCubit: previewCubit,
+              sourcePath: sourcePath,
               enabled: enabled,
             ),
         ],
@@ -331,6 +338,7 @@ class _ModeEditor extends StatelessWidget {
               state: state,
               cubit: cubit,
               previewCubit: previewCubit,
+              sourcePath: sourcePath,
               enabled: enabled,
             ),
         ],
@@ -343,6 +351,7 @@ class _ModeEditor extends StatelessWidget {
               state: state,
               cubit: cubit,
               previewCubit: previewCubit,
+              sourcePath: sourcePath,
               enabled: enabled,
             ),
         ],
@@ -360,11 +369,13 @@ class _GroupRow extends StatelessWidget {
   const _GroupRow({
     required this.group,
     required this.previewCubit,
+    required this.sourcePath,
     required this.trailing,
   });
 
   final DecentSamplerGroupInfo group;
   final PolyMultisampleBuilderCubit? previewCubit;
+  final String? sourcePath;
   final Widget trailing;
 
   @override
@@ -376,6 +387,7 @@ class _GroupRow extends StatelessWidget {
           path: group.previewSourcePath,
           label: group.name,
           previewCubit: previewCubit,
+          sourcePath: sourcePath,
         ),
         trailing,
       ],
@@ -389,6 +401,7 @@ class _GroupRangeRow extends StatelessWidget {
     required this.state,
     required this.cubit,
     required this.previewCubit,
+    required this.sourcePath,
     required this.enabled,
   });
 
@@ -396,6 +409,7 @@ class _GroupRangeRow extends StatelessWidget {
   final PolyDecentImportState state;
   final PolyDecentImportCubit cubit;
   final PolyMultisampleBuilderCubit? previewCubit;
+  final String? sourcePath;
   final bool enabled;
 
   @override
@@ -430,6 +444,7 @@ class _GroupRangeRow extends StatelessWidget {
               path: group.previewSourcePath,
               label: group.name,
               previewCubit: previewCubit,
+              sourcePath: sourcePath,
             ),
           ],
         ),
@@ -482,6 +497,7 @@ class _TagRow extends StatelessWidget {
     required this.state,
     required this.cubit,
     required this.previewCubit,
+    required this.sourcePath,
     required this.enabled,
   });
 
@@ -489,6 +505,7 @@ class _TagRow extends StatelessWidget {
   final PolyDecentImportState state;
   final PolyDecentImportCubit cubit;
   final PolyMultisampleBuilderCubit? previewCubit;
+  final String? sourcePath;
   final bool enabled;
 
   @override
@@ -546,6 +563,7 @@ class _TagRow extends StatelessWidget {
               path: tag.previewSourcePath,
               label: tag.label,
               previewCubit: previewCubit,
+              sourcePath: sourcePath,
             ),
           ],
         ),
@@ -611,17 +629,22 @@ class _PreviewButton extends StatelessWidget {
     required this.path,
     required this.label,
     required this.previewCubit,
+    required this.sourcePath,
   });
 
   final String? path;
   final String label;
   final PolyMultisampleBuilderCubit? previewCubit;
+  final String? sourcePath;
 
   @override
   Widget build(BuildContext context) {
     final cubit = previewCubit;
-    final samplePath = path;
-    if (cubit == null || samplePath == null) return const SizedBox.shrink();
+    final previewPath = _resolvedLocalPreviewPath(
+      sourcePath: sourcePath,
+      samplePath: path,
+    );
+    if (cubit == null || path == null) return const SizedBox.shrink();
     return BlocBuilder<
       PolyMultisampleBuilderCubit,
       PolyMultisampleBuilderState
@@ -632,12 +655,30 @@ class _PreviewButton extends StatelessWidget {
             current.previewState.visiblePath;
       },
       builder: (context, state) {
-        final playing = state.previewState.visiblePath == samplePath;
+        final canPreview = previewPath != null;
+        final playing =
+            canPreview && state.previewState.visiblePath == previewPath;
         final action = playing ? 'Stop preview' : 'Preview sample';
-        return IconButton(
-          tooltip: '$action: $label',
+        final tooltip = canPreview
+            ? '$action: $label'
+            : 'Preview unavailable: $label';
+        final button = IconButton(
+          tooltip: tooltip,
           icon: Icon(playing ? Icons.stop : Icons.play_arrow),
-          onPressed: () => cubit.playOrStopPreview(samplePath),
+          onPressed: canPreview
+              ? () => cubit.playOrStopPreview(previewPath)
+              : null,
+        );
+        return SizedBox.square(
+          dimension: 48,
+          child: canPreview
+              ? button
+              : Semantics(
+                  label: tooltip,
+                  button: true,
+                  enabled: false,
+                  child: ExcludeSemantics(child: button),
+                ),
         );
       },
     );
@@ -718,6 +759,41 @@ class _IntStepper extends StatelessWidget {
       ],
     );
   }
+}
+
+String? _resolvedLocalPreviewPath({
+  required String? sourcePath,
+  required String? samplePath,
+}) {
+  final rawSamplePath = samplePath?.trim();
+  if (rawSamplePath == null || rawSamplePath.isEmpty) return null;
+  if (!rawSamplePath.toLowerCase().endsWith('.wav')) return null;
+
+  final normalizedSamplePath = rawSamplePath.replaceAll('\\', p.separator);
+  final candidates = <String>[];
+  if (p.isAbsolute(normalizedSamplePath)) {
+    candidates.add(normalizedSamplePath);
+  }
+
+  final rawSourcePath = sourcePath?.trim();
+  if (rawSourcePath != null && rawSourcePath.isNotEmpty) {
+    final sourceDirectory = Directory(rawSourcePath);
+    if (sourceDirectory.existsSync()) {
+      candidates.add(p.join(sourceDirectory.path, normalizedSamplePath));
+    } else {
+      final sourceFile = File(rawSourcePath);
+      if (sourceFile.existsSync() &&
+          p.extension(sourceFile.path).toLowerCase() == '.dspreset') {
+        candidates.add(p.join(sourceFile.parent.path, normalizedSamplePath));
+      }
+    }
+  }
+
+  for (final candidate in candidates) {
+    final file = File(candidate);
+    if (file.existsSync()) return file.absolute.path;
+  }
+  return null;
 }
 
 String _handlingLabel(DecentSamplerGroupHandling handling) {
