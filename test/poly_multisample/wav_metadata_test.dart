@@ -80,6 +80,65 @@ void main() {
       expect(overview.frameCount, 8);
     });
 
+    test('renderPitchedPreview doubles pitch by halving frame count', () {
+      final bytes = _pcm16Wav(
+        samples: [-32768, -12000, 0, 12000, 32767, 12000, 0, -12000],
+      );
+
+      final rendered = WavAudioRenderer.renderPitchedPreview(
+        bytes,
+        pitchRatio: 2,
+      );
+      final overview = WavMetadataReader.parse(rendered);
+
+      expect(overview, isNotNull);
+      expect(overview!.frameCount, 4);
+      expect(overview.sampleRate, 44100);
+      expect(overview.loopStart, isNull);
+      expect(_pcm16Samples(rendered), hasLength(4));
+    });
+
+    test('renderPitchedPreview lowers pitch by extending frame count', () {
+      final bytes = _pcm16Wav(
+        samples: [-32768, -12000, 0, 12000, 32767, 12000, 0, -12000],
+      );
+
+      final rendered = WavAudioRenderer.renderPitchedPreview(
+        bytes,
+        pitchRatio: 0.5,
+      );
+      final overview = WavMetadataReader.parse(rendered);
+
+      expect(overview, isNotNull);
+      expect(overview!.frameCount, 16);
+      expect(_pcm16Samples(rendered), hasLength(16));
+    });
+
+    test('renderPitchedPreview falls back to unity for invalid ratios', () {
+      final bytes = _pcm16Wav(
+        samples: [-32768, -12000, 0, 12000, 32767, 12000, 0, -12000],
+      );
+
+      final rendered = WavAudioRenderer.renderPitchedPreview(
+        bytes,
+        pitchRatio: double.nan,
+      );
+      final overview = WavMetadataReader.parse(rendered);
+
+      expect(overview, isNotNull);
+      expect(overview!.frameCount, 8);
+    });
+
+    test('renderPitchedPreview rejects invalid wav bytes', () {
+      expect(
+        () => WavAudioRenderer.renderPitchedPreview(
+          Uint8List.fromList([1, 2, 3]),
+          pitchRatio: 1,
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('renders trim and adjusts existing loop metadata', () {
       final bytes = _pcm16WavWithLoop(
         samples: [-10000, -8000, -6000, -4000, -2000, 0, 2000, 4000],

@@ -311,6 +311,91 @@ class WavMetadataReader {
 }
 
 class WavAudioRenderer {
+  static Uint8List renderPitchedPreview(
+    Uint8List bytes, {
+    required double pitchRatio,
+  }) {
+    if (bytes.length < 44) {
+      throw const FormatException('WAV file is too small.');
+    }
+    if (WavMetadataReader._tag(bytes, 0) != 'RIFF' ||
+        WavMetadataReader._tag(bytes, 8) != 'WAVE') {
+      throw const FormatException('Not a RIFF/WAVE file.');
+    }
+
+    final data = ByteData.sublistView(bytes);
+    final chunks = _readChunks(bytes, data);
+    _FmtChunk? fmt;
+    _DataChunk? audio;
+    for (final chunk in chunks) {
+      if (chunk.id == 'fmt ') {
+        fmt = WavMetadataReader._readFmt(data, chunk.start, chunk.size);
+      } else if (chunk.id == 'data') {
+        audio = _DataChunk(start: chunk.start, size: chunk.size);
+      }
+    }
+    if (fmt == null || audio == null) {
+      throw const FormatException('WAV fmt/data chunks not found.');
+    }
+    if (!_isSupportedFormat(fmt)) {
+      throw FormatException(
+        'Unsupported WAV format ${fmt.format}/${fmt.bitsPerSample}.',
+      );
+    }
+
+    final bytesPerSample = (fmt.bitsPerSample / 8).ceil();
+    final bytesPerFrame = bytesPerSample * fmt.channels;
+    final frameCount = audio.size ~/ bytesPerFrame;
+    if (frameCount <= 0) {
+      throw const FormatException('WAV has no audio frames.');
+    }
+
+    final safePitchRatio = pitchRatio.isFinite && pitchRatio > 0
+        ? pitchRatio
+        : 1.0;
+    final renderedFrameCount = math.max(
+      1,
+      (frameCount / safePitchRatio).ceil(),
+    );
+    final renderedSamples = List<double>.filled(
+      renderedFrameCount * fmt.channels,
+      0,
+    );
+
+    for (var frame = 0; frame < renderedFrameCount; frame++) {
+      final sourcePosition = frame * safePitchRatio;
+      final lowerFrame = sourcePosition.floor().clamp(0, frameCount - 1);
+      final upperFrame = (lowerFrame + 1).clamp(0, frameCount - 1);
+      final fraction = (sourcePosition - lowerFrame).clamp(0.0, 1.0);
+      for (var channel = 0; channel < fmt.channels; channel++) {
+        final lowerOffset =
+            audio.start + lowerFrame * bytesPerFrame + channel * bytesPerSample;
+        final upperOffset =
+            audio.start + upperFrame * bytesPerFrame + channel * bytesPerSample;
+        final lower = WavMetadataReader._readSample(
+          data,
+          lowerOffset,
+          fmt.bitsPerSample,
+          fmt.format,
+        );
+        final upper = WavMetadataReader._readSample(
+          data,
+          upperOffset,
+          fmt.bitsPerSample,
+          fmt.format,
+        );
+        renderedSamples[frame * fmt.channels + channel] =
+            lower + (upper - lower) * fraction;
+      }
+    }
+
+    return _buildPcm16Wave(
+      sampleRate: fmt.sampleRate,
+      channels: fmt.channels,
+      samples: renderedSamples,
+    );
+  }
+
   static Uint8List render(Uint8List bytes, WavRenderOptions options) {
     if (bytes.length < 44) {
       throw const FormatException('WAV file is too small.');
@@ -483,6 +568,47 @@ class WavAudioRenderer {
     required double strength,
   }) {
     return WavFadeShaper.apply(value, curve, strength: strength);
+  }
+
+  static Uint8List _buildPcm16Wave({
+    required int sampleRate,
+    required int channels,
+    required List<double> samples,
+  }) {
+    final renderedAudio = Uint8List(samples.length * 2);
+    final audioData = ByteData.sublistView(renderedAudio);
+    for (var index = 0; index < samples.length; index++) {
+      audioData.setInt16(
+        index * 2,
+        (samples[index].clamp(-1.0, 1.0) * 32767).round().clamp(-32768, 32767),
+        Endian.little,
+      );
+    }
+
+    final fmtBody = ByteData(16)
+      ..setUint16(0, 1, Endian.little)
+      ..setUint16(2, channels, Endian.little)
+      ..setUint32(4, sampleRate, Endian.little)
+      ..setUint32(8, sampleRate * channels * 2, Endian.little)
+      ..setUint16(12, channels * 2, Endian.little)
+      ..setUint16(14, 16, Endian.little);
+
+    final body = BytesBuilder(copy: false)
+      ..add(_ascii('WAVE'))
+      ..add(_ascii('fmt '))
+      ..add(WavMetadataWriter._u32(16))
+      ..add(fmtBody.buffer.asUint8List())
+      ..add(_ascii('data'))
+      ..add(WavMetadataWriter._u32(renderedAudio.length))
+      ..add(renderedAudio);
+    if (renderedAudio.length.isOdd) body.addByte(0);
+
+    final bodyBytes = body.toBytes();
+    return (BytesBuilder(copy: false)
+          ..add(_ascii('RIFF'))
+          ..add(WavMetadataWriter._u32(bodyBytes.length))
+          ..add(bodyBytes))
+        .toBytes();
   }
 
   static Uint8List _encodeAudio(
