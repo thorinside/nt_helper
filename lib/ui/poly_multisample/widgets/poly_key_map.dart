@@ -14,12 +14,14 @@ class PolyKeyMap extends StatefulWidget {
     required this.selectedPath,
     required this.onSelect,
     this.height = 180,
+    this.onPreviewNote,
   });
 
   final List<PolySampleRegion> regions;
   final String? selectedPath;
   final ValueChanged<PolySampleRegion> onSelect;
   final double height;
+  final ValueChanged<int>? onPreviewNote;
 
   @override
   State<PolyKeyMap> createState() => _PolyKeyMapState();
@@ -94,6 +96,27 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     });
   }
 
+  int? _midiAtKeyboardPosition(
+    Offset position,
+    Size size,
+    int minMidi,
+    int maxMidi,
+  ) {
+    final layout = _PolyKeyMapLayout(size, velocityLanes(widget.regions));
+    final keyboardRect = Rect.fromLTRB(
+      layout.left,
+      layout.keyboardTop,
+      layout.right,
+      layout.keyboardBottom,
+    );
+    if (!keyboardRect.contains(position)) return null;
+    final span = math.max(1, maxMidi - minMidi + 1);
+    return (minMidi + ((position.dx - layout.left) / layout.width) * span)
+        .floor()
+        .clamp(minMidi, maxMidi)
+        .toInt();
+  }
+
   List<Widget> _regionSemanticTargets(
     Size canvasSize,
     int minMidi,
@@ -152,6 +175,49 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     ];
   }
 
+  List<Widget> _noteSemanticTargets(Size canvasSize, int minMidi, int maxMidi) {
+    final onPreviewNote = widget.onPreviewNote;
+    if (onPreviewNote == null) return const [];
+    final layout = _PolyKeyMapLayout(canvasSize, velocityLanes(widget.regions));
+    final span = math.max(1, maxMidi - minMidi + 1);
+    return [
+      for (var midi = minMidi; midi <= maxMidi; midi++)
+        Positioned.fromRect(
+          rect: Rect.fromLTRB(
+            layout.left + ((midi - minMidi) / span) * layout.width,
+            layout.keyboardTop,
+            layout.left + ((midi + 1 - minMidi) / span) * layout.width,
+            layout.keyboardBottom,
+          ),
+          child: FocusableActionDetector(
+            mouseCursor: SystemMouseCursors.click,
+            shortcuts: const {
+              SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+              SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+            },
+            actions: {
+              ActivateIntent: CallbackAction<ActivateIntent>(
+                onInvoke: (_) {
+                  onPreviewNote(midi);
+                  return null;
+                },
+              ),
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onPreviewNote(midi),
+              child: Semantics(
+                button: true,
+                label: 'Preview ${PolyMultisampleParser.midiToNoteName(midi)}',
+                onTap: () => onPreviewNote(midi),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final mappedCount = widget.regions
@@ -163,13 +229,14 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     return Semantics(
       container: true,
       label: 'Keyboard map with $mappedCount mapped samples',
+      hint: 'Tap sample ranges to select. Tap piano keys to preview notes.',
       child: SizedBox(
         height: widget.height,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final canvasWidth = math.max(
               constraints.maxWidth,
-              (maxMidi - minMidi) * 14.0 + 80,
+              (maxMidi - minMidi + 1) * 6.0 + 32,
             );
             final canvasSize = Size(canvasWidth, constraints.maxHeight);
             _scheduleSelectedScroll(canvasSize, minMidi, maxMidi);
@@ -194,7 +261,20 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
                               minMidi,
                               maxMidi,
                             );
-                            if (region != null) widget.onSelect(region);
+                            if (region != null) {
+                              widget.onSelect(region);
+                              return;
+                            }
+                            final midi = _midiAtKeyboardPosition(
+                              details.localPosition,
+                              canvasSize,
+                              minMidi,
+                              maxMidi,
+                            );
+                            if (midi != null) {
+                              widget.onPreviewNote?.call(midi);
+                              return;
+                            }
                           },
                           child: CustomPaint(
                             painter: _PolyKeyMapPainter(
@@ -209,6 +289,7 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
                         ),
                       ),
                       ..._regionSemanticTargets(canvasSize, minMidi, maxMidi),
+                      ..._noteSemanticTargets(canvasSize, minMidi, maxMidi),
                     ],
                   ),
                 ),
