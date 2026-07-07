@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -11,6 +10,7 @@ import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
+import 'package:nt_helper/ui/widgets/mapping_range_slider.dart';
 
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
@@ -1220,96 +1220,21 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// ---------------------
   /// Range Slider
   /// ---------------------
-  String _formatDisplayValue(double displayValue) {
-    final decimalPlaces = widget.powerOfTen.abs();
-    final formatted = displayValue.toStringAsFixed(decimalPlaces);
-    final unit = widget.unitString?.trim();
-    if (unit != null && unit.isNotEmpty) {
-      return '$formatted $unit';
-    }
-    return formatted;
-  }
-
   Widget _buildRangeSlider({
     required int minValue,
     required int maxValue,
     required void Function(int rawMin, int rawMax) onChanged,
     void Function(int rawMin, int rawMax)? onChangeEnd,
   }) {
-    final scale = pow(10, widget.powerOfTen).toDouble();
-    var sliderMin = widget.parameterMin;
-    var sliderMax = widget.parameterMax;
-    if (sliderMin > sliderMax) {
-      final tmp = sliderMin;
-      sliderMin = sliderMax;
-      sliderMax = tmp;
-    }
-
-    if (sliderMin == sliderMax) {
-      // Only one possible value — show a label instead of a slider
-      final displayValue = sliderMin * scale;
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0),
-        child: Text(
-          'Range: ${_formatDisplayValue(displayValue)}',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      );
-    }
-
-    final displayMin = sliderMin * scale;
-    final displayMax = sliderMax * scale;
-
-    // Clamp current values to slider range
-    final clampedMin = minValue.clamp(sliderMin, sliderMax);
-    final clampedMax = maxValue.clamp(sliderMin, sliderMax);
-    final displayStart = clampedMin * scale;
-    final displayEnd = clampedMax * scale;
-
-    final divisions = sliderMax - sliderMin;
-
-    return Column(
-      children: [
-        RangeSlider(
-          values: RangeValues(displayStart, displayEnd),
-          min: displayMin,
-          max: displayMax,
-          divisions: divisions,
-          labels: RangeLabels(
-            _formatDisplayValue(displayStart),
-            _formatDisplayValue(displayEnd),
-          ),
-          semanticFormatterCallback: (value) => _formatDisplayValue(value),
-          onChanged: (RangeValues values) {
-            final rawMin = (values.start / scale).round();
-            final rawMax = (values.end / scale).round();
-            onChanged(rawMin, rawMax);
-          },
-          onChangeEnd: onChangeEnd != null
-              ? (RangeValues values) {
-                  final rawMin = (values.start / scale).round();
-                  final rawMax = (values.end / scale).round();
-                  onChangeEnd(rawMin, rawMax);
-                }
-              : null,
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Min: ${_formatDisplayValue(displayStart)}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                'Max: ${_formatDisplayValue(displayEnd)}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-      ],
+    return MappingRangeSlider(
+      minValue: minValue,
+      maxValue: maxValue,
+      parameterMin: widget.parameterMin,
+      parameterMax: widget.parameterMax,
+      powerOfTen: widget.powerOfTen,
+      unitString: widget.unitString,
+      onChanged: onChanged,
+      onChangeEnd: onChangeEnd,
     );
   }
 
