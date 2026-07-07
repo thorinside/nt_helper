@@ -141,16 +141,16 @@ void main() {
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
         expect(decoded['error'], contains('Invalid slot index'));
-        expect(decoded['error'], contains('Must be 0-31'));
+        expect(decoded['error'], contains('Must be 0-39'));
       });
 
-      test('should return error when slot index is >= 32', () async {
-        final result = await tools.show({'target': 'slot', 'identifier': 32});
+      test('should return error when slot index is >= 40', () async {
+        final result = await tools.show({'target': 'slot', 'identifier': 40});
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
         expect(decoded['error'], contains('Invalid slot index'));
-        expect(decoded['error'], contains('Must be 0-31'));
+        expect(decoded['error'], contains('Must be 0-39'));
       });
 
       test('should return error when device not synchronized', () async {
@@ -254,10 +254,10 @@ void main() {
         expect(decoded['error'], contains('Invalid slot index'));
       });
 
-      test('should return error when slot_index >= 32', () async {
+      test('should return error when slot_index >= 40', () async {
         final result = await tools.show({
           'target': 'parameter',
-          'identifier': '32:5',
+          'identifier': '40:5',
         });
 
         final decoded = jsonDecode(result);

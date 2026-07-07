@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/tables.dart';
+import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart'; // For PresetMappingEntry
 import 'package:collection/collection.dart'; // For groupBy, mapIndexed
 
@@ -582,7 +583,7 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
           ? existingCount
           : insertionOffset;
 
-      const slotLimit = 32;
+      const slotLimit = DistingLimits.maxPresetSlots;
       // Space accounting uses the *unclamped* insertionOffset in replace mode
       // so that a caller asking to "replace at slot 25" of a 5-slot target
       // (which would need 35 slots) fails the limit check explicitly, instead
@@ -769,7 +770,7 @@ class ApplyTemplateSlotsResult {
 }
 
 /// Thrown by [PresetsDao.applyTemplateSlots] when the target would exceed
-/// the device's 32-slot limit.
+/// the device's preset slot limit.
 class TemplateSpaceException implements Exception {
   /// Existing slot count on the target preset before the apply.
   final int current;
@@ -778,13 +779,13 @@ class TemplateSpaceException implements Exception {
   /// algorithm metadata).
   final int applied;
 
-  /// Hard upper bound. Defaults to 32 (the device limit).
+  /// Hard upper bound. Defaults to the device limit.
   final int limit;
 
   TemplateSpaceException({
     required this.current,
     required this.applied,
-    this.limit = 32,
+    this.limit = DistingLimits.maxPresetSlots,
   });
 
   @override

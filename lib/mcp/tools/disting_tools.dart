@@ -410,7 +410,7 @@ class DistingTools {
   /// MCP Tool: Simple interface to add an algorithm to the preset.
   /// Designed for minimal cognitive load - flat parameter structure.
   /// Parameters:
-  ///   - slot_index (int, optional): Target slot (0-31). If omitted, adds to first empty slot.
+  ///   - slot_index (int, optional): Target slot (0-39). If omitted, adds to first empty slot.
   ///   - name (string, optional): Algorithm name (fuzzy matching ≥70%)
   ///   - guid (string, optional): Algorithm GUID (exact match)
   ///   - specifications (list of ints, optional): Specification values for algorithms that require them
@@ -578,7 +578,7 @@ class DistingTools {
 
   /// MCP Tool: Removes (clears) the algorithm from a specific slot.
   /// Parameters:
-  ///   - slot_index (int, required): The index of the slot to clear (0-31).
+  ///   - slot_index (int, required): The index of the slot to clear (0-39).
   /// Returns:
   ///   A JSON string confirming the removal. Lenient if slot is already empty.
   Future<String> removeSlot(Map<String, dynamic> params) async {

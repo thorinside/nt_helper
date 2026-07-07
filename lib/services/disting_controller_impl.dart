@@ -1,6 +1,7 @@
 import 'dart:typed_data'; // Added for Uint8List
 import 'package:collection/collection.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show
         Algorithm,
@@ -16,8 +17,7 @@ import 'package:nt_helper/models/packed_mapping_data.dart'
 
 class DistingControllerImpl implements DistingController {
   final DistingCubit _distingCubit;
-  static const int maxSlots =
-      32; // Define maxSlots consistently, make static const
+  static const int maxSlots = DistingLimits.maxPresetSlots;
 
   DistingControllerImpl(this._distingCubit);
 
@@ -42,7 +42,7 @@ class DistingControllerImpl implements DistingController {
   void _validateSlotIndex(int index) {
     if (index < 0 || index >= maxSlots) {
       throw ArgumentError(
-        'Invalid slot index: $index. Must be between 0 and ${maxSlots - 1}.',
+        'Invalid slot index: $index. Must be between 0 and ${DistingLimits.maxPresetSlotIndex}.',
       );
     }
   }

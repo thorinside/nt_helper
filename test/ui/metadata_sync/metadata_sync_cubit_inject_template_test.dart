@@ -55,11 +55,11 @@ void main() {
     });
 
     blocTest<MetadataSyncCubit, MetadataSyncState>(
-      'throws exception when slot limit would be exceeded (31 + 2 > 32)',
+      'throws exception when slot limit would be exceeded (39 + 2 > 40)',
       build: () {
         when(
           () => mockMidiManager.requestNumAlgorithmsInPreset(),
-        ).thenAnswer((_) async => 31);
+        ).thenAnswer((_) async => 39);
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -127,7 +127,7 @@ void main() {
         isA<PresetLoadFailure>().having(
           (state) => state.error,
           'error message',
-          contains('Would exceed 32 slot limit'),
+          contains('Would exceed 40 slot limit'),
         ),
       ],
     );

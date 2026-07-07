@@ -93,7 +93,7 @@ void main() {
 
       test('should return error when slot_index exceeds maximum', () async {
         final result = await tools.editParameter({
-          'slot_index': 32,
+          'slot_index': 40,
           'parameter_number': 0,
           'value': 50,
         });

@@ -146,7 +146,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel(RegExp(r'2 selected, 0 current slots, 2 of 32')),
+      find.bySemanticsLabel(RegExp(r'2 selected, 0 current slots, 2 of 40')),
       findsOneWidget,
     );
     expect(find.bySemanticsLabel('Import template from file'), findsWidgets);

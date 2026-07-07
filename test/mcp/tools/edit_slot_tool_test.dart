@@ -140,7 +140,7 @@ void main() {
 
       test('should return error when slot_index exceeds maximum', () async {
         final result = await tools.editSlot({
-          'slot_index': 32,
+          'slot_index': 40,
           'data': {'parameters': []},
         });
 
@@ -588,12 +588,12 @@ void main() {
           isTrue,
         );
 
-        final result31 = await tools.editSlot({'slot_index': 31, 'data': {}});
+        final result39 = await tools.editSlot({'slot_index': 39, 'data': {}});
 
-        final decoded31 = jsonDecode(result31);
+        final decoded39 = jsonDecode(result39);
         // Either succeeds or has error message
         expect(
-          decoded31['success'] == true || decoded31['error'] != null,
+          decoded39['success'] == true || decoded39['error'] != null,
           isTrue,
         );
       });

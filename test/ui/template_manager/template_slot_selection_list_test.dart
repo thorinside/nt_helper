@@ -97,7 +97,7 @@ void main() {
     expect(find.text('Delay'), findsOneWidget);
     expect(find.text('Chorus'), findsOneWidget);
     expect(
-      find.textContaining('2 selected + 4 current = 6 / 32'),
+      find.textContaining('2 selected + 4 current = 6 / 40'),
       findsOneWidget,
     );
 

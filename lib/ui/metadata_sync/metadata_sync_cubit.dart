@@ -6,6 +6,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show AlgorithmInfo, Specification;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
@@ -781,9 +782,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         currentSlotCount = 0;
       }
       final totalSlots = currentSlotCount + total;
-      if (totalSlots > 32) {
+      if (totalSlots > DistingLimits.maxPresetSlots) {
         throw Exception(
-          'Cannot inject: Would exceed 32 slot limit '
+          'Cannot inject: Would exceed ${DistingLimits.maxPresetSlots} slot limit '
           '(current: $currentSlotCount, template: $total)',
         );
       }

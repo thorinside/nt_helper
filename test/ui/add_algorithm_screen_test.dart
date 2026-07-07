@@ -1242,7 +1242,7 @@ void main() {
     ) async {
       when(
         () => mockCubit.state,
-      ).thenReturn(synchronizedWith([mockFactoryAlgorithm], slotCount: 32));
+      ).thenReturn(synchronizedWith([mockFactoryAlgorithm], slotCount: 40));
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(createTestWidget());

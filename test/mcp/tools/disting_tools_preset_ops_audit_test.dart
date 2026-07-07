@@ -528,12 +528,12 @@ void main() {
       ).thenAnswer((_) async {});
 
       final result = await distingTools.moveAlgorithm({
-        'slot_index': 30,
+        'slot_index': 38,
         'direction': 'down',
         'steps': 3,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
-      // After 1 step (30→31), second step 31 >= 31 → error
+      // After 1 step (38 -> 39), second step would exceed the final slot.
       expect(json['success'], isFalse);
     });
 

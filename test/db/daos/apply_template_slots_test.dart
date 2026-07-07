@@ -501,13 +501,13 @@ void main() {
 
   group('PresetsDao.applyTemplateSlots — space exception', () {
     test(
-      'insert mode beyond 32 slots throws TemplateSpaceException with diagnostics',
+      'insert mode beyond 40 slots throws TemplateSpaceException with diagnostics',
       () async {
         await _seedAlgorithm(db, 'AAAA');
         await _seedAlgorithm(db, 'TARG');
-        // Template with 30 slots
+        // Template with 36 slots
         final templateSlots = List<FullPresetSlot>.generate(
-          30,
+          36,
           (i) => _slot(slotIndex: i, guid: 'AAAA'),
         );
         final templateId = await _savePreset(
@@ -528,14 +528,14 @@ void main() {
           await db.presetsDao.applyTemplateSlots(
             templateId: templateId,
             targetPresetId: targetId,
-            templateSlotIndices: List<int>.generate(30, (i) => i),
+            templateSlotIndices: List<int>.generate(36, (i) => i),
             insertionOffset: 5,
           );
           fail('expected TemplateSpaceException');
         } on TemplateSpaceException catch (e) {
           expect(e.current, 5);
-          expect(e.applied, 30);
-          expect(e.limit, 32);
+          expect(e.applied, 36);
+          expect(e.limit, 40);
         }
 
         final loaded = await db.presetsDao.getFullPresetDetails(targetId);
@@ -551,7 +551,7 @@ void main() {
     );
 
     test(
-      'replace mode beyond 32 slots throws TemplateSpaceException',
+      'replace mode beyond 40 slots throws TemplateSpaceException',
       () async {
         await _seedAlgorithm(db, 'AAAA');
         await _seedAlgorithm(db, 'TARG');
@@ -578,7 +578,7 @@ void main() {
             templateId: templateId,
             targetPresetId: targetId,
             templateSlotIndices: List<int>.generate(10, (i) => i),
-            insertionOffset: 25,
+            insertionOffset: 35,
             overwrite: true,
           ),
           throwsA(isA<TemplateSpaceException>()),
@@ -646,12 +646,12 @@ void main() {
         db.algorithms,
       )..where((a) => a.guid.equals('GHST'))).go();
 
-      // Target with 25 existing slots — 25 + 10 (non-skipped) = 35 > 32 → still fails.
+      // Target with 31 existing slots - 31 + 10 (non-skipped) = 41 > 40.
       final targetId = await _savePreset(
         db,
         'Target',
         slots: List<FullPresetSlot>.generate(
-          25,
+          31,
           (i) => _slot(slotIndex: i, guid: 'AAAA'),
         ),
       );

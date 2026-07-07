@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
+import 'package:nt_helper/domain/disting_limits.dart';
 
 class TemplateSlotSelectionList extends StatefulWidget {
   final FullPresetDetails template;
@@ -14,7 +15,7 @@ class TemplateSlotSelectionList extends StatefulWidget {
     required this.selectedIndices,
     required this.onSelectionChanged,
     this.currentTargetSlotCount = 0,
-    this.maxSlots = 32,
+    this.maxSlots = DistingLimits.maxPresetSlots,
   });
 
   @override

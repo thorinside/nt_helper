@@ -9,7 +9,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 /// Message format:
 /// F0 00 21 27 6D [sysExId] 54 [slot] [p_high] [p_mid] [p_low] [version] [index] F7
 ///
-/// - slot: Slot index (0-31)
+/// - slot: Slot index (0-39)
 /// - p_high, p_mid, p_low: Parameter number encoded as 3 bytes (7-bit each)
 /// - version: Mapping version (5)
 /// - index: Performance page index (0-30, where 0 = not assigned)

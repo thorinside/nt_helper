@@ -148,7 +148,7 @@ void main() {
         db,
         'Crowded',
         isTemplate: false,
-        slots: [for (var i = 0; i < 31; i++) _slot(slotIndex: i, guid: 'AAAA')],
+        slots: [for (var i = 0; i < 39; i++) _slot(slotIndex: i, guid: 'AAAA')],
       );
 
       final response = await tools.applyTemplateToPreset({
@@ -160,9 +160,9 @@ void main() {
 
       expect(json['success'], isFalse);
       expect(json['error'], 'space');
-      expect(json['current'], 31);
+      expect(json['current'], 39);
       expect(json['applied'], 2);
-      expect(json['limit'], 32);
+      expect(json['limit'], 40);
     });
 
     test('registry exposes apply_template_to_preset', () {

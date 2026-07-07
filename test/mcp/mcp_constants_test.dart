@@ -9,8 +9,8 @@ class TestAlgorithm {
 
 void main() {
   group('MCPConstants', () {
-    test('maxSlots is 32', () {
-      expect(MCPConstants.maxSlots, 32);
+    test('maxSlots is 40', () {
+      expect(MCPConstants.maxSlots, 40);
     });
 
     test('fuzzyMatchThreshold is 0.7', () {
@@ -300,8 +300,8 @@ void main() {
         expect(MCPUtils.validateSlotIndex(0), isNull);
       });
 
-      test('returns null for slot 31 (maximum valid)', () {
-        expect(MCPUtils.validateSlotIndex(31), isNull);
+      test('returns null for slot 39 (maximum valid)', () {
+        expect(MCPUtils.validateSlotIndex(39), isNull);
       });
 
       test('returns error for slot -1 (below range)', () {
@@ -311,8 +311,8 @@ void main() {
         expect(result['error'], contains('out of range'));
       });
 
-      test('returns error for slot 32 (above range)', () {
-        final result = MCPUtils.validateSlotIndex(32);
+      test('returns error for slot 40 (above range)', () {
+        final result = MCPUtils.validateSlotIndex(40);
         expect(result, isNotNull);
         expect(result!['success'], false);
       });

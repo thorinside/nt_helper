@@ -174,25 +174,25 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           template: template,
-          currentSlotCount: 25, // 25 + 10 = 35 > 32
+          currentSlotCount: 35, // 35 + 10 = 45 > 40
         ),
       );
 
       // Should show warning message
       expect(
-        find.textContaining('Cannot inject: Would exceed 32 slot limit'),
+        find.textContaining('Cannot inject: Would exceed 40 slot limit'),
         findsOneWidget,
       );
-      expect(find.textContaining('current: 25'), findsOneWidget);
+      expect(find.textContaining('current: 35'), findsOneWidget);
       expect(find.textContaining('template: 10'), findsOneWidget);
-      expect(find.textContaining('total would be: 35'), findsOneWidget);
+      expect(find.textContaining('total would be: 45'), findsOneWidget);
     });
 
     testWidgets('shows warning icon when limit exceeded', (tester) async {
       final template = createTestTemplate(name: 'Test Template', slotCount: 10);
 
       await tester.pumpWidget(
-        createTestWidget(template: template, currentSlotCount: 25),
+        createTestWidget(template: template, currentSlotCount: 35),
       );
 
       // Should show warning icon
@@ -203,7 +203,7 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 10);
 
       await tester.pumpWidget(
-        createTestWidget(template: template, currentSlotCount: 25),
+        createTestWidget(template: template, currentSlotCount: 35),
       );
 
       // Find the ElevatedButton
@@ -247,25 +247,25 @@ void main() {
 
       // Should not show warning
       expect(
-        find.textContaining('Cannot inject: Would exceed 32 slot limit'),
+        find.textContaining('Cannot inject: Would exceed 40 slot limit'),
         findsNothing,
       );
       expect(find.byIcon(Icons.warning), findsNothing);
     });
 
-    testWidgets('handles exact 32 slot limit correctly', (tester) async {
+    testWidgets('handles exact 40 slot limit correctly', (tester) async {
       final template = createTestTemplate(name: 'Test Template', slotCount: 12);
 
       await tester.pumpWidget(
         createTestWidget(
           template: template,
-          currentSlotCount: 20, // 20 + 12 = 32 (exactly at limit)
+          currentSlotCount: 28, // 28 + 12 = 40 (exactly at limit)
         ),
       );
 
       // Should NOT show warning (exactly at limit is OK)
       expect(
-        find.textContaining('Cannot inject: Would exceed 32 slot limit'),
+        find.textContaining('Cannot inject: Would exceed 40 slot limit'),
         findsNothing,
       );
 

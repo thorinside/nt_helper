@@ -188,14 +188,14 @@ void main() {
       expect(json['error'], contains('-1'));
     });
 
-    test('slot_index 32 (out of range) returns error', () async {
+    test('slot_index 40 (out of range) returns error', () async {
       final result = await distingTools.addSimple({
         'name': 'VCO',
-        'slot_index': 32,
+        'slot_index': 40,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
-      expect(json['error'], contains('32'));
+      expect(json['error'], contains('40'));
     });
 
     test(
@@ -279,10 +279,10 @@ void main() {
     });
 
     test('out of range slot_index returns error', () async {
-      final result = await distingTools.removeSlot({'slot_index': 32});
+      final result = await distingTools.removeSlot({'slot_index': 40});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
-      expect(json['error'], contains('32'));
+      expect(json['error'], contains('40'));
     });
 
     test('already-empty slot returns success', () async {
@@ -518,7 +518,7 @@ void main() {
 
     test('move down from last slot returns boundary error', () async {
       final result = await distingTools.moveAlgorithm({
-        'slot_index': 31,
+        'slot_index': 39,
         'direction': 'down',
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -624,10 +624,10 @@ void main() {
     });
 
     test('out of range slot_index returns error', () async {
-      final result = await distingTools.editSlot({'slot_index': 32});
+      final result = await distingTools.editSlot({'slot_index': 40});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
-      expect(json['error'], contains('32'));
+      expect(json['error'], contains('40'));
     });
 
     test('missing data returns error', () async {
@@ -674,10 +674,10 @@ void main() {
 
   group('moveAlgorithmDown — boundary', () {
     test('moving last slot down returns error', () async {
-      final result = await distingTools.moveAlgorithmDown({'slot_index': 31});
+      final result = await distingTools.moveAlgorithmDown({'slot_index': 39});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
-      expect(json['error'], contains('31'));
+      expect(json['error'], contains('39'));
     });
 
     test('moving slot 0 down succeeds', () async {

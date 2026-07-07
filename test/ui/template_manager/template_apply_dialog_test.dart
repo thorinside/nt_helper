@@ -159,7 +159,7 @@ void main() {
       db,
       'Crowded',
       isTemplate: false,
-      slots: [for (var i = 0; i < 31; i++) _slot(i, 'AAAA')],
+      slots: [for (var i = 0; i < 39; i++) _slot(i, 'AAAA')],
     );
     final template = (await db.presetsDao.getFullPresetDetails(templateId))!;
 
@@ -169,12 +169,12 @@ void main() {
     await tester.tap(find.text('Apply selected'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('31 existing'), findsOneWidget);
+    expect(find.textContaining('39 existing'), findsOneWidget);
     expect(
-      find.text('31 existing + 2 selected exceeds the 32-slot limit.'),
+      find.text('39 existing + 2 selected exceeds the 40-slot limit.'),
       findsOneWidget,
     );
-    expect(find.textContaining('32-slot limit'), findsOneWidget);
+    expect(find.textContaining('40-slot limit'), findsOneWidget);
   });
 
   testWidgets('device apply cancel button invokes cancellation callback', (

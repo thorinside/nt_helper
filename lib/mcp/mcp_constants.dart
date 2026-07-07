@@ -1,5 +1,7 @@
 import 'dart:math' show pow;
 
+import 'package:nt_helper/domain/disting_limits.dart';
+
 /// Constants and utilities for MCP tools
 class MCPConstants {
   // Common tool help references
@@ -16,7 +18,8 @@ class MCPConstants {
   static const double fuzzyMatchThreshold = 0.7;
   static const int maxNotesLines = 7;
   static const int maxNotesLineLength = 31;
-  static const int maxSlots = 32;
+  static const int maxSlots = DistingLimits.maxPresetSlots;
+  static const int maxSlotIndex = DistingLimits.maxPresetSlotIndex;
 }
 
 /// Result of algorithm resolution
@@ -217,7 +220,7 @@ class MCPUtils {
     }
     if (slotIndex < 0 || slotIndex >= MCPConstants.maxSlots) {
       return buildError(
-        '${MCPConstants.invalidRangeError}: slot_index must be between 0 and ${MCPConstants.maxSlots - 1}',
+        '${MCPConstants.invalidRangeError}: slot_index must be between 0 and ${MCPConstants.maxSlotIndex}',
       );
     }
     return null;

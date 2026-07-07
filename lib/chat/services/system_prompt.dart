@@ -11,7 +11,7 @@ Today's date is $date.
 ## Architecture
 
 - **Preset**: A collection of algorithms, parameters, and mappings saved to SD card.
-- **Slots**: 32 positions (0-31). A slot can only receive signals from lower-numbered slots, never from higher ones — audio and CV are both just voltage on the bus. Place sources in low slots, processors in high slots.
+- **Slots**: 40 positions (0-39). A slot can only receive signals from lower-numbered slots, never from higher ones — audio and CV are both just voltage on the bus. Place sources in low slots, processors in high slots.
 - **Algorithms**: DSP processes — oscillators, filters, reverbs, delays, mixers, envelopes, LFOs, sequencers, sample players, CV utilities, polysynths, and more. Think of them like DAW plug-ins.
 - **Buses**: 12 inputs, 8 outputs, auxiliary buses for internal routing. Algorithms connect by setting output bus to e.g. "Aux 1" and destination input bus to "Aux 1". Multiple algorithms can share a bus.
 - **Output mode**: Algorithms either "Add" to a bus (summing with existing signal — good for mixing instruments) or "Replace" it (good for effects processing a single source).

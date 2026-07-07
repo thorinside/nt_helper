@@ -7,6 +7,7 @@ import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/chat/services/memory_tools.dart';
 import 'package:nt_helper/chat/utils/image_result_detector.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/mcp/mcp_constants.dart';
 import 'package:nt_helper/mcp/tool_reference_store.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
@@ -33,6 +34,10 @@ class ToolRegistryEntry {
 /// Shared registry of tool definitions consumed by both the MCP server
 /// and the in-app chat's ToolBridgeService.
 class ToolRegistry {
+  static const _slotMinimum = 0;
+  static const _slotMaximum = MCPConstants.maxSlotIndex;
+  static const _slotRangeDescription = '0-$_slotMaximum';
+
   static const _memoryToolNames = {
     'memory_read',
     'memory_write',
@@ -328,7 +333,7 @@ class ToolRegistry {
             'slot_index': {
               'type': 'integer',
               'description':
-                  'Slot index (0-31). Required when scope is "slot".',
+                  'Slot index ($_slotRangeDescription). Required when scope is "slot".',
             },
             'partial_match': {
               'type': 'boolean',
@@ -367,9 +372,9 @@ class ToolRegistry {
           'properties': {
             'slot_index': {
               'type': 'integer',
-              'minimum': 0,
-              'maximum': 31,
-              'description': 'Slot index (0-31).',
+              'minimum': _slotMinimum,
+              'maximum': _slotMaximum,
+              'description': 'Slot index ($_slotRangeDescription).',
             },
           },
           'required': ['slot_index'],
@@ -387,9 +392,9 @@ class ToolRegistry {
           'properties': {
             'slot_index': {
               'type': 'integer',
-              'minimum': 0,
-              'maximum': 31,
-              'description': 'Slot index (0-31).',
+              'minimum': _slotMinimum,
+              'maximum': _slotMaximum,
+              'description': 'Slot index ($_slotRangeDescription).',
             },
             'parameter_number': {
               'description':
@@ -487,9 +492,9 @@ class ToolRegistry {
           'properties': {
             'slot_index': {
               'type': 'integer',
-              'minimum': 0,
-              'maximum': 31,
-              'description': 'Slot index (0-31).',
+              'minimum': _slotMinimum,
+              'maximum': _slotMaximum,
+              'description': 'Slot index ($_slotRangeDescription).',
             },
             'data': {
               'type': 'object',
@@ -556,9 +561,9 @@ class ToolRegistry {
           'properties': {
             'slot_index': {
               'type': 'integer',
-              'minimum': 0,
-              'maximum': 31,
-              'description': 'Slot index (0-31).',
+              'minimum': _slotMinimum,
+              'maximum': _slotMaximum,
+              'description': 'Slot index ($_slotRangeDescription).',
             },
             'parameter_number': {
               'description':
@@ -678,7 +683,7 @@ class ToolRegistry {
             'slot_index': {
               'type': 'integer',
               'description':
-                  'Insert position (0-31). Omit for first empty slot.',
+                  'Insert position ($_slotRangeDescription). Omit for first empty slot.',
             },
             'specifications': {
               'type': 'array',
@@ -755,7 +760,7 @@ class ToolRegistry {
           'properties': {
             'slot_index': {
               'type': 'integer',
-              'description': 'Slot index to clear (0-31).',
+              'description': 'Slot index to clear ($_slotRangeDescription).',
             },
           },
           'required': ['slot_index'],
@@ -776,7 +781,7 @@ class ToolRegistry {
             'slot_index': {
               'type': 'integer',
               'description':
-                  'Current slot index of the algorithm to move (0-31).',
+                  'Current slot index of the algorithm to move ($_slotRangeDescription).',
             },
             'direction': {
               'type': 'string',

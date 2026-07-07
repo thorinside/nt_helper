@@ -80,7 +80,7 @@ class _MappingDelegate {
 
   /// Sets the performance page assignment for a parameter.
   ///
-  /// - [slotIndex]: Slot index (0-31)
+  /// - [slotIndex]: Slot index (0-39)
   /// - [parameterNumber]: Parameter number within the algorithm
   /// - [perfPageIndex]: Performance page index (0-30, where 0 = not assigned)
   ///

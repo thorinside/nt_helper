@@ -202,7 +202,7 @@ void main() {
             insertionOffset: any(named: 'insertionOffset'),
             overwrite: any(named: 'overwrite'),
           ),
-        ).thenThrow(TemplateSpaceException(current: 30, applied: 4));
+        ).thenThrow(TemplateSpaceException(current: 38, applied: 4));
         return cubit;
       },
       act: (c) async {
@@ -220,7 +220,7 @@ void main() {
         isA<MetadataSyncFailure>().having(
           (s) => s.error,
           'error message',
-          allOf(contains('30'), contains('4'), contains('32')),
+          allOf(contains('38'), contains('4'), contains('40')),
         ),
       ],
     );

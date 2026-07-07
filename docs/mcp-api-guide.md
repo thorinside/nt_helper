@@ -97,10 +97,10 @@ Apply selected slots from a saved template to the connected device or to a saved
 }
 ```
 
-If the target would exceed the 32-slot device limit, the tool returns a structured error:
+If the target would exceed the 40-slot device limit, the tool returns a structured error:
 
 ```json
-{"success": false, "error": "space", "current": 31, "applied": 2, "limit": 32}
+{"success": false, "error": "space", "current": 39, "applied": 2, "limit": 40}
 ```
 
 Device mode requires a connected Disting NT. If a device apply fails mid-operation, inspect the current device state with `show_preset`; hardware writes are not transactional.
@@ -169,7 +169,7 @@ Search for parameters by name within the current preset or a specific slot.
 **Parameters**:
 - `query` (required, string): Parameter name (case-insensitive)
 - `scope` (optional, string): "preset" (all slots) or "slot" (specific slot)
-- `slot_index` (optional, integer): Slot index (0-31), required when scope is "slot"
+- `slot_index` (optional, integer): Slot index (0-39), required when scope is "slot"
 - `partial_match` (optional, boolean): If true, find parameters containing the query. Default: false
 
 ```json
@@ -214,7 +214,7 @@ Show a compact preset overview: preset name and slot list with algorithm names a
 Show a slot with parameter summaries. Each parameter shows its name, current value, and range (for numerics). Does NOT include enum value lists or full mapping detail — use `show_parameter` for those. Large results may be returned as a `tool_reference`.
 
 **Parameters**:
-- `slot_index` (required, integer): Slot index (0-31)
+- `slot_index` (required, integer): Slot index (0-39)
 
 ```json
 {"tool": "show_slot", "arguments": {"slot_index": 0}}
@@ -240,7 +240,7 @@ Show a slot with parameter summaries. Each parameter shows its name, current val
 Show a single parameter with its value, range, unit, and enabled mappings.
 
 **Parameters**:
-- `slot_index` (required, integer): Slot index (0-31)
+- `slot_index` (required, integer): Slot index (0-39)
 - `parameter` (required, integer): Parameter number (0-based index)
 
 ```json
@@ -329,7 +329,7 @@ Edit the entire preset state including name and all slots. Replaces the full pre
 Edit a specific slot: change algorithm, set parameters, or rename.
 
 **Parameters**:
-- `slot_index` (required, integer): Slot index (0-31)
+- `slot_index` (required, integer): Slot index (0-39)
 - `data` (required, object): Slot data with optional `algorithm`, `parameters`, and `name`
 
 **Use when**: Changing algorithm in single slot, updating all parameters for one algorithm.
@@ -367,7 +367,7 @@ Edit a specific slot: change algorithm, set parameters, or rename.
 Edit a single parameter value and/or mapping.
 
 **Parameters**:
-- `slot_index` (required, integer): Slot index (0-31)
+- `slot_index` (required, integer): Slot index (0-39)
 - `parameter` (required, string or integer): Parameter name or number (0-based)
 - `value` (optional, number): Parameter value (omit to update only mapping)
 - `mapping` (optional, object): CV/MIDI/i2c/performance page mapping
@@ -447,7 +447,7 @@ Add an algorithm to the preset. Inserts without replacing existing algorithms.
 - `target` (required): Must be "algorithm"
 - `name` (optional, string): Algorithm name (fuzzy matching)
 - `guid` (optional, string): Algorithm GUID (exact match)
-- `slot_index` (optional, integer): Target slot (0-31). Omit for first empty slot.
+- `slot_index` (optional, integer): Target slot (0-39). Omit for first empty slot.
 
 ```json
 {"tool": "add", "arguments": {"target": "algorithm", "name": "Dual VCO"}}
@@ -465,7 +465,7 @@ Remove the algorithm from a slot, leaving it empty.
 
 **Parameters**:
 - `target` (required): Must be "slot"
-- `slot_index` (required, integer): Slot index to clear (0-31)
+- `slot_index` (required, integer): Slot index to clear (0-39)
 
 ```json
 {"tool": "remove", "arguments": {"target": "slot", "slot_index": 3}}

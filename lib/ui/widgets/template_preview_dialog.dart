@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
+import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 
@@ -9,7 +10,7 @@ import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 /// - Current preset slot summary
 /// - Template algorithms to be added
 /// - Result preview with slot ranges
-/// - Warning if 32-slot limit would be exceeded
+/// - Warning if the preset slot limit would be exceeded
 /// - Loading state during injection
 /// - Error state if injection fails
 class TemplatePreviewDialog extends StatefulWidget {
@@ -58,7 +59,8 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
   int get _templateSlotCount => widget.template.slots.length;
   int get _totalSlotsAfterInjection =>
       widget.currentSlotCount + _templateSlotCount;
-  bool get _exceedsLimit => _totalSlotsAfterInjection > 32;
+  bool get _exceedsLimit =>
+      _totalSlotsAfterInjection > DistingLimits.maxPresetSlots;
 
   @override
   Widget build(BuildContext context) {
@@ -278,7 +280,7 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Cannot inject: Would exceed 32 slot limit (current: ${widget.currentSlotCount}, template: $_templateSlotCount, total would be: $_totalSlotsAfterInjection)',
+              'Cannot inject: Would exceed ${DistingLimits.maxPresetSlots} slot limit (current: ${widget.currentSlotCount}, template: $_templateSlotCount, total would be: $_totalSlotsAfterInjection)',
               style: TextStyle(
                 color: theme.colorScheme.onErrorContainer,
                 fontWeight: FontWeight.w500,
