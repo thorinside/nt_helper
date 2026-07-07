@@ -8,7 +8,9 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show DisplayMode;
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/ui/widgets/clipboard_selectable_tab.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
+import 'package:nt_helper/ui/widgets/shift_click_gesture_recognizer.dart';
 import 'package:nt_helper/util/extensions.dart';
 
 class AlgorithmListView extends StatelessWidget {
@@ -20,6 +22,14 @@ class AlgorithmListView extends StatelessWidget {
   final Future<int> Function(int index)? onMoveDown;
   final ValueChanged<int>? onDelete;
 
+  /// Live clipboard-selection set used by the algorithm-clipboard (Mod+C)
+  /// flow. When non-null, shift-clicking a tile toggles it in this set and a
+  /// tertiary-coloured box is drawn around clipboard-selected tiles.
+  final ValueNotifier<Set<int>>? clipboardSelection;
+
+  /// Toggle callback invoked when a tile is shift-clicked for the clipboard.
+  final ValueChanged<int>? onToggleClipboardSelection;
+
   const AlgorithmListView({
     super.key,
     required this.slots,
@@ -29,6 +39,8 @@ class AlgorithmListView extends StatelessWidget {
     this.onMoveUp,
     this.onMoveDown,
     this.onDelete,
+    this.clipboardSelection,
+    this.onToggleClipboardSelection,
   });
 
   static const String algorithmNameHelpText =
@@ -40,10 +52,12 @@ class AlgorithmListView extends StatelessWidget {
       builder: (context, state) {
         return switch (state) {
           DistingStateSynchronized(slots: final _) => ListView.builder(
-            padding: const EdgeInsets.only(top: 8.0),
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
             itemCount: slots.length,
             itemBuilder: (context, index) {
-              return _AlgorithmListTile(
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: _AlgorithmListTile(
                 slot: slots[index],
                 index: index,
                 isSelected: index == selectedIndex,
@@ -52,6 +66,9 @@ class AlgorithmListView extends StatelessWidget {
                 onMoveUp: onMoveUp,
                 onMoveDown: onMoveDown,
                 onDelete: onDelete,
+                clipboardSelection: clipboardSelection,
+                onToggleClipboardSelection: onToggleClipboardSelection,
+              ),
               );
             },
           ),
@@ -71,6 +88,8 @@ class _AlgorithmListTile extends StatefulWidget {
   final Future<int> Function(int index)? onMoveUp;
   final Future<int> Function(int index)? onMoveDown;
   final ValueChanged<int>? onDelete;
+  final ValueNotifier<Set<int>>? clipboardSelection;
+  final ValueChanged<int>? onToggleClipboardSelection;
 
   const _AlgorithmListTile({
     required this.slot,
@@ -81,6 +100,8 @@ class _AlgorithmListTile extends StatefulWidget {
     this.onMoveUp,
     this.onMoveDown,
     this.onDelete,
+    this.clipboardSelection,
+    this.onToggleClipboardSelection,
   });
 
   @override
@@ -225,18 +246,45 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
           widget.onHelpTextChanged?.call(null);
           if (hasActions) _onHoverChanged(false);
         },
-        child: GestureDetector(
-          onDoubleTap: () async {
-            var cubit = context.read<DistingCubit>();
-            cubit.disting()?.let((manager) {
-              manager.requestSetFocus(widget.index, 0);
-              manager.requestSetDisplayMode(DisplayMode.algorithmUI);
-            });
-            if (SettingsService().hapticsEnabled) {
-              Haptics.vibrate(HapticsType.medium);
-            }
-          },
-          child: Stack(
+        child: RawGestureDetector(
+          behavior: HitTestBehavior.translucent,
+          gestures: widget.onToggleClipboardSelection == null
+              ? const <Type, GestureRecognizerFactory>{}
+              : {
+                  ShiftClickGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                        ShiftClickGestureRecognizer
+                      >(
+                        () => ShiftClickGestureRecognizer(
+                          onShiftTap: () {
+                            widget.onToggleClipboardSelection!(
+                              widget.index,
+                            );
+                            if (SettingsService().hapticsEnabled) {
+                              Haptics.vibrate(HapticsType.light);
+                            }
+                          },
+                        ),
+                        (_) {},
+                      ),
+                },
+          child: GestureDetector(
+            onDoubleTap: () async {
+              var cubit = context.read<DistingCubit>();
+              cubit.disting()?.let((manager) {
+                manager.requestSetFocus(widget.index, 0);
+                manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+              });
+              if (SettingsService().hapticsEnabled) {
+                Haptics.vibrate(HapticsType.medium);
+              }
+            },
+          child: ClipboardSelectableTab(
+            key: ValueKey('clipboard-tile-${widget.index}'),
+            selection: widget.clipboardSelection ?? _emptySelection,
+            slotIndex: widget.index,
+            horizontalPadding: 4,
+            child: Stack(
             children: [
               ListTile(
                 title: ExcludeSemantics(
@@ -309,13 +357,20 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
                         ),
                       );
                     },
-                    child: _buildActionRow(),
+            child: _buildActionRow(),
                   ),
                 ),
             ],
           ),
+          ),
         ),
       ),
+    ),
     );
   }
 }
+
+// A stable, never-mutated notifier used when no clipboard selection is wired
+// up, so tiles can always hand a [ValueNotifier] to [ClipboardSelectableTab].
+final ValueNotifier<Set<int>> _emptySelection =
+    ValueNotifier<Set<int>>(<int>{});

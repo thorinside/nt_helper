@@ -63,6 +63,14 @@ class ShortcutHelpOverlay extends StatelessWidget {
                       _ShortcutEntry('$_mod+]', 'Next Slot'),
                       _ShortcutEntry('$_mod+L', 'Toggle Chat Panel'),
                       _ShortcutEntry('$_mod+T', 'Template Manager'),
+                      _ShortcutEntry(
+                        '$_mod+C',
+                        'Copy Selected Slots to Algorithm Clipboard',
+                      ),
+                      _ShortcutEntry(
+                        '$_mod+V',
+                        'Paste Algorithm Clipboard to End of Preset',
+                      ),
                       _ShortcutEntry('$_mod+/', 'Show This Help'),
                     ]),
                     _buildSection(context, 'Parameters', [

@@ -12,4 +12,13 @@ class Constants {
 
   // Feature flags
   static const bool enablePresetExport = true; // Enable preset export feature
+
+  // --- Algorithm clipboard ---
+  // The algorithm clipboard is persisted as a single reserved system template
+  // so it survives app restarts. It is excluded from the Template Manager UI
+  // and from normal template share/export flows.
+  static const String algorithmClipboardPresetName =
+      '__algorithm_clipboard__';
+  static const String algorithmClipboardCategory =
+      '__algorithm_clipboard__';
 }

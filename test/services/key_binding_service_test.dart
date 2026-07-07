@@ -87,6 +87,28 @@ void main() {
         )],
         isA<OpenTemplateManagerIntent>(),
       );
+      expect(
+        shortcuts[const SingleActivator(LogicalKeyboardKey.keyC, meta: true)],
+        isA<CopyAlgorithmsIntent>(),
+      );
+      expect(
+        shortcuts[const SingleActivator(
+          LogicalKeyboardKey.keyC,
+          control: true,
+        )],
+        isA<CopyAlgorithmsIntent>(),
+      );
+      expect(
+        shortcuts[const SingleActivator(LogicalKeyboardKey.keyV, meta: true)],
+        isA<PasteAlgorithmsIntent>(),
+      );
+      expect(
+        shortcuts[const SingleActivator(
+          LogicalKeyboardKey.keyV,
+          control: true,
+        )],
+        isA<PasteAlgorithmsIntent>(),
+      );
     });
 
     testWidgets('builds actions that invoke provided callbacks', (
@@ -141,6 +163,8 @@ void main() {
       tester,
     ) async {
       int openTemplateManagerCount = 0;
+      int copyAlgorithmsCount = 0;
+      int pasteAlgorithmsCount = 0;
 
       final service = KeyBindingService(
         platformInteractionService: _TestPlatformInteractionService(
@@ -163,6 +187,8 @@ void main() {
         onNextSlot: () {},
         onToggleChat: () {},
         onOpenTemplateManager: () => openTemplateManagerCount++,
+        onCopyAlgorithms: () => copyAlgorithmsCount++,
+        onPasteAlgorithms: () => pasteAlgorithmsCount++,
       );
 
       late BuildContext capturedContext;
@@ -187,6 +213,12 @@ void main() {
       Actions.invoke(capturedContext, const OpenTemplateManagerIntent());
 
       expect(openTemplateManagerCount, 1);
+
+      Actions.invoke(capturedContext, const CopyAlgorithmsIntent());
+      Actions.invoke(capturedContext, const PasteAlgorithmsIntent());
+
+      expect(copyAlgorithmsCount, 1);
+      expect(pasteAlgorithmsCount, 1);
     });
 
     test('reports zoom modifier state correctly on macOS', () {

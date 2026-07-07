@@ -70,6 +70,18 @@ class OpenTemplateManagerIntent extends Intent {
   const OpenTemplateManagerIntent();
 }
 
+/// Intent triggered when the user copies the shift-selected slot tabs into the
+/// persistent algorithm clipboard.
+class CopyAlgorithmsIntent extends Intent {
+  const CopyAlgorithmsIntent();
+}
+
+/// Intent triggered when the user pastes the algorithm clipboard onto the end
+/// of the current device preset.
+class PasteAlgorithmsIntent extends Intent {
+  const PasteAlgorithmsIntent();
+}
+
 /// Abstracts access to the hardware keyboard to facilitate testing and
 /// deterministic modifier checks.
 abstract class HardwareKeyboardAdapter {
@@ -221,6 +233,18 @@ class KeyBindingService {
         const OpenTemplateManagerIntent(),
     const SingleActivator(LogicalKeyboardKey.keyT, meta: true):
         const OpenTemplateManagerIntent(),
+
+    // Copy selected slots to algorithm clipboard: Mod+C
+    const SingleActivator(LogicalKeyboardKey.keyC, control: true):
+        const CopyAlgorithmsIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyC, meta: true):
+        const CopyAlgorithmsIntent(),
+
+    // Paste algorithm clipboard to end of preset: Mod+V
+    const SingleActivator(LogicalKeyboardKey.keyV, control: true):
+        const PasteAlgorithmsIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyV, meta: true):
+        const PasteAlgorithmsIntent(),
   };
 
   /// Creates the actions map for zoom in/out/reset callbacks.
@@ -266,6 +290,8 @@ class KeyBindingService {
     required VoidCallback onNextSlot,
     required VoidCallback onToggleChat,
     required VoidCallback onOpenTemplateManager,
+    required VoidCallback onCopyAlgorithms,
+    required VoidCallback onPasteAlgorithms,
   }) {
     return {
       SavePresetIntent: CallbackAction<SavePresetIntent>(
@@ -343,6 +369,18 @@ class KeyBindingService {
       OpenTemplateManagerIntent: CallbackAction<OpenTemplateManagerIntent>(
         onInvoke: (_) {
           onOpenTemplateManager();
+          return null;
+        },
+      ),
+      CopyAlgorithmsIntent: CallbackAction<CopyAlgorithmsIntent>(
+        onInvoke: (_) {
+          onCopyAlgorithms();
+          return null;
+        },
+      ),
+      PasteAlgorithmsIntent: CallbackAction<PasteAlgorithmsIntent>(
+        onInvoke: (_) {
+          onPasteAlgorithms();
           return null;
         },
       ),

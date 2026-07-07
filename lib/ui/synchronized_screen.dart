@@ -12,6 +12,7 @@ import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/chat/ui/chat_panel.dart';
 import 'package:nt_helper/mcp/tool_registry.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/services/algorithm_clipboard_service.dart';
 import 'package:nt_helper/ui/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
@@ -49,6 +50,8 @@ import 'package:nt_helper/ui/plugin_gallery_screen.dart';
 import 'package:nt_helper/ui/template_manager/current_preset_template_source.dart';
 import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 import 'package:nt_helper/ui/widgets/shortcut_help_overlay.dart';
+import 'package:nt_helper/ui/widgets/shift_click_gesture_recognizer.dart';
+import 'package:nt_helper/ui/widgets/clipboard_selectable_tab.dart';
 
 import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -143,6 +146,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   ChatCubit? _chatCubit;
   final SectionParameterController _sectionController =
       SectionParameterController();
+
+  /// Slot indices selected via shift-click for the algorithm clipboard (Mod+C).
+  /// A [ValueNotifier] so individual tab indicators can rebuild without
+  /// tearing down the in-flight tap gesture that toggled them. Persisted
+  /// across slot-list rebuilds until copied or cleared. Desktop-only.
+  final ValueNotifier<Set<int>> _clipboardSelection =
+      ValueNotifier<Set<int>>(<int>{});
 
   @override
   void initState() {
@@ -270,6 +280,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     _routingEditorCubit?.close();
     _chatCubit?.close();
     _sectionController.dispose();
+    _clipboardSelection.dispose();
     super.dispose();
   }
 
@@ -309,6 +320,17 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       // Clamp selectedIndex into valid range [0, slots.length-1] (or 0 if no slots).
       final int maxIndex = widget.slots.isEmpty ? 0 : widget.slots.length - 1;
       int newIndex = _selectedIndex.clamp(0, maxIndex);
+      // Drop any clipboard selection entries that no longer map to a slot.
+      if (widget.slots.isEmpty) {
+        _clipboardSelection.value = <int>{};
+      } else {
+        final next = _clipboardSelection.value
+            .where((i) => i < widget.slots.length)
+            .toSet();
+        if (next.length != _clipboardSelection.value.length) {
+          _clipboardSelection.value = next;
+        }
+      }
       if (newIndex != _selectedIndex) {
         setState(() {
           _selectedIndex = newIndex;
@@ -597,6 +619,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           },
           onShowShortcutHelp: () => _handleShowShortcutHelp(),
           onOpenTemplateManager: () => _handleOpenTemplateManagerShortcut(),
+          onCopyAlgorithms: () => _handleCopyAlgorithmsToClipboard(cubit),
+          onPasteAlgorithms: () => _handlePasteAlgorithmsFromClipboard(cubit),
           onSwitchToParameters: () {
             setState(() => _currentMode = EditMode.parameters);
             SemanticsService.sendAnnouncement(
@@ -948,6 +972,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           child: AlgorithmListView(
             slots: widget.slots,
             selectedIndex: _selectedIndex,
+            clipboardSelection: _clipboardSelection,
+            onToggleClipboardSelection: widget.loading
+                ? null
+                : (index) {
+                    // Multi-select is desktop-only (the side list only shows
+                    // on wide-screen / desktop). Toggle without setState: the
+                    // indicator leaf listens via ValueListenableBuilder.
+                    final next = Set<int>.of(_clipboardSelection.value);
+                    if (!next.add(index)) {
+                      next.remove(index);
+                    }
+                    _clipboardSelection.value = next;
+                  },
             onSelectionChanged: (index) {
               setState(() {
                 _selectedIndex = index;
@@ -1480,6 +1517,115 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
   }
 
+  AlgorithmClipboardService _algorithmClipboardService(DistingCubit cubit) =>
+      AlgorithmClipboardService(cubit.database);
+
+  Future<void> _handleCopyAlgorithmsToClipboard(DistingCubit cubit) async {
+    final state = cubit.state;
+    if (state is! DistingStateSynchronized) return;
+
+    final selected = _clipboardSelection.value.toList()..sort();
+    if (selected.isEmpty) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Select slot tabs with shift-click, then press Mod+C to copy.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final copied = await _algorithmClipboardService(cubit)
+          .copyFromDistingState(state, selected);
+      if (copied > 0) {
+        // Clear the on-screen selection now that it has been snapshotted.
+        _clipboardSelection.value = <int>{};
+      }
+      if (copied == 0) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No slots were copied.')),
+        );
+        return;
+      }
+      if (!mounted) return;
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        'Copied ${describeClipboardCount(copied)} to clipboard',
+        TextDirection.ltr,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Copy failed: $error'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handlePasteAlgorithmsFromClipboard(DistingCubit cubit) async {
+    final state = cubit.state;
+    if (state is! DistingStateSynchronized) return;
+    if (widget.loading) return;
+
+    final service = _algorithmClipboardService(cubit);
+    final count = await service.clipboardSlotCount();
+    if (count == 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(algorithmClipboardEmptyMessage)),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final metadataCubit = MetadataSyncCubit(cubit.database, cubit);
+    try {
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        'Pasting ${describeClipboardCount(count)} to end of preset',
+        TextDirection.ltr,
+      );
+      await service.pasteToCurrentDevice(metadataCubit, cubit.requireDisting());
+      final resultState = metadataCubit.state;
+      if (!mounted) return;
+      if (resultState case PresetLoadFailure(error: final error)) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      } else if (resultState case PresetLoadSuccess(message: _)) {
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          'Pasted ${describeClipboardCount(count)} to preset',
+          TextDirection.ltr,
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Paste failed: $error'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      await metadataCubit.close();
+    }
+  }
+
   BottomAppBar _buildBottomAppBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     bool isWideScreen = screenWidth > 900;
@@ -1822,14 +1968,14 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           notification.depth == 1,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(
-          66.0, // Consistent height for both modes
+          72.0, // Consistent height for both modes
         ),
         child: Column(
           children: [
             _buildPresetInfoEditor(context), // The preset info
             // Always reserve space for tab bar to prevent jumping
             SizedBox(
-              height: 26.0,
+              height: 32.0,
               child: !isWideScreen && _currentMode == EditMode.parameters
                   ? _buildTabBar(context)
                   : null,
@@ -2516,10 +2662,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               tabs: List<Widget>.generate(syncState.length, (index) {
                 final slot = syncState[index];
                 final displayName = slot.algorithm.name;
+                final isDesktop =
+                    !_platformService.isMobilePlatform();
 
                 return Semantics(
                   label: 'Slot ${index + 1}: $displayName',
-                  hint: 'Double tap to select. Long press to rename.',
+                  hint: isDesktop
+                      ? 'Double tap to select. Long press to rename. '
+                          'Shift-click to mark for clipboard copy.'
+                      : 'Double tap to select. Long press to rename.',
                   customSemanticsActions: {
                     const CustomSemanticsAction(
                       label: 'Rename algorithm',
@@ -2557,7 +2708,41 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         _contextualHelpText = null;
                       });
                     },
-                    child: GestureDetector(
+                    child: RawGestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      gestures: {
+                        ShiftClickGestureRecognizer:
+                            GestureRecognizerFactoryWithHandlers<
+                              ShiftClickGestureRecognizer
+                            >(
+                              () => ShiftClickGestureRecognizer(
+                                onShiftTap: () {
+                                  // Multi-select is desktop-only: the slot tab
+                                  // bar is the persistent top chrome there,
+                                  // whereas mobile collapses it and
+                                  // shift-clicking is not ergonomic.
+                                  if (!isDesktop) return;
+                                  // Toggle without setState: the indicator
+                                  // leaf listens via ValueListenableBuilder
+                                  // below. Winning the gesture arena here
+                                  // also prevents the TabBar from switching
+                                  // the active tab during multi-select.
+                                  final next = Set<int>.of(
+                                    _clipboardSelection.value,
+                                  );
+                                  if (!next.add(index)) {
+                                    next.remove(index);
+                                  }
+                                  _clipboardSelection.value = next;
+                                  if (SettingsService().hapticsEnabled) {
+                                    Haptics.vibrate(HapticsType.light);
+                                  }
+                                },
+                              ),
+                              (_) {},
+                            ),
+                      },
+                      child: GestureDetector(
                       onDoubleTap: () async {
                         var cubit = context.read<DistingCubit>();
                         cubit.disting()?.let((manager) {
@@ -2589,33 +2774,44 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           final isRenamed =
                               originalName != null &&
                               originalName != displayName;
-                          if (!isRenamed) {
-                            return Tab(text: displayName);
-                          }
-                          return Tab(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(displayName),
-                                Text(
-                                  originalName,
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface.withAlpha(153),
+                          final tabWidget = !isRenamed
+                              ? Tab(text: displayName)
+                              : Tab(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(displayName),
+                                      Text(
+                                        originalName,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: Theme.of(
+                                                context,
+                                              )
+                                              .colorScheme
+                                              .onSurface
+                                              .withAlpha(153),
+                                            ),
                                       ),
-                                ),
-                              ],
-                            ),
+                                    ],
+                                  ),
+                                );
+                          return ClipboardSelectableTab(
+                            key: ValueKey('clipboard-tab-$index'),
+                            selection: _clipboardSelection,
+                            slotIndex: index,
+                            child: tabWidget,
                           );
                         },
                       ),
                     ),
                   ),
-                );
-              }),
-            ),
+                ),
+              );
+            }),
+          ),
           ),
           _ => const Center(child: Text("Loading slots...")),
         };
@@ -3041,3 +3237,4 @@ class _UpdateCheckButtonState extends State<_UpdateCheckButton> {
     );
   }
 }
+

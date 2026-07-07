@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/tables.dart';
 import 'package:nt_helper/domain/disting_limits.dart';
@@ -74,6 +75,13 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     final templatePresets =
         await (select(presets)
               ..where((p) => p.isTemplate.equals(true))
+              ..where(
+                (p) =>
+                    p.category.isNull() |
+                    p.category.isNotValue(
+                      Constants.algorithmClipboardCategory,
+                    ),
+              )
               ..orderBy([(p) => OrderingTerm.asc(p.name)]))
             .get();
     final List<FullPresetDetails> templates = [];
@@ -218,6 +226,92 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     } catch (e) {
       return null;
     }
+  }
+
+  // --- Algorithm Clipboard ---
+
+  /// The algorithm clipboard is a single reserved system template (see
+  /// [Constants.algorithmClipboardPresetName]) used by the Mod+C / Mod+V
+  /// slot copy/paste flow. It is persisted so it survives app restarts but is
+  /// hidden from the Template Manager via [getTemplates].
+
+  /// Returns the clipboard template with all its slots, or `null` when the
+  /// clipboard is empty (no reserved row exists yet).
+  Future<FullPresetDetails?> getClipboardTemplate() async {
+    final row = await _clipboardPresetRow();
+    if (row == null) return null;
+    return getFullPresetDetails(row.id);
+  }
+
+  /// Returns the number of slots currently stored in the clipboard, or `0`
+  /// when the clipboard is empty.
+  Future<int> clipboardSlotCount() async {
+    final row = await _clipboardPresetRow();
+    if (row == null) return 0;
+    final count =
+        await (select(presetSlots)
+              ..where((s) => s.presetId.equals(row.id)))
+            .map((s) => 1)
+            .get();
+    return count.length;
+  }
+
+  /// Upserts [details] as the clipboard template, replacing any prior
+  /// clipboard contents. The preset row is pinned to the reserved name and
+  /// category; its slots (algorithms + values + mappings + routings) are
+  /// copied verbatim from [details]. Returns the clipboard preset id.
+  Future<int> saveClipboardTemplate(FullPresetDetails details) async {
+    final existing = await _clipboardPresetRow();
+    final pinned = details.preset.copyWith(
+      id: existing?.id ?? -1,
+      name: Constants.algorithmClipboardPresetName,
+      category: Value(Constants.algorithmClipboardCategory),
+      isTemplate: true,
+      templateMetadata: const Value(null),
+    );
+    final reindexed = FullPresetDetails(
+      preset: pinned,
+      slots: [
+        for (var i = 0; i < details.slots.length; i++)
+          _reindexClipboardSlot(details.slots[i], i),
+      ],
+    );
+    return saveFullPreset(reindexed, isTemplate: true);
+  }
+
+  /// Deletes the clipboard template, if any. Safe to call when the clipboard
+  /// is already empty.
+  Future<void> clearClipboardTemplate() async {
+    final row = await _clipboardPresetRow();
+    if (row != null) {
+      await deletePreset(row.id);
+    }
+  }
+
+  Future<PresetEntry?> _clipboardPresetRow() {
+    return (select(presets)
+          ..where((p) => p.isTemplate.equals(true))
+          ..where(
+            (p) =>
+                p.name.equals(Constants.algorithmClipboardPresetName) &
+                p.category.equals(Constants.algorithmClipboardCategory),
+          ))
+        .getSingleOrNull();
+  }
+
+  FullPresetSlot _reindexClipboardSlot(FullPresetSlot slot, int newIndex) {
+    return FullPresetSlot(
+      slot: slot.slot.copyWith(
+        id: -1,
+        presetId: -1,
+        slotIndex: newIndex,
+      ),
+      algorithm: slot.algorithm,
+      parameterValues: slot.parameterValues,
+      parameterStringValues: slot.parameterStringValues,
+      mappings: slot.mappings,
+      routing: slot.routing,
+    );
   }
 
   // --- Insertion/Update Methods ---
