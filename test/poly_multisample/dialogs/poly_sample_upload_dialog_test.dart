@@ -25,11 +25,23 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
+    expect(find.text('SysEx to NT hardware'), findsOneWidget);
+    expect(find.text('Slow'), findsOneWidget);
     expect(
       find.text('Uses MIDI SysEx and checks uploaded filenames and sizes.'),
       findsOneWidget,
     );
     expect(find.text('Verify after upload'), findsNothing);
+  });
+
+  testWidgets('labels mounted SD-card upload as fast', (tester) async {
+    await _pumpDialogButton(tester, sysexAvailable: true, onResult: (_) {});
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mounted SD-card folder'), findsOneWidget);
+    expect(find.text('Fast'), findsOneWidget);
   });
 
   testWidgets('returns mounted path when mounted tile is tapped', (

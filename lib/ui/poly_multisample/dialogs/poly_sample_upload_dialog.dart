@@ -45,7 +45,13 @@ class _PolySampleUploadDialogState extends State<_PolySampleUploadDialog> {
             ),
             ListTile(
               leading: const Icon(Icons.cable, semanticLabel: 'SysEx upload'),
-              title: const Text('SysEx to NT hardware'),
+              title: const Row(
+                children: [
+                  Flexible(child: Text('SysEx to NT hardware')),
+                  SizedBox(width: 8),
+                  _UploadSpeedBadge(label: 'Slow', isFast: false),
+                ],
+              ),
               subtitle: Text(
                 widget.sysexAvailable
                     ? 'Uses MIDI SysEx and checks uploaded filenames and sizes.'
@@ -65,7 +71,13 @@ class _PolySampleUploadDialogState extends State<_PolySampleUploadDialog> {
                 Icons.sd_storage,
                 semanticLabel: 'Mounted SD-card upload',
               ),
-              title: const Text('Mounted SD-card folder'),
+              title: const Row(
+                children: [
+                  Flexible(child: Text('Mounted SD-card folder')),
+                  SizedBox(width: 8),
+                  _UploadSpeedBadge(label: 'Fast', isFast: true),
+                ],
+              ),
               subtitle: const Text(
                 'Copies files to a mounted SD-card filesystem folder.',
               ),
@@ -84,6 +96,36 @@ class _PolySampleUploadDialogState extends State<_PolySampleUploadDialog> {
           child: const Text('Cancel'),
         ),
       ],
+    );
+  }
+}
+
+class _UploadSpeedBadge extends StatelessWidget {
+  const _UploadSpeedBadge({required this.label, required this.isFast});
+
+  final String label;
+  final bool isFast;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isFast
+            ? colorScheme.tertiaryContainer
+            : colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: isFast
+              ? colorScheme.onTertiaryContainer
+              : colorScheme.onErrorContainer,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
