@@ -166,7 +166,6 @@ class PolySampleUploadService {
     required IDistingMidiManager manager,
     required List<PolySampleRegion> regions,
     required String hardwareFolder,
-    bool verifyAfterUpload = false,
     PolySampleUploadProgress? onProgress,
   }) async {
     final files = buildUploadFiles(
@@ -214,9 +213,11 @@ class PolySampleUploadService {
       );
     }
 
-    final verification = verifyAfterUpload
-        ? await _verifyHardwareFiles(manager, uploadedFiles, progress)
-        : const _HardwareVerificationResult(correctedFiles: 0, failedFiles: 0);
+    final verification = await _verifyHardwareFiles(
+      manager,
+      uploadedFiles,
+      progress,
+    );
 
     return PolySampleUploadResult(
       filesUploaded: filesUploaded,

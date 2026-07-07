@@ -7,7 +7,7 @@ Add an upload action to the poly multisample/sample-folder editor. The action se
 1. **SysEx to NT hardware** through the existing MIDI SD-card file APIs.
 2. **Mounted SD-card folder** through the local filesystem.
 
-The mounted SD-card path prompts for a destination folder and stores that folder for the next upload. The SysEx path uploads first, then optionally verifies every uploaded hardware filename and byte size through directory listing. Byte-for-byte SysEx verification of WAV files is not supported by the Disting NT protocol because SD-card file download is whole-file only.
+The mounted SD-card path prompts for a destination folder and stores that folder for the next upload. The SysEx path uploads first, then always checks every uploaded hardware filename and byte size through directory listing. Byte-for-byte SysEx verification of WAV files is not supported by the Disting NT protocol because SD-card file download is whole-file only.
 
 Hardening policy: **realistic-only**. Required hardening is limited to plausible user actions, async races, filesystem errors, hardware/API latency, and upload data mismatch.
 
@@ -83,7 +83,7 @@ Hand spot-check after inventory: `poly_sample_hardware_service.dart` now uses SD
 | The SysEx hardware destination is fixed to `/multisamples/<sanitized current instrument name>`. | The request requires transport selection, not a second SysEx destination workflow. A deterministic destination makes the feature mechanical and matches NT multisample folder conventions. | `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`; tests | required |
 | The mounted SD-card destination is the exact folder returned by `FilePicker.getDirectoryPath`. | The request requires a destination folder and persistence. The selected folder is the final sampler folder; the app does not append the instrument name. | `lib/ui/poly_multisample/poly_samples_screen.dart`; `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
 | Mounted upload overwrites only planned target files and leaves unrelated existing files alone. | Removing extra files from a user-selected mounted folder is destructive and was not requested. | `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
-| SysEx verification is opt-in and runs only after all files have uploaded. | WAV verification doubles the transfer time; verification must not abort the folder after the first file and leave later samples missing. | `lib/poly_multisample/poly_sample_upload_service.dart`; dialog; tests | required |
+| SysEx name/size checking always runs after all files have uploaded. | Directory listing checks are cheap and must not abort the folder after the first file and leave later samples missing. | `lib/poly_multisample/poly_sample_upload_service.dart`; dialog; tests | required |
 | SysEx verification covers every planned target filename and byte size with directory listing and ignores unrelated existing hardware files. | Whole-file SysEx downloads are not viable for WAV files, and the NT protocol has no chunked download operation. Deleting unrelated hardware files is destructive and not required. | `lib/poly_multisample/poly_sample_upload_service.dart`; `lib/domain/i_disting_midi_manager.dart`; tests | required |
 | SysEx verification reports missing or size-mismatched files after all uploads complete. | The canonical protocol supports chunked upload and directory listing, but not byte-range download or byte-level correction verification for large WAV files. | `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
 | Uploaded SysEx filenames are the NT PolyMultisample mapping contract. | The NT PolyMultisample player derives root note, switch point, velocity layer, and round robin from filenames inside `/multisamples/<instrument>`, not from sidecar metadata. | `lib/poly_multisample/poly_sample_upload_service.dart`; tests | required |
@@ -216,7 +216,7 @@ Mechanical service rules:
 4. `uploadMountedSd` creates parent directories, copies each source file to a unique temp file in the target directory, deletes an existing target file with the same path, then renames the temp file to the target path. A source path equal to its normalized target path is counted as uploaded and skipped without deleting the file.
 5. `uploadMountedSd` cleans up its temp file on copy/rename failure.
 6. `uploadSysEx` calls `buildUploadFiles` with `targetFolder: hardwareFolder` and `pathContext: p.posix`; hardware target paths must always use `/` separators on every host platform.
-7. `uploadSysEx` creates hardware parent directories with `requestDirectoryCreate` and `_requireSuccess`, uploads every source file with `requestFileUploadChunk` in 512-byte file-data chunks, and reports progress with elapsed-rate ETA. When `verifyAfterUpload` is true, verification runs only after all uploads complete, uses `requestDirectoryListing` to confirm every planned target filename and byte size, and reports missing or size-mismatched files through `failedVerificationFiles`; it does not throw and does not prevent other files from uploading.
+7. `uploadSysEx` creates hardware parent directories with `requestDirectoryCreate` and `_requireSuccess`, uploads every source file with `requestFileUploadChunk` in 512-byte file-data chunks, and reports progress with elapsed-rate ETA. After every SysEx upload, it uses `requestDirectoryListing` to confirm every planned target filename and byte size, and reports missing or size-mismatched files through `failedVerificationFiles`; it does not throw and does not prevent other files from uploading.
 8. `_requireSuccess` has signature `Future<void> _requireSuccess(Future<SdCardStatus?> future, String operation)` and throws `PolySampleUploadException('Hardware $operation failed: ${status?.message ?? 'no response'}')` when the status is null or unsuccessful.
 9. `bytesUploaded` counts source bytes sent by primary uploads only. Verification does not add to `bytesUploaded`.
 
@@ -269,7 +269,7 @@ New public methods:
 
 ```dart
 Future<void> uploadViaMountedSd(String destinationFolder);
-Future<void> uploadViaSysEx(IDistingMidiManager manager, {bool verifyAfterUpload = false});
+Future<void> uploadViaSysEx(IDistingMidiManager manager);
 ```
 
 Shared cubit upload guards, in order:
@@ -290,10 +290,8 @@ SysEx method success behavior:
 
 1. Compute `hardwareFolder = p.posix.join('/multisamples', _safeHardwareFolderName(instrument.name))`.
 2. Emit `activeOperation: uploading`, `progressText: 'Uploading sample folder...'`, `clearError: true`.
-3. Call `_uploadService.uploadSysEx(regions: editedRegions, manager: manager, hardwareFolder: hardwareFolder, verifyAfterUpload: verifyAfterUpload, onProgress: ...)`.
-4. Emit `activeOperation: none`, clear progress text, and effect:
-   - correctedFiles is 0: `'Uploaded sample folder to $hardwareFolder.'`
-   - correctedFiles is greater than 0: `'Uploaded sample folder to $hardwareFolder and corrected ${result.correctedFiles} files.'`
+3. Call `_uploadService.uploadSysEx(regions: editedRegions, manager: manager, hardwareFolder: hardwareFolder, onProgress: ...)`.
+4. Emit `activeOperation: none`, clear progress text, and effect `'Uploaded sample folder to $hardwareFolder.'`.
 
 Failure behavior for both methods: catch any error and emit `activeOperation: none`, clear progress text, `error: error.toString()`.
 
@@ -329,7 +327,7 @@ Dialog structure:
   - `ListTile` for SysEx:
     - leading `Icon(Icons.cable, semanticLabel: 'SysEx upload')`
     - title `'SysEx to NT hardware'`
-    - subtitle `'Uses MIDI SysEx. Optional verification reads every uploaded WAV back in chunks.'`
+    - subtitle `'Uses MIDI SysEx and checks uploaded filenames and sizes.'`
     - enabled exactly `sysexAvailable`
     - disabled subtitle replacement when false: `'Connect to Disting NT to use SysEx upload.'`
     - onTap pops `PolySampleUploadPath.sysex`
@@ -431,8 +429,8 @@ Wire `PolySamplesEditorView(..., onUpload: () => _upload(context), ...)` in `_bo
 1. `flutter analyze` reports no issues.
 2. `flutter test test/poly_multisample` passes.
 3. The Samples editor toolbar displays an `Upload` button for local/import/custom sample sets and disables it for hardware-source sample sets.
-4. The upload dialog has exactly two paths: `SysEx to NT hardware` and `Mounted SD-card folder`; SysEx is disabled when no MIDI manager is connected; SysEx includes an opt-in `Verify after upload` checkbox.
+4. The upload dialog has exactly two paths: `SysEx to NT hardware` and `Mounted SD-card folder`; SysEx is disabled when no MIDI manager is connected; SysEx upload always checks uploaded filenames and byte sizes after transfer.
 5. Mounted SD upload prompts with dialog title `'Upload samples to mounted SD-card folder'`, uploads to the exact folder returned by the picker, and persists that exact folder as `lastMountedUploadFolder`.
-6. SysEx upload sends to `/multisamples/<sanitized current instrument name>`, shows byte-count and ETA progress, optionally verifies every planned target file after upload, corrects one mismatched/missing upload per file, and reports a snackbar error when verification still fails.
+6. SysEx upload sends to `/multisamples/<sanitized current instrument name>`, shows byte-count and ETA progress, always checks every planned target filename and byte size after upload, and reports a snackbar error when the check fails.
 7. Upload success sends an accessibility announcement through the existing effect listener and does not show a success snackbar.
 8. Upload never changes the current editor instrument, source mode, edited regions, baseline regions, selection, or dirty state.

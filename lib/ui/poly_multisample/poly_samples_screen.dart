@@ -307,10 +307,7 @@ class PolySamplesView extends StatelessWidget {
     if (choice == null || !context.mounted) return;
     switch (choice.path) {
       case PolySampleUploadPath.sysex:
-        await cubit.uploadViaSysEx(
-          manager!,
-          verifyAfterUpload: choice.verifyAfterUpload,
-        );
+        await cubit.uploadViaSysEx(manager!);
         break;
       case PolySampleUploadPath.mountedSd:
         final destination = await FilePicker.getDirectoryPath(

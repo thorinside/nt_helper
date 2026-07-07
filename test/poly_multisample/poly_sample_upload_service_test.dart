@@ -153,7 +153,7 @@ void main() {
   );
 
   test(
-    'uploadSysEx creates parents and uploads chunk without verification by default',
+    'uploadSysEx creates parents, uploads chunks, and checks names and sizes',
     () async {
       final manager = MockDistingMidiManager();
       final chunkCalls = <ChunkUploadCall>[];
@@ -161,6 +161,11 @@ void main() {
         ..writeAsBytesSync([1, 2, 3]);
       _stubDirectoryCreates(manager);
       _stubChunkUploads(manager, chunkCalls);
+      when(
+        () => manager.requestDirectoryListing('/multisamples/Piano/Nested'),
+      ).thenAnswer(
+        (_) async => DirectoryListing(entries: [_file('Piano_C3.wav', 3)]),
+      );
 
       final result = await service.uploadSysEx(
         manager: manager,
@@ -189,6 +194,7 @@ void main() {
       verifyNever(() => manager.requestFileUpload(any(), any()));
       verifyNever(() => manager.requestFileDownloadChunk(any(), any(), any()));
       expect(result.correctedFiles, 0);
+      expect(result.failedVerificationFiles, 0);
     },
   );
 
@@ -206,6 +212,11 @@ void main() {
     when(
       () => manager.requestDirectoryListing('/multisamples'),
     ).thenAnswer((_) async => DirectoryListing(entries: [_dir('Piano')]));
+    when(
+      () => manager.requestDirectoryListing('/multisamples/Piano'),
+    ).thenAnswer(
+      (_) async => DirectoryListing(entries: [_file('Piano_C3.wav', 3)]),
+    );
     _stubChunkUploads(manager, chunkCalls);
 
     final result = await service.uploadSysEx(
@@ -337,6 +348,16 @@ void main() {
         ..writeAsBytesSync(d3Bytes);
       _stubDirectoryCreates(manager);
       _stubChunkUploads(manager, chunkCalls);
+      when(
+        () => manager.requestDirectoryListing('/multisamples/Piano'),
+      ).thenAnswer(
+        (_) async => DirectoryListing(
+          entries: [
+            _file('Pno_C3_SW48_V1_RR1.wav', c3Bytes.length),
+            _file('Pno_take2_D3_SW60_V2_RR3.wav', d3Bytes.length),
+          ],
+        ),
+      );
 
       await service.uploadSysEx(
         manager: manager,
@@ -382,6 +403,12 @@ void main() {
         ..writeAsBytesSync(bytes);
       _stubDirectoryCreates(manager);
       _stubChunkUploads(manager, chunkCalls);
+      when(
+        () => manager.requestDirectoryListing('/multisamples/Piano'),
+      ).thenAnswer(
+        (_) async =>
+            DirectoryListing(entries: [_file('Piano_C3.wav', bytes.length)]),
+      );
 
       await service.uploadSysEx(
         manager: manager,
@@ -436,7 +463,6 @@ void main() {
           ),
         ],
         hardwareFolder: '/multisamples/Piano',
-        verifyAfterUpload: true,
       );
 
       expect(chunkCalls.map((call) => call.position), [0, 512, 1024]);
@@ -448,7 +474,7 @@ void main() {
     },
   );
 
-  test('uploadSysEx reports listing verification failures', () async {
+  test('uploadSysEx reports listing check failures', () async {
     final manager = MockDistingMidiManager();
     final chunkCalls = <ChunkUploadCall>[];
     final source = File('${tempRoot.path}/Piano_C3.wav')
@@ -472,7 +498,6 @@ void main() {
         ),
       ],
       hardwareFolder: '/multisamples/Piano',
-      verifyAfterUpload: true,
     );
 
     expect(chunkCalls, hasLength(1));
@@ -481,7 +506,7 @@ void main() {
   });
 
   test(
-    'uploadSysEx uploads remaining files before verification failures',
+    'uploadSysEx uploads remaining files before listing check failures',
     () async {
       final manager = MockDistingMidiManager();
       final chunkCalls = <ChunkUploadCall>[];
@@ -514,7 +539,6 @@ void main() {
           ),
         ],
         hardwareFolder: '/multisamples/Piano',
-        verifyAfterUpload: true,
       );
 
       expect(

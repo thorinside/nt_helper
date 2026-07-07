@@ -3,13 +3,9 @@ import 'package:flutter/material.dart';
 enum PolySampleUploadPath { sysex, mountedSd }
 
 class PolySampleUploadChoice {
-  const PolySampleUploadChoice({
-    required this.path,
-    this.verifyAfterUpload = false,
-  });
+  const PolySampleUploadChoice({required this.path});
 
   final PolySampleUploadPath path;
-  final bool verifyAfterUpload;
 }
 
 Future<PolySampleUploadChoice?> showPolySampleUploadPathDialog(
@@ -35,8 +31,6 @@ class _PolySampleUploadDialog extends StatefulWidget {
 }
 
 class _PolySampleUploadDialogState extends State<_PolySampleUploadDialog> {
-  bool _verifyAfterUpload = false;
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -54,31 +48,17 @@ class _PolySampleUploadDialogState extends State<_PolySampleUploadDialog> {
               title: const Text('SysEx to NT hardware'),
               subtitle: Text(
                 widget.sysexAvailable
-                    ? 'Uses MIDI SysEx. Optional verification reads every uploaded WAV back in chunks.'
+                    ? 'Uses MIDI SysEx and checks uploaded filenames and sizes.'
                     : 'Connect to Disting NT to use SysEx upload.',
               ),
               enabled: widget.sysexAvailable,
               onTap: widget.sysexAvailable
                   ? () => Navigator.of(context).pop(
-                      PolySampleUploadChoice(
+                      const PolySampleUploadChoice(
                         path: PolySampleUploadPath.sysex,
-                        verifyAfterUpload: _verifyAfterUpload,
                       ),
                     )
                   : null,
-            ),
-            CheckboxListTile(
-              value: _verifyAfterUpload,
-              onChanged: widget.sysexAvailable
-                  ? (value) {
-                      setState(() => _verifyAfterUpload = value ?? false);
-                    }
-                  : null,
-              title: const Text('Verify after upload'),
-              subtitle: const Text(
-                'Slower, but checks the files on the NT after the upload finishes.',
-              ),
-              controlAffinity: ListTileControlAffinity.leading,
             ),
             ListTile(
               leading: const Icon(

@@ -926,10 +926,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  Future<void> uploadViaSysEx(
-    IDistingMidiManager manager, {
-    bool verifyAfterUpload = false,
-  }) async {
+  Future<void> uploadViaSysEx(IDistingMidiManager manager) async {
     final instrument = state.currentInstrument;
     if (instrument == null) return;
     if (state.sourceMode == PolySampleSourceMode.hardware) {
@@ -979,7 +976,6 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         regions: editedRegions,
         manager: manager,
         hardwareFolder: hardwareFolder,
-        verifyAfterUpload: verifyAfterUpload,
         onProgress: (message) {
           if (operationRevision != _contentRevision) return;
           emit(state.copyWith(progressText: message));
@@ -992,7 +988,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
             activeOperation: PolyMultisampleActiveOperation.none,
             clearProgressText: true,
             error:
-                'Uploaded sample folder to $hardwareFolder, but verification failed for ${result.failedVerificationFiles} files.',
+                'Uploaded sample folder to $hardwareFolder, but ${result.failedVerificationFiles} uploaded file check(s) failed.',
           ),
         );
         return;
@@ -1001,9 +997,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         state.copyWith(
           activeOperation: PolyMultisampleActiveOperation.none,
           clearProgressText: true,
-          effect: result.correctedFiles == 0
-              ? 'Uploaded sample folder to $hardwareFolder.'
-              : 'Uploaded sample folder to $hardwareFolder and corrected ${result.correctedFiles} files.',
+          effect: 'Uploaded sample folder to $hardwareFolder.',
           effectId: state.effectId + 1,
         ),
       );

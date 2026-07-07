@@ -17,26 +17,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result?.path, PolySampleUploadPath.sysex);
-    expect(result?.verifyAfterUpload, isFalse);
   });
 
-  testWidgets('returns sysex choice with verification enabled', (tester) async {
-    PolySampleUploadChoice? result;
-    await _pumpDialogButton(
-      tester,
-      sysexAvailable: true,
-      onResult: (value) => result = value,
-    );
+  testWidgets('describes the automatic SysEx upload check', (tester) async {
+    await _pumpDialogButton(tester, sysexAvailable: true, onResult: (_) {});
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Verify after upload'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('SysEx to NT hardware'));
-    await tester.pumpAndSettle();
 
-    expect(result?.path, PolySampleUploadPath.sysex);
-    expect(result?.verifyAfterUpload, isTrue);
+    expect(
+      find.text('Uses MIDI SysEx and checks uploaded filenames and sizes.'),
+      findsOneWidget,
+    );
+    expect(find.text('Verify after upload'), findsNothing);
   });
 
   testWidgets('returns mounted path when mounted tile is tapped', (
@@ -55,7 +48,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result?.path, PolySampleUploadPath.mountedSd);
-    expect(result?.verifyAfterUpload, isFalse);
   });
 
   testWidgets('disables SysEx tile without a manager', (tester) async {

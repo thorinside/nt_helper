@@ -80,11 +80,11 @@ Mechanical edits:
    - `test('buildUploadFiles rejects duplicate target names', ...)`: two regions that both target `Piano_C3.wav`; expect `PolySampleUploadException` and message contains `Multiple samples target Piano_C3.wav`.
    - `test('uploadMountedSd copies renamed files and preserves unrelated files', ...)`: create a temp source folder with `Piano_C3.wav`, destination folder with existing `Piano_C3.wav` containing different bytes and `unrelated.txt`; upload one region rooted C3; expect target bytes equal source and unrelated file still exists.
    - `test('uploadMountedSd skips same source and target path without deleting', ...)`: source path is already the computed target in destination; upload; expect file bytes unchanged.
-   - `test('uploadSysEx creates parents and uploads chunk without verification by default', ...)`: nested hardware folder `/multisamples/Piano/Nested`, mock mkdir success, upload chunk success; verify `requestDirectoryCreate('/multisamples/Piano')`, `requestDirectoryCreate('/multisamples/Piano/Nested')`, one chunk upload, no chunk download, and result `correctedFiles == 0`.
+   - `test('uploadSysEx creates parents, uploads chunks, and checks names and sizes', ...)`: nested hardware folder `/multisamples/Piano/Nested`, mock mkdir success, upload chunk success, listing check success; verify `requestDirectoryCreate('/multisamples/Piano')`, `requestDirectoryCreate('/multisamples/Piano/Nested')`, one chunk upload, no chunk download, and result `failedVerificationFiles == 0`.
    - `test('uploadSysEx writes semantic filenames into multisamples folder', ...)`: two edited regions with changed root, switch point, velocity, and round robin upload to `/multisamples/Piano/<semantic filename>.wav`; expect target paths contain the generated root/SW/V/RR tags used by the NT PolyMultisample player.
-   - `test('uploadSysEx verifies uploaded files by listing names and sizes', ...)`: with `verifyAfterUpload: true`, directory listing contains the planned filename and byte size; expect `failedVerificationFiles == 0`, `correctedFiles == 0`, and no chunk downloads.
-   - `test('uploadSysEx reports listing verification failures', ...)`: directory listing has a missing or size-mismatched planned file; expect `failedVerificationFiles == 1`.
-   - `test('uploadSysEx uploads remaining files before verification failures', ...)`: two files upload first, then one listing verification failure is reported; expect `filesUploaded == 2`.
+   - `test('uploadSysEx verifies uploaded files by listing names and sizes', ...)`: directory listing contains the planned filename and byte size; expect `failedVerificationFiles == 0`, `correctedFiles == 0`, and no chunk downloads.
+   - `test('uploadSysEx reports listing check failures', ...)`: directory listing has a missing or size-mismatched planned file; expect `failedVerificationFiles == 1`.
+   - `test('uploadSysEx uploads remaining files before listing check failures', ...)`: two files upload first, then one listing check failure is reported; expect `filesUploaded == 2`.
    - `test('uploadSysEx failed chunk upload surfaces PolySampleUploadException', ...)`: a later chunk returns `SdCardStatus(success: false, message: 'nope')`; expect message contains `Hardware upload chunk at 512 for /multisamples/Piano/Piano_C3.wav failed: nope`.
 
 Verification commands:
@@ -151,7 +151,6 @@ class _FakeUploadService extends PolySampleUploadService {
     required IDistingMidiManager manager,
     required List<PolySampleRegion> regions,
     required String hardwareFolder,
-    bool verifyAfterUpload = false,
     PolySampleUploadProgress? onProgress,
   }) async { ... }
 }
@@ -163,8 +162,7 @@ The fake methods increment call counts, store destination/folder, call `onProgre
 8. Add these cubit tests exactly:
    - `test('uploadViaMountedSd persists destination and emits success effect', ...)`: seed a local/importDraft state with one edited region using `_ExposedPolyMultisampleBuilderCubit.setTestState`; call upload; expect fake destination, `lastMountedUploadFolder`, `activeOperation.none`, and effect `Uploaded sample folder to /Volumes/NT/samples/Piano.`.
    - `test('uploadViaSysEx targets sanitized instrument folder', ...)`: instrument name `Piano/Bad:*Name`; call upload with `_MockDistingMidiManager`; expect fake `hardwareFolder == '/multisamples/Piano_Bad__Name'` and effect `Uploaded sample folder to /multisamples/Piano_Bad__Name.`.
-   - `test('uploadViaSysEx reports corrected file count in effect', ...)`: fake result `correctedFiles: 2`; expect effect `Uploaded sample folder to /multisamples/Piano and corrected 2 files.`.
-   - `test('uploadViaSysEx reports verification failures as an error', ...)`: fake result `failedVerificationFiles: 1`; call with `verifyAfterUpload: true`; expect fake flag true, error text, and no success effect.
+   - `test('uploadViaSysEx reports file check failures as an error', ...)`: fake result `failedVerificationFiles: 1`; call upload; expect check-failure error text and no success effect.
    - `test('upload guards hardware source mode', ...)`: state sourceMode hardware; call mounted upload; expect fake `mountedCalls == 0` and error `Open or import a local sample folder before uploading.`.
    - `test('upload guards pending waveform edits', ...)`: state with `wavEditDrafts` non-empty; call SysEx upload; expect fake `sysexCalls == 0` and error `Save or discard waveform edits before uploading this sample set.`.
    - `test('upload surfaces transport errors', ...)`: fake throws `PolySampleUploadException('boom')`; call mounted upload; expect `activeOperation.none` and error `boom`.
@@ -216,8 +214,8 @@ Mechanical edits:
 7. Wire `onUpload: () => _upload(context)` in the `PolySamplesEditorView` construction.
 8. Update every `PolySamplesEditorView` construction in tests to pass `onUpload`.
 9. Dialog tests in `test/poly_multisample/dialogs/poly_sample_upload_dialog_test.dart`:
-   - `testWidgets('returns sysex path when SysEx tile is tapped', ...)`: open dialog with `sysexAvailable: true`, tap `SysEx to NT hardware`, expect result path `PolySampleUploadPath.sysex` and `verifyAfterUpload == false`.
-   - `testWidgets('returns sysex choice with verification enabled', ...)`: open dialog with `sysexAvailable: true`, tap `Verify after upload`, tap `SysEx to NT hardware`, expect result path `PolySampleUploadPath.sysex` and `verifyAfterUpload == true`.
+   - `testWidgets('returns sysex path when SysEx tile is tapped', ...)`: open dialog with `sysexAvailable: true`, tap `SysEx to NT hardware`, expect result path `PolySampleUploadPath.sysex`.
+   - `testWidgets('describes the automatic SysEx upload check', ...)`: open dialog with `sysexAvailable: true`, expect text `Uses MIDI SysEx and checks uploaded filenames and sizes.` and no `Verify after upload` checkbox.
    - `testWidgets('returns mounted path when mounted tile is tapped', ...)`: tap `Mounted SD-card folder`, expect result path `PolySampleUploadPath.mountedSd`.
    - `testWidgets('disables SysEx tile without a manager', ...)`: open with `sysexAvailable: false`, expect disabled subtitle `Connect to Disting NT to use SysEx upload.`, tap `SysEx to NT hardware`, pump, expect dialog still present.
 10. Editor-view test additions in `test/poly_multisample/poly_samples_editor_view_test.dart`:

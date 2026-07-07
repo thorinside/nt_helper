@@ -36,7 +36,7 @@ Future<int> runDebugPolySampleUploadCommand(List<String> args) async {
     '  mode: ${options.validateOnly ? 'validate existing upload' : 'upload'}',
   );
   if (!options.validateOnly) {
-    stdout.writeln('  verify: ${options.verifyAfterUpload ? 'yes' : 'no'}');
+    stdout.writeln('  check: names and sizes after upload');
   } else {
     stdout.writeln(
       '  content: ${options.validateContent ? 'yes' : 'no, names and sizes'}',
@@ -144,14 +144,12 @@ Future<int> runDebugPolySampleUploadCommand(List<String> args) async {
       manager: manager,
       regions: instrument.regions,
       hardwareFolder: options.hardwareFolder,
-      verifyAfterUpload: options.verifyAfterUpload,
       onProgress: progressPrinter.write,
     );
     stdout.writeln(
       'Upload finished: ${result.filesUploaded} file(s), '
       '${_formatBytes(result.bytesUploaded)}, '
-      '${result.correctedFiles} corrected, '
-      '${result.failedVerificationFiles} verification failure(s).',
+      '${result.failedVerificationFiles} check failure(s).',
     );
     return result.failedVerificationFiles == 0 ? 0 : 70;
   } finally {
@@ -249,7 +247,6 @@ class _DebugPolySampleUploadOptions {
   const _DebugPolySampleUploadOptions({
     required this.sourceFolder,
     required this.hardwareFolder,
-    required this.verifyAfterUpload,
     required this.validateOnly,
     required this.validateContent,
     this.inputDeviceName,
@@ -259,7 +256,6 @@ class _DebugPolySampleUploadOptions {
 
   final String sourceFolder;
   final String hardwareFolder;
-  final bool verifyAfterUpload;
   final bool validateOnly;
   final bool validateContent;
   final String? inputDeviceName;
@@ -269,7 +265,6 @@ class _DebugPolySampleUploadOptions {
   static _DebugPolySampleUploadOptions parse(List<String> args) {
     final values = <String, String>{};
     var sourceFolder = _defaultSourceFolder();
-    var verifyAfterUpload = false;
     var validateOnly = false;
     var validateContent = false;
 
@@ -285,10 +280,7 @@ class _DebugPolySampleUploadOptions {
         sourceFolder = arg.substring(debugPolySampleUploadFlag.length + 1);
         continue;
       }
-      if (arg == '--verify' || arg == '--verify-after-upload') {
-        verifyAfterUpload = true;
-        continue;
-      }
+      if (arg == '--verify' || arg == '--verify-after-upload') continue;
       if (arg == '--validate' || arg == '--validate-only') {
         validateOnly = true;
         continue;
@@ -311,7 +303,6 @@ class _DebugPolySampleUploadOptions {
     return _DebugPolySampleUploadOptions(
       sourceFolder: sourceFolder,
       hardwareFolder: values['hardware-folder'] ?? '/multisamples/$folderName',
-      verifyAfterUpload: verifyAfterUpload,
       validateOnly: validateOnly,
       validateContent: validateContent,
       inputDeviceName: values['input'],
