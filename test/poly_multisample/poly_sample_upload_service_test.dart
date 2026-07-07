@@ -86,7 +86,10 @@ void main() {
   });
 
   test('adaptive ETA estimator adjusts when later transfer rate slows', () {
-    final estimator = AdaptiveTransferRateEstimator();
+    final estimator = AdaptiveTransferRateEstimator(
+      minSampleDuration: const Duration(seconds: 1),
+      minSampleBytes: 1,
+    );
 
     estimator.record(completedBytes: 1000, elapsed: const Duration(seconds: 1));
     final earlyEstimate = estimator.estimate(remainingBytes: 3000);
@@ -98,6 +101,68 @@ void main() {
     expect(earlyEstimate, isNotNull);
     expect(adjustedEstimate, isNotNull);
     expect(adjustedEstimate!, greaterThan(earlyEstimate!));
+  });
+
+  test('adaptive ETA estimator ignores timing gaps between files', () {
+    final estimator = AdaptiveTransferRateEstimator(
+      minSampleDuration: const Duration(seconds: 1),
+      minSampleBytes: 1,
+    );
+
+    estimator.record(
+      completedBytes: 1000,
+      elapsed: const Duration(seconds: 1),
+      segmentId: 1,
+    );
+    estimator.record(
+      completedBytes: 2000,
+      elapsed: const Duration(seconds: 2),
+      segmentId: 1,
+    );
+    final beforeFileSwitch = estimator.estimate(remainingBytes: 1000);
+
+    estimator.record(
+      completedBytes: 2512,
+      elapsed: const Duration(seconds: 10),
+      segmentId: 2,
+    );
+    estimator.record(
+      completedBytes: 3512,
+      elapsed: const Duration(seconds: 11),
+      segmentId: 2,
+    );
+    final afterFileSwitch = estimator.estimate(remainingBytes: 1000);
+
+    expect(beforeFileSwitch, const Duration(seconds: 1));
+    expect(afterFileSwitch, const Duration(seconds: 1));
+    expect(estimator.sampleCount, 3);
+  });
+
+  test('adaptive ETA estimator excludes extreme outlier samples', () {
+    final estimator = AdaptiveTransferRateEstimator(
+      minSampleDuration: const Duration(seconds: 1),
+      minSampleBytes: 1,
+    );
+
+    for (var second = 1; second <= 5; second++) {
+      estimator.record(
+        completedBytes: second * 1000,
+        elapsed: Duration(seconds: second),
+      );
+    }
+    estimator.record(
+      completedBytes: 5001,
+      elapsed: const Duration(seconds: 15),
+    );
+    estimator.record(
+      completedBytes: 6001,
+      elapsed: const Duration(seconds: 16),
+    );
+
+    expect(
+      estimator.estimate(remainingBytes: 1000),
+      lessThanOrEqualTo(const Duration(milliseconds: 1100)),
+    );
   });
 
   test(

@@ -303,7 +303,11 @@ class _TransferProgress {
   }) {
     completedBytes += bytes;
     final elapsed = _stopwatch.elapsed;
-    _etaEstimator.record(completedBytes: completedBytes, elapsed: elapsed);
+    _etaEstimator.record(
+      completedBytes: completedBytes,
+      elapsed: elapsed,
+      segmentId: fileIndex,
+    );
     final shouldEmit =
         onProgress != null &&
         (completedBytes >= totalBytes ||
@@ -335,34 +339,65 @@ class _TransferProgress {
 
 class AdaptiveTransferRateEstimator {
   AdaptiveTransferRateEstimator({
-    this.minSampleDuration = const Duration(milliseconds: 250),
-    this.smoothingFactor = 0.25,
-  }) : assert(smoothingFactor > 0 && smoothingFactor <= 1);
+    this.minSampleDuration = const Duration(seconds: 2),
+    this.minSampleBytes = 8 * 1024,
+    this.maxSampleCount = 120,
+    this.minSamplesForOutlierRejection = 5,
+    this.outlierTolerance = 0.45,
+    this.trimFraction = 0.15,
+  }) : assert(minSampleBytes >= 0),
+       assert(maxSampleCount > 0),
+       assert(minSamplesForOutlierRejection > 0),
+       assert(outlierTolerance >= 0),
+       assert(trimFraction >= 0 && trimFraction < 0.5);
 
   final Duration minSampleDuration;
-  final double smoothingFactor;
+  final int minSampleBytes;
+  final int maxSampleCount;
+  final int minSamplesForOutlierRejection;
+  final double outlierTolerance;
+  final double trimFraction;
 
   int _lastSampleBytes = 0;
   Duration _lastSampleElapsed = Duration.zero;
-  double? _smoothedBytesPerMillisecond;
+  int? _lastSegmentId;
+  double? _bytesPerMillisecond;
   int _sampleCount = 0;
+  final List<_TransferRateSample> _samples = [];
 
   int get sampleCount => _sampleCount;
 
-  void record({required int completedBytes, required Duration elapsed}) {
+  void record({
+    required int completedBytes,
+    required Duration elapsed,
+    int? segmentId,
+  }) {
+    if (segmentId != null &&
+        _lastSegmentId != null &&
+        segmentId != _lastSegmentId) {
+      _lastSegmentId = segmentId;
+      _lastSampleBytes = completedBytes;
+      _lastSampleElapsed = elapsed;
+      return;
+    }
+    _lastSegmentId ??= segmentId;
+
     final deltaBytes = completedBytes - _lastSampleBytes;
     final deltaElapsed = elapsed - _lastSampleElapsed;
     if (deltaBytes <= 0 || deltaElapsed.inMilliseconds <= 0) return;
     if (deltaElapsed < minSampleDuration) return;
+    if (deltaBytes < minSampleBytes) return;
 
-    final instantaneousRate = deltaBytes / deltaElapsed.inMilliseconds;
-    if (instantaneousRate <= 0) return;
-
-    final alpha = _sampleCount < 4 ? 0.5 : smoothingFactor;
-    final currentRate = _smoothedBytesPerMillisecond;
-    _smoothedBytesPerMillisecond = currentRate == null
-        ? instantaneousRate
-        : (currentRate * (1 - alpha)) + (instantaneousRate * alpha);
+    _samples.add(
+      _TransferRateSample(
+        bytes: deltaBytes,
+        milliseconds: deltaElapsed.inMilliseconds,
+      ),
+    );
+    if (_samples.length > maxSampleCount) {
+      _samples.removeAt(0);
+    }
+    _bytesPerMillisecond = _calculateLongRunRate();
     _sampleCount++;
     _lastSampleBytes = completedBytes;
     _lastSampleElapsed = elapsed;
@@ -370,10 +405,72 @@ class AdaptiveTransferRateEstimator {
 
   Duration? estimate({required int remainingBytes}) {
     if (remainingBytes <= 0) return Duration.zero;
-    final rate = _smoothedBytesPerMillisecond;
+    final rate = _bytesPerMillisecond;
     if (rate == null || rate <= 0) return null;
     return Duration(milliseconds: (remainingBytes / rate).round());
   }
+
+  double? _calculateLongRunRate() {
+    if (_samples.isEmpty) return null;
+    var usable = List<_TransferRateSample>.of(_samples);
+    if (usable.length >= minSamplesForOutlierRejection) {
+      usable = _withoutOutliers(usable);
+    }
+    if (usable.length >= 8 && trimFraction > 0) {
+      usable.sort((a, b) => a.rate.compareTo(b.rate));
+      final trimCount = (usable.length * trimFraction).floor();
+      if (trimCount > 0 && trimCount * 2 < usable.length) {
+        usable = usable.sublist(trimCount, usable.length - trimCount);
+      }
+    }
+    return _weightedRate(usable);
+  }
+
+  List<_TransferRateSample> _withoutOutliers(
+    List<_TransferRateSample> samples,
+  ) {
+    final rates = samples.map((sample) => sample.rate).toList()..sort();
+    final median = _median(rates);
+    final deviations = rates.map((rate) => (rate - median).abs()).toList()
+      ..sort();
+    final mad = _median(deviations);
+    final tolerance = _maxDouble(median * outlierTolerance, mad * 3);
+    final filtered = samples
+        .where((sample) => (sample.rate - median).abs() <= tolerance)
+        .toList();
+    return filtered.isEmpty ? samples : filtered;
+  }
+
+  double _weightedRate(List<_TransferRateSample> samples) {
+    var bytes = 0;
+    var milliseconds = 0;
+    for (final sample in samples) {
+      bytes += sample.bytes;
+      milliseconds += sample.milliseconds;
+    }
+    return bytes / milliseconds;
+  }
+}
+
+class _TransferRateSample {
+  const _TransferRateSample({required this.bytes, required this.milliseconds});
+
+  final int bytes;
+  final int milliseconds;
+
+  double get rate => bytes / milliseconds;
+}
+
+double _median(List<double> sortedValues) {
+  final length = sortedValues.length;
+  if (length == 0) return 0;
+  final middle = length ~/ 2;
+  if (length.isOdd) return sortedValues[middle];
+  return (sortedValues[middle - 1] + sortedValues[middle]) / 2;
+}
+
+double _maxDouble(double a, double b) {
+  return a > b ? a : b;
 }
 
 class _HardwareVerificationResult {
