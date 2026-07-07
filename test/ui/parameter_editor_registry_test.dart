@@ -12,13 +12,10 @@ void main() {
     required String guid,
     required String parameterName,
     required int unit,
+    String algorithmName = 'Test Algorithm',
   }) {
     return Slot(
-      algorithm: Algorithm(
-        algorithmIndex: 0,
-        guid: guid,
-        name: 'Test Algorithm',
-      ),
+      algorithm: Algorithm(algorithmIndex: 0, guid: guid, name: algorithmName),
       routing: RoutingInfo(algorithmIndex: 0, routingInfo: List.filled(6, 0)),
       pages: ParameterPages(algorithmIndex: 0, pages: []),
       parameters: [
@@ -131,6 +128,62 @@ void main() {
         expect(editor, isNotNull, reason: 'unit=$unit');
         final fileEditor = editor as FileParameterEditor;
         expect(fileEditor.rule.mode, equals(FileSelectionMode.fileOnly));
+      }
+    });
+
+    test('pymu Folder and Sample use Poly Multisample rules', () {
+      for (final parameterName in ['Folder', 'Sample']) {
+        final slot = createTestSlot(
+          guid: 'pymu',
+          parameterName: parameterName,
+          unit: ParameterUnits.modernHasStrings,
+          algorithmName: 'Poly Multisample',
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: parameterName);
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.baseDirectory, '/samples');
+        expect(fileEditor.rule.ntSampleFolderEnumeration, isTrue);
+        expect(
+          fileEditor.rule.hasMultisampleSampleSentinel,
+          parameterName == 'Sample',
+        );
+      }
+    });
+
+    test('pyms Folder and Sample use Poly Multisample legacy rules', () {
+      for (final parameterName in ['Folder', 'Sample']) {
+        final slot = createTestSlot(
+          guid: 'pyms',
+          parameterName: parameterName,
+          unit: ParameterUnits.modernHasStrings,
+          algorithmName: 'Poly Multisample (legacy)',
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: parameterName);
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.baseDirectory, '/samples');
+        expect(fileEditor.rule.ntSampleFolderEnumeration, isTrue);
+        expect(
+          fileEditor.rule.hasMultisampleSampleSentinel,
+          parameterName == 'Sample',
+        );
+      }
+    });
+
+    test('generic Folder and Sample rules remain non-recursive', () {
+      for (final parameterName in ['Folder', 'Sample']) {
+        final slot = createTestSlot(
+          guid: 'splr',
+          parameterName: parameterName,
+          unit: ParameterUnits.modernHasStrings,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: parameterName);
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.baseDirectory, '/samples');
+        expect(fileEditor.rule.ntSampleFolderEnumeration, isFalse);
+        expect(fileEditor.rule.hasMultisampleSampleSentinel, isFalse);
       }
     });
 

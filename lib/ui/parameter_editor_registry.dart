@@ -127,6 +127,12 @@ class ParameterEditorRule {
   /// Default folder to select (relative to baseDirectory)
   final String? defaultFolder;
 
+  /// Match the NT's recursive /samples folder numbering.
+  final bool ntSampleFolderEnumeration;
+
+  /// Value 0 is the "Multisample" sentinel before real files.
+  final bool hasMultisampleSampleSentinel;
+
   const ParameterEditorRule({
     this.algorithmGuid,
     this.parameterNamePattern,
@@ -138,6 +144,8 @@ class ParameterEditorRule {
     required this.description,
     this.recursive = false,
     this.defaultFolder,
+    this.ntSampleFolderEnumeration = false,
+    this.hasMultisampleSampleSentinel = false,
   });
 
   /// Check if this rule matches the given parameter
@@ -209,6 +217,48 @@ class ParameterEditorRegistry {
 
   /// Unified rules for all firmware versions
   static final List<ParameterEditorRule> _rules = [
+    // Poly Multisample - NT enumerates folders recursively under /samples.
+    ParameterEditorRule(
+      algorithmGuid: 'pymu',
+      parameterNamePattern: r'^Folder$',
+      units: _folderUnits,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.folderOnly,
+      description: 'Poly Multisample folder selection',
+      ntSampleFolderEnumeration: true,
+    ),
+    ParameterEditorRule(
+      algorithmGuid: 'pymu',
+      parameterNamePattern: r'^Sample$',
+      units: _folderUnits,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.fileOnly,
+      allowedExtensions: ['.wav', '.aif', '.aiff'],
+      description: 'Poly Multisample sample selection',
+      ntSampleFolderEnumeration: true,
+      hasMultisampleSampleSentinel: true,
+    ),
+    ParameterEditorRule(
+      algorithmGuid: 'pyms',
+      parameterNamePattern: r'^Folder$',
+      units: _folderUnits,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.folderOnly,
+      description: 'Poly Multisample legacy folder selection',
+      ntSampleFolderEnumeration: true,
+    ),
+    ParameterEditorRule(
+      algorithmGuid: 'pyms',
+      parameterNamePattern: r'^Sample$',
+      units: _folderUnits,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.fileOnly,
+      allowedExtensions: ['.wav', '.aif', '.aiff'],
+      description: 'Poly Multisample legacy sample selection',
+      ntSampleFolderEnumeration: true,
+      hasMultisampleSampleSentinel: true,
+    ),
+
     // Sample player - Folder selection
     ParameterEditorRule(
       algorithmGuid: 'samp',

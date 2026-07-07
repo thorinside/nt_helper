@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show ParameterInfo;
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
@@ -53,6 +54,12 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   String? _currentDirectory;
   String? _selectedFolderName;
   String? _selectedFileName;
+
+  bool get _usesNtSampleFolderEnumeration =>
+      widget.rule.ntSampleFolderEnumeration;
+
+  bool get _hasMultisampleSampleSentinel =>
+      widget.rule.hasMultisampleSampleSentinel;
 
   // Development mode state for Lua Script
   Timer? _fileWatchTimer;
@@ -199,6 +206,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
   String? _getDisplayValueForCurrentValue() {
     final currentVal = widget.currentValue;
+    if (_hasMultisampleSampleSentinel && currentVal <= 0) {
+      return 'Multisample';
+    }
     // Use min value to determine display offset: if min=0, show currentVal+1; if min=1, show currentVal
     final displayVal = widget.parameterInfo.min == 0
         ? currentVal + 1
@@ -233,9 +243,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   Future<void> _resolveCurrentValueToName() async {
     if (_currentDirectory == null || _availableFiles.isEmpty) return;
 
-    // Convert parameter value to array index using min value
-    final paramValue = widget.currentValue;
-    final index = paramValue - widget.parameterInfo.min;
+    final index = _entryIndexForParameterValue(widget.currentValue);
 
     if (index >= 0 && index < _availableFiles.length) {
       final entry = _availableFiles[index];
@@ -258,7 +266,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   void _incrementValue() {
-    final newValue = (widget.currentValue + 1).clamp(
+    final incrementedValue = _hasMultisampleSampleSentinel
+        ? (widget.currentValue < 1 ? 1 : widget.currentValue + 1)
+        : widget.currentValue + 1;
+    final newValue = incrementedValue.clamp(
       widget.parameterInfo.min,
       widget.parameterInfo.max,
     );
@@ -269,7 +280,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   void _decrementValue() {
-    final newValue = (widget.currentValue - 1).clamp(
+    final decrementedValue = _hasMultisampleSampleSentinel
+        ? (widget.currentValue <= 1 ? 0 : widget.currentValue - 1)
+        : widget.currentValue - 1;
+    final newValue = decrementedValue.clamp(
       widget.parameterInfo.min,
       widget.parameterInfo.max,
     );
@@ -313,8 +327,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   void _updateSelectedNameForValue(int value) {
     if (_availableFiles.isEmpty) return;
 
-    // Convert parameter value to array index using min value
-    final index = value - widget.parameterInfo.min;
+    final index = _entryIndexForParameterValue(value);
 
     if (index >= 0 && index < _availableFiles.length) {
       final entry = _availableFiles[index];
@@ -369,7 +382,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
       List<DirectoryEntry> allFiles = [];
 
-      if (widget.rule.recursive) {
+      if (_usesNtSampleFolderEnumeration &&
+          widget.rule.mode == FileSelectionMode.folderOnly) {
+        allFiles = await _loadNtSampleFolderEntries(disting, directoryToLoad);
+      } else if (widget.rule.recursive) {
         // Recursive search for files
         allFiles = await _loadDirectoryRecursive(disting, directoryToLoad, '');
       } else {
@@ -383,54 +399,59 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
       if (mounted) {
         setState(() {
-          _availableFiles =
-              allFiles.where((entry) {
-                // Filter out hidden files and system directories
-                if (entry.name.startsWith('.')) return false;
+          final availableFiles = allFiles.where((entry) {
+            // Filter out hidden files and system directories
+            if (entry.name.startsWith('.')) return false;
 
-                // Filter based on mode and allowed extensions
-                switch (widget.rule.mode) {
-                  case FileSelectionMode.folderOnly:
-                    return entry.isDirectory &&
-                        !widget.rule.excludeDirs.contains(
-                          entry.name.replaceAll('/', ''),
-                        );
-                  case FileSelectionMode.fileOnly:
-                  case FileSelectionMode.directFile:
-                    if (entry.isDirectory) return false;
-                    if (widget.rule.allowedExtensions?.isEmpty ?? true) {
-                      return true;
-                    }
-                    return widget.rule.allowedExtensions!.any(
-                      (ext) =>
-                          entry.name.toLowerCase().endsWith(ext.toLowerCase()),
+            // Filter based on mode and allowed extensions
+            switch (widget.rule.mode) {
+              case FileSelectionMode.folderOnly:
+                return entry.isDirectory &&
+                    !widget.rule.excludeDirs.contains(
+                      entry.name.replaceAll('/', ''),
                     );
-                  case FileSelectionMode.folderThenFile:
-                    // Show both folders and valid files
-                    if (entry.isDirectory) {
-                      return !widget.rule.excludeDirs.contains(
-                        entry.name.replaceAll('/', ''),
-                      );
-                    }
-                    if (widget.rule.allowedExtensions?.isEmpty ?? true) {
-                      return true;
-                    }
-                    return widget.rule.allowedExtensions!.any(
-                      (ext) =>
-                          entry.name.toLowerCase().endsWith(ext.toLowerCase()),
-                    );
-                  case FileSelectionMode.textInput:
-                    return false; // Not used for text input
+              case FileSelectionMode.fileOnly:
+              case FileSelectionMode.directFile:
+                if (entry.isDirectory) return false;
+                if (widget.rule.allowedExtensions?.isEmpty ?? true) {
+                  return true;
                 }
-              }).toList()..sort((a, b) {
-                // For recursive mode, sort by full path
-                // For non-recursive, sort directories first, then files
-                if (!widget.rule.recursive && a.isDirectory != b.isDirectory) {
-                  return a.isDirectory ? -1 : 1;
+                return widget.rule.allowedExtensions!.any(
+                  (ext) => entry.name.toLowerCase().endsWith(ext.toLowerCase()),
+                );
+              case FileSelectionMode.folderThenFile:
+                // Show both folders and valid files
+                if (entry.isDirectory) {
+                  return !widget.rule.excludeDirs.contains(
+                    entry.name.replaceAll('/', ''),
+                  );
                 }
-                // Then sort alphabetically
-                return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-              });
+                if (widget.rule.allowedExtensions?.isEmpty ?? true) {
+                  return true;
+                }
+                return widget.rule.allowedExtensions!.any(
+                  (ext) => entry.name.toLowerCase().endsWith(ext.toLowerCase()),
+                );
+              case FileSelectionMode.textInput:
+                return false; // Not used for text input
+            }
+          }).toList();
+          if (!(_usesNtSampleFolderEnumeration &&
+              widget.rule.mode == FileSelectionMode.folderOnly)) {
+            availableFiles.sort((a, b) {
+              // For recursive mode, sort by full path
+              // For non-recursive, sort directories first, then files
+              if (!widget.rule.recursive && a.isDirectory != b.isDirectory) {
+                return a.isDirectory ? -1 : 1;
+              }
+              // Then sort alphabetically
+              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            });
+          }
+          if (_hasMultisampleSampleSentinel) {
+            availableFiles.insert(0, _multisampleSentinelEntry());
+          }
+          _availableFiles = availableFiles;
           _isLoadingFiles = false;
         });
 
@@ -470,25 +491,19 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         return _currentDirectory;
       }
 
-      final listing = await disting.requestDirectoryListing(_currentDirectory!);
-      if (listing == null) {
-        return _currentDirectory;
-      }
-
-      final folders =
-          listing.entries
-              .where((e) => e.isDirectory && !e.name.startsWith('.'))
-              .toList()
-            ..sort(
-              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-            );
+      final folders = _usesNtSampleFolderEnumeration
+          ? await _loadNtSampleFolderEntries(disting, _currentDirectory!)
+          : await _loadFlatFolderEntries(disting, _currentDirectory!);
 
       // Convert folder parameter value to array index using min value
       final folderParam = widget.slot.parameters[folderParamIndex];
       final folderIndex = folderValue - folderParam.min;
 
       if (folderIndex >= 0 && folderIndex < folders.length) {
-        final selectedFolder = folders[folderIndex].name.replaceAll('/', '');
+        final selectedFolder = folders[folderIndex].name.replaceAll(
+          RegExp(r'/+$'),
+          '',
+        );
         return '$_currentDirectory/$selectedFolder';
       } else {}
     } catch (e) {
@@ -539,8 +554,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       // Find the index of the selected entry and set the parameter value
       final selectedIndex = _availableFiles.indexOf(selectedEntry);
       if (selectedIndex != -1) {
-        // Convert array index to parameter value using min value
-        final newValue = selectedIndex + widget.parameterInfo.min;
+        final newValue = _parameterValueForEntryIndex(selectedIndex);
         // Update the name immediately for UI feedback
         _updateSelectedNameForValue(newValue);
         // Then notify parent to update hardware
@@ -550,7 +564,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   Future<List<DirectoryEntry>> _loadDirectoryRecursive(
-    dynamic disting,
+    IDistingMidiManager disting,
     String basePath,
     String relativePath,
   ) async {
@@ -606,6 +620,84 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     }
 
     return results;
+  }
+
+  Future<List<DirectoryEntry>> _loadFlatFolderEntries(
+    IDistingMidiManager disting,
+    String path,
+  ) async {
+    final listing = await disting.requestDirectoryListing(path);
+    if (listing == null) return [];
+    return listing.entries
+        .where((entry) => entry.isDirectory && !entry.name.startsWith('.'))
+        .toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  Future<List<DirectoryEntry>> _loadNtSampleFolderEntries(
+    IDistingMidiManager disting,
+    String basePath,
+  ) async {
+    final results = <DirectoryEntry>[];
+
+    Future<void> walk(String currentPath, String relativePath) async {
+      final listing = await disting.requestDirectoryListing(currentPath);
+      if (listing == null) return;
+
+      final directories =
+          listing.entries.where((entry) {
+            if (!entry.isDirectory) return false;
+            final name = entry.name.replaceAll(RegExp(r'/+$'), '');
+            if (name.isEmpty || name.startsWith('.')) return false;
+            return !widget.rule.excludeDirs.contains(name);
+          }).toList()..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
+
+      for (final directory in directories) {
+        final name = directory.name.replaceAll(RegExp(r'/+$'), '');
+        final childRelativePath = relativePath.isEmpty
+            ? name
+            : '$relativePath/$name';
+        results.add(
+          DirectoryEntry(
+            name: childRelativePath,
+            attributes: directory.attributes,
+            date: directory.date,
+            time: directory.time,
+            size: directory.size,
+          ),
+        );
+        await walk('$currentPath/$name', childRelativePath);
+      }
+    }
+
+    await walk(basePath, '');
+    return results;
+  }
+
+  int _entryIndexForParameterValue(int value) {
+    if (_hasMultisampleSampleSentinel) {
+      return value <= 0 ? 0 : value;
+    }
+    return value - widget.parameterInfo.min;
+  }
+
+  int _parameterValueForEntryIndex(int index) {
+    if (_hasMultisampleSampleSentinel) {
+      return index <= 0 ? 0 : index;
+    }
+    return index + widget.parameterInfo.min;
+  }
+
+  DirectoryEntry _multisampleSentinelEntry() {
+    return DirectoryEntry(
+      name: 'Multisample',
+      attributes: 0,
+      date: 0,
+      time: 0,
+      size: 0,
+    );
   }
 
   IconData _getFileIcon(String fileName) {
@@ -751,7 +843,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     final itemType = widget.rule.mode == FileSelectionMode.folderOnly
         ? 'folder'
         : 'file';
-    final canGoPrev = widget.currentValue > widget.parameterInfo.min;
+    final canGoPrev = _hasMultisampleSampleSentinel
+        ? widget.currentValue > 0
+        : widget.currentValue > widget.parameterInfo.min;
     final canGoNext = widget.currentValue < widget.parameterInfo.max;
 
     return Row(
@@ -1267,7 +1361,7 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
 
   void _scrollToSelected() {
     if (_searchQuery.isNotEmpty) return;
-    final selectedIndex = widget.currentValue - widget.parameterInfo.min;
+    final selectedIndex = _selectedIndex;
     if (selectedIndex >= 0 && selectedIndex < widget.availableFiles.length) {
       const itemHeight = 36.0;
       final offset = selectedIndex * itemHeight;
@@ -1291,11 +1385,18 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
     }).toList();
   }
 
+  int get _selectedIndex {
+    if (widget.rule.hasMultisampleSampleSentinel) {
+      return widget.currentValue <= 0 ? 0 : widget.currentValue;
+    }
+    return widget.currentValue - widget.parameterInfo.min;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFolder = widget.rule.mode == FileSelectionMode.folderOnly;
     final filtered = _filteredFiles;
-    final selectedIndex = widget.currentValue - widget.parameterInfo.min;
+    final selectedIndex = _selectedIndex;
 
     return AlertDialog(
       title: Row(
