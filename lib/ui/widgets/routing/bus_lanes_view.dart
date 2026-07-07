@@ -709,16 +709,14 @@ class _BusLanesViewState extends State<BusLanesView> {
       }
     }
 
-    // Collect available buses: unused and not the current assignment.
     final auxMax = _lastHasExtended ? BusSpec.auxMaxExtended : BusSpec.auxMax;
     final es5Min = _lastHasExtended ? BusSpec.es5MinExtended : BusSpec.es5Min;
     final es5Max = _lastHasExtended ? BusSpec.es5MaxExtended : BusSpec.es5Max;
 
-    final available = <int>[];
+    final buses = <int>[];
     void addRange(int from, int to) {
       for (var b = from; b <= to; b++) {
-        if (b == ref.previousBus || _lastVisibleBuses.contains(b)) continue;
-        available.add(b);
+        if (!buses.contains(b)) buses.add(b);
       }
     }
 
@@ -726,19 +724,20 @@ class _BusLanesViewState extends State<BusLanesView> {
     addRange(BusSpec.outputMin, BusSpec.outputMax);
     addRange(BusSpec.auxMin, auxMax);
     if (isUsbf) addRange(es5Min, es5Max);
-    if (available.isEmpty) return;
+    if (buses.isEmpty) return;
 
     final choice = await showDialog<int>(
       context: context,
       builder: (ctx) => BusPickerDialog(
         portLabel: ref.label,
         currentBus: ref.previousBus,
-        availableBuses: available,
+        availableBuses: buses,
         showEs5: isUsbf,
         busLabel: _busLabel,
       ),
     );
     if (choice == null || !mounted || !context.mounted) return;
+    if (choice == ref.previousBus) return;
     await _applyAssign(context, ref, choice);
   }
 

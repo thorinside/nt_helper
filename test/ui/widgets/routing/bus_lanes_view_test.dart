@@ -75,6 +75,35 @@ void main() {
     ],
   );
 
+  state.RoutingAlgorithm dualOutputsOnAdjacentBuses() => state.RoutingAlgorithm(
+    id: 'algoDual',
+    index: 0,
+    algorithm: Algorithm(algorithmIndex: 0, guid: 'dual', name: 'Dual'),
+    inputPorts: const [],
+    outputPorts: const [
+      Port(
+        id: 'dual_out_13',
+        name: 'Out 13',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        busValue: 13,
+        outputMode: OutputMode.add,
+        parameterNumber: 3,
+        modeParameterNumber: 5,
+      ),
+      Port(
+        id: 'dual_out_14',
+        name: 'Out 14',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        busValue: 14,
+        outputMode: OutputMode.add,
+        parameterNumber: 4,
+        modeParameterNumber: 6,
+      ),
+    ],
+  );
+
   state.RoutingAlgorithm inPlaceOutputOnInputBus() => state.RoutingAlgorithm(
     id: 'algoInPlace',
     index: 0,
@@ -234,6 +263,25 @@ void main() {
     expect(find.byType(CustomPaint), findsWidgets);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'bus picker opened from plus lane shows current and used lower buses',
+    (tester) async {
+      when(cubit.state).thenReturn(loadedWith([dualOutputsOnAdjacentBuses()]));
+
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      // Visible buses are 13 and 14. The second output bead is on bus 14
+      // at column 2, row 1. Dropping it one rail to the right lands on plus.
+      await tester.dragFrom(const Offset(277, 99), const Offset(42, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Current bus O2'), findsOneWidget);
+      expect(find.text('O1'), findsOneWidget);
+      expect(find.text('O2'), findsOneWidget);
+    },
+  );
 
   testWidgets('touch dragging empty bus lanes canvas pans the view', (
     tester,
