@@ -629,7 +629,11 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     final listing = await disting.requestDirectoryListing(path);
     if (listing == null) return [];
     return listing.entries
-        .where((entry) => entry.isDirectory && !entry.name.startsWith('.'))
+        .where(
+          (entry) =>
+              _isDirectoryEntry(entry) &&
+              !_directoryEntryName(entry).startsWith('.'),
+        )
         .toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
@@ -640,45 +644,67 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   ) async {
     final results = <DirectoryEntry>[];
 
-    Future<void> walk(String currentPath, String relativePath) async {
-      final DirectoryListing? listing;
+    Future<DirectoryListing?> listingFor(String path) async {
       try {
-        listing = await disting.requestDirectoryListing(currentPath);
+        return await disting.requestDirectoryListing(path);
       } catch (_) {
-        return;
+        return null;
       }
-      if (listing == null) return;
+    }
 
+    Future<void> walk(
+      String currentPath,
+      String relativePath,
+      DirectoryListing listing,
+    ) async {
       final directories =
           listing.entries.where((entry) {
-            if (!entry.isDirectory) return false;
-            final name = entry.name.replaceAll(RegExp(r'/+$'), '');
+            final name = _directoryEntryName(entry);
             if (name.isEmpty || name.startsWith('.')) return false;
+            if (_looksLikeFileName(name)) return false;
             return !widget.rule.excludeDirs.contains(name);
           }).toList()..sort(
             (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
           );
 
       for (final directory in directories) {
-        final name = directory.name.replaceAll(RegExp(r'/+$'), '');
+        final name = _directoryEntryName(directory);
         final childRelativePath = relativePath.isEmpty
             ? name
             : '$relativePath/$name';
+        final childPath = '$currentPath/$name';
         results.add(
           DirectoryEntry(
             name: childRelativePath,
-            attributes: directory.attributes,
+            attributes: directory.attributes | 0x10,
             date: directory.date,
             time: directory.time,
             size: directory.size,
           ),
         );
-        await walk('$currentPath/$name', childRelativePath);
+        final childListing = await listingFor(childPath);
+        if (childListing != null) {
+          await walk(childPath, childRelativePath, childListing);
+        }
       }
     }
 
-    await walk(basePath, '');
+    final rootListing = await listingFor(basePath);
+    if (rootListing == null) return results;
+    await walk(basePath, '', rootListing);
     return results;
+  }
+
+  bool _isDirectoryEntry(DirectoryEntry entry) {
+    return entry.isDirectory || entry.name.endsWith('/');
+  }
+
+  String _directoryEntryName(DirectoryEntry entry) {
+    return entry.name.replaceAll(RegExp(r'/+$'), '');
+  }
+
+  bool _looksLikeFileName(String name) {
+    return path.extension(name).isNotEmpty;
   }
 
   int _entryIndexForParameterValue(int value) {

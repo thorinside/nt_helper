@@ -17,6 +17,9 @@ class _MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 DirectoryEntry _dir(String name) =>
     DirectoryEntry(name: '$name/', attributes: 0x10, date: 0, time: 0, size: 0);
 
+DirectoryEntry _plainFolderCandidate(String name) =>
+    DirectoryEntry(name: name, attributes: 0, date: 0, time: 0, size: 0);
+
 DirectoryEntry _file(String name, {int size = 128}) =>
     DirectoryEntry(name: name, attributes: 0x20, date: 0, time: 0, size: size);
 
@@ -106,6 +109,31 @@ void main() {
         expect(find.text('No folders found in /samples'), findsNothing);
       },
     );
+
+    testWidgets('plain Multisamples folder candidate is enumerated', (
+      tester,
+    ) async {
+      when(() => manager.requestDirectoryListing('/samples')).thenAnswer(
+        (_) async => DirectoryListing(
+          entries: [
+            _dir('ZTop'),
+            _plainFolderCandidate('Multisamples'),
+            _dir('Multisample'),
+          ],
+        ),
+      );
+      when(
+        () => manager.requestDirectoryListing('/samples/Multisamples'),
+      ).thenAnswer((_) async => DirectoryListing(entries: const []));
+      final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 0);
+
+      await _pumpEditor(tester, cubit: cubit, slot: slot, parameterNumber: 0);
+
+      await tester.tap(find.text('Browse'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Multisamples'), findsOneWidget);
+    });
 
     testWidgets('Sample value 0 displays Multisample instead of first file', (
       tester,
