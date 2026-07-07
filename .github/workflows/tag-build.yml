@@ -14,6 +14,7 @@ on:
 
 env:
   FLUTTER_VERSION: "3.44.4"
+  ANDROID_NDK_VERSION: "27.0.12077973"
 
 permissions:
   contents: write # Needed for creating/updating GitHub releases
@@ -105,6 +106,22 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
+      - name: Install Android NDK
+        run: |
+          for attempt in 1 2 3; do
+            if yes | sdkmanager --install "ndk;${ANDROID_NDK_VERSION}"; then
+              break
+            fi
+
+            rm -rf "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}" "${ANDROID_HOME}/.temp"
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep 10
+          done
+
+          test -d "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}"
+
       - name: Clone and Build UVCCamera Native Library
         run: |
           cd /tmp
@@ -176,6 +193,22 @@ jobs:
         with:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Install Android NDK
+        run: |
+          for attempt in 1 2 3; do
+            if yes | sdkmanager --install "ndk;${ANDROID_NDK_VERSION}"; then
+              break
+            fi
+
+            rm -rf "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}" "${ANDROID_HOME}/.temp"
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep 10
+          done
+
+          test -d "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}"
 
       - name: Clone and Build UVCCamera Native Library
         run: |
@@ -329,7 +362,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+          sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
           flutter pub get
 
       - name: Build Linux
