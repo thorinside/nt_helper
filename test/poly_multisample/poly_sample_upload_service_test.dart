@@ -301,6 +301,52 @@ void main() {
     expect(chunkCalls.single.path, '/multisamples/Piano/Piano_C3.wav');
   });
 
+  test('uploadSysEx keeps progress details on every uploading line', () async {
+    final manager = MockDistingMidiManager();
+    final chunkCalls = <ChunkUploadCall>[];
+    final progressMessages = <String>[];
+    final first = File('${tempRoot.path}/Piano_C3.wav')
+      ..writeAsBytesSync([1, 2, 3]);
+    final second = File('${tempRoot.path}/Piano_D3.wav')
+      ..writeAsBytesSync([4, 5, 6]);
+    _stubDirectoryCreates(manager);
+    _stubChunkUploads(manager, chunkCalls);
+    when(
+      () => manager.requestDirectoryListing('/multisamples/Piano'),
+    ).thenAnswer(
+      (_) async => DirectoryListing(
+        entries: [_file('Piano_C3.wav', 3), _file('Piano_D3.wav', 3)],
+      ),
+    );
+
+    await service.uploadSysEx(
+      manager: manager,
+      regions: [
+        PolySampleRegion(
+          path: first.path,
+          fileName: 'Piano_C3.wav',
+          displayName: 'Piano_C3.wav',
+          rootMidi: 48,
+        ),
+        PolySampleRegion(
+          path: second.path,
+          fileName: 'Piano_D3.wav',
+          displayName: 'Piano_D3.wav',
+          rootMidi: 50,
+        ),
+      ],
+      hardwareFolder: '/multisamples/Piano',
+      onProgress: progressMessages.add,
+    );
+
+    final uploadingMessages = progressMessages
+        .where((message) => message.startsWith('Uploading '))
+        .toList();
+    expect(uploadingMessages, isNotEmpty);
+    expect(uploadingMessages, everyElement(contains(' of 6 B, ')));
+    expect(uploadingMessages, everyElement(endsWith(')')));
+  });
+
   test('validateSysEx checks uploaded files with directory listing', () async {
     final manager = MockDistingMidiManager();
     final source = File('${tempRoot.path}/Piano_C3.wav')

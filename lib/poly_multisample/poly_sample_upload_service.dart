@@ -187,8 +187,11 @@ class PolySampleUploadService {
 
     for (var index = 0; index < files.length; index++) {
       final file = files[index];
-      onProgress?.call(
-        'Uploading ${index + 1}/${files.length} ${file.displayName}...',
+      progress.emitCurrent(
+        action: 'Uploading',
+        displayName: file.displayName,
+        fileIndex: index + 1,
+        fileCount: files.length,
       );
       await _ensureHardwareParent(manager, file.targetPath);
       final bytes = await File(file.sourcePath).readAsBytes();
@@ -294,6 +297,25 @@ class _TransferProgress {
       AdaptiveTransferRateEstimator();
   Duration _lastProgressEmit = Duration.zero;
 
+  void emitCurrent({
+    required String action,
+    required String displayName,
+    required int fileIndex,
+    required int fileCount,
+  }) {
+    if (onProgress == null) return;
+    final elapsed = _stopwatch.elapsed;
+    _lastProgressEmit = elapsed;
+    onProgress?.call(
+      _message(
+        action: action,
+        displayName: displayName,
+        fileIndex: fileIndex,
+        fileCount: fileCount,
+      ),
+    );
+  }
+
   void advance({
     required int bytes,
     required String action,
@@ -316,11 +338,24 @@ class _TransferProgress {
     if (!shouldEmit) return;
     _lastProgressEmit = elapsed;
     onProgress?.call(
-      '$action $fileIndex/$fileCount $displayName '
-      '(${_formatBytes(completedBytes)} of ${_formatBytes(totalBytes)}, '
-      '${_percent()}, ${_etaText()})',
+      _message(
+        action: action,
+        displayName: displayName,
+        fileIndex: fileIndex,
+        fileCount: fileCount,
+      ),
     );
   }
+
+  String _message({
+    required String action,
+    required String displayName,
+    required int fileIndex,
+    required int fileCount,
+  }) =>
+      '$action $fileIndex/$fileCount $displayName '
+      '(${_formatBytes(completedBytes)} of ${_formatBytes(totalBytes)}, '
+      '${_percent()}, ${_etaText()})';
 
   String _percent() {
     if (totalBytes <= 0) return '100%';
