@@ -217,6 +217,42 @@ void main() {
     },
   );
 
+  test('uploadMountedSd keeps progress details on uploading lines', () async {
+    final sourceDir = Directory('${tempRoot.path}/source')..createSync();
+    final destinationDir = Directory('${tempRoot.path}/dest')..createSync();
+    final progressMessages = <String>[];
+    final first = File('${sourceDir.path}/Piano_C3.wav')
+      ..writeAsBytesSync([1, 2, 3]);
+    final second = File('${sourceDir.path}/Piano_D3.wav')
+      ..writeAsBytesSync([4, 5, 6]);
+
+    await service.uploadMountedSd(
+      regions: [
+        PolySampleRegion(
+          path: first.path,
+          fileName: 'Piano_C3.wav',
+          displayName: 'Piano_C3.wav',
+          rootMidi: 48,
+        ),
+        PolySampleRegion(
+          path: second.path,
+          fileName: 'Piano_D3.wav',
+          displayName: 'Piano_D3.wav',
+          rootMidi: 50,
+        ),
+      ],
+      destinationFolder: destinationDir.path,
+      onProgress: progressMessages.add,
+    );
+
+    final uploadingMessages = progressMessages
+        .where((message) => message.startsWith('Uploading '))
+        .toList();
+    expect(uploadingMessages, isNotEmpty);
+    expect(uploadingMessages, everyElement(contains(' of 6 B, ')));
+    expect(uploadingMessages, everyElement(endsWith(')')));
+  });
+
   test(
     'uploadSysEx creates parents, uploads chunks, and checks names and sizes',
     () async {

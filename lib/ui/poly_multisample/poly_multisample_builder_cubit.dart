@@ -853,7 +853,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  Future<void> uploadViaMountedSd(String destinationFolder) async {
+  Future<void> uploadViaMountedSd(String mountedSdFolder) async {
     final instrument = state.currentInstrument;
     if (instrument == null) return;
     if (state.sourceMode == PolySampleSourceMode.hardware) {
@@ -887,6 +887,10 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
     final operationRevision = _contentRevision;
     final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
+    final destinationFolder = _mountedSdDestinationFolder(
+      mountedSdFolder,
+      instrument.name,
+    );
     emit(
       state.copyWith(
         activeOperation: PolyMultisampleActiveOperation.uploading,
@@ -904,13 +908,13 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         },
       );
       final prefs = await _prefs();
-      await prefs.setLastMountedUploadFolder(destinationFolder);
+      await prefs.setLastMountedUploadFolder(mountedSdFolder);
       if (operationRevision != _contentRevision) return;
       emit(
         state.copyWith(
           activeOperation: PolyMultisampleActiveOperation.none,
           clearProgressText: true,
-          lastMountedUploadFolder: destinationFolder,
+          lastMountedUploadFolder: mountedSdFolder,
           effect: 'Uploaded sample folder to $destinationFolder.',
           effectId: state.effectId + 1,
         ),
@@ -2414,6 +2418,26 @@ class _KeyboardNotePreviewMatch {
 String _safeHardwareFolderName(String name) {
   final sanitized = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
   return sanitized.isEmpty ? 'Untitled' : sanitized;
+}
+
+String _mountedSdDestinationFolder(
+  String mountedSdFolder,
+  String instrumentName,
+) {
+  final safeName = _safeHardwareFolderName(instrumentName);
+  final normalized = p.normalize(mountedSdFolder);
+  final basename = p.basename(normalized);
+  final parent = p.dirname(normalized);
+  final parentBasename = p.basename(parent);
+
+  if (basename == safeName &&
+      (parentBasename == 'samples' || parentBasename == 'multisamples')) {
+    return p.join(p.dirname(parent), 'multisamples', safeName);
+  }
+  if (basename == 'samples' || basename == 'multisamples') {
+    return p.join(parent, 'multisamples', safeName);
+  }
+  return p.join(normalized, 'multisamples', safeName);
 }
 
 String _fingerprintRegions(List<PolySampleRegion> regions) {

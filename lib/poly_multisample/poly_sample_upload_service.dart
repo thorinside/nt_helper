@@ -117,14 +117,35 @@ class PolySampleUploadService {
     );
     var filesUploaded = 0;
     var bytesUploaded = 0;
-
+    var totalBytes = 0;
     for (final file in files) {
-      onProgress?.call('Uploading ${file.displayName}...');
+      totalBytes += await File(file.sourcePath).length();
+    }
+    final progress = _TransferProgress(
+      totalBytes: totalBytes,
+      onProgress: onProgress,
+    );
+
+    for (var index = 0; index < files.length; index++) {
+      final file = files[index];
       final source = File(file.sourcePath);
       final targetPath = p.normalize(file.targetPath);
       final sourcePath = p.normalize(source.path);
       final sourceLength = await source.length();
+      progress.emitCurrent(
+        action: 'Uploading',
+        displayName: file.displayName,
+        fileIndex: index + 1,
+        fileCount: files.length,
+      );
       if (sourcePath == targetPath) {
+        progress.advance(
+          bytes: sourceLength,
+          action: 'Uploading',
+          displayName: file.displayName,
+          fileIndex: index + 1,
+          fileCount: files.length,
+        );
         filesUploaded++;
         bytesUploaded += sourceLength;
         continue;
@@ -136,7 +157,19 @@ class PolySampleUploadService {
       final tempPath = _uniqueTempPath(targetPath);
       final temp = File(tempPath);
       try {
-        await source.copy(tempPath);
+        await _copyFileWithProgress(
+          source,
+          temp,
+          onBytesCopied: (byteCount) {
+            progress.advance(
+              bytes: byteCount,
+              action: 'Uploading',
+              displayName: file.displayName,
+              fileIndex: index + 1,
+              fileCount: files.length,
+            );
+          },
+        );
         if (await target.exists()) {
           await target.delete();
         }
@@ -688,4 +721,26 @@ String _uniqueTempPath(String targetPath) {
   }
   final fallback = DateTime.now().millisecondsSinceEpoch;
   return p.join(directory, '.$basename.poly-upload-tmp-$fallback');
+}
+
+Future<void> _copyFileWithProgress(
+  File source,
+  File target, {
+  void Function(int byteCount)? onBytesCopied,
+}) async {
+  final sink = target.openWrite();
+  var closed = false;
+  try {
+    await for (final chunk in source.openRead()) {
+      sink.add(chunk);
+      onBytesCopied?.call(chunk.length);
+    }
+    await sink.close();
+    closed = true;
+  } catch (_) {
+    if (!closed) {
+      await sink.close();
+    }
+    rethrow;
+  }
 }

@@ -1734,7 +1734,62 @@ void main() {
     });
 
     test(
-      'uploadViaMountedSd persists destination and emits success effect',
+      'uploadViaMountedSd targets multisamples folder under selected SD root',
+      () async {
+        final uploadService = _FakeUploadService();
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          uploadService: uploadService,
+          previewService: PolyAudioPreviewService(
+            adapter: _FakePreviewAdapter(),
+          ),
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.importDraft,
+            currentInstrument: PolySampleInstrument(
+              name: 'Piano',
+              sourcePath: '/tmp/Piano',
+              regions: [
+                PolySampleRegion(
+                  path: '/tmp/Piano/Piano_C3.wav',
+                  fileName: 'Piano_C3.wav',
+                  displayName: 'Piano_C3.wav',
+                  rootMidi: 48,
+                ),
+              ],
+            ),
+            editedRegions: [
+              PolySampleRegion(
+                path: '/tmp/Piano/Piano_C3.wav',
+                fileName: 'Piano_C3.wav',
+                displayName: 'Piano_C3.wav',
+                rootMidi: 48,
+              ),
+            ],
+          ),
+        );
+
+        await cubit.uploadViaMountedSd('/Volumes/NT');
+
+        expect(
+          uploadService.mountedDestination,
+          '/Volumes/NT/multisamples/Piano',
+        );
+        expect(cubit.state.lastMountedUploadFolder, '/Volumes/NT');
+        expect(
+          cubit.state.activeOperation,
+          PolyMultisampleActiveOperation.none,
+        );
+        expect(
+          cubit.state.effect,
+          'Uploaded sample folder to /Volumes/NT/multisamples/Piano.',
+        );
+      },
+    );
+
+    test(
+      'uploadViaMountedSd remaps legacy samples folder selections to multisamples',
       () async {
         final uploadService = _FakeUploadService();
         final cubit = _ExposedPolyMultisampleBuilderCubit(
@@ -1772,7 +1827,10 @@ void main() {
 
         await cubit.uploadViaMountedSd('/Volumes/NT/samples/Piano');
 
-        expect(uploadService.mountedDestination, '/Volumes/NT/samples/Piano');
+        expect(
+          uploadService.mountedDestination,
+          '/Volumes/NT/multisamples/Piano',
+        );
         expect(
           cubit.state.lastMountedUploadFolder,
           '/Volumes/NT/samples/Piano',
@@ -1783,7 +1841,7 @@ void main() {
         );
         expect(
           cubit.state.effect,
-          'Uploaded sample folder to /Volumes/NT/samples/Piano.',
+          'Uploaded sample folder to /Volumes/NT/multisamples/Piano.',
         );
       },
     );

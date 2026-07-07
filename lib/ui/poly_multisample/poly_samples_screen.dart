@@ -311,7 +311,7 @@ class PolySamplesView extends StatelessWidget {
         break;
       case PolySampleUploadPath.mountedSd:
         final destination = await FilePicker.getDirectoryPath(
-          dialogTitle: 'Upload samples to mounted SD-card folder',
+          dialogTitle: 'Choose mounted SD-card root folder',
           initialDirectory:
               cubit.state.lastMountedUploadFolder ??
               cubit.state.lastCustomOutputFolder ??
