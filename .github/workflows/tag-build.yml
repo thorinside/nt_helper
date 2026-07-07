@@ -108,19 +108,22 @@ jobs:
 
       - name: Install Android NDK
         run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+
           for attempt in 1 2 3; do
-            if yes | sdkmanager --install "ndk;${ANDROID_NDK_VERSION}"; then
+            if yes | "$SDKMANAGER" --install "ndk;${ANDROID_NDK_VERSION}"; then
               break
             fi
 
-            rm -rf "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}" "${ANDROID_HOME}/.temp"
+            rm -rf "${SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}" "${SDK_ROOT}/.temp"
             if [ "$attempt" = "3" ]; then
               exit 1
             fi
             sleep 10
           done
 
-          test -d "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}"
+          test -d "${SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}"
 
       - name: Clone and Build UVCCamera Native Library
         run: |
@@ -196,19 +199,22 @@ jobs:
 
       - name: Install Android NDK
         run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+
           for attempt in 1 2 3; do
-            if yes | sdkmanager --install "ndk;${ANDROID_NDK_VERSION}"; then
+            if yes | "$SDKMANAGER" --install "ndk;${ANDROID_NDK_VERSION}"; then
               break
             fi
 
-            rm -rf "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}" "${ANDROID_HOME}/.temp"
+            rm -rf "${SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}" "${SDK_ROOT}/.temp"
             if [ "$attempt" = "3" ]; then
               exit 1
             fi
             sleep 10
           done
 
-          test -d "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}"
+          test -d "${SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}"
 
       - name: Clone and Build UVCCamera Native Library
         run: |
