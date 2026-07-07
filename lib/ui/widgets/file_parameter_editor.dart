@@ -641,7 +641,12 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     final results = <DirectoryEntry>[];
 
     Future<void> walk(String currentPath, String relativePath) async {
-      final listing = await disting.requestDirectoryListing(currentPath);
+      final DirectoryListing? listing;
+      try {
+        listing = await disting.requestDirectoryListing(currentPath);
+      } catch (_) {
+        return;
+      }
       if (listing == null) return;
 
       final directories =

@@ -86,6 +86,27 @@ void main() {
       },
     );
 
+    testWidgets(
+      'folder enumeration keeps parent folders when child listing fails',
+      (tester) async {
+        when(
+          () => manager.requestDirectoryListing('/samples/Multisample'),
+        ).thenThrow(Exception('directory listing failed'));
+        final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 0);
+
+        await _pumpEditor(tester, cubit: cubit, slot: slot, parameterNumber: 0);
+
+        expect(find.text('Multisample'), findsOneWidget);
+
+        await tester.tap(find.text('Browse'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Multisample'), findsWidgets);
+        expect(find.text('ZTop'), findsOneWidget);
+        expect(find.text('No folders found in /samples'), findsNothing);
+      },
+    );
+
     testWidgets('Sample value 0 displays Multisample instead of first file', (
       tester,
     ) async {
