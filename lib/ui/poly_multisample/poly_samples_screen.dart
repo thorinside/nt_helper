@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/ui/poly_multisample/dialogs/poly_decent_import_dialog.dart';
 import 'package:nt_helper/ui/poly_multisample/dialogs/poly_loose_wav_import_dialog.dart';
@@ -307,11 +309,18 @@ class PolySamplesView extends StatelessWidget {
     if (choice == null || !context.mounted) return;
     switch (choice.path) {
       case PolySampleUploadPath.sysex:
-        await cubit.uploadViaSysEx(manager!);
+        final liveManager = manager!;
+        final destination = await _chooseHardwareUploadFolder(
+          context,
+          liveManager,
+          initialFolder: cubit.suggestedHardwareUploadFolder(),
+        );
+        if (destination == null || !context.mounted) return;
+        await cubit.uploadViaSysEx(liveManager, hardwareFolder: destination);
         break;
       case PolySampleUploadPath.mountedSd:
-        final selectedFolder = await FilePicker.getDirectoryPath(
-          dialogTitle: 'Choose mounted SD-card folder',
+        final destination = await FilePicker.getDirectoryPath(
+          dialogTitle: 'Choose destination folder under samples',
           initialDirectory:
               cubit.state.lastMountedUploadFolder ??
               cubit.state.lastCustomOutputFolder ??
@@ -319,39 +328,8 @@ class PolySamplesView extends StatelessWidget {
                   ? null
                   : p.dirname(cubit.state.lastLocalFolder!)),
         );
-        if (selectedFolder == null || !context.mounted) return;
-        final destinationChoice =
-            await showPolySampleMountedSdDestinationDialog(
-              context,
-              selectedFolder: selectedFolder,
-              ntMultisampleFolder: cubit.mountedSdDestinationForSelection(
-                selectedFolder,
-              ),
-            );
-        if (destinationChoice == null || !context.mounted) return;
-        switch (destinationChoice.mode) {
-          case PolySampleMountedSdDestinationMode.ntMultisampleFolder:
-            await cubit.uploadViaMountedSd(selectedFolder);
-            break;
-          case PolySampleMountedSdDestinationMode.selectedFolder:
-            await cubit.uploadViaMountedSd(
-              selectedFolder,
-              useSelectedFolder: true,
-            );
-            break;
-          case PolySampleMountedSdDestinationMode.createFolder:
-            final destination = await _chooseMountedUploadFolder(
-              context,
-              cubit,
-              parentFolder: selectedFolder,
-            );
-            if (destination == null || !context.mounted) return;
-            await cubit.uploadViaMountedSd(
-              destination,
-              useSelectedFolder: true,
-            );
-            break;
-        }
+        if (destination == null || !context.mounted) return;
+        await cubit.uploadViaMountedSd(destination);
         break;
     }
   }
@@ -364,19 +342,17 @@ class PolySamplesView extends StatelessWidget {
   }
 }
 
-Future<String?> _chooseMountedUploadFolder(
+Future<String?> _chooseHardwareUploadFolder(
   BuildContext context,
-  PolyMultisampleBuilderCubit cubit, {
-  required String parentFolder,
-}) async {
+  IDistingMidiManager manager, {
+  required String initialFolder,
+}) {
   return showDialog<String>(
     context: context,
     builder: (dialogContext) {
-      return _SaveFolderDialog(
-        title: 'Create upload folder',
-        actionLabel: 'Upload',
-        initialParent: parentFolder,
-        initialName: cubit.mountedSdSuggestedFolderName(),
+      return _HardwareUploadFolderDialog(
+        manager: manager,
+        initialFolder: initialFolder,
       );
     },
   );
@@ -409,14 +385,10 @@ Future<String?> _chooseSaveFolder(
 
 class _SaveFolderDialog extends StatefulWidget {
   const _SaveFolderDialog({
-    this.title = 'Save samples as folder',
-    this.actionLabel = 'Save',
     required this.initialParent,
     required this.initialName,
   });
 
-  final String title;
-  final String actionLabel;
   final String initialParent;
   final String initialName;
 
@@ -447,7 +419,7 @@ class _SaveFolderDialogState extends State<_SaveFolderDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.title),
+      title: const Text('Save samples as folder'),
       content: Form(
         key: _formKey,
         child: SizedBox(
@@ -547,7 +519,180 @@ class _SaveFolderDialogState extends State<_SaveFolderDialog> {
             }
             Navigator.of(context).pop(path);
           },
-          child: Text(widget.actionLabel),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+class _HardwareUploadFolderDialog extends StatefulWidget {
+  const _HardwareUploadFolderDialog({
+    required this.manager,
+    required this.initialFolder,
+  });
+
+  final IDistingMidiManager manager;
+  final String initialFolder;
+
+  @override
+  State<_HardwareUploadFolderDialog> createState() =>
+      _HardwareUploadFolderDialogState();
+}
+
+class _HardwareUploadFolderDialogState
+    extends State<_HardwareUploadFolderDialog> {
+  late final TextEditingController _pathController;
+  var _currentFolder = '/samples';
+  var _folders = const <DirectoryEntry>[];
+  var _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _pathController = TextEditingController(text: widget.initialFolder);
+    _loadFolder(_currentFolder);
+  }
+
+  @override
+  void dispose() {
+    _pathController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadFolder(String path) async {
+    setState(() {
+      _currentFolder = path;
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final listing = await widget.manager.requestDirectoryListing(path);
+      final folders =
+          listing?.entries
+              .where(
+                (entry) =>
+                    entry.isDirectory &&
+                    entry.name.isNotEmpty &&
+                    !entry.name.startsWith('.'),
+              )
+              .toList() ??
+          <DirectoryEntry>[];
+      folders.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+      if (!mounted) return;
+      setState(() {
+        _folders = folders;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _folders = const [];
+        _isLoading = false;
+        _error = 'Could not read $path: $error';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final path = p.posix.normalize(_pathController.text.trim());
+    final canSelect = path.startsWith('/samples/') && path.length > 9;
+    return AlertDialog(
+      title: Semantics(header: true, child: const Text('Choose upload folder')),
+      content: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _pathController,
+              decoration: const InputDecoration(
+                labelText: 'Destination folder under /samples',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Parent folder',
+                  onPressed: _currentFolder == '/samples'
+                      ? null
+                      : () {
+                          final parent = p.posix.dirname(_currentFolder);
+                          _loadFolder(
+                            parent.startsWith('/samples') ? parent : '/samples',
+                          );
+                        },
+                  icon: const Icon(Icons.arrow_upward),
+                ),
+                Expanded(child: Text(_currentFolder)),
+              ],
+            ),
+            SizedBox(
+              height: 220,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      itemCount: _folders.length,
+                      itemBuilder: (context, index) {
+                        final folder = _folders[index];
+                        final name = folder.name.replaceAll(RegExp(r'/+$'), '');
+                        final path = p.posix.join(_currentFolder, name);
+                        return ListTile(
+                          leading: const Icon(Icons.folder),
+                          title: Text(name),
+                          onTap: () {
+                            _pathController.text = path;
+                            setState(() {});
+                          },
+                          onLongPress: () => _loadFolder(path),
+                          trailing: IconButton(
+                            tooltip: 'Open folder',
+                            icon: const Icon(Icons.chevron_right),
+                            onPressed: () => _loadFolder(path),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Semantics(
+                liveRegion: true,
+                label: _error,
+                child: ExcludeSemantics(
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (!canSelect) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Choose a folder below /samples, not /samples itself.',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: canSelect ? () => Navigator.of(context).pop(path) : null,
+          child: const Text('Upload Here'),
         ),
       ],
     );

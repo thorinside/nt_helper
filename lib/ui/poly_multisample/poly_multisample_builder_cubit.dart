@@ -853,19 +853,14 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  String mountedSdDestinationForSelection(String mountedSdFolder) {
-    final instrumentName = state.currentInstrument?.name ?? 'Untitled';
-    return _mountedSdDestinationFolder(mountedSdFolder, instrumentName);
+  String suggestedHardwareUploadFolder() {
+    return p.posix.join(
+      '/samples',
+      _safeHardwareFolderName(state.currentInstrument?.name ?? 'Untitled'),
+    );
   }
 
-  String mountedSdSuggestedFolderName() {
-    return _safeHardwareFolderName(state.currentInstrument?.name ?? 'Untitled');
-  }
-
-  Future<void> uploadViaMountedSd(
-    String mountedSdFolder, {
-    bool useSelectedFolder = false,
-  }) async {
+  Future<void> uploadViaMountedSd(String mountedSdFolder) async {
     final instrument = state.currentInstrument;
     if (instrument == null) return;
     if (state.sourceMode == PolySampleSourceMode.hardware) {
@@ -899,9 +894,17 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
     final operationRevision = _contentRevision;
     final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
-    final destinationFolder = useSelectedFolder
-        ? p.normalize(mountedSdFolder)
-        : _mountedSdDestinationFolder(mountedSdFolder, instrument.name);
+    final destinationFolder = p.normalize(mountedSdFolder);
+    if (!_isMountedSamplesDestination(destinationFolder)) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          error:
+              'Choose a destination folder inside the SD card samples folder.',
+        ),
+      );
+      return;
+    }
     emit(
       state.copyWith(
         activeOperation: PolyMultisampleActiveOperation.uploading,
@@ -941,7 +944,10 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  Future<void> uploadViaSysEx(IDistingMidiManager manager) async {
+  Future<void> uploadViaSysEx(
+    IDistingMidiManager manager, {
+    String? hardwareFolder,
+  }) async {
     final instrument = state.currentInstrument;
     if (instrument == null) return;
     if (state.sourceMode == PolySampleSourceMode.hardware) {
@@ -975,10 +981,18 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
     final operationRevision = _contentRevision;
     final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
-    final hardwareFolder = p.posix.join(
-      '/multisamples',
-      _safeHardwareFolderName(instrument.name),
-    );
+    final destinationFolder =
+        hardwareFolder ??
+        p.posix.join('/samples', _safeHardwareFolderName(instrument.name));
+    if (!_isHardwareSamplesDestination(destinationFolder)) {
+      emit(
+        state.copyWith(
+          activeOperation: PolyMultisampleActiveOperation.none,
+          error: 'Choose a destination folder under /samples.',
+        ),
+      );
+      return;
+    }
     emit(
       state.copyWith(
         activeOperation: PolyMultisampleActiveOperation.uploading,
@@ -990,7 +1004,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       final result = await _uploadService.uploadSysEx(
         regions: editedRegions,
         manager: manager,
-        hardwareFolder: hardwareFolder,
+        hardwareFolder: destinationFolder,
         onProgress: (message) {
           if (operationRevision != _contentRevision) return;
           emit(state.copyWith(progressText: message));
@@ -1003,7 +1017,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
             activeOperation: PolyMultisampleActiveOperation.none,
             clearProgressText: true,
             error:
-                'Uploaded sample folder to $hardwareFolder, but ${result.failedVerificationFiles} uploaded file check(s) failed.',
+                'Uploaded sample folder to $destinationFolder, but ${result.failedVerificationFiles} uploaded file check(s) failed.',
           ),
         );
         return;
@@ -1012,7 +1026,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         state.copyWith(
           activeOperation: PolyMultisampleActiveOperation.none,
           clearProgressText: true,
-          effect: 'Uploaded sample folder to $hardwareFolder.',
+          effect: 'Uploaded sample folder to $destinationFolder.',
           effectId: state.effectId + 1,
         ),
       );
@@ -2431,24 +2445,22 @@ String _safeHardwareFolderName(String name) {
   return sanitized.isEmpty ? 'Untitled' : sanitized;
 }
 
-String _mountedSdDestinationFolder(
-  String mountedSdFolder,
-  String instrumentName,
-) {
-  final safeName = _safeHardwareFolderName(instrumentName);
-  final normalized = p.normalize(mountedSdFolder);
-  final basename = p.basename(normalized);
-  final parent = p.dirname(normalized);
-  final parentBasename = p.basename(parent);
+bool _isMountedSamplesDestination(String folder) {
+  final parts = p
+      .split(p.normalize(folder))
+      .where((part) => part.isNotEmpty && part != p.separator)
+      .toList();
+  for (var index = 0; index < parts.length; index++) {
+    if (parts[index].toLowerCase() == 'samples' && index < parts.length - 1) {
+      return true;
+    }
+  }
+  return false;
+}
 
-  if (basename == safeName &&
-      (parentBasename == 'samples' || parentBasename == 'multisamples')) {
-    return p.join(p.dirname(parent), 'multisamples', safeName);
-  }
-  if (basename == 'samples' || basename == 'multisamples') {
-    return p.join(parent, 'multisamples', safeName);
-  }
-  return p.join(normalized, 'multisamples', safeName);
+bool _isHardwareSamplesDestination(String folder) {
+  final normalized = p.posix.normalize(folder);
+  return normalized.startsWith('/samples/') && normalized.length > 9;
 }
 
 String _fingerprintRegions(List<PolySampleRegion> regions) {
