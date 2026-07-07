@@ -2,10 +2,22 @@ import 'package:flutter/material.dart';
 
 enum PolySampleUploadPath { sysex, mountedSd }
 
+enum PolySampleMountedSdDestinationMode {
+  ntMultisampleFolder,
+  selectedFolder,
+  createFolder,
+}
+
 class PolySampleUploadChoice {
   const PolySampleUploadChoice({required this.path});
 
   final PolySampleUploadPath path;
+}
+
+class PolySampleMountedSdDestinationChoice {
+  const PolySampleMountedSdDestinationChoice({required this.mode});
+
+  final PolySampleMountedSdDestinationMode mode;
 }
 
 Future<PolySampleUploadChoice?> showPolySampleUploadPathDialog(
@@ -16,6 +28,23 @@ Future<PolySampleUploadChoice?> showPolySampleUploadPathDialog(
     context: context,
     builder: (context) {
       return _PolySampleUploadDialog(sysexAvailable: sysexAvailable);
+    },
+  );
+}
+
+Future<PolySampleMountedSdDestinationChoice?>
+showPolySampleMountedSdDestinationDialog(
+  BuildContext context, {
+  required String selectedFolder,
+  required String ntMultisampleFolder,
+}) {
+  return showDialog<PolySampleMountedSdDestinationChoice>(
+    context: context,
+    builder: (context) {
+      return _PolySampleMountedSdDestinationDialog(
+        selectedFolder: selectedFolder,
+        ntMultisampleFolder: ntMultisampleFolder,
+      );
     },
   );
 }
@@ -79,11 +108,91 @@ class _PolySampleUploadDialogState extends State<_PolySampleUploadDialog> {
                 ],
               ),
               subtitle: const Text(
-                'Copies files to a mounted SD-card filesystem folder.',
+                'Copies files to an SD card mounted on this computer.',
               ),
               onTap: () => Navigator.of(context).pop(
                 const PolySampleUploadChoice(
                   path: PolySampleUploadPath.mountedSd,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PolySampleMountedSdDestinationDialog extends StatelessWidget {
+  const _PolySampleMountedSdDestinationDialog({
+    required this.selectedFolder,
+    required this.ntMultisampleFolder,
+  });
+
+  final String selectedFolder;
+  final String ntMultisampleFolder;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Semantics(
+        header: true,
+        child: const Text('Mounted SD destination'),
+      ),
+      content: SizedBox(
+        width: 480,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              isThreeLine: true,
+              leading: const Icon(
+                Icons.rule_folder,
+                semanticLabel: 'NT multisample folder',
+              ),
+              title: const Text('NT multisample folder'),
+              subtitle: Text(
+                '$ntMultisampleFolder\nSame folder layout used by SysEx uploads.',
+              ),
+              onTap: () => Navigator.of(context).pop(
+                const PolySampleMountedSdDestinationChoice(
+                  mode: PolySampleMountedSdDestinationMode.ntMultisampleFolder,
+                ),
+              ),
+            ),
+            ListTile(
+              isThreeLine: true,
+              leading: const Icon(
+                Icons.folder,
+                semanticLabel: 'Selected folder',
+              ),
+              title: const Text('Selected folder'),
+              subtitle: Text(
+                '$selectedFolder\nCopy directly into this folder.',
+              ),
+              onTap: () => Navigator.of(context).pop(
+                const PolySampleMountedSdDestinationChoice(
+                  mode: PolySampleMountedSdDestinationMode.selectedFolder,
+                ),
+              ),
+            ),
+            ListTile(
+              isThreeLine: true,
+              leading: const Icon(
+                Icons.create_new_folder,
+                semanticLabel: 'Create folder',
+              ),
+              title: const Text('Create folder'),
+              subtitle: Text('$selectedFolder\nCreate a folder here first.'),
+              onTap: () => Navigator.of(context).pop(
+                const PolySampleMountedSdDestinationChoice(
+                  mode: PolySampleMountedSdDestinationMode.createFolder,
                 ),
               ),
             ),

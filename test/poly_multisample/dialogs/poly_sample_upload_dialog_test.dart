@@ -83,6 +83,67 @@ void main() {
     expect(find.text('Upload sample folder'), findsOneWidget);
     expect(result, isNull);
   });
+
+  testWidgets('mounted destination dialog returns NT folder choice', (
+    tester,
+  ) async {
+    PolySampleMountedSdDestinationChoice? result;
+    await _pumpMountedDestinationDialogButton(
+      tester,
+      onResult: (value) => result = value,
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('NT multisample folder'));
+    await tester.pumpAndSettle();
+
+    expect(
+      result?.mode,
+      PolySampleMountedSdDestinationMode.ntMultisampleFolder,
+    );
+  });
+
+  testWidgets('mounted destination dialog returns selected folder choice', (
+    tester,
+  ) async {
+    PolySampleMountedSdDestinationChoice? result;
+    await _pumpMountedDestinationDialogButton(
+      tester,
+      onResult: (value) => result = value,
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Selected folder'));
+    await tester.pumpAndSettle();
+
+    expect(result?.mode, PolySampleMountedSdDestinationMode.selectedFolder);
+  });
+
+  testWidgets('mounted destination dialog offers folder creation', (
+    tester,
+  ) async {
+    PolySampleMountedSdDestinationChoice? result;
+    await _pumpMountedDestinationDialogButton(
+      tester,
+      onResult: (value) => result = value,
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('/Volumes/NT/multisamples/Piano'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('/Volumes/NT'), findsNWidgets(3));
+
+    await tester.tap(find.text('Create folder'));
+    await tester.pumpAndSettle();
+
+    expect(result?.mode, PolySampleMountedSdDestinationMode.createFolder);
+  });
 }
 
 Future<void> _pumpDialogButton(
@@ -99,6 +160,31 @@ Future<void> _pumpDialogButton(
               final result = await showPolySampleUploadPathDialog(
                 context,
                 sysexAvailable: sysexAvailable,
+              );
+              onResult(result);
+            },
+            child: const Text('Open'),
+          );
+        },
+      ),
+    ),
+  );
+}
+
+Future<void> _pumpMountedDestinationDialogButton(
+  WidgetTester tester, {
+  required ValueChanged<PolySampleMountedSdDestinationChoice?> onResult,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Builder(
+        builder: (context) {
+          return TextButton(
+            onPressed: () async {
+              final result = await showPolySampleMountedSdDestinationDialog(
+                context,
+                selectedFolder: '/Volumes/NT',
+                ntMultisampleFolder: '/Volumes/NT/multisamples/Piano',
               );
               onResult(result);
             },

@@ -853,7 +853,19 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  Future<void> uploadViaMountedSd(String mountedSdFolder) async {
+  String mountedSdDestinationForSelection(String mountedSdFolder) {
+    final instrumentName = state.currentInstrument?.name ?? 'Untitled';
+    return _mountedSdDestinationFolder(mountedSdFolder, instrumentName);
+  }
+
+  String mountedSdSuggestedFolderName() {
+    return _safeHardwareFolderName(state.currentInstrument?.name ?? 'Untitled');
+  }
+
+  Future<void> uploadViaMountedSd(
+    String mountedSdFolder, {
+    bool useSelectedFolder = false,
+  }) async {
     final instrument = state.currentInstrument;
     if (instrument == null) return;
     if (state.sourceMode == PolySampleSourceMode.hardware) {
@@ -887,10 +899,9 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
     final operationRevision = _contentRevision;
     final editedRegions = List<PolySampleRegion>.from(state.editedRegions);
-    final destinationFolder = _mountedSdDestinationFolder(
-      mountedSdFolder,
-      instrument.name,
-    );
+    final destinationFolder = useSelectedFolder
+        ? p.normalize(mountedSdFolder)
+        : _mountedSdDestinationFolder(mountedSdFolder, instrument.name);
     emit(
       state.copyWith(
         activeOperation: PolyMultisampleActiveOperation.uploading,

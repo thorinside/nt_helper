@@ -1846,6 +1846,52 @@ void main() {
       },
     );
 
+    test('uploadViaMountedSd can use the selected folder exactly', () async {
+      final uploadService = _FakeUploadService();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        uploadService: uploadService,
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.importDraft,
+          currentInstrument: PolySampleInstrument(
+            name: 'Piano',
+            sourcePath: '/tmp/Piano',
+            regions: [
+              PolySampleRegion(
+                path: '/tmp/Piano/Piano_C3.wav',
+                fileName: 'Piano_C3.wav',
+                displayName: 'Piano_C3.wav',
+                rootMidi: 48,
+              ),
+            ],
+          ),
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/Piano/Piano_C3.wav',
+              fileName: 'Piano_C3.wav',
+              displayName: 'Piano_C3.wav',
+              rootMidi: 48,
+            ),
+          ],
+        ),
+      );
+
+      await cubit.uploadViaMountedSd(
+        '/Volumes/NT/Custom Folder',
+        useSelectedFolder: true,
+      );
+
+      expect(uploadService.mountedDestination, '/Volumes/NT/Custom Folder');
+      expect(cubit.state.lastMountedUploadFolder, '/Volumes/NT/Custom Folder');
+      expect(
+        cubit.state.effect,
+        'Uploaded sample folder to /Volumes/NT/Custom Folder.',
+      );
+    });
+
     test('uploadViaSysEx targets sanitized instrument folder', () async {
       final uploadService = _FakeUploadService();
       final cubit = _ExposedPolyMultisampleBuilderCubit(

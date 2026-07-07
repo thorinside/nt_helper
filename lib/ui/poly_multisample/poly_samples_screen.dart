@@ -310,8 +310,8 @@ class PolySamplesView extends StatelessWidget {
         await cubit.uploadViaSysEx(manager!);
         break;
       case PolySampleUploadPath.mountedSd:
-        final destination = await FilePicker.getDirectoryPath(
-          dialogTitle: 'Choose mounted SD-card root folder',
+        final selectedFolder = await FilePicker.getDirectoryPath(
+          dialogTitle: 'Choose mounted SD-card folder',
           initialDirectory:
               cubit.state.lastMountedUploadFolder ??
               cubit.state.lastCustomOutputFolder ??
@@ -319,8 +319,39 @@ class PolySamplesView extends StatelessWidget {
                   ? null
                   : p.dirname(cubit.state.lastLocalFolder!)),
         );
-        if (destination == null || !context.mounted) return;
-        await cubit.uploadViaMountedSd(destination);
+        if (selectedFolder == null || !context.mounted) return;
+        final destinationChoice =
+            await showPolySampleMountedSdDestinationDialog(
+              context,
+              selectedFolder: selectedFolder,
+              ntMultisampleFolder: cubit.mountedSdDestinationForSelection(
+                selectedFolder,
+              ),
+            );
+        if (destinationChoice == null || !context.mounted) return;
+        switch (destinationChoice.mode) {
+          case PolySampleMountedSdDestinationMode.ntMultisampleFolder:
+            await cubit.uploadViaMountedSd(selectedFolder);
+            break;
+          case PolySampleMountedSdDestinationMode.selectedFolder:
+            await cubit.uploadViaMountedSd(
+              selectedFolder,
+              useSelectedFolder: true,
+            );
+            break;
+          case PolySampleMountedSdDestinationMode.createFolder:
+            final destination = await _chooseMountedUploadFolder(
+              context,
+              cubit,
+              parentFolder: selectedFolder,
+            );
+            if (destination == null || !context.mounted) return;
+            await cubit.uploadViaMountedSd(
+              destination,
+              useSelectedFolder: true,
+            );
+            break;
+        }
         break;
     }
   }
@@ -331,6 +362,24 @@ class PolySamplesView extends StatelessWidget {
     if (path == null) return;
     await cubit.saveCustomDraft(path);
   }
+}
+
+Future<String?> _chooseMountedUploadFolder(
+  BuildContext context,
+  PolyMultisampleBuilderCubit cubit, {
+  required String parentFolder,
+}) async {
+  return showDialog<String>(
+    context: context,
+    builder: (dialogContext) {
+      return _SaveFolderDialog(
+        title: 'Create upload folder',
+        actionLabel: 'Upload',
+        initialParent: parentFolder,
+        initialName: cubit.mountedSdSuggestedFolderName(),
+      );
+    },
+  );
 }
 
 Future<String?> _chooseSaveFolder(
@@ -360,10 +409,14 @@ Future<String?> _chooseSaveFolder(
 
 class _SaveFolderDialog extends StatefulWidget {
   const _SaveFolderDialog({
+    this.title = 'Save samples as folder',
+    this.actionLabel = 'Save',
     required this.initialParent,
     required this.initialName,
   });
 
+  final String title;
+  final String actionLabel;
   final String initialParent;
   final String initialName;
 
@@ -394,7 +447,7 @@ class _SaveFolderDialogState extends State<_SaveFolderDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Save samples as folder'),
+      title: Text(widget.title),
       content: Form(
         key: _formKey,
         child: SizedBox(
@@ -494,7 +547,7 @@ class _SaveFolderDialogState extends State<_SaveFolderDialog> {
             }
             Navigator.of(context).pop(path);
           },
-          child: const Text('Save'),
+          child: Text(widget.actionLabel),
         ),
       ],
     );
