@@ -12,6 +12,7 @@ import 'package:nt_helper/ui/bpm_editor_widget.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/widgets/mapping_edit_button.dart';
 import 'package:nt_helper/ui/widgets/parameter_value_display.dart';
+import 'package:nt_helper/ui/widgets/routing_parameter_value.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
 
@@ -33,6 +34,7 @@ class ParameterViewRow extends StatefulWidget {
   final Slot slot;
   final bool isDisabled;
   final int parameterUnit; // Integer unit type for registry-based detection
+  final bool isRoutingParameter; // I/O parameter whose value is a bus number
   final Object? parameterValueTraversalId;
   final double? parameterValueTraversalOrder;
   final bool parameterValueEditingEnabled;
@@ -55,6 +57,7 @@ class ParameterViewRow extends StatefulWidget {
     required this.slot,
     this.isDisabled = false,
     this.parameterUnit = 0,
+    this.isRoutingParameter = false,
     this.parameterValueTraversalId,
     this.parameterValueTraversalOrder,
     this.parameterValueEditingEnabled = true,
@@ -194,6 +197,19 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
         : null;
 
     final paramName = cleanTitle(widget.name);
+
+    // Routing (I/O) parameters use the routing bus picker instead of a slider
+    // and a flat enum dropdown.
+    final bool isRoutingParameter = widget.isRoutingParameter;
+    final bool routingShowEs5 = widget.slot.algorithm.guid == 'usbf';
+    final bool routingHasExtendedAuxBuses = isRoutingParameter
+        ? () {
+            final state = context.read<DistingCubit>().state;
+            return state is DistingStateSynchronized
+                ? state.firmwareVersion.hasExtendedAuxBuses
+                : false;
+          }()
+        : false;
 
     final innerRow = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
@@ -404,39 +420,54 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             flex: widescreen ? 4 : 5,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: ParameterValueDisplay(
-                currentValue: currentValue,
-                min: widget.min,
-                max: widget.max,
-                name: widget.name,
-                unit: widget.unit,
-                powerOfTen: widget.powerOfTen,
-                displayString: widget.displayString,
-                dropdownItems: widget.dropdownItems,
-                isOnOff: widget.isOnOff,
-                widescreen: widescreen,
-                isBpmUnit: isBpmUnit,
-                hasFileEditor: fileEditor != null,
-                showAlternateEditor: _showAlternateEditor,
-                enabled: widget.parameterValueEditingEnabled,
-                traversalId: widget.parameterValueTraversalId,
-                traversalOrder: widget.parameterValueTraversalOrder,
-                onValueChanged: (newValue) {
-                  setState(() {
-                    currentValue = newValue;
-                    if (widget.isOnOff) {
-                      isChecked = currentValue == 1;
-                    }
-                  });
-                  _updateCubitValue(newValue);
-                  _scheduleParameterRefresh();
-                },
-                onLongPress: () => setState(() {
-                  if (!isBpmUnit && fileEditor == null) {
-                    _showAlternateEditor = !_showAlternateEditor;
-                  }
-                }),
-              ),
+              child: isRoutingParameter
+                  ? RoutingParameterValue(
+                      portLabel: paramName,
+                      currentBus: currentValue,
+                      showEs5: routingShowEs5,
+                      hasExtendedAuxBuses: routingHasExtendedAuxBuses,
+                      enabled: widget.parameterValueEditingEnabled,
+                      onValueChanged: (newValue) {
+                        setState(() {
+                          currentValue = newValue;
+                        });
+                        _updateCubitValue(newValue);
+                        _scheduleParameterRefresh();
+                      },
+                    )
+                  : ParameterValueDisplay(
+                      currentValue: currentValue,
+                      min: widget.min,
+                      max: widget.max,
+                      name: widget.name,
+                      unit: widget.unit,
+                      powerOfTen: widget.powerOfTen,
+                      displayString: widget.displayString,
+                      dropdownItems: widget.dropdownItems,
+                      isOnOff: widget.isOnOff,
+                      widescreen: widescreen,
+                      isBpmUnit: isBpmUnit,
+                      hasFileEditor: fileEditor != null,
+                      showAlternateEditor: _showAlternateEditor,
+                      enabled: widget.parameterValueEditingEnabled,
+                      traversalId: widget.parameterValueTraversalId,
+                      traversalOrder: widget.parameterValueTraversalOrder,
+                      onValueChanged: (newValue) {
+                        setState(() {
+                          currentValue = newValue;
+                          if (widget.isOnOff) {
+                            isChecked = currentValue == 1;
+                          }
+                        });
+                        _updateCubitValue(newValue);
+                        _scheduleParameterRefresh();
+                      },
+                      onLongPress: () => setState(() {
+                        if (!isBpmUnit && fileEditor == null) {
+                          _showAlternateEditor = !_showAlternateEditor;
+                        }
+                      }),
+                    ),
             ),
           ),
         ],

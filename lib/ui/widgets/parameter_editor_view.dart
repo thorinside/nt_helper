@@ -38,6 +38,10 @@ class ParameterEditorView extends StatelessWidget {
       parameterInfo.unit,
     );
 
+    // I/O (routing) parameters carry a bus number as their value. They render
+    // the routing bus picker instead of a flat enum dropdown.
+    final isRoutingParameter = parameterInfo.isInput || parameterInfo.isOutput;
+
     // Check if we have a complete set of enum strings (all non-empty)
     // Partial enums (e.g., ["Off", "", "", ...]) should not be treated as dropdowns
     final hasCompleteEnumStrings =
@@ -81,8 +85,11 @@ class ParameterEditorView extends StatelessWidget {
       parameterNumber: parameterInfo.parameterNumber,
       powerOfTen: parameterInfo.powerOfTen,
       defaultValue: parameterInfo.defaultValue,
+      isRoutingParameter: isRoutingParameter,
       displayString: effectiveDisplayString,
-      dropdownItems: hasCompleteEnumStrings ? enumStrings.values : null,
+      dropdownItems: (hasCompleteEnumStrings && !isRoutingParameter)
+          ? enumStrings.values
+          : null,
       isOnOff:
           (hasCompleteEnumStrings &&
           enumStrings.values.length >= 2 &&
