@@ -86,7 +86,7 @@ No symbol moves. No compatibility re-export is needed.
 | Do not change `RoutingEditorCubit`, `BusSpec`, routing services, bus numbering, or solver logic | The feature is presentation and selection affordance only | none | out-of-scope |
 | Do not add success snackbars or debug logging | Repo rules forbid unnecessary success snackbars and debug logging | all implementation files | out-of-scope |
 | Do not persist picker scroll position | The requested state is derived from the current selected bus each time the dialog opens | none | out-of-scope |
-| Do not mark used buses with a separate used badge in this program | Visibility of used buses is required; a used-bus legend is a separate UI feature | none | optional |
+| Do not mark used buses with a separate used badge in this program | Visibility of used buses is required; a used-bus legend is a separate UI feature | none | out-of-scope |
 
 ## Dialog API and behavior contract
 
@@ -126,7 +126,7 @@ Current-bus tile contract:
 Scroll contract:
 
 - The dialog body uses a `SingleChildScrollView` controlled by `_scrollController`.
-- The scrollable bus-section area is constrained to at most `MediaQuery.sizeOf(context).height * 0.65` and at most `420` logical pixels.
+- The scrollable bus-section area is constrained to at most `MediaQuery.sizeOf(context).height * 0.65` and at most `420.0` logical pixels; use the double literal `420.0` so `math.min` returns a `double` accepted by `BoxConstraints.maxHeight`.
 - `_BusPickerDialogState.initState` schedules one post-frame callback.
 - The callback calls `Scrollable.ensureVisible` on the current tile key with `alignment: 0.5` and `duration: Duration.zero`.
 - If `currentBus <= 0` or the current tile context is absent, the callback returns without scrolling.

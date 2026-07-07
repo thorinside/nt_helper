@@ -9,7 +9,7 @@ Program-level verification after STEP 2:
 ```bash
 cd /Users/nealsanche/nosuch/nt_helper
 flutter analyze
-flutter test test/ui/widgets/routing/bus_picker_dialog_test.dart test/ui/widgets/routing/bus_lanes_view_test.dart
+flutter test
 ```
 
 ## STEP 1 of 2 — Center and mark the selected bus in the dialog
@@ -42,7 +42,7 @@ flutter test test/ui/widgets/routing/bus_picker_dialog_test.dart test/ui/widgets
    - Call `Scrollable.ensureVisible(currentContext, alignment: 0.5, duration: Duration.zero);`.
 7. Override `dispose` in `_BusPickerDialogState`, call `_scrollController.dispose()`, then call `super.dispose()`.
 8. In `build`, wrap the bus sections in a `SingleChildScrollView` controlled by `_scrollController`.
-9. Constrain the scrollable bus-section area with `ConstrainedBox` and `BoxConstraints(maxHeight: math.min(MediaQuery.sizeOf(context).height * 0.65, 420))`.
+9. Constrain the scrollable bus-section area with `ConstrainedBox` and `BoxConstraints(maxHeight: math.min(MediaQuery.sizeOf(context).height * 0.65, 420.0))`.
 10. Add `import 'dart:math' as math;` at the top of `bus_picker_dialog.dart`.
 11. Keep the header and footer outside the scroll view.
 12. In `_section`, pass these new arguments to `_BusTile`:
