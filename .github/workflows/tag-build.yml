@@ -697,7 +697,16 @@ jobs:
         run: |
           # Sign WITHOUT --deep to preserve the helper's signature
           # Sign frameworks and other nested code first
-          find build/macos/Build/Products/Release/nt_helper.app/Contents/Frameworks -type d -name "*.framework" -exec \
+          APP_BUNDLE="build/macos/Build/Products/Release/nt_helper.app"
+          FRAMEWORKS_DIR="$APP_BUNDLE/Contents/Frameworks"
+
+          find "$FRAMEWORKS_DIR" -type f -name "*.dylib" -print0 | while IFS= read -r -d '' dylib; do
+            echo "Signing embedded dylib: $dylib"
+            codesign --force --verbose --options runtime \
+              --sign "Apple Distribution: Neal Sanche (KN424RZG26)" "$dylib"
+          done
+
+          find "$FRAMEWORKS_DIR" -type d -name "*.framework" -exec \
             codesign --force --verbose --options runtime \
               --sign "Apple Distribution: Neal Sanche (KN424RZG26)" {} \;
           
@@ -705,13 +714,13 @@ jobs:
           codesign --force --verbose --options runtime \
             --sign "Apple Distribution: Neal Sanche (KN424RZG26)" \
             --entitlements macos/Runner/AppStore.entitlements \
-            build/macos/Build/Products/Release/nt_helper.app
+            "$APP_BUNDLE"
           
           # Verify final signatures
           echo "Main app signature:"
-          codesign -d -vvv build/macos/Build/Products/Release/nt_helper.app 2>&1 | grep -E "Identifier|TeamIdentifier"
+          codesign -d -vvv "$APP_BUNDLE" 2>&1 | grep -E "Identifier|TeamIdentifier"
           echo "Helper signature (should be preserved):"
-          codesign -d -vvv "build/macos/Build/Products/Release/nt_helper.app/Contents/Helpers/nt-flash.app" 2>&1 | grep -E "Identifier|TeamIdentifier"
+          codesign -d -vvv "$APP_BUNDLE/Contents/Helpers/nt-flash.app" 2>&1 | grep -E "Identifier|TeamIdentifier"
 
       - name: Create installer package (.pkg)
         run: |
