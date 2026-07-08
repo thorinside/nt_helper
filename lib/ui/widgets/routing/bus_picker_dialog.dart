@@ -29,6 +29,12 @@ class BusPickerDialog extends StatefulWidget {
   /// Whether ES-5 buses are valid targets for this port.
   final bool showEs5;
 
+  /// Whether the parameter permits bus 0 (None/Off) as a valid value.
+  ///
+  /// When `true`, a neutral "None" tile is shown at the top of the picker;
+  /// tapping it pops the dialog with `0`.
+  final bool canDisconnect;
+
   /// Label formatter matching the bus-lanes legend (I1, O3, A12, ES1…).
   final String Function(int) busLabel;
 
@@ -38,6 +44,7 @@ class BusPickerDialog extends StatefulWidget {
     required this.currentBus,
     required this.availableBuses,
     required this.showEs5,
+    this.canDisconnect = false,
     required this.busLabel,
   });
 
@@ -150,6 +157,13 @@ class _BusPickerDialogState extends State<BusPickerDialog> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (widget.canDisconnect)
+                            _NoneSection(
+                              selected: widget.currentBus == 0,
+                              onTap: widget.currentBus == 0
+                                  ? null
+                                  : () => Navigator.of(context).pop(0),
+                            ),
                           if (_inputs.isNotEmpty)
                             _section('Inputs', _inputs, theme),
                           if (_outputs.isNotEmpty)
@@ -232,6 +246,85 @@ class _BusTile extends StatefulWidget {
 
   @override
   State<_BusTile> createState() => _BusTileState();
+}
+
+class _NoneSection extends StatelessWidget {
+  final bool selected;
+  final VoidCallback? onTap;
+  const _NoneSection({required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final borderColor = selected ? theme.colorScheme.primary : theme.colorScheme.outline;
+    final borderWidth = selected ? 3.0 : 1.5;
+    final fillColor = selected
+        ? theme.colorScheme.primary.withValues(alpha: 0.18)
+        : theme.colorScheme.surfaceContainerHighest;
+    final foreground = theme.colorScheme.onSurface;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                'None',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Semantics(
+                label: selected ? 'Current bus None' : 'Route to None',
+                button: true,
+                selected: selected,
+                enabled: onTap != null,
+                excludeSemantics: true,
+                child: Material(
+                  color: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    side: BorderSide(color: borderColor, width: borderWidth),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: onTap,
+                    child: Container(
+                      width: 48,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: fillColor,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'None',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                          color: foreground,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _BusTileState extends State<_BusTile> {

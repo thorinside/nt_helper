@@ -26,6 +26,14 @@ class RoutingParameterValue extends StatelessWidget {
   /// Whether the device firmware exposes the extended aux/ES-5 bus range.
   final bool hasExtendedAuxBuses;
 
+  /// Whether the parameter permits bus 0 (None/Off) as a valid value.
+  ///
+  /// Some I/O parameters have a non-zero minimum (e.g. an input that must be
+  /// assigned) and therefore cannot be fully disconnected. When this is `true`,
+  /// a small "disconnect" (x) affordance is shown next to the chip and a "None"
+  /// tile is offered in the bus picker.
+  final bool canDisconnect;
+
   /// Whether the control is interactive.
   final bool enabled;
 
@@ -38,6 +46,7 @@ class RoutingParameterValue extends StatelessWidget {
     required this.currentBus,
     required this.showEs5,
     required this.hasExtendedAuxBuses,
+    this.canDisconnect = false,
     this.enabled = true,
     required this.onValueChanged,
   });
@@ -75,49 +84,75 @@ class RoutingParameterValue extends StatelessWidget {
     final textStyle = (theme.textTheme.labelLarge ?? const TextStyle())
         .copyWith(fontWeight: FontWeight.w700, color: foreground);
 
-    return Semantics(
-      label: '$portLabel: $label',
-      button: true,
-      enabled: enabled,
-      child: ExcludeSemantics(
-        child: Opacity(
-          opacity: enabled ? 1.0 : 0.5,
-          child: IgnorePointer(
-            ignoring: !enabled,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _openPicker(context),
-                borderRadius: BorderRadius.circular(6),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: fillColor,
+    final showDisconnect = canDisconnect && currentBus > 0 && enabled;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Semantics(
+          label: '$portLabel: $label',
+          button: true,
+          enabled: enabled,
+          child: ExcludeSemantics(
+            child: Opacity(
+              opacity: enabled ? 1.0 : 0.5,
+              child: IgnorePointer(
+                ignoring: !enabled,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _openPicker(context),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: borderColor, width: 1.5),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.route_rounded,
-                        size: 16,
-                        color: foreground,
-                        semanticLabel: '',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
-                      const SizedBox(width: 6),
-                      Text(label, style: textStyle),
-                    ],
+                      decoration: BoxDecoration(
+                        color: fillColor,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: borderColor, width: 1.5),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.route_rounded,
+                            size: 16,
+                            color: foreground,
+                            semanticLabel: '',
+                          ),
+                          const SizedBox(width: 6),
+                          Text(label, style: textStyle),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ),
+        if (showDisconnect) ...[
+          const SizedBox(width: 4),
+          Semantics(
+            label: 'Disconnect $portLabel',
+            button: true,
+            child: ExcludeSemantics(
+              child: _DisconnectButton(
+                onPressed: () {
+                  onValueChanged(0);
+                  SemanticsService.sendAnnouncement(
+                    View.of(context),
+                    '$portLabel: None',
+                    TextDirection.ltr,
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -152,6 +187,7 @@ class RoutingParameterValue extends StatelessWidget {
         currentBus: currentBus,
         availableBuses: buses,
         showEs5: showEs5,
+        canDisconnect: canDisconnect,
         busLabel: _busLabel,
       ),
     );
@@ -166,5 +202,46 @@ class RoutingParameterValue extends StatelessWidget {
         TextDirection.ltr,
       );
     }
+  }
+}
+
+/// Small "disconnect" (x) affordance shown beside an I/O parameter chip when
+/// the parameter permits bus 0 (None).
+class _DisconnectButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  const _DisconnectButton({required this.onPressed});
+
+  @override
+  State<_DisconnectButton> createState() => _DisconnectButtonState();
+}
+
+class _DisconnectButtonState extends State<_DisconnectButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurfaceVariant;
+    return Material(
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+        side: BorderSide(
+          color: _hovered ? theme.colorScheme.outline : Colors.transparent,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: widget.onPressed,
+        onHover: (h) {
+          if (h != _hovered) setState(() => _hovered = h);
+        },
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(Icons.close_rounded, size: 16, color: color),
+        ),
+      ),
+    );
   }
 }

@@ -132,5 +132,164 @@ void main() {
       expect(find.text('Aux'), findsOneWidget);
       expect(find.text('A1'), findsOneWidget);
     });
+
+    testWidgets(
+      'does not show disconnect (x) when canDisconnect is false',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            RoutingParameterValue(
+              portLabel: 'Output 1',
+              currentBus: 13,
+              showEs5: false,
+              hasExtendedAuxBuses: false,
+              canDisconnect: false,
+              onValueChanged: (_) {},
+            ),
+          ),
+        );
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'does not show disconnect (x) when currentBus is already 0',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            RoutingParameterValue(
+              portLabel: 'Output 1',
+              currentBus: 0,
+              showEs5: false,
+              hasExtendedAuxBuses: false,
+              canDisconnect: true,
+              onValueChanged: (_) {},
+            ),
+          ),
+        );
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping disconnect (x) fires onValueChanged with 0',
+      (tester) async {
+        int? selected;
+        await tester.pumpWidget(
+          _wrap(
+            RoutingParameterValue(
+              portLabel: 'Output 1',
+              currentBus: 13,
+              showEs5: false,
+              hasExtendedAuxBuses: false,
+              canDisconnect: true,
+              onValueChanged: (b) => selected = b,
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pumpAndSettle();
+
+        expect(selected, 0);
+      },
+    );
+
+    testWidgets(
+      'disconnect (x) is hidden when disabled',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            RoutingParameterValue(
+              portLabel: 'Output 1',
+              currentBus: 13,
+              showEs5: false,
+              hasExtendedAuxBuses: false,
+              canDisconnect: true,
+              enabled: false,
+              onValueChanged: (_) {},
+            ),
+          ),
+        );
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'bus picker shows None tile when canDisconnect is true',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            RoutingParameterValue(
+              portLabel: 'Output 1',
+              currentBus: 13,
+              showEs5: false,
+              hasExtendedAuxBuses: false,
+              canDisconnect: true,
+              onValueChanged: (_) {},
+            ),
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.route_rounded), warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        // Two "None" texts: section header + tile.
+        expect(find.text('None'), findsNWidgets(2));
+      },
+    );
+
+    testWidgets(
+      'bus picker hides None tile when canDisconnect is false',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            RoutingParameterValue(
+              portLabel: 'Output 1',
+              currentBus: 13,
+              showEs5: false,
+              hasExtendedAuxBuses: false,
+              canDisconnect: false,
+              onValueChanged: (_) {},
+            ),
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.route_rounded), warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        expect(find.text('None'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'selecting None in the picker fires onValueChanged with 0',
+      (tester) async {
+        int? selected;
+        await tester.pumpWidget(
+          _wrap(
+            RoutingParameterValue(
+              portLabel: 'Output 1',
+              currentBus: 13,
+              showEs5: false,
+              hasExtendedAuxBuses: false,
+              canDisconnect: true,
+              onValueChanged: (b) => selected = b,
+            ),
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.route_rounded), warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        // Tap the None tile (the one inside the Wrap, not the header).
+        final noneTiles = find.text('None');
+        await tester.tap(noneTiles.at(1));
+        await tester.pumpAndSettle();
+
+        expect(selected, 0);
+      },
+    );
   });
 }

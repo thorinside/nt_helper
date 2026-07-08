@@ -426,6 +426,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                       currentBus: currentValue,
                       showEs5: routingShowEs5,
                       hasExtendedAuxBuses: routingHasExtendedAuxBuses,
+                      canDisconnect: widget.min == 0,
                       enabled: widget.parameterValueEditingEnabled,
                       onValueChanged: (newValue) {
                         setState(() {
