@@ -368,10 +368,13 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
       final gateBus = strippedIoParameters['Gate input $i'] ?? 0;
       gateInputs.add(gateBus);
 
-      // CV count for this gate (only relevant if gate is connected)
-      final cvCount = strippedIoParameters['Gate $i CV count'] ?? 0;
+      // CV count for this gate (only relevant if gate is connected).
+      // Gate $i CV count is a numeric knob (unit=0), not a bus assignment,
+      // so it lacks ioFlags and is not present in ioParameters.
+      // Read it directly from the slot instead.
+      final cvCount =
+          AlgorithmRouting.getParameterValue(slot, 'Gate $i CV count');
       gateCvCounts.add(cvCount);
-      if (gateBus > 0 || cvCount > 0) {}
     }
 
     // Trim trailing unconnected gates
