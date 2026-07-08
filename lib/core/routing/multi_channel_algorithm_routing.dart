@@ -611,6 +611,19 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       for (final v in slot.values) v.parameterNumber: v.value,
     };
 
+    // Only consider parameters that appear in at least one firmware-provided
+    // page.  Hidden parameters (not in any page) should not appear in the
+    // routing views — this matches the parameter editor's behaviour.
+    // When pages are empty (test mocks, offline fixtures), fall back to all.
+    Set<int> computeVisibleSet(Slot target) {
+      final pageParams =
+          target.pages.pages.expand((p) => p.parameters).toSet();
+      if (pageParams.isNotEmpty) return pageParams;
+      return target.parameters.map((p) => p.parameterNumber).toSet();
+    }
+
+    final visible = computeVisibleSet(slot);
+
     final ioParameterEntries =
         <({String name, int busValue, ParameterInfo? paramInfo})>[];
     final consumedIoParameterNumbers = <int>{};
@@ -618,6 +631,7 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
     // Prefer the slot parameter list so duplicate parameter names on different
     // pages (for example mixer channel inputs) do not collapse into one map key.
     for (final param in slot.parameters) {
+      if (!visible.contains(param.parameterNumber)) continue;
       final isIoParameter =
           param.isInput ||
           param.isOutput ||
@@ -660,6 +674,7 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
 
     // First pass: collect all send-related parameters (including non-bus ones like width/mode)
     for (final param in slot.parameters) {
+      if (!visible.contains(param.parameterNumber)) continue;
       final sendPage = parameterToSendPage[param.parameterNumber];
       if (sendPage != null) {
         sendGroups[sendPage] ??= {};

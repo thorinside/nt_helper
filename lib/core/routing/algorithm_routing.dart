@@ -514,10 +514,29 @@ abstract class AlgorithmRouting {
     return instance;
   }
 
+  /// Compute the set of parameter numbers that are visible (i.e., present
+  /// in at least one firmware-provided page).  Parameters that are not in
+  /// any page are hidden from the parameter editor and should also be
+  /// excluded from routing visualizations.
+  ///
+  /// When `slot.pages.pages` is empty (e.g. test mocks, offline fixtures
+  /// without page metadata), falls back to all parameters so existing
+  /// tests and callers remain compatible.
+  static Set<int> _visibleParameterNumbers(Slot slot) {
+    final pageParams =
+        slot.pages.pages.expand((p) => p.parameters).toSet();
+    if (pageParams.isNotEmpty) return pageParams;
+    return slot.parameters.map((p) => p.parameterNumber).toSet();
+  }
+
   /// Helper method to extract routing-related parameters from a slot.
   ///
   /// Uses IO flags (`ParameterInfo.isInput`, `.isOutput`) to identify
   /// parameters that represent bus assignments for routing.
+  ///
+  /// Only parameters that appear in at least one firmware-provided page
+  /// are considered — hidden parameters are excluded to match the
+  /// parameter editor's behaviour.
   ///
   /// Parameters:
   /// - [slot]: The slot to analyze
@@ -529,6 +548,7 @@ abstract class AlgorithmRouting {
       return {};
     }
 
+    final visible = _visibleParameterNumbers(slot);
     final ioParameters = <String, int>{};
 
     final valueByParam = <int, int>{
@@ -536,6 +556,7 @@ abstract class AlgorithmRouting {
     };
 
     for (final param in slot.parameters) {
+      if (!visible.contains(param.parameterNumber)) continue;
       if (param.isInput ||
           param.isOutput ||
           isHardcodedInput(slot.algorithm.guid, param.name)) {
@@ -569,14 +590,15 @@ abstract class AlgorithmRouting {
   /// - unit == 1 (enum type)
   /// - enumValues containing 'Add' and 'Replace'
   ///
-  /// This method follows the same pattern as extractIOParameters but
-  /// specifically targets mode control parameters for output ports.
+  /// Only parameters that appear in at least one firmware-provided page
+  /// are considered — hidden parameters are excluded.
   ///
   /// Parameters:
   /// - [slot]: The slot to analyze
   ///
   /// Returns a map of parameter names to their mode values (0=Add, 1=Replace)
   static Map<String, int> extractModeParameters(Slot slot) {
+    final visible = _visibleParameterNumbers(slot);
     final modeParameters = <String, int>{};
 
     final valueByParam = <int, int>{
@@ -589,6 +611,7 @@ abstract class AlgorithmRouting {
     };
 
     for (final param in slot.parameters) {
+      if (!visible.contains(param.parameterNumber)) continue;
       // Mode parameters are identified by:
       // - name ending with 'mode' (case-insensitive)
       // - unit == 1 (enum type)
@@ -613,12 +636,16 @@ abstract class AlgorithmRouting {
 
   /// Extract mode parameters with both their values and parameter numbers.
   ///
+  /// Only parameters that appear in at least one firmware-provided page
+  /// are considered — hidden parameters are excluded.
+  ///
   /// Parameters:
   /// - [slot]: The slot to analyze
   ///
   /// Returns a map of parameter names to (parameterNumber, value) records
   static Map<String, ({int parameterNumber, int value})>
   extractModeParametersWithNumbers(Slot slot) {
+    final visible = _visibleParameterNumbers(slot);
     final modeParameters = <String, ({int parameterNumber, int value})>{};
 
     final valueByParam = <int, int>{
@@ -631,6 +658,7 @@ abstract class AlgorithmRouting {
     };
 
     for (final param in slot.parameters) {
+      if (!visible.contains(param.parameterNumber)) continue;
       // Mode parameters are identified by:
       // - name ending with 'mode' (case-insensitive)
       // - unit == 1 (enum type)

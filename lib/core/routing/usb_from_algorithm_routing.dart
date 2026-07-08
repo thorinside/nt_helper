@@ -215,10 +215,15 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
   }
 
   static List<ParameterInfo> _findUsbToParams(Slot slot) {
+    // Only consider parameters that appear in at least one firmware-provided
+    // page — hidden parameters should not leak into the routing views.
+    // When pages are empty (test mocks, offline fixtures), fall back to all.
+    final visible = _visibleParameterNumbers(slot);
+
     // Use IO flags to find output parameters
     var toParams = [
       for (final p in slot.parameters)
-        if (p.isOutput) p,
+        if (visible.contains(p.parameterNumber) && p.isOutput) p,
     ];
 
     // Sort stably by parameter number and keep the first 8
@@ -231,10 +236,15 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
   }
 
   static List<ParameterInfo> _findUsbModeParams(Slot slot) {
+    // Only consider parameters that appear in at least one firmware-provided
+    // page — hidden parameters should not leak into the routing views.
+    // When pages are empty (test mocks, offline fixtures), fall back to all.
+    final visible = _visibleParameterNumbers(slot);
+
     // Use IO flags to find output mode parameters
     var modeParams = [
       for (final p in slot.parameters)
-        if (p.isOutputMode) p,
+        if (visible.contains(p.parameterNumber) && p.isOutputMode) p,
     ];
 
     // Sort by parameter number to keep channel order stable
@@ -246,5 +256,14 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
     }
 
     return modeParams;
+  }
+
+  /// Compute visible parameter numbers: page membership when available,
+  /// or all parameters as fallback for test mocks / offline fixtures.
+  static Set<int> _visibleParameterNumbers(Slot slot) {
+    final pageParams =
+        slot.pages.pages.expand((p) => p.parameters).toSet();
+    if (pageParams.isNotEmpty) return pageParams;
+    return slot.parameters.map((p) => p.parameterNumber).toSet();
   }
 }
