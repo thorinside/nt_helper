@@ -140,7 +140,7 @@ void main() {
       expect(mappingWarnings(regions), [
         'Mapping impossible: invalid.wav has low C5 above high C4.',
         'Mapping impossible: outside.wav root D5 is outside C3–C4.',
-        'Mapping overlap: overlap-a.wav and overlap-b.wav overlap on A#4–C5 at velocity 2, RR 3.',
+        'Mapping overlap: overlap-a.wav overlaps overlap-b.wav on velocity 2, RR 3.',
       ]);
     });
 

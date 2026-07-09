@@ -201,7 +201,7 @@ class _Toolbar extends StatelessWidget {
                                   builder: (dialogContext) => AlertDialog(
                                     title: const Text('Discard all?'),
                                     content: const Text(
-                                      'This will remove all samples from the draft.',
+                                      'This reverts every sample in the draft.',
                                     ),
                                     actions: [
                                       TextButton(
@@ -219,7 +219,7 @@ class _Toolbar extends StatelessWidget {
                                   ),
                                 );
                                 if (discardAll == true) {
-                                  cubit.clearDraft();
+                                  cubit.discardChanges();
                                 }
                               }
                             : null,

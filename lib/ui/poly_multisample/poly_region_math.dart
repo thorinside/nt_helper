@@ -92,7 +92,7 @@ List<String> mappingWarnings(List<PolySampleRegion> regions) {
     final high = highFor(region);
     if (low > high) {
       warnings.add(
-        'Mapping impossible: ${sampleDisplayLabel(region, regions)} has low ${_noteLabel(low)} above high ${_noteLabel(high)}.',
+        'Mapping impossible: ${region.displayName} has low ${_noteLabel(low)} above high ${_noteLabel(high)}.',
       );
     }
   }
@@ -103,7 +103,7 @@ List<String> mappingWarnings(List<PolySampleRegion> regions) {
     final high = highFor(region);
     if (root < low || root > high) {
       warnings.add(
-        'Mapping impossible: ${sampleDisplayLabel(region, regions)} root ${_noteLabel(root)} is outside ${_noteLabel(low)}–${_noteLabel(high)}.',
+        'Mapping impossible: ${region.displayName} root ${_noteLabel(root)} is outside ${_noteLabel(low)}–${_noteLabel(high)}.',
       );
     }
   }
@@ -126,7 +126,7 @@ List<String> mappingWarnings(List<PolySampleRegion> regions) {
       final overlapHigh = math.min(highA, highB);
       if (overlapLow <= overlapHigh) {
         warnings.add(
-          'Mapping overlap: ${sampleDisplayLabel(a, regions)} and ${sampleDisplayLabel(b, regions)} overlap on ${_noteLabel(overlapLow)}–${_noteLabel(overlapHigh)} at velocity $velocityA, RR $rrA.',
+          'Mapping overlap: ${a.displayName} overlaps ${b.displayName} on velocity $velocityA, RR $rrA.',
         );
       }
     }

@@ -117,14 +117,14 @@ void main() {
 
     expect(find.text('Discard all?'), findsOneWidget);
     expect(
-      find.text('This will remove all samples from the draft.'),
+      find.text('This reverts every sample in the draft.'),
       findsOneWidget,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Discard all'));
     await tester.pumpAndSettle();
     expect(find.text('Discard all?'), findsNothing);
-    expect(cubit.clearDraftCount, 1);
-    expect(cubit.discardChangesCount, 0);
+    expect(cubit.clearDraftCount, 0);
+    expect(cubit.discardChangesCount, 1);
   });
 
   testWidgets('unmap selected proceeds immediately', (tester) async {
