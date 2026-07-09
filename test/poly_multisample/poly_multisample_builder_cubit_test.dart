@@ -417,6 +417,564 @@ void main() {
       expect(region.roundRobin, 1);
     });
 
+    test('mapping edits preserve editor order', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/z.wav',
+              fileName: 'z.wav',
+              displayName: 'z.wav',
+              rootMidi: 72,
+            ),
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+              rootMidi: 48,
+            ),
+            PolySampleRegion(
+              path: '/tmp/m.wav',
+              fileName: 'm.wav',
+              displayName: 'm.wav',
+              rootMidi: 60,
+            ),
+          ],
+        ),
+      );
+
+      cubit.updateRoot('/tmp/z.wav', 36);
+      cubit.updateRangeLow('/tmp/a.wav', 40);
+      cubit.updateRangeHigh('/tmp/m.wav', 90);
+      cubit.updateVelocity('/tmp/z.wav', 2);
+      cubit.updateRoundRobin('/tmp/a.wav', 3);
+
+      expect(cubit.state.editedRegions.map((region) => region.path).toList(), [
+        '/tmp/z.wav',
+        '/tmp/a.wav',
+        '/tmp/m.wav',
+      ]);
+    });
+
+    test(
+      'mapping warnings report invalid range root outside range and overlaps',
+      () {
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(
+            adapter: _FakePreviewAdapter(),
+          ),
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            editedRegions: [
+              PolySampleRegion(
+                path: '/tmp/invalid.wav',
+                fileName: 'invalid.wav',
+                displayName: 'invalid.wav',
+                rangeLow: 72,
+                rangeHigh: 60,
+              ),
+              PolySampleRegion(
+                path: '/tmp/outside.wav',
+                fileName: 'outside.wav',
+                displayName: 'outside.wav',
+                rootMidi: 74,
+                rangeLow: 48,
+                rangeHigh: 60,
+              ),
+              PolySampleRegion(
+                path: '/tmp/overlap-a.wav',
+                fileName: 'overlap-a.wav',
+                displayName: 'overlap-a.wav',
+                rootMidi: 66,
+                rangeLow: 64,
+                rangeHigh: 72,
+                velocityLayer: 2,
+                roundRobin: 3,
+              ),
+              PolySampleRegion(
+                path: '/tmp/overlap-b.wav',
+                fileName: 'overlap-b.wav',
+                displayName: 'overlap-b.wav',
+                rootMidi: 71,
+                rangeLow: 70,
+                rangeHigh: 80,
+                velocityLayer: 2,
+                roundRobin: 3,
+              ),
+            ],
+          ),
+        );
+
+        cubit.updateRoot('/tmp/overlap-a.wav', 66);
+
+        expect(cubit.state.mappingWarnings, [
+          'Mapping warning: invalid.wav has low C5 above high C4.',
+          'Mapping warning: outside.wav root D5 is outside C3–C4.',
+          'Mapping warning: overlap-a.wav and overlap-b.wav overlap on A#4–C5 at velocity 2, RR 3.',
+        ]);
+      },
+    );
+
+    test('mapping warnings allow different velocity and rr overlaps', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+              rootMidi: 60,
+              rangeLow: 60,
+              rangeHigh: 64,
+              velocityLayer: 1,
+              roundRobin: 1,
+            ),
+            PolySampleRegion(
+              path: '/tmp/b.wav',
+              fileName: 'b.wav',
+              displayName: 'b.wav',
+              rootMidi: 62,
+              rangeLow: 61,
+              rangeHigh: 65,
+              velocityLayer: 2,
+              roundRobin: 1,
+            ),
+            PolySampleRegion(
+              path: '/tmp/c.wav',
+              fileName: 'c.wav',
+              displayName: 'c.wav',
+              rootMidi: 64,
+              rangeLow: 62,
+              rangeHigh: 66,
+              velocityLayer: 1,
+              roundRobin: 2,
+            ),
+          ],
+        ),
+      );
+
+      cubit.updateRoot('/tmp/a.wav', 60);
+
+      expect(cubit.state.mappingWarnings, isEmpty);
+    });
+
+    test('selected bulk mapping edits only selected rows', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          selectedPaths: {'/tmp/a.wav', '/tmp/c.wav'},
+          focusedPath: '/tmp/a.wav',
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+              rootMidi: 48,
+              rangeLow: 48,
+              rangeHigh: 48,
+              velocityLayer: 1,
+              roundRobin: 1,
+            ),
+            PolySampleRegion(
+              path: '/tmp/b.wav',
+              fileName: 'b.wav',
+              displayName: 'b.wav',
+              rootMidi: 50,
+              rangeLow: 50,
+              rangeHigh: 50,
+              velocityLayer: 2,
+              roundRobin: 2,
+            ),
+            PolySampleRegion(
+              path: '/tmp/c.wav',
+              fileName: 'c.wav',
+              displayName: 'c.wav',
+              rootMidi: 52,
+              rangeLow: 52,
+              rangeHigh: 52,
+              velocityLayer: 3,
+              roundRobin: 3,
+            ),
+          ],
+        ),
+      );
+
+      cubit.updateSelectedRoot(61);
+      cubit.updateSelectedRangeLow(60);
+      cubit.updateSelectedRangeHigh(64);
+      cubit.updateSelectedVelocity(4);
+      cubit.updateSelectedRoundRobin(5);
+
+      final a = cubit.state.editedRegions[0];
+      final b = cubit.state.editedRegions[1];
+      final c = cubit.state.editedRegions[2];
+      expect(a.rootMidi, 61);
+      expect(a.rootName, 'C#4');
+      expect(a.rangeLow, 60);
+      expect(a.rangeHigh, 64);
+      expect(a.velocityLayer, 4);
+      expect(a.roundRobin, 5);
+      expect(b.rootMidi, 50);
+      expect(b.rangeLow, 50);
+      expect(b.rangeHigh, 50);
+      expect(b.velocityLayer, 2);
+      expect(b.roundRobin, 2);
+      expect(c.rootMidi, 61);
+      expect(c.rootName, 'C#4');
+      expect(c.rangeLow, 60);
+      expect(c.rangeHigh, 64);
+      expect(c.velocityLayer, 4);
+      expect(c.roundRobin, 5);
+    });
+
+    test(
+      'unmapSelectedRegions clears mapping fields without removing rows',
+      () {
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(
+            adapter: _FakePreviewAdapter(),
+          ),
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            selectedPaths: {'/tmp/a.wav'},
+            focusedPath: '/tmp/a.wav',
+            editedRegions: [
+              PolySampleRegion(
+                path: '/tmp/a.wav',
+                fileName: 'a.wav',
+                displayName: 'a.wav',
+                rootMidi: 48,
+                rootName: 'C3',
+                rangeLow: 48,
+                rangeHigh: 60,
+                switchPoint: 50,
+                velocityLayer: 2,
+                roundRobin: 3,
+              ),
+              PolySampleRegion(
+                path: '/tmp/b.wav',
+                fileName: 'b.wav',
+                displayName: 'b.wav',
+                rootMidi: 50,
+                rootName: 'D3',
+                rangeLow: 50,
+                rangeHigh: 62,
+                switchPoint: 54,
+                velocityLayer: 4,
+                roundRobin: 5,
+              ),
+            ],
+          ),
+        );
+
+        cubit.unmapSelectedRegions();
+
+        final a = cubit.state.editedRegions[0];
+        final b = cubit.state.editedRegions[1];
+        expect(cubit.state.editedRegions, hasLength(2));
+        expect(a.rootMidi, isNull);
+        expect(a.rootName, isNull);
+        expect(a.rangeLow, isNull);
+        expect(a.rangeHigh, isNull);
+        expect(a.switchPoint, isNull);
+        expect(a.velocityLayer, isNull);
+        expect(a.roundRobin, isNull);
+        expect(b.rootMidi, 50);
+        expect(b.rootName, 'D3');
+        expect(b.rangeLow, 50);
+        expect(b.rangeHigh, 62);
+        expect(b.switchPoint, 54);
+        expect(b.velocityLayer, 4);
+        expect(b.roundRobin, 5);
+      },
+    );
+
+    test(
+      'discardChanges resets only selected existing rows and removes selected new rows',
+      () {
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: PolyAudioPreviewService(
+            adapter: _FakePreviewAdapter(),
+          ),
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          const PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            currentInstrument: PolySampleInstrument(
+              name: 'Piano',
+              sourcePath: '/tmp',
+              regions: [
+                PolySampleRegion(
+                  path: '/tmp/a.wav',
+                  fileName: 'a.wav',
+                  displayName: 'a.wav',
+                  rootMidi: 48,
+                  rootName: 'C3',
+                  rangeLow: 48,
+                  rangeHigh: 48,
+                  velocityLayer: 1,
+                  roundRobin: 1,
+                ),
+                PolySampleRegion(
+                  path: '/tmp/b.wav',
+                  fileName: 'b.wav',
+                  displayName: 'b.wav',
+                  rootMidi: 50,
+                  rootName: 'D3',
+                  rangeLow: 50,
+                  rangeHigh: 50,
+                  velocityLayer: 2,
+                  roundRobin: 2,
+                ),
+              ],
+            ),
+            baselineRegions: [
+              PolySampleRegion(
+                path: '/tmp/a.wav',
+                fileName: 'a.wav',
+                displayName: 'a.wav',
+                rootMidi: 48,
+                rootName: 'C3',
+                rangeLow: 48,
+                rangeHigh: 48,
+                velocityLayer: 1,
+                roundRobin: 1,
+              ),
+              PolySampleRegion(
+                path: '/tmp/b.wav',
+                fileName: 'b.wav',
+                displayName: 'b.wav',
+                rootMidi: 50,
+                rootName: 'D3',
+                rangeLow: 50,
+                rangeHigh: 50,
+                velocityLayer: 2,
+                roundRobin: 2,
+              ),
+            ],
+            editedRegions: [
+              PolySampleRegion(
+                path: '/tmp/a.wav',
+                fileName: 'a.wav',
+                displayName: 'a.wav',
+                rootMidi: 49,
+                rootName: 'C#3',
+                rangeLow: 49,
+                rangeHigh: 49,
+                velocityLayer: 3,
+                roundRobin: 3,
+              ),
+              PolySampleRegion(
+                path: '/tmp/b.wav',
+                fileName: 'b.wav',
+                displayName: 'b.wav',
+                rootMidi: 51,
+                rootName: 'D#3',
+                rangeLow: 51,
+                rangeHigh: 51,
+                velocityLayer: 4,
+                roundRobin: 4,
+              ),
+              PolySampleRegion(
+                path: '/tmp/new.wav',
+                fileName: 'new.wav',
+                displayName: 'new.wav',
+                rootMidi: 53,
+                rootName: 'F3',
+                rangeLow: 53,
+                rangeHigh: 53,
+                velocityLayer: 5,
+                roundRobin: 5,
+              ),
+            ],
+            selectedPaths: {'/tmp/a.wav', '/tmp/new.wav'},
+            focusedPath: '/tmp/a.wav',
+            loopDrafts: {
+              '/tmp/a.wav': PolyWaveformDraft(loopStart: 10, loopEnd: 20),
+              '/tmp/b.wav': PolyWaveformDraft(loopStart: 30, loopEnd: 40),
+              '/tmp/new.wav': PolyWaveformDraft(loopStart: 50, loopEnd: 60),
+            },
+            wavEditDrafts: {
+              '/tmp/a.wav': PolyWaveformDraft(trimStart: 1),
+              '/tmp/b.wav': PolyWaveformDraft(trimStart: 2),
+              '/tmp/new.wav': PolyWaveformDraft(trimStart: 3),
+            },
+          ),
+        );
+
+        cubit.discardChanges();
+
+        expect(cubit.state.editedRegions.map((region) => region.path), [
+          '/tmp/a.wav',
+          '/tmp/b.wav',
+        ]);
+        final a = cubit.state.editedRegions[0];
+        final b = cubit.state.editedRegions[1];
+        expect(a.rootMidi, 48);
+        expect(a.rootName, 'C3');
+        expect(a.rangeLow, 48);
+        expect(a.rangeHigh, 48);
+        expect(a.velocityLayer, 1);
+        expect(a.roundRobin, 1);
+        expect(b.rootMidi, 51);
+        expect(b.rootName, 'D#3');
+        expect(b.rangeLow, 51);
+        expect(b.rangeHigh, 51);
+        expect(b.velocityLayer, 4);
+        expect(b.roundRobin, 4);
+        expect(cubit.state.loopDrafts, isNot(contains('/tmp/a.wav')));
+        expect(cubit.state.wavEditDrafts, isNot(contains('/tmp/a.wav')));
+        expect(cubit.state.loopDrafts, isNot(contains('/tmp/new.wav')));
+        expect(cubit.state.wavEditDrafts, isNot(contains('/tmp/new.wav')));
+        expect(cubit.state.loopDrafts, contains('/tmp/b.wav'));
+        expect(cubit.state.wavEditDrafts, contains('/tmp/b.wav'));
+        expect(cubit.state.selectedPaths, {'/tmp/a.wav'});
+      },
+    );
+
+    test('discardChanges with no selection keeps full discard behavior', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          currentInstrument: PolySampleInstrument(
+            name: 'Piano',
+            sourcePath: '/tmp',
+            regions: [
+              PolySampleRegion(
+                path: '/tmp/a.wav',
+                fileName: 'a.wav',
+                displayName: 'a.wav',
+                rootMidi: 48,
+                rootName: 'C3',
+              ),
+              PolySampleRegion(
+                path: '/tmp/b.wav',
+                fileName: 'b.wav',
+                displayName: 'b.wav',
+                rootMidi: 50,
+                rootName: 'D3',
+              ),
+            ],
+          ),
+          baselineRegions: [
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+              rootMidi: 48,
+              rootName: 'C3',
+            ),
+            PolySampleRegion(
+              path: '/tmp/b.wav',
+              fileName: 'b.wav',
+              displayName: 'b.wav',
+              rootMidi: 50,
+              rootName: 'D3',
+            ),
+          ],
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+              rootMidi: 49,
+              rootName: 'C#3',
+            ),
+            PolySampleRegion(
+              path: '/tmp/b.wav',
+              fileName: 'b.wav',
+              displayName: 'b.wav',
+              rootMidi: 51,
+              rootName: 'D#3',
+            ),
+          ],
+          loopDrafts: {
+            '/tmp/a.wav': PolyWaveformDraft(loopStart: 10, loopEnd: 20),
+            '/tmp/b.wav': PolyWaveformDraft(loopStart: 30, loopEnd: 40),
+          },
+          wavEditDrafts: {
+            '/tmp/a.wav': PolyWaveformDraft(trimStart: 1),
+            '/tmp/b.wav': PolyWaveformDraft(trimStart: 2),
+          },
+        ),
+      );
+
+      cubit.discardChanges();
+
+      expect(cubit.state.editedRegions, const [
+        PolySampleRegion(
+          path: '/tmp/a.wav',
+          fileName: 'a.wav',
+          displayName: 'a.wav',
+          rootMidi: 48,
+          rootName: 'C3',
+        ),
+        PolySampleRegion(
+          path: '/tmp/b.wav',
+          fileName: 'b.wav',
+          displayName: 'b.wav',
+          rootMidi: 50,
+          rootName: 'D3',
+        ),
+      ]);
+      expect(cubit.state.loopDrafts, isEmpty);
+      expect(cubit.state.wavEditDrafts, isEmpty);
+    });
+
+    test('returnToSources clears mapping warnings', () async {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          currentInstrument: PolySampleInstrument(
+            name: 'Piano',
+            sourcePath: '/tmp',
+            regions: [
+              PolySampleRegion(
+                path: '/tmp/a.wav',
+                fileName: 'a.wav',
+                displayName: 'a.wav',
+              ),
+            ],
+          ),
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+            ),
+          ],
+          mappingWarnings: ['Mapping warning: a.wav has low C5 above high C4.'],
+        ),
+      );
+
+      await cubit.returnToSources();
+
+      expect(cubit.state.mappingWarnings, isEmpty);
+    });
+
     test(
       'auto-preview restarts the edited wav after mapping changes',
       () async {
