@@ -23,6 +23,7 @@ recovery rule instead of asking for judgment.
 | `keyboard-note-render-preview/` | Add rendered pitched WAV playback when tapping piano keys in the poly multisample sample editor | 5 | steps 1–2 medium, step 3 hard, steps 4–5 medium |
 | `routing-bus-picker-selected-center/` | Center the current bus in the routing bus picker and show used buses in the bus-lanes picker | 2 | step 1 medium, step 2 medium |
 | `improve-the-nt-helper-sample-editor-ux-based-on/` | Improve poly multisample sample editor UX with stable edit ordering, selection-scoped mapping/discard, bulk root/list controls, and loop/fade preview | 3 | steps 1–2 medium, step 3 hard |
+| `improve-the-nt-helper-sample-editor-ux-based-on/` | Improve poly multisample sample editor UX with stable edit ordering, selection-scoped mapping/discard, bulk root/list controls, and loop/fade preview | 3 | steps 1–2 medium, step 3 hard |
 
 ## Target executor
 
