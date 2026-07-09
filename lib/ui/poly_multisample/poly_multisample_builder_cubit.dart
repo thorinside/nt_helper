@@ -254,7 +254,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   final Map<String, Future<String>> _notePreviewRenderInFlight = {};
   final List<String> _notePreviewRoots = [];
   final Map<String, int> _notePreviewRoundRobinCursor = {};
+  final Map<String, String> _waveformPreviewCache = {};
+  final Map<String, Future<String>> _waveformPreviewRenderInFlight = {};
+  final List<String> _waveformPreviewRoots = [];
   var _notePreviewRequest = 0;
+  var _waveformPreviewRequest = 0;
   var _notePreviewGeneration = 0;
   var _rootConsumingOperationCount = 0;
   var _cleanupAfterOperations = false;
@@ -263,6 +267,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   var _autoPreviewRequest = 0;
   var _loopEditPreviewRequest = 0;
   Timer? _loopEditPreviewDebounce;
+  Timer? _waveformEditPreviewDebounce;
   var _hardwarePreviewInFlight = false;
   var _importSequence = 0;
   var _waveformLoadSequence = 0;
@@ -1383,6 +1388,9 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         File(path).existsSync()) {
       _scheduleLoopEditPreview(path, snappedDraft, overview);
     }
+    if (state.previewState.visiblePath == path && File(path).existsSync()) {
+      _scheduleWaveformEditPreview(path);
+    }
   }
 
   PolyWaveformDraft _snapLoopDraftToZeroCrossings(
@@ -1524,6 +1532,49 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
+  void _scheduleWaveformEditPreview(String path) {
+    if (!_isLocalMountedWavPreviewPath(path) || !File(path).existsSync()) {
+      return;
+    }
+    final requestId = ++_waveformPreviewRequest;
+    _waveformEditPreviewDebounce?.cancel();
+    _waveformEditPreviewDebounce = Timer(const Duration(milliseconds: 80), () {
+      unawaited(_playWaveformEditPreview(path, requestId: requestId));
+    });
+  }
+
+  Future<void> _playWaveformEditPreview(
+    String path, {
+    required int requestId,
+  }) async {
+    try {
+      if (!_isLocalMountedWavPreviewPath(path) || !File(path).existsSync()) {
+        return;
+      }
+      if (state.previewState.visiblePath != path) return;
+      final previewPath = await _cachedWaveformPreviewPath(
+        path,
+        requestId: requestId,
+      );
+      if (requestId != _waveformPreviewRequest || _isClosing) return;
+      if (state.previewState.isPlaying) {
+        await _previewService.stop();
+      }
+      if (requestId != _waveformPreviewRequest || _isClosing) return;
+      await _previewService.restartPreview(
+        previewPath,
+        displayPath: path,
+        gainDb: state.previewGainDb,
+      );
+    } on _StaleWaveformPreviewRequest {
+      return;
+    } catch (error) {
+      if (requestId == _waveformPreviewRequest && !_isClosing) {
+        emit(state.copyWith(error: error.toString()));
+      }
+    }
+  }
+
   Future<void> saveLoopMetadata(String path) async {
     try {
       final draft = state.loopDrafts[path];
@@ -1562,6 +1613,9 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       nextDrafts[path] = draft;
     }
     emit(state.copyWith(wavEditDrafts: nextDrafts));
+    if (state.previewState.visiblePath == path && File(path).existsSync()) {
+      _scheduleWaveformEditPreview(path);
+    }
   }
 
   Future<void> saveDestructiveWav(
@@ -1643,10 +1697,19 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         );
         return;
       }
+      if (_isLocalMountedWavPreviewPath(path)) {
+        await _previewService.playOrStopPreview(
+          path,
+          gainDb: state.previewGainDb,
+        );
+        return;
+      }
       await _previewService.playOrStopPreview(
         path,
         gainDb: state.previewGainDb,
       );
+    } on _StaleWaveformPreviewRequest {
+      return;
     } catch (error) {
       emit(state.copyWith(error: error.toString()));
     }
@@ -1788,6 +1851,18 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         );
         return;
       }
+      if (_isLocalMountedWavPreviewPath(path)) {
+        if (requestId != _autoPreviewRequest || _isClosing) return;
+        if (restartVisiblePreview && state.previewState.visiblePath == path) {
+          await _previewService.stop();
+        }
+        if (requestId != _autoPreviewRequest || _isClosing) return;
+        await _previewService.playOrStopPreview(
+          path,
+          gainDb: state.previewGainDb,
+        );
+        return;
+      }
       if (requestId != _autoPreviewRequest || _isClosing) return;
       if (restartVisiblePreview && state.previewState.visiblePath == path) {
         await _previewService.stop();
@@ -1797,6 +1872,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         path,
         gainDb: state.previewGainDb,
       );
+    } on _StaleWaveformPreviewRequest {
+      return;
     } catch (error) {
       emit(state.copyWith(error: error.toString()));
     }
@@ -1815,12 +1892,15 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   Future<void> close() async {
     _isClosing = true;
     _notePreviewRequest++;
+    _waveformPreviewRequest++;
     _loopEditPreviewRequest++;
     _loopEditPreviewDebounce?.cancel();
+    _waveformEditPreviewDebounce?.cancel();
     await _previewSub.cancel();
     await _previewService.dispose();
     await _cleanupHardwarePreviewRoots();
     await _cleanupNotePreviewRoots();
+    await _cleanupWaveformPreviewRoots();
     if (_rootConsumingOperationCount > 0) {
       _cleanupAfterOperations = true;
     } else {
@@ -2101,6 +2181,59 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     );
   }
 
+  Future<String> _cachedWaveformPreviewPath(
+    String path, {
+    required int requestId,
+  }) async {
+    final file = File(path);
+    final stat = await file.stat();
+    final cacheKey = [
+      p.normalize(path),
+      stat.modified.millisecondsSinceEpoch,
+      stat.size,
+      _previewDraftFingerprint(path),
+    ].join('|');
+    final cachedPath = _waveformPreviewCache[cacheKey];
+    if (cachedPath != null && await File(cachedPath).exists()) {
+      return cachedPath;
+    }
+    final existing = _waveformPreviewRenderInFlight[cacheKey];
+    if (existing != null) return existing;
+
+    final future = (() async {
+      final bytes = await file.readAsBytes();
+      final preparedBytes = _preparedKeyboardPreviewBytes(path, bytes);
+      if (requestId != _waveformPreviewRequest || _isClosing) {
+        throw const _StaleWaveformPreviewRequest();
+      }
+      final root = await Directory.systemTemp.createTemp(
+        'nt_helper_poly_waveform_preview_',
+      );
+      if (requestId != _waveformPreviewRequest || _isClosing) {
+        await _deleteWaveformPreviewRoot(root.path);
+        throw const _StaleWaveformPreviewRequest();
+      }
+      _waveformPreviewRoots.add(root.path);
+      final output = File(p.join(root.path, 'preview.wav'));
+      await output.writeAsBytes(preparedBytes, flush: true);
+      if (requestId != _waveformPreviewRequest || _isClosing) {
+        _waveformPreviewRoots.remove(root.path);
+        await _deleteWaveformPreviewRoot(root.path);
+        throw const _StaleWaveformPreviewRequest();
+      }
+      _waveformPreviewCache[cacheKey] = output.path;
+      return output.path;
+    })();
+    _waveformPreviewRenderInFlight[cacheKey] = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_waveformPreviewRenderInFlight[cacheKey], future)) {
+        _waveformPreviewRenderInFlight.remove(cacheKey);
+      }
+    }
+  }
+
   Future<PolyAudioPreviewSourcePlayback?> _keyboardPreviewSourcePlayback(
     PolySampleRegion region,
     int midi,
@@ -2202,7 +2335,28 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
+  Future<void> _cleanupWaveformPreviewRoots() async {
+    final roots = List<String>.from(_waveformPreviewRoots);
+    _waveformPreviewRoots.clear();
+    _waveformPreviewCache.clear();
+    _waveformPreviewRenderInFlight.clear();
+    for (final root in roots) {
+      await _deleteWaveformPreviewRoot(root);
+    }
+  }
+
   Future<void> _deleteNotePreviewRoot(String root) async {
+    try {
+      final dir = Directory(root);
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+    } on FileSystemException {
+      // Best-effort cleanup only.
+    }
+  }
+
+  Future<void> _deleteWaveformPreviewRoot(String root) async {
     try {
       final dir = Directory(root);
       if (await dir.exists()) {
@@ -2681,6 +2835,10 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
 class _StaleNotePreviewRequest implements Exception {
   const _StaleNotePreviewRequest();
+}
+
+class _StaleWaveformPreviewRequest implements Exception {
+  const _StaleWaveformPreviewRequest();
 }
 
 class _KeyboardNotePreviewMatch {

@@ -177,10 +177,47 @@ class _Toolbar extends StatelessWidget {
                       : const Icon(Icons.check),
                   label: const Text('Apply'),
                 ),
-              TextButton.icon(
-                onPressed: state.isDirty ? cubit.discardChanges : null,
-                icon: const Icon(Icons.undo),
-                label: Text(hasSelection ? 'Discard selected' : 'Discard'),
+              Builder(
+                builder: (context) {
+                  final discardLabel = hasSelection
+                      ? 'Discard selected'
+                      : 'Discard';
+                  return Tooltip(
+                    message: discardLabel,
+                    child: Semantics(
+                      label: discardLabel,
+                      button: true,
+                      child: TextButton.icon(
+                        onPressed: state.isDirty
+                            ? () {
+                                if (state.selectedPaths.isEmpty) {
+                                  showDialog<void>(
+                                    context: context,
+                                    builder: (dialogContext) => AlertDialog(
+                                      title: const Text('Nothing Selected'),
+                                      content: const Text(
+                                        'Select samples first, then tap discard to remove them.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(dialogContext).pop(),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  return;
+                                }
+                                cubit.discardChanges();
+                              }
+                            : null,
+                        icon: const Icon(Icons.undo),
+                        label: Text(discardLabel),
+                      ),
+                    ),
+                  );
+                },
               ),
               PopupMenuButton<String>(
                 tooltip: 'More sample actions',

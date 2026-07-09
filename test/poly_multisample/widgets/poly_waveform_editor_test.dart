@@ -134,6 +134,37 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('waveform editor paints fade overlays', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 400,
+            child: PolyWaveformEditor(
+              overview: _overview(),
+              mode: PolyWaveformEditorMode.trim,
+              startFrame: 0,
+              endFrame: 999,
+              fadeInFrames: 250,
+              fadeOutFrames: 250,
+              fadeInCurve: WavFadeCurve.equalPower,
+              fadeOutCurve: WavFadeCurve.sCurve,
+              fadeInStrength: 0.9,
+              fadeOutStrength: 0.7,
+              onChanged: (_, _) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('poly-waveform-fade-overlay')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('tap sets the nearest trim boundary', (tester) async {
     int? startFrame;
     int? endFrame;

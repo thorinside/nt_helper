@@ -481,6 +481,39 @@ void main() {
     expect(find.text('Overwrite'), findsOneWidget);
   });
 
+  testWidgets('fade controls are reflected in the waveform preview overlay', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState().copyWith(
+        waveformSummaries: {'/tmp/Piano/Piano_C3.wav': _overview()},
+        wavEditDrafts: const {
+          '/tmp/Piano/Piano_C3.wav': PolyWaveformDraft(
+            fadeInFrames: 441,
+            fadeOutFrames: 220,
+            fadeInCurve: WavFadeCurve.sCurve,
+            fadeOutCurve: WavFadeCurve.equalPower,
+            fadeInStrength: 0.9,
+            fadeOutStrength: 0.7,
+          ),
+        },
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('poly-waveform-fade-overlay')),
+      300,
+    );
+
+    expect(
+      find.byKey(const ValueKey('poly-waveform-fade-overlay')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('waveform nudge buttons keep endpoints ordered', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit();
     addTearDown(cubit.close);

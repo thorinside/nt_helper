@@ -1009,6 +1009,43 @@ void main() {
       },
     );
 
+    test('waveform preview refreshes after fade edits', () async {
+      final source = File('${tempRoot.path}/Piano_C4.wav');
+      _writeTinyPreviewWav(source);
+      final adapter = _FakePreviewAdapter();
+      final previewService = PolyAudioPreviewService(adapter: adapter);
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: previewService,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: source.path,
+              fileName: 'Piano_C4.wav',
+              displayName: 'Piano_C4.wav',
+            ),
+          ],
+          waveformSummaries: {source.path: _overviewWithFrameCount(8)},
+          selectedPaths: {source.path},
+          focusedPath: source.path,
+        ),
+      );
+
+      await cubit.playOrStopPreview(source.path);
+
+      cubit.updateWavEditDraft(
+        source.path,
+        const PolyWaveformDraft(fadeInFrames: 4),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+
+      expect(adapter.playedPaths, hasLength(2));
+      expect(cubit.state.previewState.visiblePath, source.path);
+    });
+
     test(
       'keyboard note preview selects and plays a rendered local wav',
       () async {
@@ -1673,6 +1710,47 @@ void main() {
       await cubit.playKeyboardNotePreview(60);
 
       expect(cubit.state.error, contains('adapter failed'));
+    });
+
+    test('wav draft edits refresh the active preview', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'nt_helper_preview_',
+      );
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final source = File('${tempDir.path}/preview.wav');
+      _writeTinyPreviewWav(source);
+      final adapter = _FakePreviewAdapter();
+      final previewService = PolyAudioPreviewService(adapter: adapter);
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: previewService,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: source.path,
+              fileName: 'preview.wav',
+              displayName: 'preview.wav',
+            ),
+          ],
+          selectedPaths: {source.path},
+          focusedPath: source.path,
+        ),
+      );
+
+      await cubit.playOrStopPreview(source.path);
+      await _waitForCondition(() => adapter.playedPaths.length == 1);
+
+      cubit.updateWavEditDraft(
+        source.path,
+        const PolyWaveformDraft(fadeInFrames: 2),
+      );
+      await _waitForCondition(() => adapter.playedPaths.length == 2);
+
+      expect(adapter.playedPaths, hasLength(2));
+      expect(cubit.state.previewState.visiblePath, source.path);
     });
 
     test(

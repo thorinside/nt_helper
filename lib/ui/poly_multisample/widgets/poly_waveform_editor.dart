@@ -20,6 +20,12 @@ class PolyWaveformEditor extends StatefulWidget {
     this.loopStartFrame,
     this.loopEndFrame,
     this.onLoopChanged,
+    this.fadeInFrames = 0,
+    this.fadeOutFrames = 0,
+    this.fadeInCurve = WavFadeCurve.linear,
+    this.fadeOutCurve = WavFadeCurve.linear,
+    this.fadeInStrength = 0.5,
+    this.fadeOutStrength = 0.5,
     this.playback,
     this.height = 120,
   });
@@ -32,6 +38,12 @@ class PolyWaveformEditor extends StatefulWidget {
   final int? loopStartFrame;
   final int? loopEndFrame;
   final void Function(int loopStartFrame, int loopEndFrame)? onLoopChanged;
+  final int fadeInFrames;
+  final int fadeOutFrames;
+  final WavFadeCurve fadeInCurve;
+  final WavFadeCurve fadeOutCurve;
+  final double fadeInStrength;
+  final double fadeOutStrength;
   final PolyAudioPreviewSourcePlayback? playback;
   final double height;
 
@@ -430,20 +442,47 @@ class _PolyWaveformEditorState extends State<PolyWaveformEditor>
                       child: AnimatedBuilder(
                         animation: _playheadTicker,
                         builder: (context, child) {
-                          return CustomPaint(
-                            painter: _PolyWaveformPainter(
-                              overview: widget.overview,
-                              mode: widget.mode,
-                              startFrame: _start,
-                              endFrame: _end,
-                              loopStartFrame: _loopStart,
-                              loopEndFrame: _loopEnd,
-                              playbackHeadFrame: widget.playback?.frameAt(
-                                DateTime.now(),
+                          final colorScheme = Theme.of(context).colorScheme;
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              CustomPaint(
+                                painter: _PolyWaveformPainter(
+                                  overview: widget.overview,
+                                  mode: widget.mode,
+                                  startFrame: _start,
+                                  endFrame: _end,
+                                  loopStartFrame: _loopStart,
+                                  loopEndFrame: _loopEnd,
+                                  playbackHeadFrame: widget.playback?.frameAt(
+                                    DateTime.now(),
+                                  ),
+                                  colorScheme: colorScheme,
+                                ),
+                                child: child,
                               ),
-                              colorScheme: Theme.of(context).colorScheme,
-                            ),
-                            child: child,
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: CustomPaint(
+                                    key: const ValueKey(
+                                      'poly-waveform-fade-overlay',
+                                    ),
+                                    painter: _PolyWaveformFadePainter(
+                                      overview: widget.overview,
+                                      startFrame: _start,
+                                      endFrame: _end,
+                                      fadeInFrames: widget.fadeInFrames,
+                                      fadeOutFrames: widget.fadeOutFrames,
+                                      fadeInCurve: widget.fadeInCurve,
+                                      fadeOutCurve: widget.fadeOutCurve,
+                                      fadeInStrength: widget.fadeInStrength,
+                                      fadeOutStrength: widget.fadeOutStrength,
+                                      colorScheme: colorScheme,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           );
                         },
                         child: const SizedBox.expand(),
@@ -457,6 +496,171 @@ class _PolyWaveformEditorState extends State<PolyWaveformEditor>
         ),
       ),
     );
+  }
+}
+
+class _PolyWaveformFadePainter extends CustomPainter {
+  const _PolyWaveformFadePainter({
+    required this.overview,
+    required this.startFrame,
+    required this.endFrame,
+    required this.fadeInFrames,
+    required this.fadeOutFrames,
+    required this.fadeInCurve,
+    required this.fadeOutCurve,
+    required this.fadeInStrength,
+    required this.fadeOutStrength,
+    required this.colorScheme,
+  });
+
+  final WavOverview overview;
+  final int startFrame;
+  final int endFrame;
+  final int fadeInFrames;
+  final int fadeOutFrames;
+  final WavFadeCurve fadeInCurve;
+  final WavFadeCurve fadeOutCurve;
+  final double fadeInStrength;
+  final double fadeOutStrength;
+  final ColorScheme colorScheme;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final maxFrame = math.max(1, overview.frameCount);
+    final startX = (startFrame / maxFrame) * size.width;
+    final endX = (endFrame / maxFrame) * size.width;
+    final selectedRect = Rect.fromLTRB(startX, 0, endX, size.height);
+    if (selectedRect.width <= 0) return;
+
+    if (fadeInFrames > 0) {
+      _paintFade(
+        canvas,
+        selectedRect,
+        frames: fadeInFrames,
+        curve: fadeInCurve,
+        strength: fadeInStrength,
+        fillColor: colorScheme.secondary.withValues(alpha: 0.18),
+        strokeColor: colorScheme.secondary.withValues(alpha: 0.9),
+        fromStart: true,
+      );
+    }
+    if (fadeOutFrames > 0) {
+      _paintFade(
+        canvas,
+        selectedRect,
+        frames: fadeOutFrames,
+        curve: fadeOutCurve,
+        strength: fadeOutStrength,
+        fillColor: colorScheme.tertiary.withValues(alpha: 0.18),
+        strokeColor: colorScheme.tertiary.withValues(alpha: 0.9),
+        fromStart: false,
+      );
+    }
+
+    final fadeLinePaint = Paint()
+      ..color = Colors.amber.withValues(alpha: 0.8)
+      ..strokeWidth = 2;
+    if (fadeInFrames > 0 && startX > 0) {
+      canvas.drawLine(
+        Offset(startX, 0),
+        Offset(startX, size.height),
+        fadeLinePaint,
+      );
+    }
+    if (fadeOutFrames > 0 && endX > 0 && endX < size.width) {
+      canvas.drawLine(
+        Offset(endX, 0),
+        Offset(endX, size.height),
+        fadeLinePaint,
+      );
+    }
+  }
+
+  void _paintFade(
+    Canvas canvas,
+    Rect selectedRect, {
+    required int frames,
+    required WavFadeCurve curve,
+    required double strength,
+    required Color fillColor,
+    required Color strokeColor,
+    required bool fromStart,
+  }) {
+    final width = selectedRect.width;
+    if (width <= 0) return;
+    final fadeWidth = math.min(
+      width,
+      (frames / math.max(1, overview.frameCount)) * width,
+    );
+    if (fadeWidth <= 0) return;
+    final fadeRect = fromStart
+        ? Rect.fromLTWH(
+            selectedRect.left,
+            selectedRect.top,
+            fadeWidth,
+            selectedRect.height,
+          )
+        : Rect.fromLTWH(
+            selectedRect.right - fadeWidth,
+            selectedRect.top,
+            fadeWidth,
+            selectedRect.height,
+          );
+    final steps = math.max(8, fadeWidth.round());
+    final path = Path()..moveTo(fadeRect.left, fadeRect.bottom);
+    for (var index = 0; index <= steps; index++) {
+      final t = index / steps;
+      final x = fromStart
+          ? fadeRect.left + fadeRect.width * t
+          : fadeRect.right - fadeRect.width * t;
+      final envelope = fromStart
+          ? WavFadeShaper.apply(t, curve, strength: strength)
+          : 1 - WavFadeShaper.apply(1 - t, curve, strength: strength);
+      final y = fadeRect.bottom - envelope * fadeRect.height;
+      path.lineTo(x, y);
+    }
+    path
+      ..lineTo(fadeRect.right, fadeRect.bottom)
+      ..close();
+
+    final fillPaint = Paint()..color = fillColor;
+    canvas.drawPath(path, fillPaint);
+
+    final strokePath = Path();
+    for (var index = 0; index <= steps; index++) {
+      final t = index / steps;
+      final x = fromStart
+          ? fadeRect.left + fadeRect.width * t
+          : fadeRect.right - fadeRect.width * t;
+      final envelope = fromStart
+          ? WavFadeShaper.apply(t, curve, strength: strength)
+          : 1 - WavFadeShaper.apply(1 - t, curve, strength: strength);
+      final y = fadeRect.bottom - envelope * fadeRect.height;
+      if (index == 0) {
+        strokePath.moveTo(x, y);
+      } else {
+        strokePath.lineTo(x, y);
+      }
+    }
+    final strokePaint = Paint()
+      ..color = strokeColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawPath(strokePath, strokePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PolyWaveformFadePainter oldDelegate) {
+    return oldDelegate.overview != overview ||
+        oldDelegate.startFrame != startFrame ||
+        oldDelegate.endFrame != endFrame ||
+        oldDelegate.fadeInFrames != fadeInFrames ||
+        oldDelegate.fadeOutFrames != fadeOutFrames ||
+        oldDelegate.fadeInCurve != fadeInCurve ||
+        oldDelegate.fadeOutCurve != fadeOutCurve ||
+        oldDelegate.fadeInStrength != fadeInStrength ||
+        oldDelegate.fadeOutStrength != fadeOutStrength ||
+        oldDelegate.colorScheme != colorScheme;
   }
 }
 

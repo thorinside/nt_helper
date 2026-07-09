@@ -572,6 +572,12 @@ class _WaveformSection extends StatelessWidget {
             endFrame: wavDraft.trimEnd ?? maxFrame,
             loopStartFrame: loopDraft.loopStart,
             loopEndFrame: loopDraft.loopEnd,
+            fadeInFrames: wavDraft.fadeInFrames,
+            fadeOutFrames: wavDraft.fadeOutFrames,
+            fadeInCurve: wavDraft.fadeInCurve,
+            fadeOutCurve: wavDraft.fadeOutCurve,
+            fadeInStrength: wavDraft.fadeInStrength,
+            fadeOutStrength: wavDraft.fadeOutStrength,
             playback: playback,
             onChanged: (start, end) {
               cubit.updateWavEditDraft(

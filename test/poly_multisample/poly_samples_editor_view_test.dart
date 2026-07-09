@@ -100,6 +100,50 @@ void main() {
     expect(find.text('Unsaved changes'), findsOneWidget);
   });
 
+  testWidgets('discard with no selection shows confirmation dialog', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(
+        _state(
+          dirty: true,
+        ).copyWith(selectedPaths: const {}, clearFocusedPath: true),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+    await tester.tap(find.widgetWithText(TextButton, 'Discard'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nothing Selected'), findsOneWidget);
+    expect(
+      find.text('Select samples first, then tap discard to remove them.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(TextButton, 'OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing Selected'), findsNothing);
+    expect(cubit.discardChangesCount, 0);
+  });
+
+  testWidgets('discard with selection proceeds immediately', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(
+        _state(dirty: true).copyWith(
+          selectedPaths: const {'/tmp/Piano/Piano_C3.wav'},
+          clearFocusedPath: true,
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+    await tester.tap(find.widgetWithText(TextButton, 'Discard selected'));
+    await tester.pumpAndSettle();
+
+    expect(cubit.discardChangesCount, 1);
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
   testWidgets('waveform drafts explain disabled primary save action', (
     tester,
   ) async {
@@ -486,6 +530,8 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
       );
 
   final previewedNotes = <int>[];
+  var removeSelectedRegionsCount = 0;
+  var discardChangesCount = 0;
 
   @override
   Future<void> playKeyboardNotePreview(int midi) async {
@@ -495,6 +541,16 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   @override
   Future<void> startKeyboardNotePreview(int midi) async {
     previewedNotes.add(midi);
+  }
+
+  @override
+  void removeSelectedRegions() {
+    removeSelectedRegionsCount++;
+  }
+
+  @override
+  void discardChanges() {
+    discardChangesCount++;
   }
 
   void setTestState(PolyMultisampleBuilderState state) {
