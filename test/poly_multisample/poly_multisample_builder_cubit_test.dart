@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:bloc/bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
@@ -514,9 +515,9 @@ void main() {
         cubit.updateRoot('/tmp/overlap-a.wav', 66);
 
         expect(cubit.state.mappingWarnings, [
-          'Mapping warning: invalid.wav has low C5 above high C4.',
-          'Mapping warning: outside.wav root D5 is outside C3–C4.',
-          'Mapping warning: overlap-a.wav and overlap-b.wav overlap on A#4–C5 at velocity 2, RR 3.',
+          'Mapping impossible: invalid.wav has low C5 above high C4.',
+          'Mapping impossible: outside.wav root D5 is outside C3–C4.',
+          'Mapping overlap: overlap-a.wav and overlap-b.wav overlap on A#4–C5 at velocity 2, RR 3.',
         ]);
       },
     );
@@ -611,16 +612,20 @@ void main() {
           ],
         ),
       );
+      cubit.changeCount = 0;
 
-      cubit.updateSelectedRoot(61);
-      cubit.updateSelectedRangeLow(60);
-      cubit.updateSelectedRangeHigh(64);
-      cubit.updateSelectedVelocity(4);
-      cubit.updateSelectedRoundRobin(5);
+      cubit.updateSelectedMappings(
+        rootMidi: 61,
+        rangeLow: 60,
+        rangeHigh: 64,
+        velocityLayer: 4,
+        roundRobin: 5,
+      );
 
       final a = cubit.state.editedRegions[0];
       final b = cubit.state.editedRegions[1];
       final c = cubit.state.editedRegions[2];
+      expect(cubit.changeCount, 1);
       expect(a.rootMidi, 61);
       expect(a.rootName, 'C#4');
       expect(a.rangeLow, 60);
@@ -966,7 +971,9 @@ void main() {
               displayName: 'a.wav',
             ),
           ],
-          mappingWarnings: ['Mapping warning: a.wav has low C5 above high C4.'],
+          mappingWarnings: [
+            'Mapping impossible: a.wav has low C5 above high C4.',
+          ],
         ),
       );
 
@@ -3966,6 +3973,14 @@ class _ExposedPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
     super.uploadService,
     super.notePreviewRenderer,
   });
+
+  var changeCount = 0;
+
+  @override
+  void onChange(Change<PolyMultisampleBuilderState> change) {
+    changeCount++;
+    super.onChange(change);
+  }
 
   void setTestState(PolyMultisampleBuilderState state) {
     emit(state);

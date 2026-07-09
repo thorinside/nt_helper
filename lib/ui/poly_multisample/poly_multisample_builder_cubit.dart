@@ -19,6 +19,7 @@ import 'package:nt_helper/poly_multisample/poly_sample_preferences_service.dart'
 import 'package:nt_helper/poly_multisample/poly_sample_upload_service.dart';
 import 'package:nt_helper/poly_multisample/poly_wav_service.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 
 enum PolySampleSourceMode { none, local, hardware, importDraft, customDraft }
 
@@ -702,59 +703,86 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  void updateSelectedRoot(int midi, {IDistingMidiManager? manager}) {
-    final clampedMidi = midi.clamp(0, 127).toInt();
+  void updateSelectedMappings({
+    int? rootMidi,
+    int? rangeLow,
+    int? rangeHigh,
+    int? velocityLayer,
+    int? roundRobin,
+    bool clearRoot = false,
+    bool clearRangeLow = false,
+    bool clearRangeHigh = false,
+    bool clearSwitchPoint = false,
+    bool clearVelocityLayer = false,
+    bool clearRoundRobin = false,
+    IDistingMidiManager? manager,
+  }) {
+    final clampedRootMidi = rootMidi?.clamp(0, 127).toInt();
+    final clampedRangeLow = rangeLow?.clamp(0, 127).toInt();
+    final clampedRangeHigh = rangeHigh?.clamp(0, 127).toInt();
+    final clampedVelocityLayer = velocityLayer == null
+        ? null
+        : math.max(1, velocityLayer);
+    final clampedRoundRobin = roundRobin == null
+        ? null
+        : math.max(1, roundRobin);
     _updateSelectedRegions(
       (region) => region.copyWith(
-        rootMidi: clampedMidi,
-        rootName: PolyMultisampleParser.midiToNoteName(clampedMidi),
+        rootMidi: clearRoot ? null : (clampedRootMidi ?? region.rootMidi),
+        rootName: clearRoot
+            ? null
+            : clampedRootMidi == null
+            ? region.rootName
+            : PolyMultisampleParser.midiToNoteName(clampedRootMidi),
+        rangeLow: clearRangeLow ? null : (clampedRangeLow ?? region.rangeLow),
+        rangeHigh: clearRangeHigh
+            ? null
+            : (clampedRangeHigh ?? region.rangeHigh),
+        clearRoot: clearRoot,
+        clearRangeLow: clearRangeLow,
+        clearRangeHigh: clearRangeHigh,
+        clearSwitchPoint: clearSwitchPoint,
+        clearVelocityLayer: clearVelocityLayer,
+        clearRoundRobin: clearRoundRobin,
+        velocityLayer: clearVelocityLayer
+            ? null
+            : (clampedVelocityLayer ?? region.velocityLayer),
+        roundRobin: clearRoundRobin
+            ? null
+            : (clampedRoundRobin ?? region.roundRobin),
       ),
       manager: manager,
     );
+  }
+
+  void updateSelectedRoot(int midi, {IDistingMidiManager? manager}) {
+    updateSelectedMappings(rootMidi: midi, manager: manager);
   }
 
   void updateSelectedRangeLow(int midi, {IDistingMidiManager? manager}) {
-    final clampedMidi = midi.clamp(0, 127).toInt();
-    _updateSelectedRegions(
-      (region) => region.copyWith(rangeLow: clampedMidi),
-      manager: manager,
-    );
+    updateSelectedMappings(rangeLow: midi, manager: manager);
   }
 
   void updateSelectedRangeHigh(int midi, {IDistingMidiManager? manager}) {
-    final clampedMidi = midi.clamp(0, 127).toInt();
-    _updateSelectedRegions(
-      (region) => region.copyWith(rangeHigh: clampedMidi),
-      manager: manager,
-    );
+    updateSelectedMappings(rangeHigh: midi, manager: manager);
   }
 
   void updateSelectedVelocity(int layer, {IDistingMidiManager? manager}) {
-    final clampedLayer = math.max(1, layer);
-    _updateSelectedRegions(
-      (region) => region.copyWith(velocityLayer: clampedLayer),
-      manager: manager,
-    );
+    updateSelectedMappings(velocityLayer: layer, manager: manager);
   }
 
   void updateSelectedRoundRobin(int lane, {IDistingMidiManager? manager}) {
-    final clampedLane = math.max(1, lane);
-    _updateSelectedRegions(
-      (region) => region.copyWith(roundRobin: clampedLane),
-      manager: manager,
-    );
+    updateSelectedMappings(roundRobin: lane, manager: manager);
   }
 
   void unmapSelectedRegions() {
-    _updateSelectedRegions(
-      (region) => region.copyWith(
-        clearRoot: true,
-        clearRangeLow: true,
-        clearRangeHigh: true,
-        clearSwitchPoint: true,
-        clearVelocityLayer: true,
-        clearRoundRobin: true,
-      ),
+    updateSelectedMappings(
+      clearRoot: true,
+      clearRangeLow: true,
+      clearRangeHigh: true,
+      clearSwitchPoint: true,
+      clearVelocityLayer: true,
+      clearRoundRobin: true,
     );
   }
 
@@ -2487,7 +2515,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   }) {
     _contentRevision++;
     final regions = List<PolySampleRegion>.from(instrument.regions);
-    final mappingWarnings = _mappingWarningsFor(regions);
+    final mappingWarningList = mappingWarnings(regions);
     final previewVisiblePath = state.previewState.visiblePath;
     final shouldStopPreview =
         previewVisiblePath != null &&
@@ -2512,7 +2540,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         clearFocusedPath: regions.isEmpty,
         mapRevision: state.mapRevision + 1,
         warnings: warnings,
-        mappingWarnings: mappingWarnings,
+        mappingWarnings: mappingWarningList,
         waveformSummaries: const {},
         waveformLoadingPaths: const {},
         waveformFailedPaths: const {},
@@ -2558,7 +2586,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     _contentRevision++;
     final instrument = state.currentInstrument;
     final remainingPaths = {for (final region in regions) region.path};
-    final mappingWarnings = _mappingWarningsFor(regions);
+    final mappingWarningList = mappingWarnings(regions);
     final nextSelectedPaths = (selectedPaths ?? state.selectedPaths)
         .where(remainingPaths.contains)
         .toSet();
@@ -2603,7 +2631,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
             ? PolyAudioPreviewState(gainDb: state.previewState.gainDb)
             : state.previewState,
         mapRevision: state.mapRevision + 1,
-        mappingWarnings: mappingWarnings,
+        mappingWarnings: mappingWarningList,
       ),
     );
   }
@@ -2644,121 +2672,6 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       _autoPreviewMappingEdit(updatedPaths.first, manager: manager);
     }
     return true;
-  }
-
-  List<String> _mappingWarningsFor(List<PolySampleRegion> regions) {
-    final warnings = <String>[];
-
-    int lowFor(PolySampleRegion region) {
-      return (region.rangeLow ?? region.switchPoint ?? region.rootMidi ?? 0)
-          .clamp(0, 127)
-          .toInt();
-    }
-
-    int highFor(PolySampleRegion region) {
-      final explicit = region.rangeHigh;
-      if (explicit != null) return explicit.clamp(0, 127).toInt();
-      final low = lowFor(region);
-      final velocity = region.velocityLayer ?? 1;
-      final rr = region.roundRobin ?? 1;
-      final laterLows =
-          regions
-              .where(
-                (candidate) =>
-                    candidate.rootMidi != null &&
-                    (candidate.velocityLayer ?? 1) == velocity &&
-                    (candidate.roundRobin ?? 1) == rr &&
-                    lowFor(candidate) > low,
-              )
-              .map(lowFor)
-              .toList()
-            ..sort();
-      if (laterLows.isEmpty) return 127;
-      return math.max(low, laterLows.first - 1);
-    }
-
-    for (final region in regions) {
-      final low = lowFor(region);
-      final high = highFor(region);
-      if (low > high) {
-        warnings.add(
-          'Mapping warning: ${_sampleMappingLabel(region, regions)} has low ${_noteLabel(low)} above high ${_noteLabel(high)}.',
-        );
-      }
-    }
-    for (final region in regions) {
-      final root = region.rootMidi;
-      if (root == null) continue;
-      final low = lowFor(region);
-      final high = highFor(region);
-      if (root < low || root > high) {
-        warnings.add(
-          'Mapping warning: ${_sampleMappingLabel(region, regions)} root ${_noteLabel(root)} is outside ${_noteLabel(low)}–${_noteLabel(high)}.',
-        );
-      }
-    }
-    for (var i = 0; i < regions.length; i++) {
-      final a = regions[i];
-      if (a.rootMidi == null) continue;
-      final lowA = lowFor(a);
-      final highA = highFor(a);
-      final velocityA = a.velocityLayer ?? 1;
-      final rrA = a.roundRobin ?? 1;
-      for (var j = i + 1; j < regions.length; j++) {
-        final b = regions[j];
-        if (b.rootMidi == null) continue;
-        if ((b.velocityLayer ?? 1) != velocityA || (b.roundRobin ?? 1) != rrA) {
-          continue;
-        }
-        final lowB = lowFor(b);
-        final highB = highFor(b);
-        final overlapLow = math.max(lowA, lowB);
-        final overlapHigh = math.min(highA, highB);
-        if (overlapLow <= overlapHigh) {
-          warnings.add(
-            'Mapping warning: ${_sampleMappingLabel(a, regions)} and ${_sampleMappingLabel(b, regions)} overlap on ${_noteLabel(overlapLow)}–${_noteLabel(overlapHigh)} at velocity $velocityA, RR $rrA.',
-          );
-        }
-      }
-    }
-
-    return warnings;
-  }
-
-  String _noteLabel(int midi) => PolyMultisampleParser.midiToNoteName(midi);
-
-  String _sampleMappingLabel(
-    PolySampleRegion region,
-    List<PolySampleRegion> regions,
-  ) {
-    final duplicatePaths = [
-      for (final candidate in regions)
-        if (candidate.displayName == region.displayName) candidate.path,
-    ];
-    if (duplicatePaths.length < 2) return region.displayName;
-    final normalizedPath = p.normalize(region.path);
-    final commonRoot = (() {
-      final splitPaths = [
-        for (final path in duplicatePaths)
-          p.split(p.dirname(p.normalize(path))),
-      ];
-      if (splitPaths.isEmpty) return '.';
-      final common = <String>[];
-      for (var index = 0; index < splitPaths.first.length; index++) {
-        final segment = splitPaths.first[index];
-        if (splitPaths.every(
-          (parts) => index < parts.length && parts[index] == segment,
-        )) {
-          common.add(segment);
-        } else {
-          break;
-        }
-      }
-      if (common.isEmpty) return '.';
-      return p.joinAll(common);
-    })();
-    final label = p.relative(normalizedPath, from: commonRoot);
-    return label == '.' ? region.displayName : label.replaceAll('\\', '/');
   }
 
   Iterable<String> _rangeSelection(String path) {

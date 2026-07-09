@@ -179,41 +179,52 @@ class _Toolbar extends StatelessWidget {
                 ),
               Builder(
                 builder: (context) {
-                  final discardLabel = hasSelection
-                      ? 'Discard selected'
-                      : 'Discard';
+                  final destructiveLabel = hasSelection
+                      ? 'Unmap selected'
+                      : 'Discard all';
+                  final canUseDestructiveAction =
+                      hasSelection || state.editedRegions.isNotEmpty;
                   return Tooltip(
-                    message: discardLabel,
+                    message: destructiveLabel,
                     child: Semantics(
-                      label: discardLabel,
+                      label: destructiveLabel,
                       button: true,
                       child: TextButton.icon(
-                        onPressed: state.isDirty
-                            ? () {
-                                if (state.selectedPaths.isEmpty) {
-                                  showDialog<void>(
-                                    context: context,
-                                    builder: (dialogContext) => AlertDialog(
-                                      title: const Text('Nothing Selected'),
-                                      content: const Text(
-                                        'Select samples first, then tap discard to remove them.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(dialogContext).pop(),
-                                          child: const Text('OK'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                        onPressed: canUseDestructiveAction
+                            ? () async {
+                                if (hasSelection) {
+                                  cubit.removeSelectedRegions();
                                   return;
                                 }
-                                cubit.discardChanges();
+                                final discardAll = await showDialog<bool>(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    title: const Text('Discard all?'),
+                                    content: const Text(
+                                      'This will remove all samples from the draft.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(dialogContext).pop(),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () => Navigator.of(
+                                          dialogContext,
+                                        ).pop(true),
+                                        child: const Text('Discard all'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (discardAll == true) {
+                                  cubit.clearDraft();
+                                }
                               }
                             : null,
-                        icon: const Icon(Icons.undo),
-                        label: Text(discardLabel),
+                        icon: const Icon(Icons.delete_outline),
+                        label: Text(destructiveLabel),
                       ),
                     ),
                   );
@@ -229,9 +240,6 @@ class _Toolbar extends StatelessWidget {
                       break;
                     case 'add_folder':
                       onAddFolder();
-                      break;
-                    case 'unmap_selected':
-                      cubit.unmapSelectedRegions();
                       break;
                     case 'remove_selected':
                       cubit.removeSelectedRegions();
@@ -249,11 +257,6 @@ class _Toolbar extends StatelessWidget {
                   const PopupMenuItem(
                     value: 'add_folder',
                     child: Text('Add folder…'),
-                  ),
-                  PopupMenuItem(
-                    value: 'unmap_selected',
-                    enabled: state.selectedPaths.isNotEmpty,
-                    child: const Text('Unmap selected'),
                   ),
                   PopupMenuItem(
                     value: 'remove_selected',

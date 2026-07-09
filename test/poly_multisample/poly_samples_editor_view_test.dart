@@ -92,7 +92,7 @@ void main() {
       find.widgetWithText(FilledButton, 'Apply'),
     );
     final discard = tester.widget<TextButton>(
-      find.widgetWithText(TextButton, 'Discard'),
+      find.widgetWithText(TextButton, 'Discard all'),
     );
 
     expect(apply.onPressed, isNotNull);
@@ -112,21 +112,22 @@ void main() {
     addTearDown(cubit.close);
 
     await _pumpEditor(tester, cubit);
-    await tester.tap(find.widgetWithText(TextButton, 'Discard'));
+    await tester.tap(find.widgetWithText(TextButton, 'Discard all'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Nothing Selected'), findsOneWidget);
+    expect(find.text('Discard all?'), findsOneWidget);
     expect(
-      find.text('Select samples first, then tap discard to remove them.'),
+      find.text('This will remove all samples from the draft.'),
       findsOneWidget,
     );
-    await tester.tap(find.widgetWithText(TextButton, 'OK'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Discard all'));
     await tester.pumpAndSettle();
-    expect(find.text('Nothing Selected'), findsNothing);
+    expect(find.text('Discard all?'), findsNothing);
+    expect(cubit.clearDraftCount, 1);
     expect(cubit.discardChangesCount, 0);
   });
 
-  testWidgets('discard with selection proceeds immediately', (tester) async {
+  testWidgets('unmap selected proceeds immediately', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit()
       ..setTestState(
         _state(dirty: true).copyWith(
@@ -137,10 +138,11 @@ void main() {
     addTearDown(cubit.close);
 
     await _pumpEditor(tester, cubit);
-    await tester.tap(find.widgetWithText(TextButton, 'Discard selected'));
+    await tester.tap(find.widgetWithText(TextButton, 'Unmap selected'));
     await tester.pumpAndSettle();
 
-    expect(cubit.discardChangesCount, 1);
+    expect(cubit.removeSelectedRegionsCount, 1);
+    expect(cubit.clearDraftCount, 0);
     expect(find.byType(AlertDialog), findsNothing);
   });
 
@@ -267,7 +269,7 @@ void main() {
           _state(
             warnings: const ['Import warning'],
             mappingWarnings: const [
-              'Mapping warning: Piano_C3.wav root C3 is outside C4–C5.',
+              'Mapping impossible: Piano_C3.wav root C3 is outside C4–C5.',
             ],
           ),
         );
@@ -345,26 +347,22 @@ void main() {
 
     await _pumpEditor(tester, cubit);
 
-    expect(find.widgetWithText(TextButton, 'Discard selected'), findsOneWidget);
-    expect(find.widgetWithText(TextButton, 'Discard'), findsNothing);
+    expect(find.widgetWithText(TextButton, 'Unmap selected'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Discard all'), findsNothing);
   });
 
-  testWidgets('toolbar unmap selected clears mapping without removing sample', (
+  testWidgets('toolbar unmap selected button removes selected sample', (
     tester,
   ) async {
     final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
     addTearDown(cubit.close);
 
     await _pumpEditor(tester, cubit);
-    await tester.tap(find.byTooltip('More sample actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Unmap selected'));
+    await tester.tap(find.widgetWithText(TextButton, 'Unmap selected'));
     await tester.pump();
 
-    expect(cubit.state.editedRegions, hasLength(2));
-    expect(cubit.state.editedRegions.first.rootMidi, isNull);
-    expect(cubit.state.editedRegions.first.rootName, isNull);
-    expect(cubit.state.editedRegions.last.rootMidi, isNull);
+    expect(cubit.removeSelectedRegionsCount, 1);
+    expect(find.byType(AlertDialog), findsNothing);
   });
 
   testWidgets('inline row stepper focuses row and updates inspector', (
@@ -532,6 +530,7 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   final previewedNotes = <int>[];
   var removeSelectedRegionsCount = 0;
   var discardChangesCount = 0;
+  var clearDraftCount = 0;
 
   @override
   Future<void> playKeyboardNotePreview(int midi) async {
@@ -551,6 +550,11 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   @override
   void discardChanges() {
     discardChangesCount++;
+  }
+
+  @override
+  void clearDraft() {
+    clearDraftCount++;
   }
 
   void setTestState(PolyMultisampleBuilderState state) {

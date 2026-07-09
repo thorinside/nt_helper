@@ -98,6 +98,52 @@ void main() {
       expect(velocityLanes(regions), [2, 1]);
     });
 
+    test('mappingWarnings reports impossible mappings and overlaps', () {
+      const regions = [
+        PolySampleRegion(
+          path: '/tmp/invalid.wav',
+          fileName: 'invalid.wav',
+          displayName: 'invalid.wav',
+          rangeLow: 72,
+          rangeHigh: 60,
+        ),
+        PolySampleRegion(
+          path: '/tmp/outside.wav',
+          fileName: 'outside.wav',
+          displayName: 'outside.wav',
+          rootMidi: 74,
+          rangeLow: 48,
+          rangeHigh: 60,
+        ),
+        PolySampleRegion(
+          path: '/tmp/overlap-a.wav',
+          fileName: 'overlap-a.wav',
+          displayName: 'overlap-a.wav',
+          rootMidi: 66,
+          rangeLow: 64,
+          rangeHigh: 72,
+          velocityLayer: 2,
+          roundRobin: 3,
+        ),
+        PolySampleRegion(
+          path: '/tmp/overlap-b.wav',
+          fileName: 'overlap-b.wav',
+          displayName: 'overlap-b.wav',
+          rootMidi: 71,
+          rangeLow: 70,
+          rangeHigh: 80,
+          velocityLayer: 2,
+          roundRobin: 3,
+        ),
+      ];
+
+      expect(mappingWarnings(regions), [
+        'Mapping impossible: invalid.wav has low C5 above high C4.',
+        'Mapping impossible: outside.wav root D5 is outside C3–C4.',
+        'Mapping overlap: overlap-a.wav and overlap-b.wav overlap on A#4–C5 at velocity 2, RR 3.',
+      ]);
+    });
+
     test('selectedRegionFor prefers focusedPath', () {
       const first = PolySampleRegion(
         path: '/tmp/first.wav',
