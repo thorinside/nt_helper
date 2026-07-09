@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_inspector.dart';
@@ -171,23 +172,32 @@ void main() {
     expect(adapter.playedPaths, ['/tmp/Piano/Piano_C3.wav']);
   });
 
-  testWidgets('root dropdown assigns selected sample root from note list', (
+  testWidgets('root menu applies a note choice to every selected sample', (
     tester,
   ) async {
     final cubit = _TestPolyMultisampleBuilderCubit();
     addTearDown(cubit.close);
-    cubit.setTestState(_selectedState());
+    cubit.setTestState(
+      _selectedState(
+        selectedPaths: {'/tmp/Piano/Piano_C3.wav', '/tmp/Piano/Piano_C4.wav'},
+        focusedPath: '/tmp/Piano/Piano_C3.wav',
+      ),
+    );
 
     await _pumpInspector(tester, cubit);
-    final rootDropdown = tester.widget<DropdownButton<int>>(
-      find.byKey(const ValueKey('poly-mapping-root-dropdown')),
+    final rootMenu = tester.widget<PopupMenuButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-root-menu')),
     );
-    rootDropdown.onChanged?.call(61);
+    expect(rootMenu.tooltip, 'Choose root note');
+    await tester.tap(find.byTooltip('Choose root note'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('poly-root-note-2')));
     await tester.pumpAndSettle();
 
-    final region = cubit.state.editedRegions.first;
-    expect(region.rootMidi, 61);
-    expect(region.rootName, 'C#4');
+    for (final region in cubit.state.editedRegions.take(2)) {
+      expect(region.rootMidi, 2);
+      expect(region.rootName, PolyMultisampleParser.midiToNoteName(2));
+    }
   });
 
   testWidgets('bulk dropdown edits selected mapping fields only', (
@@ -239,10 +249,9 @@ void main() {
 
     await _pumpInspector(tester, cubit);
 
-    final rootDropdown = tester.widget<DropdownButton<int>>(
-      find.byKey(const ValueKey('poly-mapping-root-dropdown')),
-    );
-    rootDropdown.onChanged?.call(62);
+    await tester.tap(find.byTooltip('Choose root note'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('poly-root-note-3')));
     await tester.pumpAndSettle();
 
     final lowDropdown = tester.widget<DropdownButton<int>>(
@@ -270,8 +279,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final regions = cubit.state.editedRegions;
-    expect(regions[0].rootMidi, 62);
-    expect(regions[0].rootName, 'D4');
+    expect(regions[0].rootMidi, 3);
+    expect(regions[0].rootName, PolyMultisampleParser.midiToNoteName(3));
     expect(regions[0].rangeLow, 60);
     expect(regions[0].rangeHigh, 64);
     expect(regions[0].velocityLayer, 3);
@@ -282,12 +291,96 @@ void main() {
     expect(regions[1].rangeHigh, 60);
     expect(regions[1].velocityLayer, 2);
     expect(regions[1].roundRobin, 2);
-    expect(regions[2].rootMidi, 62);
-    expect(regions[2].rootName, 'D4');
+    expect(regions[2].rootMidi, 3);
+    expect(regions[2].rootName, PolyMultisampleParser.midiToNoteName(3));
     expect(regions[2].rangeLow, 60);
     expect(regions[2].rangeHigh, 64);
     expect(regions[2].velocityLayer, 3);
     expect(regions[2].roundRobin, 4);
+  });
+
+  testWidgets('bulk mapping controls update all selected samples together', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState(
+        selectedPaths: {'/tmp/Piano/Piano_C3.wav', '/tmp/Piano/Piano_C4.wav'},
+        focusedPath: '/tmp/Piano/Piano_C3.wav',
+        editedRegions: [
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_C3.wav',
+            fileName: 'Piano_C3.wav',
+            displayName: 'Piano_C3.wav',
+            rootMidi: 48,
+            rootName: 'C3',
+            rangeLow: 48,
+            rangeHigh: 48,
+            velocityLayer: 1,
+            roundRobin: 1,
+          ),
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_C4.wav',
+            fileName: 'Piano_C4.wav',
+            displayName: 'Piano_C4.wav',
+            rootMidi: 48,
+            rootName: 'C3',
+            rangeLow: 48,
+            rangeHigh: 48,
+            velocityLayer: 1,
+            roundRobin: 1,
+          ),
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_E4.wav',
+            fileName: 'Piano_E4.wav',
+            displayName: 'Piano_E4.wav',
+            rootMidi: 52,
+            rootName: 'E4',
+            rangeLow: 52,
+            rangeHigh: 52,
+            velocityLayer: 2,
+            roundRobin: 2,
+          ),
+        ],
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+    await tester.scrollUntilVisible(
+      find.byTooltip('Increase Round robin'),
+      300,
+    );
+    await tester.tap(find.byTooltip('Increase Root'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Increase Low'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Increase High'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Increase Velocity'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Increase Round robin'));
+    await tester.pump();
+
+    final regions = cubit.state.editedRegions;
+    expect(regions[0].rootMidi, 49);
+    expect(regions[0].rootName, 'C#3');
+    expect(regions[0].rangeLow, 49);
+    expect(regions[0].rangeHigh, 49);
+    expect(regions[0].velocityLayer, 2);
+    expect(regions[0].roundRobin, 2);
+    expect(regions[1].rootMidi, 49);
+    expect(regions[1].rootName, 'C#3');
+    expect(regions[1].rangeLow, 49);
+    expect(regions[1].rangeHigh, 49);
+    expect(regions[1].velocityLayer, 2);
+    expect(regions[1].roundRobin, 2);
+    expect(regions[2].rootMidi, 52);
+    expect(regions[2].rootName, 'E4');
+    expect(regions[2].rangeLow, 52);
+    expect(regions[2].rangeHigh, 52);
+    expect(regions[2].velocityLayer, 2);
+    expect(regions[2].roundRobin, 2);
   });
 
   testWidgets('mixed selected values show Mixed hint', (tester) async {

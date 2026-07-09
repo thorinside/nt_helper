@@ -205,6 +205,11 @@ class _MappingSection extends StatelessWidget {
       selectedRegions,
       (region) => region.rootMidi,
     );
+    final rootDisplay = rootSelection.mixed
+        ? 'Mixed'
+        : rootSelection.value == null
+        ? 'Unset'
+        : PolyMultisampleParser.midiToNoteName(rootSelection.value!);
     final lowSelection = _selectionValue<int>(
       selectedRegions,
       (region) => region.rangeLow,
@@ -240,15 +245,47 @@ class _MappingSection extends StatelessWidget {
             child: Text('$selectedCount samples selected'),
           ),
         const SizedBox(height: 8),
-        _MappingDropdownRow<int>(
-          dropdownKey: const ValueKey('poly-mapping-root-dropdown'),
-          label: 'Root',
-          selected: rootSelection,
-          items: _noteMenuItems(),
-          onChanged: (value) {
-            if (value == null) return;
-            cubit.updateSelectedRoot(value, manager: manager);
-          },
+        SizedBox(
+          height: PolySampleSidebarLayout.rowHeight,
+          child: Row(
+            children: [
+              SizedBox(
+                width: PolySampleSidebarLayout.mappingLabelWidth,
+                child: const Text('Root'),
+              ),
+              Expanded(
+                child: Semantics(
+                  label: 'Root value',
+                  value: rootDisplay,
+                  button: true,
+                  child: PopupMenuButton<int>(
+                    key: const ValueKey('poly-mapping-root-menu'),
+                    tooltip: 'Choose root note',
+                    padding: EdgeInsets.zero,
+                    initialValue: rootSelection.mixed
+                        ? null
+                        : rootSelection.value,
+                    itemBuilder: (context) => _rootNoteMenuEntries(),
+                    onSelected: (value) {
+                      cubit.updateSelectedRoot(value, manager: manager);
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            rootDisplay,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(Icons.arrow_drop_down),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         _MappingDropdownRow<int>(
           dropdownKey: const ValueKey('poly-mapping-low-dropdown'),
@@ -309,55 +346,47 @@ class _MappingSection extends StatelessWidget {
           value: region.rootMidi == null
               ? 'Unset'
               : PolyMultisampleParser.midiToNoteName(root),
-          onMinus: () =>
-              cubit.updateRoot(region.path, root - 1, manager: manager),
-          onPlus: () =>
-              cubit.updateRoot(region.path, root + 1, manager: manager),
+          onMinus: () => cubit.updateSelectedRoot(root - 1, manager: manager),
+          onPlus: () => cubit.updateSelectedRoot(root + 1, manager: manager),
         ),
         _StepRow(
           rowKeySuffix: 'low',
           label: 'Low',
           value: PolyMultisampleParser.midiToNoteName(low),
           onMinus: () =>
-              cubit.updateRangeLow(region.path, low - 1, manager: manager),
-          onPlus: () =>
-              cubit.updateRangeLow(region.path, low + 1, manager: manager),
+              cubit.updateSelectedRangeLow(low - 1, manager: manager),
+          onPlus: () => cubit.updateSelectedRangeLow(low + 1, manager: manager),
         ),
         _StepRow(
           rowKeySuffix: 'high',
           label: 'High',
           value: PolyMultisampleParser.midiToNoteName(high),
           onMinus: () =>
-              cubit.updateRangeHigh(region.path, high - 1, manager: manager),
+              cubit.updateSelectedRangeHigh(high - 1, manager: manager),
           onPlus: () =>
-              cubit.updateRangeHigh(region.path, high + 1, manager: manager),
+              cubit.updateSelectedRangeHigh(high + 1, manager: manager),
         ),
         _StepRow(
           rowKeySuffix: 'velocity',
           label: 'Velocity',
           value: '$velocity',
-          onMinus: () => cubit.updateVelocity(
-            region.path,
+          onMinus: () => cubit.updateSelectedVelocity(
             math.max(1, velocity - 1),
             manager: manager,
           ),
           onPlus: () =>
-              cubit.updateVelocity(region.path, velocity + 1, manager: manager),
+              cubit.updateSelectedVelocity(velocity + 1, manager: manager),
         ),
         _StepRow(
           rowKeySuffix: 'round-robin',
           label: 'Round robin',
           value: '$roundRobin',
-          onMinus: () => cubit.updateRoundRobin(
-            region.path,
+          onMinus: () => cubit.updateSelectedRoundRobin(
             math.max(1, roundRobin - 1),
             manager: manager,
           ),
-          onPlus: () => cubit.updateRoundRobin(
-            region.path,
-            roundRobin + 1,
-            manager: manager,
-          ),
+          onPlus: () =>
+              cubit.updateSelectedRoundRobin(roundRobin + 1, manager: manager),
         ),
       ],
     );
@@ -440,6 +469,17 @@ class _MappingDropdownRow<T extends Object> extends StatelessWidget {
       ),
     );
   }
+}
+
+List<PopupMenuEntry<int>> _rootNoteMenuEntries() {
+  return [
+    for (var value = 0; value < 128; value++)
+      PopupMenuItem<int>(
+        key: ValueKey('poly-root-note-$value'),
+        value: value,
+        child: Text(PolyMultisampleParser.midiToNoteName(value)),
+      ),
+  ];
 }
 
 List<DropdownMenuItem<int>> _noteMenuItems() {

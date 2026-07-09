@@ -1053,6 +1053,61 @@ void main() {
       expect(cubit.state.previewState.visiblePath, source.path);
     });
 
+    test('discardChanges prunes waveform preview temp roots', () async {
+      final source = File('${tempRoot.path}/Piano_C4.wav');
+      _writeTinyPreviewWav(source, frames: 8);
+      final adapter = _FakePreviewAdapter();
+      final previewService = PolyAudioPreviewService(adapter: adapter);
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: previewService,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          currentInstrument: PolySampleInstrument(
+            name: 'Piano',
+            sourcePath: tempRoot.path,
+            regions: [
+              PolySampleRegion(
+                path: source.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+              ),
+            ],
+          ),
+          baselineRegions: [
+            PolySampleRegion(
+              path: source.path,
+              fileName: 'Piano_C4.wav',
+              displayName: 'Piano_C4.wav',
+            ),
+          ],
+          editedRegions: [
+            PolySampleRegion(
+              path: source.path,
+              fileName: 'Piano_C4.wav',
+              displayName: 'Piano_C4.wav',
+            ),
+          ],
+          waveformSummaries: {source.path: _overviewWithFrameCount(8)},
+          focusedPath: source.path,
+        ),
+      );
+
+      await cubit.playOrStopPreview(source.path);
+      final before = _waveformPreviewRootCount();
+
+      cubit.updateWavEditDraft(
+        source.path,
+        const PolyWaveformDraft(fadeInFrames: 4),
+      );
+      await _waitForCondition(() => _waveformPreviewRootCount() > before);
+
+      cubit.discardChanges();
+      await _waitForCondition(() => _waveformPreviewRootCount() == before);
+    });
+
     test(
       'keyboard note preview selects and plays a rendered local wav',
       () async {
@@ -4100,6 +4155,14 @@ Uint8List _i16(int value) {
 Uint8List _u32(int value) {
   final data = ByteData(4)..setUint32(0, value, Endian.little);
   return data.buffer.asUint8List();
+}
+
+int _waveformPreviewRootCount() {
+  return Directory.systemTemp
+      .listSync()
+      .whereType<Directory>()
+      .where((dir) => dir.path.contains('nt_helper_poly_waveform_preview_'))
+      .length;
 }
 
 Future<void> _waitForCondition(bool Function() condition) async {

@@ -792,16 +792,19 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         .where((region) => !selected.contains(region.path))
         .toList();
     _replaceEditedRegions(nextRegions, selectedPaths: const {});
+    unawaited(_cleanupWaveformPreviewRootsForPaths(selected));
   }
 
   void clearDraft() {
     final instrument = state.currentInstrument;
     if (instrument == null) return;
+    final pathsToCleanup = state.editedRegions.map((region) => region.path);
     _setInstrument(
       instrument.copyWith(regions: const []),
       sourceMode: state.sourceMode,
       baselineRegions: const [],
     );
+    unawaited(_cleanupWaveformPreviewRootsForPaths(pathsToCleanup));
   }
 
   void discardChanges() {
@@ -809,11 +812,16 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     if (instrument == null) return;
     final selectedPaths = state.selectedPaths;
     if (selectedPaths.isEmpty) {
+      final pathsToCleanup = <String>{
+        ...state.loopDrafts.keys,
+        ...state.wavEditDrafts.keys,
+      };
       _replaceEditedRegions(
         List<PolySampleRegion>.from(state.baselineRegions),
         selectedPaths: const {},
       );
       emit(state.copyWith(loopDrafts: const {}, wavEditDrafts: const {}));
+      unawaited(_cleanupWaveformPreviewRootsForPaths(pathsToCleanup));
       return;
     }
 
@@ -848,6 +856,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         },
       ),
     );
+    unawaited(_cleanupWaveformPreviewRootsForPaths(selectedPaths));
   }
 
   Future<void> returnToSources() async {
@@ -1403,12 +1412,17 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         previousDraft?.loopStart != snappedDraft.loopStart ||
         previousDraft?.loopEnd != snappedDraft.loopEnd;
     final nextDrafts = Map<String, PolyWaveformDraft>.from(state.loopDrafts);
-    if (overview != null && !_loopDraftChanged(snappedDraft, overview)) {
+    final removedDraft =
+        overview != null && !_loopDraftChanged(snappedDraft, overview);
+    if (removedDraft) {
       nextDrafts.remove(path);
     } else {
       nextDrafts[path] = snappedDraft;
     }
     emit(state.copyWith(loopDrafts: nextDrafts));
+    if (removedDraft) {
+      unawaited(_cleanupWaveformPreviewRootsForPaths([path]));
+    }
     if (overview != null &&
         loopPointsChanged &&
         snappedDraft.loopStart != null &&
@@ -1621,6 +1635,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
             ..remove(path),
         ),
       );
+      unawaited(_cleanupWaveformPreviewRootsForPaths([path]));
       await loadWaveform(path, force: true);
     } catch (error) {
       emit(
@@ -1635,12 +1650,17 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   void updateWavEditDraft(String path, PolyWaveformDraft draft) {
     final overview = state.waveformSummaries[path];
     final nextDrafts = Map<String, PolyWaveformDraft>.from(state.wavEditDrafts);
-    if (overview != null && !_wavEditDraftChanged(draft, overview)) {
+    final removedDraft =
+        overview != null && !_wavEditDraftChanged(draft, overview);
+    if (removedDraft) {
       nextDrafts.remove(path);
     } else {
       nextDrafts[path] = draft;
     }
     emit(state.copyWith(wavEditDrafts: nextDrafts));
+    if (removedDraft) {
+      unawaited(_cleanupWaveformPreviewRootsForPaths([path]));
+    }
     if (state.previewState.visiblePath == path && File(path).existsSync()) {
       _scheduleWaveformEditPreview(path);
     }
@@ -1678,10 +1698,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
           (service) => service.setLastWavExportFolder(wavExportFolder),
         ),
       );
+      final savedInPlace = p.normalize(path) == p.normalize(targetPath);
       emit(
         state.copyWith(
           lastWavExportFolder: wavExportFolder,
-          wavEditDrafts: p.normalize(path) == p.normalize(targetPath)
+          wavEditDrafts: savedInPlace
               ? (Map<String, PolyWaveformDraft>.from(state.wavEditDrafts)
                   ..remove(path))
               : state.wavEditDrafts,
@@ -1690,7 +1711,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
           clearError: true,
         ),
       );
-      if (p.normalize(path) == p.normalize(targetPath)) {
+      if (savedInPlace) {
+        unawaited(_cleanupWaveformPreviewRootsForPaths([path]));
         await loadWaveform(path, force: true);
       }
     } catch (error) {
@@ -2368,6 +2390,35 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     _waveformPreviewRoots.clear();
     _waveformPreviewCache.clear();
     _waveformPreviewRenderInFlight.clear();
+    for (final root in roots) {
+      await _deleteWaveformPreviewRoot(root);
+    }
+  }
+
+  Future<void> _cleanupWaveformPreviewRootsForPaths(
+    Iterable<String> paths,
+  ) async {
+    final normalizedPaths = {
+      for (final path in paths)
+        if (path.trim().isNotEmpty) p.normalize(path),
+    };
+    if (normalizedPaths.isEmpty) return;
+    _waveformPreviewRequest++;
+    final cachedKeys = <String>[];
+    final roots = <String>{};
+    for (final entry in _waveformPreviewCache.entries) {
+      final matches = normalizedPaths.any(
+        (path) => entry.key.startsWith('$path|'),
+      );
+      if (!matches) continue;
+      cachedKeys.add(entry.key);
+      roots.add(p.dirname(entry.value));
+    }
+    for (final key in cachedKeys) {
+      _waveformPreviewCache.remove(key);
+      _waveformPreviewRenderInFlight.remove(key);
+    }
+    _waveformPreviewRoots.removeWhere(roots.contains);
     for (final root in roots) {
       await _deleteWaveformPreviewRoot(root);
     }
