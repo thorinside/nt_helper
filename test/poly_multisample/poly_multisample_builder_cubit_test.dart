@@ -1109,6 +1109,49 @@ void main() {
     });
 
     test(
+      'updateWavEditDraft removing the draft prunes waveform preview temp roots',
+      () async {
+        final source = File('${tempRoot.path}/Piano_C4.wav');
+        _writeTinyPreviewWav(source, frames: 8);
+        final adapter = _FakePreviewAdapter();
+        final previewService = PolyAudioPreviewService(adapter: adapter);
+        final cubit = _ExposedPolyMultisampleBuilderCubit(
+          previewService: previewService,
+        );
+        addTearDown(cubit.close);
+        cubit.setTestState(
+          PolyMultisampleBuilderState(
+            sourceMode: PolySampleSourceMode.local,
+            editedRegions: [
+              PolySampleRegion(
+                path: source.path,
+                fileName: 'Piano_C4.wav',
+                displayName: 'Piano_C4.wav',
+              ),
+            ],
+            waveformSummaries: {source.path: _overviewWithFrameCount(8)},
+            selectedPaths: {source.path},
+            focusedPath: source.path,
+          ),
+        );
+
+        await cubit.playOrStopPreview(source.path);
+        final before = _waveformPreviewRootCount();
+
+        cubit.updateWavEditDraft(
+          source.path,
+          const PolyWaveformDraft(fadeInFrames: 4),
+        );
+        await _waitForCondition(() => _waveformPreviewRootCount() > before);
+
+        cubit.updateWavEditDraft(source.path, const PolyWaveformDraft());
+
+        await _waitForCondition(() => _waveformPreviewRootCount() == before);
+        expect(cubit.state.wavEditDrafts, isEmpty);
+      },
+    );
+
+    test(
       'keyboard note preview selects and plays a rendered local wav',
       () async {
         final source = File('${tempRoot.path}/Piano_C4.wav');
