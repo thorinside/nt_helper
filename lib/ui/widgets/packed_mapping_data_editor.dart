@@ -5,6 +5,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
@@ -377,7 +378,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
         : 0;
 
     // Safely clamp the source value for the dropdown
-    final sourceValue = (_data.source >= 0 && _data.source <= 33)
+    final maxSourceValue = DistingLimits.maxPresetSlots + 1;
+    final sourceValue = (_data.source >= 0 && _data.source <= maxSourceValue)
         ? _data.source
         : 0;
 
@@ -400,32 +402,35 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   });
                   _triggerOptimisticSave();
                 },
-                dropdownMenuEntries: List.generate(34, (index) {
-                  if (index == 0) {
-                    return const DropdownMenuEntry<int>(
-                      value: 0,
-                      label: 'Own inputs',
-                    );
-                  } else if (index == 1) {
-                    return const DropdownMenuEntry<int>(
-                      value: 1,
-                      label: 'Module inputs',
-                    );
-                  } else {
-                    // index 2..33 correspond to slots 1..32
-                    final slotNumber = index - 1;
-                    String label = 'Slot $slotNumber'; // Default label
-                    // Check if a slot exists at this index (0-based)
-                    if (slotNumber - 1 >= 0 &&
-                        slotNumber - 1 < widget.slots.length) {
-                      final slot = widget.slots[slotNumber - 1];
-                      // Use algorithm name if available
-                      label = 'Slot $slotNumber: ${slot.algorithm.name}';
-                    }
+                dropdownMenuEntries: List.generate(
+                  DistingLimits.maxPresetSlots + 2,
+                  (index) {
+                    if (index == 0) {
+                      return const DropdownMenuEntry<int>(
+                        value: 0,
+                        label: 'Own inputs',
+                      );
+                    } else if (index == 1) {
+                      return const DropdownMenuEntry<int>(
+                        value: 1,
+                        label: 'Module inputs',
+                      );
+                    } else {
+                      // index 2..41 correspond to slots 1..40
+                      final slotNumber = index - 1;
+                      String label = 'Slot $slotNumber'; // Default label
+                      // Check if a slot exists at this index (0-based)
+                      if (slotNumber - 1 >= 0 &&
+                          slotNumber - 1 < widget.slots.length) {
+                        final slot = widget.slots[slotNumber - 1];
+                        // Use algorithm name if available
+                        label = 'Slot $slotNumber: ${slot.algorithm.name}';
+                      }
 
-                    return DropdownMenuEntry<int>(value: index, label: label);
-                  }
-                }),
+                      return DropdownMenuEntry<int>(value: index, label: label);
+                    }
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 12),

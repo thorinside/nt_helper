@@ -109,6 +109,10 @@ void main() {
         )],
         isA<PasteAlgorithmsIntent>(),
       );
+      expect(
+        shortcuts[const SingleActivator(LogicalKeyboardKey.escape)],
+        isA<ClearAlgorithmSelectionIntent>(),
+      );
     });
 
     testWidgets('builds actions that invoke provided callbacks', (
@@ -165,6 +169,7 @@ void main() {
       int openTemplateManagerCount = 0;
       int copyAlgorithmsCount = 0;
       int pasteAlgorithmsCount = 0;
+      int clearAlgorithmSelectionCount = 0;
 
       final service = KeyBindingService(
         platformInteractionService: _TestPlatformInteractionService(
@@ -189,6 +194,7 @@ void main() {
         onOpenTemplateManager: () => openTemplateManagerCount++,
         onCopyAlgorithms: () => copyAlgorithmsCount++,
         onPasteAlgorithms: () => pasteAlgorithmsCount++,
+        onClearAlgorithmSelection: () => clearAlgorithmSelectionCount++,
       );
 
       late BuildContext capturedContext;
@@ -216,9 +222,11 @@ void main() {
 
       Actions.invoke(capturedContext, const CopyAlgorithmsIntent());
       Actions.invoke(capturedContext, const PasteAlgorithmsIntent());
+      Actions.invoke(capturedContext, const ClearAlgorithmSelectionIntent());
 
       expect(copyAlgorithmsCount, 1);
       expect(pasteAlgorithmsCount, 1);
+      expect(clearAlgorithmSelectionCount, 1);
     });
 
     test('reports zoom modifier state correctly on macOS', () {

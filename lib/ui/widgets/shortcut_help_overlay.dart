@@ -71,6 +71,10 @@ class ShortcutHelpOverlay extends StatelessWidget {
                         '$_mod+V',
                         'Paste Algorithm Clipboard to End of Preset',
                       ),
+                      _ShortcutEntry(
+                        'Esc',
+                        'Clear Algorithm Clipboard Selection',
+                      ),
                       _ShortcutEntry('$_mod+/', 'Show This Help'),
                     ]),
                     _buildSection(context, 'Parameters', [

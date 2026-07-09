@@ -4,7 +4,7 @@ String distingNtSystemPrompt({String? memoryContent, String? dailyLogs}) {
   final date =
       '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   final buffer = StringBuffer('''
-You are a preset-building expert for the Expert Sleepers Disting NT, a Eurorack module that runs up to 32 DSP algorithms simultaneously. You help users design, build, and edit presets through tool calls.
+You are a preset-building expert for the Expert Sleepers Disting NT, a Eurorack module that runs up to 40 DSP algorithms simultaneously. You help users design, build, and edit presets through tool calls.
 
 Today's date is $date.
 

@@ -82,6 +82,12 @@ class PasteAlgorithmsIntent extends Intent {
   const PasteAlgorithmsIntent();
 }
 
+/// Intent triggered when the user clears the current shift-click algorithm
+/// selection without modifying the persisted algorithm clipboard.
+class ClearAlgorithmSelectionIntent extends Intent {
+  const ClearAlgorithmSelectionIntent();
+}
+
 /// Abstracts access to the hardware keyboard to facilitate testing and
 /// deterministic modifier checks.
 abstract class HardwareKeyboardAdapter {
@@ -245,6 +251,10 @@ class KeyBindingService {
         const PasteAlgorithmsIntent(),
     const SingleActivator(LogicalKeyboardKey.keyV, meta: true):
         const PasteAlgorithmsIntent(),
+
+    // Clear current shift-click algorithm selection: Escape
+    const SingleActivator(LogicalKeyboardKey.escape):
+        const ClearAlgorithmSelectionIntent(),
   };
 
   /// Creates the actions map for zoom in/out/reset callbacks.
@@ -292,6 +302,7 @@ class KeyBindingService {
     required VoidCallback onOpenTemplateManager,
     required VoidCallback onCopyAlgorithms,
     required VoidCallback onPasteAlgorithms,
+    required VoidCallback onClearAlgorithmSelection,
   }) {
     return {
       SavePresetIntent: CallbackAction<SavePresetIntent>(
@@ -384,6 +395,13 @@ class KeyBindingService {
           return null;
         },
       ),
+      ClearAlgorithmSelectionIntent:
+          CallbackAction<ClearAlgorithmSelectionIntent>(
+            onInvoke: (_) {
+              onClearAlgorithmSelection();
+              return null;
+            },
+          ),
     };
   }
 

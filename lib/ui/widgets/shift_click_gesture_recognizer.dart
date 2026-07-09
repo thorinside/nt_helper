@@ -23,7 +23,8 @@ class ShiftClickGestureRecognizer extends OneSequenceGestureRecognizer {
   void addAllowedPointer(PointerDownEvent event) {
     startTrackingPointer(event.pointer, event.transform);
     final pressed = HardwareKeyboard.instance.logicalKeysPressed;
-    final shiftHeld = pressed.contains(LogicalKeyboardKey.shiftLeft) ||
+    final shiftHeld =
+        pressed.contains(LogicalKeyboardKey.shiftLeft) ||
         pressed.contains(LogicalKeyboardKey.shiftRight);
     if (shiftHeld) {
       onShiftTap();
@@ -35,7 +36,11 @@ class ShiftClickGestureRecognizer extends OneSequenceGestureRecognizer {
 
   @override
   void handleEvent(PointerEvent event) {
-    // No movement tracking needed: the decision is made at pointer-down.
+    // The shift decision is made at pointer-down; keep tracking only until the
+    // pointer sequence ends so the recognizer does not retain stale pointers.
+    if (event is PointerUpEvent || event is PointerCancelEvent) {
+      stopTrackingPointer(event.pointer);
+    }
   }
 
   @override

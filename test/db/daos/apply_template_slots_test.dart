@@ -668,7 +668,7 @@ void main() {
         ),
       );
 
-      // Now with 22 existing — 22 + 10 = 32 → should succeed.
+      // Now with 22 existing — 22 + 10 = 32, below the 40-slot limit.
       final targetId2 = await _savePreset(
         db,
         'Target 2',

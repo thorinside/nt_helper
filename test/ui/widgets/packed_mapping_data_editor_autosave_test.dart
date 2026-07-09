@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
 
@@ -327,6 +328,36 @@ void main() {
 
       expect(saveCount, 1);
       expect(lastSavedData?.source, equals(2));
+    });
+
+    testWidgets('Source dropdown includes all preset slots', (tester) async {
+      final slot40Source = DistingLimits.maxPresetSlots + 1;
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) async {},
+          initialData: testData.copyWith(source: slot40Source),
+        ),
+      );
+
+      await tester.tap(find.text('CV'));
+      await tester.pumpAndSettle();
+
+      final dropdownFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is DropdownMenu<int> &&
+            widget.label.toString().contains('Source'),
+      );
+      final dropdown = tester.widget<DropdownMenu<int>>(dropdownFinder);
+
+      expect(
+        dropdown.dropdownMenuEntries.length,
+        DistingLimits.maxPresetSlots + 2,
+      );
+      expect(
+        dropdown.dropdownMenuEntries.last.label,
+        'Slot ${DistingLimits.maxPresetSlots}',
+      );
+      expect(dropdown.initialSelection, slot40Source);
     });
 
     testWidgets('CV Input dropdown triggers immediate save', (tester) async {

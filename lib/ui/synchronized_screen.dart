@@ -151,8 +151,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   /// A [ValueNotifier] so individual tab indicators can rebuild without
   /// tearing down the in-flight tap gesture that toggled them. Persisted
   /// across slot-list rebuilds until copied or cleared. Desktop-only.
-  final ValueNotifier<Set<int>> _clipboardSelection =
-      ValueNotifier<Set<int>>(<int>{});
+  final ValueNotifier<Set<int>> _clipboardSelection = ValueNotifier<Set<int>>(
+    <int>{},
+  );
 
   @override
   void initState() {
@@ -621,6 +622,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           onOpenTemplateManager: () => _handleOpenTemplateManagerShortcut(),
           onCopyAlgorithms: () => _handleCopyAlgorithmsToClipboard(cubit),
           onPasteAlgorithms: () => _handlePasteAlgorithmsFromClipboard(cubit),
+          onClearAlgorithmSelection: _handleClearAlgorithmSelection,
           onSwitchToParameters: () {
             setState(() => _currentMode = EditMode.parameters);
             SemanticsService.sendAnnouncement(
@@ -1520,6 +1522,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   AlgorithmClipboardService _algorithmClipboardService(DistingCubit cubit) =>
       AlgorithmClipboardService(cubit.database);
 
+  void _handleClearAlgorithmSelection() {
+    if (_clipboardSelection.value.isEmpty) return;
+    _clipboardSelection.value = <int>{};
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      'Cleared algorithm clipboard selection',
+      TextDirection.ltr,
+    );
+  }
+
   Future<void> _handleCopyAlgorithmsToClipboard(DistingCubit cubit) async {
     final state = cubit.state;
     if (state is! DistingStateSynchronized) return;
@@ -1538,8 +1550,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
 
     try {
-      final copied = await _algorithmClipboardService(cubit)
-          .copyFromDistingState(state, selected);
+      final copied = await _algorithmClipboardService(
+        cubit,
+      ).copyFromDistingState(state, selected);
       if (copied > 0) {
         // Clear the on-screen selection now that it has been snapshotted.
         _clipboardSelection.value = <int>{};
@@ -1547,9 +1560,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       if (copied == 0) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No slots were copied.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('No slots were copied.')));
         return;
       }
       if (!mounted) return;
@@ -2662,14 +2675,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               tabs: List<Widget>.generate(syncState.length, (index) {
                 final slot = syncState[index];
                 final displayName = slot.algorithm.name;
-                final isDesktop =
-                    !_platformService.isMobilePlatform();
+                final isDesktop = !_platformService.isMobilePlatform();
 
                 return Semantics(
                   label: 'Slot ${index + 1}: $displayName',
                   hint: isDesktop
                       ? 'Double tap to select. Long press to rename. '
-                          'Shift-click to mark for clipboard copy.'
+                            'Shift-click to mark for clipboard copy.'
                       : 'Double tap to select. Long press to rename.',
                   customSemanticsActions: {
                     const CustomSemanticsAction(
@@ -2743,75 +2755,73 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             ),
                       },
                       child: GestureDetector(
-                      onDoubleTap: () async {
-                        var cubit = context.read<DistingCubit>();
-                        cubit.disting()?.let((manager) {
-                          manager.requestSetFocus(index, 0);
-                          manager.requestSetDisplayMode(
-                            DisplayMode.algorithmUI,
-                          );
-                        });
-                        if (SettingsService().hapticsEnabled) {
-                          Haptics.vibrate(HapticsType.medium);
-                        }
-                      },
-                      onLongPress: () async {
-                        var cubit = context.read<DistingCubit>();
-                        final newName = await showDialog<String>(
-                          context: context,
-                          builder: (dialogCtx) =>
-                              RenameSlotDialog(initialName: displayName),
-                        );
-                        if (newName != null && newName != displayName) {
-                          cubit.renameSlot(index, newName);
-                        }
-                      },
-                      child: Builder(
-                        builder: (context) {
-                          final originalName = AlgorithmMetadataService()
-                              .getAlgorithmByGuid(slot.algorithm.guid)
-                              ?.name;
-                          final isRenamed =
-                              originalName != null &&
-                              originalName != displayName;
-                          final tabWidget = !isRenamed
-                              ? Tab(text: displayName)
-                              : Tab(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(displayName),
-                                      Text(
-                                        originalName,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              color: Theme.of(
-                                                context,
-                                              )
-                                              .colorScheme
-                                              .onSurface
-                                              .withAlpha(153),
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                          return ClipboardSelectableTab(
-                            key: ValueKey('clipboard-tab-$index'),
-                            selection: _clipboardSelection,
-                            slotIndex: index,
-                            child: tabWidget,
-                          );
+                        onDoubleTap: () async {
+                          var cubit = context.read<DistingCubit>();
+                          cubit.disting()?.let((manager) {
+                            manager.requestSetFocus(index, 0);
+                            manager.requestSetDisplayMode(
+                              DisplayMode.algorithmUI,
+                            );
+                          });
+                          if (SettingsService().hapticsEnabled) {
+                            Haptics.vibrate(HapticsType.medium);
+                          }
                         },
+                        onLongPress: () async {
+                          var cubit = context.read<DistingCubit>();
+                          final newName = await showDialog<String>(
+                            context: context,
+                            builder: (dialogCtx) =>
+                                RenameSlotDialog(initialName: displayName),
+                          );
+                          if (newName != null && newName != displayName) {
+                            cubit.renameSlot(index, newName);
+                          }
+                        },
+                        child: Builder(
+                          builder: (context) {
+                            final originalName = AlgorithmMetadataService()
+                                .getAlgorithmByGuid(slot.algorithm.guid)
+                                ?.name;
+                            final isRenamed =
+                                originalName != null &&
+                                originalName != displayName;
+                            final tabWidget = !isRenamed
+                                ? Tab(text: displayName)
+                                : Tab(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(displayName),
+                                        Text(
+                                          originalName,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withAlpha(153),
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                            return ClipboardSelectableTab(
+                              key: ValueKey('clipboard-tab-$index'),
+                              selection: _clipboardSelection,
+                              slotIndex: index,
+                              child: tabWidget,
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            }),
-          ),
+                );
+              }),
+            ),
           ),
           _ => const Center(child: Text("Loading slots...")),
         };
@@ -3237,4 +3247,3 @@ class _UpdateCheckButtonState extends State<_UpdateCheckButton> {
     );
   }
 }
-

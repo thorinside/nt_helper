@@ -56,7 +56,9 @@ void main() {
         AlgorithmEntry(guid: 'G3', name: 'Gamma', numSpecifications: 0),
       ]);
       when(() => mockCubit.checkpoints).thenReturn([]);
-      when(() => mockCubit.cpuUsageStream).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockCubit.cpuUsageStream,
+      ).thenAnswer((_) => const Stream.empty());
       when(() => mockCubit.database).thenReturn(database);
       when(() => mockPlatformService.isMobilePlatform()).thenReturn(false);
       McpServerService.initialize(distingCubit: mockCubit);
@@ -148,7 +150,10 @@ void main() {
       await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Algorithm clipboard is empty'), findsOneWidget);
+      expect(
+        find.textContaining('Algorithm clipboard is empty'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shift-click toggles slots into the selection (top tabs)', (
@@ -164,8 +169,8 @@ void main() {
 
       bool isTabSelected(String label) {
         final element = tester.element(find.text(label));
-        final state =
-            element.findAncestorStateOfType<ClipboardSelectableTabState>();
+        final state = element
+            .findAncestorStateOfType<ClipboardSelectableTabState>();
         return state?.selected ?? false;
       }
 
@@ -192,6 +197,36 @@ void main() {
 
       expect(isTabSelected('Alpha'), isFalse);
       expect(isTabSelected('Gamma'), isTrue);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Escape clears shift-click selection without copying', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildWidget([_slot(0, 'G1', 'Alpha'), _slot(1, 'G2', 'Beta')]),
+      );
+
+      bool isTabSelected(String label) {
+        final element = tester.element(find.text(label));
+        final state = element
+            .findAncestorStateOfType<ClipboardSelectableTabState>();
+        return state?.selected ?? false;
+      }
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.tap(find.text('Alpha'));
+      await tester.pump();
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+
+      expect(isTabSelected('Alpha'), isTrue);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+
+      expect(isTabSelected('Alpha'), isFalse);
+      expect(await database.presetsDao.clipboardSlotCount(), 0);
       await tester.pumpAndSettle();
     });
 
@@ -241,7 +276,9 @@ void main() {
         AlgorithmEntry(guid: 'G3', name: 'Gamma', numSpecifications: 0),
       ]);
       when(() => mockCubit.checkpoints).thenReturn([]);
-      when(() => mockCubit.cpuUsageStream).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockCubit.cpuUsageStream,
+      ).thenAnswer((_) => const Stream.empty());
       when(() => mockCubit.database).thenReturn(database);
       when(() => mockPlatformService.isMobilePlatform()).thenReturn(false);
       McpServerService.initialize(distingCubit: mockCubit);
@@ -308,8 +345,8 @@ void main() {
       // state (no decoration sniffing).
       bool isTileSelected(String label) {
         final element = tester.element(find.text(label));
-        final state =
-            element.findAncestorStateOfType<ClipboardSelectableTabState>();
+        final state = element
+            .findAncestorStateOfType<ClipboardSelectableTabState>();
         return state?.selected ?? false;
       }
 

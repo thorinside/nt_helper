@@ -168,7 +168,7 @@ void main() {
   });
 
   group('TemplatePreviewDialog - Slot Limit Validation', () {
-    testWidgets('shows warning when slots would exceed 32', (tester) async {
+    testWidgets('shows warning when slots would exceed 40', (tester) async {
       final template = createTestTemplate(name: 'Test Template', slotCount: 10);
 
       await tester.pumpWidget(
@@ -223,7 +223,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           template: template,
-          currentSlotCount: 10, // 10 + 5 = 15 < 32
+          currentSlotCount: 10, // 10 + 5 = 15 < 40
         ),
       );
 

@@ -20,6 +20,12 @@ class RoutingParameterValue extends StatelessWidget {
   /// Current bus value of the parameter (0 = None/Off).
   final int currentBus;
 
+  /// Smallest raw value accepted by the backing parameter.
+  final int parameterMin;
+
+  /// Largest raw value accepted by the backing parameter.
+  final int parameterMax;
+
   /// Whether ES-5 expansion buses are valid targets (USB Audio "from Host").
   final bool showEs5;
 
@@ -44,6 +50,8 @@ class RoutingParameterValue extends StatelessWidget {
     super.key,
     required this.portLabel,
     required this.currentBus,
+    this.parameterMin = BusSpec.min,
+    this.parameterMax = BusSpec.max,
     required this.showEs5,
     required this.hasExtendedAuxBuses,
     this.canDisconnect = false,
@@ -157,27 +165,7 @@ class RoutingParameterValue extends StatelessWidget {
   }
 
   Future<void> _openPicker(BuildContext context) async {
-    final auxMax = hasExtendedAuxBuses
-        ? BusSpec.auxMaxExtended
-        : BusSpec.auxMax;
-    final es5Min = hasExtendedAuxBuses
-        ? BusSpec.es5MinExtended
-        : BusSpec.es5Min;
-    final es5Max = hasExtendedAuxBuses
-        ? BusSpec.es5MaxExtended
-        : BusSpec.es5Max;
-
-    final buses = <int>[];
-    void addRange(int from, int to) {
-      for (var b = from; b <= to; b++) {
-        if (!buses.contains(b)) buses.add(b);
-      }
-    }
-
-    addRange(BusSpec.inputMin, BusSpec.inputMax);
-    addRange(BusSpec.outputMin, BusSpec.outputMax);
-    addRange(BusSpec.auxMin, auxMax);
-    if (showEs5) addRange(es5Min, es5Max);
+    final buses = _availableBuses();
     if (buses.isEmpty) return;
 
     final choice = await showDialog<int>(
@@ -202,6 +190,36 @@ class RoutingParameterValue extends StatelessWidget {
         TextDirection.ltr,
       );
     }
+  }
+
+  List<int> _availableBuses() {
+    final low = parameterMin <= parameterMax ? parameterMin : parameterMax;
+    final high = parameterMin <= parameterMax ? parameterMax : parameterMin;
+    final auxMax = hasExtendedAuxBuses
+        ? BusSpec.auxMaxExtended
+        : BusSpec.auxMax;
+    final es5Min = hasExtendedAuxBuses
+        ? BusSpec.es5MinExtended
+        : BusSpec.es5Min;
+    final es5Max = hasExtendedAuxBuses
+        ? BusSpec.es5MaxExtended
+        : BusSpec.es5Max;
+
+    final buses = <int>[];
+    void addRange(int from, int to) {
+      final start = from.clamp(low, high).toInt();
+      final end = to.clamp(low, high).toInt();
+      if (start > end) return;
+      for (var b = start; b <= end; b++) {
+        buses.add(b);
+      }
+    }
+
+    addRange(BusSpec.inputMin, BusSpec.inputMax);
+    addRange(BusSpec.outputMin, BusSpec.outputMax);
+    addRange(BusSpec.auxMin, auxMax);
+    if (showEs5) addRange(es5Min, es5Max);
+    return buses;
   }
 }
 

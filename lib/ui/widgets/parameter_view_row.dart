@@ -424,9 +424,11 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                   ? RoutingParameterValue(
                       portLabel: paramName,
                       currentBus: currentValue,
+                      parameterMin: widget.min,
+                      parameterMax: widget.max,
                       showEs5: routingShowEs5,
                       hasExtendedAuxBuses: routingHasExtendedAuxBuses,
-                      canDisconnect: widget.min == 0,
+                      canDisconnect: widget.min <= 0 && widget.max >= 0,
                       enabled: widget.parameterValueEditingEnabled,
                       onValueChanged: (newValue) {
                         setState(() {
