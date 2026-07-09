@@ -1,6 +1,6 @@
 # Improve sample editor UX based on sample-mapping feedback
 
-Baseline ref: `HEAD` (`5cd35577` at spec authoring time)  
+Baseline ref: `5cd35577` at spec authoring time; implementation starts after the spec-program commit
 Target language: Dart / Flutter  
 Hardening policy: realistic-only  
 Program folder: `specs/improve-the-nt-helper-sample-editor-ux-based-on`
@@ -120,13 +120,14 @@ No public symbol moves to another file. No compatibility re-export is needed.
 | `_selectedOrFocusedPaths` | new | cubit file | no | Return `state.selectedPaths` when non-empty, else focused path when present, else empty set |
 | `_updateSelectedRegions` | new | cubit file | no | Apply a region transform to every path from `_selectedOrFocusedPaths` without reordering |
 | `_noteLabel` | new | cubit file | no | Convert MIDI values to note names through `PolyMultisampleParser.midiToNoteName` |
+| `_sampleMappingLabel` | new | cubit file | no | Return the same duplicate-safe label as `sampleDisplayLabel` without importing `poly_region_math.dart` into the cubit |
 | `_samplePreviewCache` | new | cubit file | no | Cache rendered sample preview paths by source path, file stat, and draft fingerprint |
 | `_samplePreviewRenderInFlight` | new | cubit file | no | Coalesce concurrent render requests for the same preview cache key |
 | `_renderedSamplePreviewPath` | new | cubit file | no | Render loop/fade/trim/gain drafts to a preview WAV for sample preview playback |
 | `PolySamplesEditorView` | editor view | same file | yes | Continue as screen root; no signature change |
 | `_Toolbar` | editor view | same file | no | Selection-scoped discard label and menu item for unmap selected |
 | `_EditorBody` | editor view | same file | no | Pass state to inspector unchanged; no layout redesign |
-| `_WarningPanel` | editor view | same file | no | Reuse for `mappingWarnings` with title `Mapping warnings` |
+| `_WarningPanel` | editor view | same file | no | Add a required storage-key parameter so the existing warnings panel and new mapping warnings panel do not share a sibling key |
 | `PolySampleInspector` | inspector file | same file | yes | Build mapping controls for one or many selected samples |
 | `_MappingSection` | inspector file | same file | no | Replace stepper-only mapping area with dropdown/list controls plus existing step rows |
 | `_MappingDropdownRow` | new | inspector file | no | Fixed row for Root/Low/High/Velocity/RR list selection |
@@ -151,7 +152,7 @@ No public symbol moves to another file. No compatibility re-export is needed.
 | Treat overlapping ranges as a warning, not as a blocked edit. | Feedback requests a clear warning rather than silent list resorting; users can intentionally create temporary states while editing. | cubit, editor view, tests | required |
 | Overlap warnings only compare mapped regions with the same effective velocity layer and same effective RR lane. | Different velocity layers and RR lanes are legitimate multisample overlaps. Same velocity and same RR claims the same playable slot. | cubit, tests | required |
 | Invalid range means `effectiveLow(region) > effectiveHigh(region)`. | This is the concrete impossible range state users can create by editing low/high independently. | cubit, tests | required |
-| Root-outside-range is a warning. | A root outside its playable range produces confusing pitching and is a plausible edit mistake. | cubit, tests | required |
+| Root-outside-range is a warning for mapped regions only. | A root outside its playable range produces confusing pitching and is a plausible edit mistake; unmapped rows already use existing missing-root issues and must not produce mapping warnings. | cubit, tests | required |
 | `discardChanges` resets only selected samples when a selection exists. | The request prefers selection-scoped discard/unmap and reserves full wipe for a deliberate no-selection or explicit clear action. | cubit, editor view, tests | required |
 | `clearDraft` remains the intentional full wipe. | Bulk wipe already has an explicit menu action named `Clear all`. | editor view, cubit | required |
 | `removeSelectedRegions` keeps deleting selected rows and is labeled as removal, not unmap. | Removing files from the draft and unmapping zones are different workflows. | editor view, tests | required |
@@ -166,6 +167,7 @@ No public symbol moves to another file. No compatibility re-export is needed.
 | Sample preview playback uses rendered draft audio for local WAVs when loop or waveform edits exist. | Users hear loop/fade/trim/gain draft effects before saving destructive changes. | cubit, tests | required |
 | Hardware direct preview keeps the existing cached download path and does not render local draft fades. | Hardware samples are not locally editable until downloaded/mounted; local draft rendering requires local file bytes. | cubit | out-of-scope |
 | Draw fade curves in `PolyWaveformEditor` using `WavFadePreview.sampleCurve`. | The waveform can show fade shape without duplicating curve math in the painter. | wav metadata, waveform editor, tests | required |
+| Do not import `poly_region_math.dart` into the cubit. | `poly_region_math.dart` imports the cubit for `selectedRegionFor`; importing it back into the cubit creates a UI-state library cycle. Duplicate only the tiny display-label logic as `_sampleMappingLabel`. | cubit | required |
 | Add accessible fade preview summary text to the waveform editor. | Screen-reader users receive the same fade-state signal as sighted users. | waveform editor, inspector tests | required |
 | Do not add audio-engine DSP or real-time streaming. | Existing preview service plays WAV files; cached render-to-temp is the repository pattern for note previews. | audio service out of edit scope | out-of-scope |
 | No Strategy registry. | There is only one editor behavior with fixed mapping fields; no behavioral family exists. | all target files | out-of-scope |
@@ -215,9 +217,9 @@ Warning text:
 | root outside range | `Mapping warning: <label> root <rootNote> is outside <lowNote>–<highNote>.` |
 | same velocity/RR overlap | `Mapping warning: <labelA> and <labelB> overlap on <overlapLowNote>–<overlapHighNote> at velocity <velocity>, RR <rr>.` |
 
-`<label>` values come from `sampleDisplayLabel(region, regions)`. Note names come from `PolyMultisampleParser.midiToNoteName`.
+`<label>` values come from new private cubit helper `_sampleMappingLabel(region, regions)`. `_sampleMappingLabel` must copy the current logic from `sampleDisplayLabel` in `lib/ui/poly_multisample/poly_region_math.dart`: use `region.displayName` when it is unique in `regions`, otherwise compute a relative path from the common directory with `package:path/path.dart` as `p` and replace backslashes with `/`. Do not import `poly_region_math.dart` into the cubit. Note names come from `PolyMultisampleParser.midiToNoteName`.
 
-Overlap comparison skips regions with `rootMidi == null`. Overlap comparison requires `(a.velocityLayer ?? 1) == (b.velocityLayer ?? 1)` and `(a.roundRobin ?? 1) == (b.roundRobin ?? 1)`. Overlap exists when `math.max(lowA, lowB) <= math.min(highA, highB)`.
+Root-outside-range comparison skips regions with `rootMidi == null`. Overlap comparison skips regions with `rootMidi == null`. Overlap comparison requires `(a.velocityLayer ?? 1) == (b.velocityLayer ?? 1)` and `(a.roundRobin ?? 1) == (b.roundRobin ?? 1)`. Overlap exists when `math.max(lowA, lowB) <= math.min(highA, highB)`.
 
 ## Selection-scoped mutation rules
 
@@ -276,6 +278,16 @@ Dropdown value display:
 | at least two selected rows differ | `null` | `Mixed` |
 | root/low/high value absent for all rows | `null` | `Unset` for Root, `Mixed` for Low/High |
 
+Selection values use these exact raw/effective fields:
+
+| Dropdown | Value source for `_selectionValue` |
+|---|---|
+| Root | `region.rootMidi` |
+| Low | `region.rangeLow`; if all selected values are null, return `_SelectionValue.value(null)` and use unset hint `Mixed`; if some selected values are null and some non-null, return `_SelectionValue.mixed()` |
+| High | `region.rangeHigh`; if all selected values are null, return `_SelectionValue.value(null)` and use unset hint `Mixed`; if some selected values are null and some non-null, return `_SelectionValue.mixed()` |
+| Velocity | `region.velocityLayer ?? 1` |
+| RR | `region.roundRobin ?? 1` |
+
 Root dropdown items contain all MIDI values 0 through 127. Low and High dropdown items contain all MIDI values 0 through 127. Velocity and RR dropdown items contain all integers 1 through 32. Selecting a dropdown item calls the matching selection-scoped cubit method.
 
 Add an `OutlinedButton.icon` below the dropdowns with key `poly-mapping-unmap-selected`, icon `Icons.link_off`, and label text:
@@ -303,7 +315,7 @@ In `_Toolbar`:
 - Rename the existing `Remove selected` menu item text to `Remove selected samples` without changing its value or action.
 - `Clear all` remains the only full wipe menu item.
 
-In `PolySamplesEditorView.build`, render the existing warning panel for `state.warnings` as it does now. Render a second `_WarningPanel(title: 'Mapping warnings', messages: state.mappingWarnings)` directly after the existing warning panel when `state.mappingWarnings.isNotEmpty`.
+In `PolySamplesEditorView.build`, render the existing warning panel for `state.warnings` as it does now, but pass it storage key value `poly-samples-import-warnings-tile`. Render a second `_WarningPanel(title: 'Mapping warnings', messages: state.mappingWarnings, storageKey: const PageStorageKey<String>('poly-samples-mapping-warnings-tile'))` directly after the existing warning panel when `state.mappingWarnings.isNotEmpty`. `_WarningPanel` must require a `PageStorageKey<String> storageKey` constructor parameter and use that value as the `ExpansionTile.key`; do not reuse the old hard-coded key for both panels.
 
 ## Waveform preview rules
 
@@ -318,17 +330,23 @@ final _samplePreviewRenderInFlight = <String, Future<String>>{};
 
 `_renderedSamplePreviewPath(String path)`:
 
-1. Reads `File(path).stat()`.
-2. Builds a cache key from normalized path, modified milliseconds, size, and `_previewDraftFingerprint(path)`.
-3. Returns the cached path when it exists on disk.
-4. Returns the in-flight future when one exists for the same key.
-5. Reads bytes from `File(path)`.
-6. Runs `_preparedKeyboardPreviewBytes(path, bytes)`.
-7. Creates temp root `nt_helper_poly_sample_preview_`.
-8. Writes `sample-preview.wav` in the temp root.
-9. Stores the temp root in `_notePreviewRoots` so existing cleanup removes it.
-10. Stores the output path in `_samplePreviewCache[cacheKey]`.
-11. Removes the in-flight entry in `whenComplete`.
+1. Capture `final generation = _notePreviewGeneration;` at method entry.
+2. Reads `File(path).stat()`.
+3. Builds a cache key from normalized path, modified milliseconds, size, and `_previewDraftFingerprint(path)`.
+4. Returns the cached path when it exists on disk.
+5. Returns the in-flight future when one exists for the same key.
+6. Reads bytes from `File(path)`.
+7. After every `await`, if `generation != _notePreviewGeneration || _isClosing`, throw `_StaleNotePreviewRequest()`.
+8. Runs `_preparedKeyboardPreviewBytes(path, bytes)`.
+9. Creates temp root `nt_helper_poly_sample_preview_`.
+10. If stale after creating the temp root, delete that root with `_deleteNotePreviewRoot(root.path)` before throwing `_StaleNotePreviewRequest()`.
+11. Writes `sample-preview.wav` in the temp root.
+12. Stores the temp root in `_notePreviewRoots` so existing cleanup removes it.
+13. If stale after writing, remove the temp root from `_notePreviewRoots`, delete it, and throw `_StaleNotePreviewRequest()`.
+14. Stores the output path in `_samplePreviewCache[cacheKey]`.
+15. Removes the in-flight entry in `whenComplete` only when the stored future is identical to the completed future.
+
+`_cleanupNotePreviewRoots()` also clears `_samplePreviewCache` and `_samplePreviewRenderInFlight` alongside the existing note preview caches.
 
 Local WAV `playOrStopPreview(path)` behavior:
 
@@ -336,11 +354,11 @@ Local WAV `playOrStopPreview(path)` behavior:
 |---|---|
 | No loop draft and no wav edit draft for `path` | Existing raw-file `playOrStopPreview(path, gainDb: state.previewGainDb)` behavior |
 | A loop draft or wav edit draft exists for `path`, preview visible path already equals `path` | Stop preview through `_previewService.stop()` |
-| A loop draft or wav edit draft exists for `path`, preview visible path differs | Await `_renderedSamplePreviewPath(path)` and call `_previewService.restartPreview(renderedPath, displayPath: path, sourcePlayback: await _keyboardPreviewSourcePlaybackForPath(path), gainDb: state.previewGainDb)` |
+| A loop draft or wav edit draft exists for `path`, preview visible path differs | Await `_renderedSamplePreviewPath(path)` and call `_previewService.restartPreview(renderedPath, displayPath: path, sourcePlayback: await _samplePreviewSourcePlayback(path), gainDb: state.previewGainDb)` |
 
 Add private helper `_samplePreviewSourcePlayback(String path)` with the same playback frame logic as `_keyboardPreviewSourcePlayback`, but `pitchRatio: 1` and `playingMidiNote` omitted.
 
-`updateWavEditDraft` must schedule a loop/fade preview when the path is a local editable WAV, the file exists, and either fade-in frames, fade-out frames, fade curve, fade strength, trim start/end, gain, or normalize value changed. It uses the same 80 ms debounce and stale request integer as loop edits. `_playLoopEditPreview` must call `_preparedKeyboardPreviewBytes` before extracting/rendering the short loop preview so audible preview includes fades and trim/gain edits.
+`updateWavEditDraft` must schedule the existing short loop-edit audible preview when all of these are true: the path is a local editable WAV, the file exists, an overview exists, either fade-in frames, fade-out frames, fade curve, fade strength, trim start/end, gain, or normalize value changed, and an active loop is available from `state.loopDrafts[path]` or the overview (`loopStart` and `loopEnd` both non-null). It uses the same 80 ms debounce and stale request integer as loop edits. If no active loop exists, do not schedule an automatic short preview; the visual fade preview plus the full sample Preview button satisfy fade/trim/gain preview for that state. `_playLoopEditPreview` must call `_preparedKeyboardPreviewBytes` before extracting/rendering the short loop preview so audible preview includes fades and trim/gain edits.
 
 ### Fade curves on waveform
 

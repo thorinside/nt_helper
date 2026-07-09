@@ -55,33 +55,35 @@ Make mapping edits preserve sample-row order, compute live mapping warnings, and
     - Leave non-selected rows unchanged.
     - Prune `loopDrafts` and `wavEditDrafts` only for selected paths.
     - Call `_replaceEditedRegions(nextRegions, selectedPaths: nextSelectedPaths)` where `nextSelectedPaths` contains selected paths that remain.
-18. Add private helper `_mappingWarningsFor(List<PolySampleRegion> regions)` below `_replaceEditedRegions` with the warning rules and strings from `spec.md`.
+18. Add private helper `_mappingWarningsFor(List<PolySampleRegion> regions)` below `_replaceEditedRegions` with the warning rules and strings from `spec.md`; root-outside-range and overlap checks must skip regions with `rootMidi == null`.
 19. Add private helper `_noteLabel(int midi)` below `_mappingWarningsFor`; it returns `PolyMultisampleParser.midiToNoteName(midi)`.
-20. Import nothing new in the cubit unless analyzer reports it; `dart:math` and parser imports already exist.
-21. In `test/poly_multisample/poly_multisample_builder_cubit_test.dart`, add test `mapping edits preserve editor order` near existing mapping edit tests. It must:
+20. Add private helper `_sampleMappingLabel(PolySampleRegion region, List<PolySampleRegion> regions)` below `_noteLabel`; copy the duplicate-display-name logic from `sampleDisplayLabel` in `lib/ui/poly_multisample/poly_region_math.dart` and use existing `package:path/path.dart` import alias `p`.
+21. Do not import `poly_region_math.dart` into the cubit.
+22. In `returnToSources`, in the state emission that clears `currentInstrument`, `editedRegions`, and draft maps, also set `mappingWarnings: const [],`.
+23. In `test/poly_multisample/poly_multisample_builder_cubit_test.dart`, add test `mapping edits preserve editor order` near existing mapping edit tests. It must:
     - Create `_ExposedPolyMultisampleBuilderCubit`.
     - Set state with three edited regions in order `/tmp/z.wav`, `/tmp/a.wav`, `/tmp/m.wav` and roots 72, 48, 60.
     - Call `updateRoot('/tmp/z.wav', 36)`, `updateRangeLow('/tmp/a.wav', 40)`, `updateRangeHigh('/tmp/m.wav', 90)`, `updateVelocity('/tmp/z.wav', 2)`, and `updateRoundRobin('/tmp/a.wav', 3)`.
     - Assert `cubit.state.editedRegions.map((r) => r.path).toList()` remains `['/tmp/z.wav', '/tmp/a.wav', '/tmp/m.wav']`.
-22. Add test `mapping warnings report invalid range root outside range and overlaps`. It must:
+24. Add test `mapping warnings report invalid range root outside range and overlaps`. It must:
     - Set state with four regions in editor order: invalid range, root outside range, overlap A, overlap B.
     - Use same velocity and RR for overlap A/B.
     - Assert `mappingWarnings` contains exactly the three strings defined by `spec.md` for those rows.
-23. Add test `mapping warnings allow different velocity and rr overlaps`. It must:
+25. Add test `mapping warnings allow different velocity and rr overlaps`. It must:
     - Set state with overlapping key ranges where one pair differs by velocity and another pair differs by RR.
     - Assert `mappingWarnings` is empty.
-24. Add test `selected bulk mapping edits only selected rows`. It must:
+26. Add test `selected bulk mapping edits only selected rows`. It must:
     - Set state with three rows, selected paths first and third, focused path first.
     - Call `updateSelectedRoot(61)`, `updateSelectedRangeLow(60)`, `updateSelectedRangeHigh(64)`, `updateSelectedVelocity(4)`, and `updateSelectedRoundRobin(5)`.
     - Assert selected rows have root C#4, low 60, high 64, velocity 4, RR 5.
     - Assert non-selected row remains unchanged.
-25. Add test `unmapSelectedRegions clears mapping fields without removing rows`. It must:
+27. Add test `unmapSelectedRegions clears mapping fields without removing rows`. It must:
     - Set state with two mapped rows, select one row.
     - Call `unmapSelectedRegions()`.
     - Assert row count remains 2.
     - Assert selected row has null `rootMidi`, `rootName`, `rangeLow`, `rangeHigh`, `switchPoint`, `velocityLayer`, and `roundRobin`.
     - Assert non-selected row remains mapped.
-26. Add test `discardChanges resets only selected existing rows and removes selected new rows`. It must:
+28. Add test `discardChanges resets only selected existing rows and removes selected new rows`. It must:
     - Set baseline with `/tmp/a.wav` and `/tmp/b.wav`.
     - Set edited rows with modified `/tmp/a.wav`, modified `/tmp/b.wav`, and new `/tmp/new.wav`.
     - Select `/tmp/a.wav` and `/tmp/new.wav`.
@@ -90,8 +92,9 @@ Make mapping edits preserve sample-row order, compute live mapping warnings, and
     - Assert `/tmp/a.wav` equals baseline values.
     - Assert `/tmp/b.wav` keeps edited values and its drafts remain.
     - Assert `/tmp/new.wav` is absent and its drafts are absent.
-27. Add test `discardChanges with no selection keeps full discard behavior`. It must cover current full reset behavior and cleared draft maps.
-28. Do not edit UI files in this step.
+29. Add test `discardChanges with no selection keeps full discard behavior`. It must cover current full reset behavior and cleared draft maps.
+30. Add test `returnToSources clears mapping warnings`. It must set state with a current instrument, one edited region, and a non-empty `mappingWarnings`, call `await cubit.returnToSources()`, and assert `mappingWarnings` is empty.
+31. Do not edit UI files in this step.
 
 ### Verification commands
 
@@ -132,44 +135,46 @@ Expose the new selection-scoped cubit behavior in the editor toolbar and inspect
 
 ### Mechanical edits
 
-1. In `PolySamplesEditorView.build`, directly after the existing block that renders `_WarningPanel(title: 'Warnings', messages: state.warnings)`, add a block that renders `_WarningPanel(title: 'Mapping warnings', messages: state.mappingWarnings)` when `state.mappingWarnings.isNotEmpty`.
-2. In `_Toolbar.build`, compute `final hasSelection = state.selectedPaths.isNotEmpty;` near the existing booleans.
-3. Change the discard `TextButton.icon` label to `Text(hasSelection ? 'Discard selected' : 'Discard')`.
-4. In the popup menu `onSelected` switch, add case `'unmap_selected': cubit.unmapSelectedRegions(); break;` before `remove_selected`.
-5. In the popup menu `itemBuilder`, insert a `PopupMenuItem` before `remove_selected` with value `unmap_selected`, enabled `state.selectedPaths.isNotEmpty`, and child text `Unmap selected`.
-6. Change the existing `remove_selected` child text from `Remove selected` to `Remove selected samples`.
-7. In `lib/ui/poly_multisample/widgets/poly_sample_inspector.dart`, replace the body of `_MappingSection.build` with the rules from `spec.md` while preserving the existing `_StepRow` controls below the new dropdown rows.
-8. Add private class `_SelectionValue<T>` below `_MappingSection` with fields `final T? value; final bool mixed;` and constructors `const _SelectionValue.value(this.value) : mixed = false;` and `const _SelectionValue.mixed() : value = null, mixed = true;`.
-9. Add private helper `_selectedRegionsForMapping(PolyMultisampleBuilderState state, PolySampleRegion fallback)` below `_SelectionValue`.
-10. Add private helper `_selectionValue<T>(List<PolySampleRegion> regions, T? Function(PolySampleRegion region) valueFor)` below `_selectedRegionsForMapping`.
-11. Add private widget `_MappingDropdownRow<T extends Object>` below `_selectionValue`.
-12. `_MappingDropdownRow` constructor must have: `Key? dropdownKey`, `required String label`, `required _SelectionValue<T> selected`, `required List<DropdownMenuItem<T>> items`, `required ValueChanged<T?> onChanged`, and `String unsetHint = 'Unset'`.
-13. `_MappingDropdownRow.build` must render a `SizedBox(height: PolySampleSidebarLayout.rowHeight)` containing a `Row` with a fixed label width `PolySampleSidebarLayout.mappingLabelWidth`, an expanded `DropdownButton<T>` with key `dropdownKey`, `isExpanded: true`, value `selected.mixed ? null : selected.value`, hint text `selected.mixed ? 'Mixed' : unsetHint`, supplied items, and supplied `onChanged`.
-14. Add helper `_noteMenuItems()` returning a list of `DropdownMenuItem<int>` for values 0 through 127 with text from `PolyMultisampleParser.midiToNoteName(value)`.
-15. Add helper `_laneMenuItems()` returning a list of `DropdownMenuItem<int>` for values 1 through 32 with text `'$value'`.
-16. In `_MappingSection.build`, compute:
+1. Change `_WarningPanel` so its constructor requires `PageStorageKey<String> storageKey`, stores it in a final field, and uses `key: storageKey` on the `ExpansionTile` instead of the current hard-coded `PageStorageKey<String>('poly-samples-warnings-tile')`.
+2. In `PolySamplesEditorView.build`, update the existing warnings block to call `_WarningPanel(title: 'Warnings', messages: state.warnings, storageKey: const PageStorageKey<String>('poly-samples-import-warnings-tile'))`.
+3. Directly after that existing warnings block, add a block that renders `_WarningPanel(title: 'Mapping warnings', messages: state.mappingWarnings, storageKey: const PageStorageKey<String>('poly-samples-mapping-warnings-tile'))` when `state.mappingWarnings.isNotEmpty`.
+4. In `_Toolbar.build`, compute `final hasSelection = state.selectedPaths.isNotEmpty;` near the existing booleans.
+5. Change the discard `TextButton.icon` label to `Text(hasSelection ? 'Discard selected' : 'Discard')`.
+6. In the popup menu `onSelected` switch, add case `'unmap_selected': cubit.unmapSelectedRegions(); break;` before `remove_selected`.
+7. In the popup menu `itemBuilder`, insert a `PopupMenuItem` before `remove_selected` with value `unmap_selected`, enabled `state.selectedPaths.isNotEmpty`, and child text `Unmap selected`.
+8. Change the existing `remove_selected` child text from `Remove selected` to `Remove selected samples`.
+9. In `lib/ui/poly_multisample/widgets/poly_sample_inspector.dart`, replace the body of `_MappingSection.build` with the rules from `spec.md` while preserving the existing `_StepRow` controls below the new dropdown rows.
+10. Add private class `_SelectionValue<T>` below `_MappingSection` with fields `final T? value; final bool mixed;` and constructors `const _SelectionValue.value(this.value) : mixed = false;` and `const _SelectionValue.mixed() : value = null, mixed = true;`.
+11. Add private helper `_selectedRegionsForMapping(PolyMultisampleBuilderState state, PolySampleRegion fallback)` below `_SelectionValue`.
+12. Add private helper `_selectionValue<T>(List<PolySampleRegion> regions, T? Function(PolySampleRegion region) valueFor)` below `_selectedRegionsForMapping`.
+13. Add private widget `_MappingDropdownRow<T extends Object>` below `_selectionValue`.
+14. `_MappingDropdownRow` constructor must have: `Key? dropdownKey`, `required String label`, `required _SelectionValue<T> selected`, `required List<DropdownMenuItem<T>> items`, `required ValueChanged<T?> onChanged`, and `String unsetHint = 'Unset'`.
+15. `_MappingDropdownRow.build` must render a `SizedBox(height: PolySampleSidebarLayout.rowHeight)` containing a `Row` with a fixed label width `PolySampleSidebarLayout.mappingLabelWidth`, an expanded `DropdownButton<T>` with key `dropdownKey`, `isExpanded: true`, value `selected.mixed ? null : selected.value`, hint text `selected.mixed ? 'Mixed' : unsetHint`, supplied items, and supplied `onChanged`.
+16. Add helper `_noteMenuItems()` returning a list of `DropdownMenuItem<int>` for values 0 through 127 with text from `PolyMultisampleParser.midiToNoteName(value)`.
+17. Add helper `_laneMenuItems()` returning a list of `DropdownMenuItem<int>` for values 1 through 32 with text `'$value'`.
+18. In `_MappingSection.build`, compute:
     - `final selectedRegions = _selectedRegionsForMapping(state, region);`
     - `final selectedCount = selectedRegions.length;`
     - selection values for root, low, high, velocity, and RR as specified in `spec.md`.
-17. Use these dropdown rows in order with exact keys from `spec.md`:
+19. Use these dropdown rows in order with exact keys from `spec.md`:
     - Root calls `cubit.updateSelectedRoot(value, manager: manager)` when value is non-null.
     - Low calls `cubit.updateSelectedRangeLow(value, manager: manager)` when value is non-null.
     - High calls `cubit.updateSelectedRangeHigh(value, manager: manager)` when value is non-null.
     - Velocity calls `cubit.updateSelectedVelocity(value, manager: manager)` when value is non-null.
     - RR calls `cubit.updateSelectedRoundRobin(value, manager: manager)` when value is non-null.
-18. Add the unmap button from `spec.md` after the dropdown rows and before the existing `_StepRow` controls.
-19. The button label must be `Unmap sample` for one selected row and `Unmap selected` for multiple rows.
-20. The button must call `cubit.unmapSelectedRegions()`.
-21. Preserve all existing waveform UI, preview controls, header row, and step-row code not named in this step.
-22. In `test/poly_multisample/poly_samples_editor_view_test.dart`, add test `mapping warnings panel renders separately from import warnings`. It must set state with `warnings: ['Import warning']` and `mappingWarnings: ['Mapping warning: Piano_C3.wav root C3 is outside C4–C5.']`, pump the editor, and assert both panel titles are present.
-23. Add test `toolbar discard label is selection scoped`. It must pump state with selected paths and assert `Discard selected` is present and `Discard` as a standalone button label is absent.
-24. Add test `toolbar unmap selected clears mapping without removing sample`. It must pump editor with one selected mapped row, open the `More sample actions` menu, tap `Unmap selected`, pump, and assert row count is unchanged and selected row `rootMidi` is null.
-25. In `test/poly_multisample/widgets/poly_sample_inspector_test.dart`, add optional parameters to `_selectedState` for `Set<String> selectedPaths`, `String? focusedPath`, and `List<PolySampleRegion>? editedRegions`. Preserve existing default behavior.
-26. Add test `root dropdown assigns selected sample root from note list`. It must pump one selected sample, tap dropdown key `poly-mapping-root-dropdown`, tap text `C#4`, pump, and assert cubit state selected row has `rootMidi` 61 and `rootName` `C#4`.
-27. Add test `bulk dropdown edits selected mapping fields only`. It must pump three rows with first and third selected, use dropdowns to set root `D4`, low `C4`, high `E4`, velocity `3`, and RR `4`, then assert only first and third rows changed.
-28. Add test `mixed selected values show Mixed hint`. It must pump two selected rows with different roots and assert text `Mixed` appears in the mapping section.
-29. Add test `unmap selected button clears mapping fields`. It must pump two selected mapped rows, tap `Unmap selected`, and assert both selected rows have null root/range/velocity/RR fields.
-30. Do not edit sample-list, waveform-editor, WAV metadata, or cubit files in this step.
+20. Add the unmap button from `spec.md` after the dropdown rows and before the existing `_StepRow` controls.
+21. The button label must be `Unmap sample` for one selected row and `Unmap selected` for multiple rows.
+22. The button must call `cubit.unmapSelectedRegions()`.
+23. Preserve all existing waveform UI, preview controls, header row, and step-row code not named in this step.
+24. In `test/poly_multisample/poly_samples_editor_view_test.dart`, add test `mapping warnings panel renders separately from import warnings`. It must set state with `warnings: ['Import warning']` and `mappingWarnings: ['Mapping warning: Piano_C3.wav root C3 is outside C4–C5.']`, pump the editor, and assert header texts `Warnings (1)` and `Mapping warnings (1)` are present. The test must not throw duplicate-key exceptions.
+25. Add test `toolbar discard label is selection scoped`. It must pump state with selected paths and assert `Discard selected` is present and `Discard` as a standalone button label is absent.
+26. Add test `toolbar unmap selected clears mapping without removing sample`. It must pump editor with one selected mapped row, open the `More sample actions` menu, tap `Unmap selected`, pump, and assert row count is unchanged and selected row `rootMidi` is null.
+27. In `test/poly_multisample/widgets/poly_sample_inspector_test.dart`, add optional parameters to `_selectedState` for `Set<String> selectedPaths`, `String? focusedPath`, and `List<PolySampleRegion>? editedRegions`. Preserve existing default behavior.
+28. Add test `root dropdown assigns selected sample root from note list`. It must pump one selected sample, tap dropdown key `poly-mapping-root-dropdown`, tap text `C#4`, pump, and assert cubit state selected row has `rootMidi` 61 and `rootName` `C#4`.
+29. Add test `bulk dropdown edits selected mapping fields only`. It must pump three rows with first and third selected, use dropdowns to set root `D4`, low `C4`, high `E4`, velocity `3`, and RR `4`, then assert only first and third rows changed.
+30. Add test `mixed selected values show Mixed hint`. It must pump two selected rows with different roots and assert text `Mixed` appears in the mapping section.
+31. Add test `unmap selected button clears mapping fields`. It must pump two selected mapped rows, tap `Unmap selected`, and assert both selected rows have null root/range/velocity/RR fields.
+32. Do not edit sample-list, waveform-editor, WAV metadata, or cubit files in this step.
 
 ### Verification commands
 
@@ -187,6 +192,7 @@ git commit -m "feat(poly-samples): add selection mapping controls"
 ### Leftover checks
 
 - No symbols are moved in this step.
+- `rg -n "poly-samples-import-warnings-tile|poly-samples-mapping-warnings-tile" lib/ui/poly_multisample/poly_samples_editor_view.dart` prints both distinct warning panel keys.
 - `rg -n "Remove selected'|Remove selected\)" lib/ui/poly_multisample/poly_samples_editor_view.dart` prints no old toolbar/menu label.
 - `rg -n "DropdownButton<|poly-mapping-root-dropdown|updateSelectedRoot|unmapSelectedRegions" lib/ui/poly_multisample/widgets/poly_sample_inspector.dart` prints the new dropdown and unmap wiring.
 - `git status --short` before commit shows only the four files named in this step.
@@ -232,25 +238,27 @@ Make loop/fade/trim/gain previews audible through cached rendered WAVs and show 
 16. In `lib/ui/poly_multisample/widgets/poly_sample_inspector.dart`, pass `wavDraft.fadeInFrames`, `wavDraft.fadeOutFrames`, `wavDraft.fadeInCurve`, `wavDraft.fadeOutCurve`, `wavDraft.fadeInStrength`, and `wavDraft.fadeOutStrength` to `PolyWaveformEditor` in `_WaveformSection`.
 17. In `test/poly_multisample/widgets/poly_sample_inspector_test.dart`, add test `waveform editor receives fade preview values`. It must set a wav edit draft with non-zero fade-in and fade-out, pump inspector, and assert the fade preview semantics text appears.
 18. In `lib/ui/poly_multisample/poly_multisample_builder_cubit.dart`, add fields `_samplePreviewCache` and `_samplePreviewRenderInFlight` near `_notePreviewCache` using the exact declarations from `spec.md`.
-19. Add private helper `_renderedSamplePreviewPath(String path)` using the exact behavior from `spec.md`.
+19. Add private helper `_renderedSamplePreviewPath(String path)` using the exact cache, generation-stale, temp-root, and in-flight cleanup behavior from `spec.md`.
 20. Add private helper `_samplePreviewSourcePlayback(String path)` using the exact behavior from `spec.md`.
 21. In `playOrStopPreview`, for non-hardware local WAV paths with a loop draft or wav edit draft, use the rendered draft preview behavior table from `spec.md`.
 22. Preserve existing hardware path behavior in `playOrStopPreview`.
 23. Preserve existing raw-file behavior for local WAV paths with no loop draft and no wav edit draft.
-24. In `updateWavEditDraft`, detect changes to trim, fade, gain, or normalize fields and call `_scheduleLoopEditPreview(path, nextDraft, overview)` when the path is local editable, exists, and an overview exists.
+24. In `updateWavEditDraft`, detect changes to trim, fade, gain, or normalize fields. Call `_scheduleLoopEditPreview(path, loopPreviewDraft, overview)` only when the path is local editable, the file exists, an overview exists, and an active loop is available from `state.loopDrafts[path]` or from `overview.loopStart`/`overview.loopEnd`. Build `loopPreviewDraft` with those loop start/end values; do not pass the wav-edit draft directly unless it contains loop start/end values.
 25. In `_playLoopEditPreview`, keep existing stale request checks and change the bytes used for rendering so it calls `_preparedKeyboardPreviewBytes(path, bytes)` before loop metadata rendering/extraction.
 26. Ensure sample preview temp roots are added to `_notePreviewRoots` so existing close cleanup removes them.
-27. Ensure `_samplePreviewRenderInFlight.remove(cacheKey)` runs in `whenComplete` for every render future.
-28. In `test/poly_multisample/poly_multisample_builder_cubit_test.dart`, add test `sample preview uses rendered draft cache for wav edits`. It must:
+27. In `_cleanupNotePreviewRoots`, clear `_samplePreviewCache` and `_samplePreviewRenderInFlight` together with the existing note preview cache fields.
+28. Ensure `_samplePreviewRenderInFlight.remove(cacheKey)` runs in `whenComplete` for every render future, guarded so it only removes the identical future currently stored for that key.
+29. In `test/poly_multisample/poly_multisample_builder_cubit_test.dart`, add test `sample preview uses rendered draft cache for wav edits`. It must:
     - Create a temporary WAV file using existing tiny WAV helpers.
     - Set state with that path selected, a loaded waveform overview, and a wav edit draft with `fadeInFrames: 4`.
     - Use `_FakePreviewAdapter` through `PolyAudioPreviewService`.
     - Call `await cubit.playOrStopPreview(path)` twice with a stop between calls.
     - Assert adapter played paths have the same rendered temp path both times and that visible display path is the source path.
-29. Add test `sample preview cache invalidates when draft fingerprint changes`. It must change fade-in frames between preview calls and assert the second rendered path differs from the first.
-30. Add test `closing cubit cleans rendered sample preview temp roots`. It must render a sample preview, assert the temp file exists, call `await cubit.close()`, and assert the temp file no longer exists.
-31. Add test `fade draft schedules audible loop edit preview`. It must use `_FakePreviewAdapter` through `PolyAudioPreviewService`, call `updateWavEditDraft` with a changed fade field, wait 100 ms for the 80 ms debounce, and assert the fake preview adapter received exactly one played path.
-32. Do not edit parser, sample-list, editor toolbar, database, MIDI, upload, or hardware service files in this step.
+30. Add test `sample preview cache invalidates when draft fingerprint changes`. It must change fade-in frames between preview calls and assert the second rendered path differs from the first.
+31. Add test `closing cubit cleans rendered sample preview temp roots`. It must render a sample preview, assert the temp file exists, call `await cubit.close()`, and assert the temp file no longer exists.
+32. Add test `fade draft schedules audible loop edit preview when loop exists`. It must use `_FakePreviewAdapter` through `PolyAudioPreviewService`, set the waveform overview with non-null `loopStart` and `loopEnd`, call `updateWavEditDraft` with a changed fade field, wait 100 ms for the 80 ms debounce, and assert the fake preview adapter received exactly one played path.
+33. Add test `fade draft without loop does not auto schedule audible preview`. It must set a waveform overview with null `loopStart` and `loopEnd`, call `updateWavEditDraft` with a changed fade field, wait 100 ms, and assert the fake preview adapter received no played paths.
+34. Do not edit parser, sample-list, editor toolbar, database, MIDI, upload, or hardware service files in this step.
 
 ### Verification commands
 
@@ -270,7 +278,7 @@ git commit -m "feat(poly-samples): preview fades on waveform and playback"
 
 - No symbols are moved in this step.
 - `rg -n "PolyWaveformEditor\(" lib test` shows every constructor call compiles with the new optional fade parameters.
-- `rg -n "_samplePreviewRenderInFlight\.remove" lib/ui/poly_multisample/poly_multisample_builder_cubit.dart` prints the in-flight cleanup site.
+- `rg -n "_samplePreviewCache\.clear\(\)|_samplePreviewRenderInFlight\.clear\(\)|_samplePreviewRenderInFlight\.remove" lib/ui/poly_multisample/poly_multisample_builder_cubit.dart` prints the cache cleanup and in-flight cleanup sites.
 - `git status --short` before commit shows only the eight files named in this step.
 
 ### Commit message
