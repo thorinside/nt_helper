@@ -80,6 +80,14 @@ void main() {
       );
 
       await _pumpInspector(tester, cubit);
+      await tester.scrollUntilVisible(
+        _byStableKey('poly-sidebar-mapping-velocity-increase'),
+        300,
+      );
+      await tester.scrollUntilVisible(
+        _byStableKey('poly-sidebar-mapping-round-robin-increase'),
+        300,
+      );
       final before = <String, Rect>{
         for (final key in [
           'poly-sidebar-mapping-root-increase',
@@ -119,6 +127,7 @@ void main() {
 
       await _pumpInspector(tester, cubit);
       final finder = _byStableKey('poly-sidebar-mapping-velocity-increase');
+      await tester.scrollUntilVisible(finder, 300);
       await tester.tap(finder);
       await tester.pump();
       for (var i = 0; i < 20 && !_primaryFocusWithin(tester, finder); i++) {
@@ -160,6 +169,216 @@ void main() {
     await tester.pump();
 
     expect(adapter.playedPaths, ['/tmp/Piano/Piano_C3.wav']);
+  });
+
+  testWidgets('root dropdown assigns selected sample root from note list', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(_selectedState());
+
+    await _pumpInspector(tester, cubit);
+    final rootDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-root-dropdown')),
+    );
+    rootDropdown.onChanged?.call(61);
+    await tester.pumpAndSettle();
+
+    final region = cubit.state.editedRegions.first;
+    expect(region.rootMidi, 61);
+    expect(region.rootName, 'C#4');
+  });
+
+  testWidgets('bulk dropdown edits selected mapping fields only', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState(
+        selectedPaths: {'/tmp/Piano/Piano_C3.wav', '/tmp/Piano/Piano_E4.wav'},
+        focusedPath: '/tmp/Piano/Piano_C3.wav',
+        editedRegions: [
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_C3.wav',
+            fileName: 'Piano_C3.wav',
+            displayName: 'Piano_C3.wav',
+            rootMidi: 48,
+            rootName: 'C3',
+            rangeLow: 48,
+            rangeHigh: 48,
+            velocityLayer: 1,
+            roundRobin: 1,
+          ),
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_C4.wav',
+            fileName: 'Piano_C4.wav',
+            displayName: 'Piano_C4.wav',
+            rootMidi: 60,
+            rootName: 'C4',
+            rangeLow: 60,
+            rangeHigh: 60,
+            velocityLayer: 2,
+            roundRobin: 2,
+          ),
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_E4.wav',
+            fileName: 'Piano_E4.wav',
+            displayName: 'Piano_E4.wav',
+            rootMidi: 64,
+            rootName: 'E4',
+            rangeLow: 64,
+            rangeHigh: 64,
+            velocityLayer: 3,
+            roundRobin: 3,
+          ),
+        ],
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+
+    final rootDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-root-dropdown')),
+    );
+    rootDropdown.onChanged?.call(62);
+    await tester.pumpAndSettle();
+
+    final lowDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-low-dropdown')),
+    );
+    lowDropdown.onChanged?.call(60);
+    await tester.pumpAndSettle();
+
+    final highDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-high-dropdown')),
+    );
+    highDropdown.onChanged?.call(64);
+    await tester.pumpAndSettle();
+
+    final velocityDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-velocity-dropdown')),
+    );
+    velocityDropdown.onChanged?.call(3);
+    await tester.pumpAndSettle();
+
+    final rrDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-rr-dropdown')),
+    );
+    rrDropdown.onChanged?.call(4);
+    await tester.pumpAndSettle();
+
+    final regions = cubit.state.editedRegions;
+    expect(regions[0].rootMidi, 62);
+    expect(regions[0].rootName, 'D4');
+    expect(regions[0].rangeLow, 60);
+    expect(regions[0].rangeHigh, 64);
+    expect(regions[0].velocityLayer, 3);
+    expect(regions[0].roundRobin, 4);
+    expect(regions[1].rootMidi, 60);
+    expect(regions[1].rootName, 'C4');
+    expect(regions[1].rangeLow, 60);
+    expect(regions[1].rangeHigh, 60);
+    expect(regions[1].velocityLayer, 2);
+    expect(regions[1].roundRobin, 2);
+    expect(regions[2].rootMidi, 62);
+    expect(regions[2].rootName, 'D4');
+    expect(regions[2].rangeLow, 60);
+    expect(regions[2].rangeHigh, 64);
+    expect(regions[2].velocityLayer, 3);
+    expect(regions[2].roundRobin, 4);
+  });
+
+  testWidgets('mixed selected values show Mixed hint', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState(
+        selectedPaths: {'/tmp/Piano/Piano_C3.wav', '/tmp/Piano/Piano_C4.wav'},
+        focusedPath: '/tmp/Piano/Piano_C3.wav',
+        editedRegions: [
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_C3.wav',
+            fileName: 'Piano_C3.wav',
+            displayName: 'Piano_C3.wav',
+            rootMidi: 48,
+            rootName: 'C3',
+          ),
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_C4.wav',
+            fileName: 'Piano_C4.wav',
+            displayName: 'Piano_C4.wav',
+            rootMidi: 60,
+            rootName: 'C4',
+          ),
+        ],
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+
+    expect(find.text('Mixed'), findsWidgets);
+  });
+
+  testWidgets('unmap selected button clears mapping fields', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState(
+        selectedPaths: {'/tmp/Piano/Piano_C3.wav', '/tmp/Piano/Piano_C4.wav'},
+        focusedPath: '/tmp/Piano/Piano_C3.wav',
+        editedRegions: [
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_C3.wav',
+            fileName: 'Piano_C3.wav',
+            displayName: 'Piano_C3.wav',
+            rootMidi: 48,
+            rootName: 'C3',
+            rangeLow: 48,
+            rangeHigh: 48,
+            velocityLayer: 1,
+            roundRobin: 1,
+          ),
+          const PolySampleRegion(
+            path: '/tmp/Piano/Piano_C4.wav',
+            fileName: 'Piano_C4.wav',
+            displayName: 'Piano_C4.wav',
+            rootMidi: 60,
+            rootName: 'C4',
+            rangeLow: 60,
+            rangeHigh: 60,
+            velocityLayer: 2,
+            roundRobin: 2,
+          ),
+        ],
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+    await tester.tap(find.text('Unmap selected'));
+    await tester.pumpAndSettle();
+
+    for (final region in cubit.state.editedRegions) {
+      expect(region.rootMidi, isNull);
+      expect(region.rootName, isNull);
+      expect(region.rangeLow, isNull);
+      expect(region.rangeHigh, isNull);
+      expect(region.velocityLayer, isNull);
+      expect(region.roundRobin, isNull);
+    }
+  });
+
+  testWidgets('next sample navigates selection', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(_selectedState());
+
+    await _pumpInspector(tester, cubit);
+    await tester.tap(find.byTooltip('Next sample'));
+    await tester.pump();
+
+    expect(cubit.state.focusedPath, '/tmp/Piano/Piano_C4.wav');
   });
 
   testWidgets('next sample navigates selection', (tester) async {
@@ -564,7 +783,13 @@ void main() {
     expect(find.bySemanticsLabel('Preview gain'), findsOneWidget);
     expect(find.bySemanticsLabel('Preview gain value'), findsOneWidget);
     expect(find.bySemanticsLabel('Root value'), findsOneWidget);
-    expect(find.bySemanticsLabel('Root'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: _byStableKey('poly-sidebar-mapping-root-row'),
+        matching: find.bySemanticsLabel('Root'),
+      ),
+      findsOneWidget,
+    );
     expect(find.bySemanticsLabel('Decrease Root'), findsOneWidget);
 
     await tester.drag(
@@ -643,15 +868,15 @@ Future<void> _pumpInspector(
   );
 }
 
-PolyMultisampleBuilderState _selectedState({bool autoPreview = false}) {
-  return PolyMultisampleBuilderState(
-    sourceMode: PolySampleSourceMode.local,
-    status: PolyMultisampleLoadStatus.ready,
-    autoPreview: autoPreview,
-    currentInstrument: const PolySampleInstrument(
-      name: 'Piano',
-      sourcePath: '/tmp/Piano',
-      regions: [
+PolyMultisampleBuilderState _selectedState({
+  bool autoPreview = false,
+  Set<String>? selectedPaths,
+  String? focusedPath,
+  List<PolySampleRegion>? editedRegions,
+}) {
+  final regions =
+      editedRegions ??
+      const [
         PolySampleRegion(
           path: '/tmp/Piano/Piano_C3.wav',
           fileName: 'Piano_C3.wav',
@@ -667,27 +892,20 @@ PolyMultisampleBuilderState _selectedState({bool autoPreview = false}) {
           rootMidi: 60,
           rootName: 'C4',
         ),
-      ],
+      ];
+  return PolyMultisampleBuilderState(
+    sourceMode: PolySampleSourceMode.local,
+    status: PolyMultisampleLoadStatus.ready,
+    autoPreview: autoPreview,
+    currentInstrument: PolySampleInstrument(
+      name: 'Piano',
+      sourcePath: '/tmp/Piano',
+      regions: regions,
     ),
-    editedRegions: const [
-      PolySampleRegion(
-        path: '/tmp/Piano/Piano_C3.wav',
-        fileName: 'Piano_C3.wav',
-        displayName: 'Piano_C3.wav',
-        rootMidi: 48,
-        rootName: 'C3',
-        velocityLayer: 1,
-      ),
-      PolySampleRegion(
-        path: '/tmp/Piano/Piano_C4.wav',
-        fileName: 'Piano_C4.wav',
-        displayName: 'Piano_C4.wav',
-        rootMidi: 60,
-        rootName: 'C4',
-      ),
-    ],
-    selectedPaths: const {'/tmp/Piano/Piano_C3.wav'},
-    focusedPath: '/tmp/Piano/Piano_C3.wav',
+    baselineRegions: regions,
+    editedRegions: regions,
+    selectedPaths: selectedPaths ?? const {'/tmp/Piano/Piano_C3.wav'},
+    focusedPath: focusedPath ?? '/tmp/Piano/Piano_C3.wav',
   );
 }
 

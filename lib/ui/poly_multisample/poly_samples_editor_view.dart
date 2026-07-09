@@ -47,7 +47,21 @@ class PolySamplesEditorView extends StatelessWidget {
           onBackToSources: onBackToSources,
         ),
         if (state.warnings.isNotEmpty)
-          _WarningPanel(title: 'Warnings', messages: state.warnings),
+          _WarningPanel(
+            title: 'Warnings',
+            messages: state.warnings,
+            storageKey: const PageStorageKey<String>(
+              'poly-samples-import-warnings-tile',
+            ),
+          ),
+        if (state.mappingWarnings.isNotEmpty)
+          _WarningPanel(
+            title: 'Mapping warnings',
+            messages: state.mappingWarnings,
+            storageKey: const PageStorageKey<String>(
+              'poly-samples-mapping-warnings-tile',
+            ),
+          ),
         Expanded(
           child: _EditorBody(state: state, manager: manager),
         ),
@@ -98,6 +112,7 @@ class _Toolbar extends StatelessWidget {
         state.sourceMode == PolySampleSourceMode.customDraft;
     final canSaveMappingChanges =
         !state.hasWaveformDrafts && state.hasRegionChanges;
+    final hasSelection = state.selectedPaths.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
@@ -165,7 +180,7 @@ class _Toolbar extends StatelessWidget {
               TextButton.icon(
                 onPressed: state.isDirty ? cubit.discardChanges : null,
                 icon: const Icon(Icons.undo),
-                label: const Text('Discard'),
+                label: Text(hasSelection ? 'Discard selected' : 'Discard'),
               ),
               PopupMenuButton<String>(
                 tooltip: 'More sample actions',
@@ -177,6 +192,9 @@ class _Toolbar extends StatelessWidget {
                       break;
                     case 'add_folder':
                       onAddFolder();
+                      break;
+                    case 'unmap_selected':
+                      cubit.unmapSelectedRegions();
                       break;
                     case 'remove_selected':
                       cubit.removeSelectedRegions();
@@ -196,9 +214,14 @@ class _Toolbar extends StatelessWidget {
                     child: Text('Add folder…'),
                   ),
                   PopupMenuItem(
+                    value: 'unmap_selected',
+                    enabled: state.selectedPaths.isNotEmpty,
+                    child: const Text('Unmap selected'),
+                  ),
+                  PopupMenuItem(
                     value: 'remove_selected',
                     enabled: state.selectedPaths.isNotEmpty,
-                    child: const Text('Remove selected'),
+                    child: const Text('Remove selected samples'),
                   ),
                   PopupMenuItem(
                     value: 'clear_all',
@@ -338,12 +361,17 @@ class _EditorBody extends StatelessWidget {
 }
 
 class _WarningPanel extends StatelessWidget {
-  const _WarningPanel({required this.title, required this.messages});
+  const _WarningPanel({
+    required this.title,
+    required this.messages,
+    required this.storageKey,
+  });
 
   static const double _maxWarningListHeight = 200;
 
   final String title;
   final List<String> messages;
+  final PageStorageKey<String> storageKey;
 
   @override
   Widget build(BuildContext context) {
@@ -362,7 +390,7 @@ class _WarningPanel extends StatelessWidget {
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
-              key: const PageStorageKey<String>('poly-samples-warnings-tile'),
+              key: storageKey,
               initiallyExpanded: false,
               tilePadding: const EdgeInsets.symmetric(horizontal: 16),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

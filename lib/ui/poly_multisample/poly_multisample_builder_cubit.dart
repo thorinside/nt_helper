@@ -252,8 +252,6 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   final Map<String, int> _waveformLoadTokens = {};
   final Map<String, String> _notePreviewCache = {};
   final Map<String, Future<String>> _notePreviewRenderInFlight = {};
-  final Map<String, String> _samplePreviewCache = {};
-  final Map<String, Future<String>> _samplePreviewRenderInFlight = {};
   final List<String> _notePreviewRoots = [];
   final Map<String, int> _notePreviewRoundRobinCursor = {};
   var _notePreviewRequest = 0;
@@ -2487,7 +2485,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     if (updatedPaths.isEmpty) return false;
     _replaceEditedRegions(nextRegions);
     if (focusedUpdated) {
-      _autoPreviewMappingEdit(focusedPath!, manager: manager);
+      _autoPreviewMappingEdit(focusedPath, manager: manager);
     } else {
       _autoPreviewMappingEdit(updatedPaths.first, manager: manager);
     }

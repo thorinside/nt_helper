@@ -199,17 +199,108 @@ class _MappingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectedRegions = _selectedRegionsForMapping(state, region);
+    final selectedCount = selectedRegions.length;
+    final rootSelection = _selectionValue<int>(
+      selectedRegions,
+      (region) => region.rootMidi,
+    );
+    final lowSelection = _selectionValue<int>(
+      selectedRegions,
+      (region) => region.rangeLow,
+    );
+    final highSelection = _selectionValue<int>(
+      selectedRegions,
+      (region) => region.rangeHigh,
+    );
+    final velocitySelection = _selectionValue<int>(
+      selectedRegions,
+      (region) => region.velocityLayer ?? 1,
+    );
+    final rrSelection = _selectionValue<int>(
+      selectedRegions,
+      (region) => region.roundRobin ?? 1,
+    );
     final root = region.rootMidi ?? 60;
     final low = effectiveLow(region);
     final high = effectiveHigh(region, state.editedRegions);
     final velocity = region.velocityLayer ?? 1;
     final roundRobin = region.roundRobin ?? 1;
+    final title = selectedCount == 1 ? 'Mapping' : 'Mapping selection';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Semantics(
           header: true,
-          child: Text('Mapping', style: Theme.of(context).textTheme.titleSmall),
+          child: Text(title, style: Theme.of(context).textTheme.titleSmall),
+        ),
+        if (selectedCount > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text('$selectedCount samples selected'),
+          ),
+        const SizedBox(height: 8),
+        _MappingDropdownRow<int>(
+          dropdownKey: const ValueKey('poly-mapping-root-dropdown'),
+          label: 'Root',
+          selected: rootSelection,
+          items: _noteMenuItems(),
+          onChanged: (value) {
+            if (value == null) return;
+            cubit.updateSelectedRoot(value, manager: manager);
+          },
+        ),
+        _MappingDropdownRow<int>(
+          dropdownKey: const ValueKey('poly-mapping-low-dropdown'),
+          label: 'Low',
+          selected: lowSelection,
+          items: _noteMenuItems(),
+          unsetHint: 'Mixed',
+          onChanged: (value) {
+            if (value == null) return;
+            cubit.updateSelectedRangeLow(value, manager: manager);
+          },
+        ),
+        _MappingDropdownRow<int>(
+          dropdownKey: const ValueKey('poly-mapping-high-dropdown'),
+          label: 'High',
+          selected: highSelection,
+          items: _noteMenuItems(),
+          unsetHint: 'Mixed',
+          onChanged: (value) {
+            if (value == null) return;
+            cubit.updateSelectedRangeHigh(value, manager: manager);
+          },
+        ),
+        _MappingDropdownRow<int>(
+          dropdownKey: const ValueKey('poly-mapping-velocity-dropdown'),
+          label: 'Velocity',
+          selected: velocitySelection,
+          items: _laneMenuItems(),
+          onChanged: (value) {
+            if (value == null) return;
+            cubit.updateSelectedVelocity(value, manager: manager);
+          },
+        ),
+        _MappingDropdownRow<int>(
+          dropdownKey: const ValueKey('poly-mapping-rr-dropdown'),
+          label: 'RR',
+          selected: rrSelection,
+          items: _laneMenuItems(),
+          onChanged: (value) {
+            if (value == null) return;
+            cubit.updateSelectedRoundRobin(value, manager: manager);
+          },
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const ValueKey('poly-mapping-unmap-selected'),
+            onPressed: cubit.unmapSelectedRegions,
+            icon: const Icon(Icons.link_off),
+            label: Text(selectedCount == 1 ? 'Unmap sample' : 'Unmap selected'),
+          ),
         ),
         const SizedBox(height: 8),
         _StepRow(
@@ -271,6 +362,101 @@ class _MappingSection extends StatelessWidget {
       ],
     );
   }
+}
+
+class _SelectionValue<T extends Object> {
+  const _SelectionValue.value(this.value) : mixed = false;
+  const _SelectionValue.mixed() : value = null, mixed = true;
+
+  final T? value;
+  final bool mixed;
+}
+
+List<PolySampleRegion> _selectedRegionsForMapping(
+  PolyMultisampleBuilderState state,
+  PolySampleRegion fallback,
+) {
+  final selected = state.editedRegions
+      .where((region) => state.selectedPaths.contains(region.path))
+      .toList();
+  return selected.isEmpty ? [fallback] : selected;
+}
+
+_SelectionValue<T> _selectionValue<T extends Object>(
+  List<PolySampleRegion> regions,
+  T? Function(PolySampleRegion region) valueFor,
+) {
+  if (regions.isEmpty) return const _SelectionValue.mixed();
+  final values = [for (final region in regions) valueFor(region)];
+  final first = values.first;
+  if (values.every((value) => value == first)) {
+    return _SelectionValue.value(first);
+  }
+  if (values.every((value) => value == null)) {
+    return const _SelectionValue.value(null);
+  }
+  return const _SelectionValue.mixed();
+}
+
+class _MappingDropdownRow<T extends Object> extends StatelessWidget {
+  const _MappingDropdownRow({
+    super.key,
+    required this.dropdownKey,
+    required this.label,
+    required this.selected,
+    required this.items,
+    required this.onChanged,
+    this.unsetHint = 'Unset',
+  });
+
+  final Key? dropdownKey;
+  final String label;
+  final _SelectionValue<T> selected;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  final String unsetHint;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: PolySampleSidebarLayout.rowHeight,
+      child: Row(
+        children: [
+          SizedBox(
+            width: PolySampleSidebarLayout.mappingLabelWidth,
+            child: Text(label),
+          ),
+          Expanded(
+            child: DropdownButton<T>(
+              key: dropdownKey,
+              isExpanded: true,
+              value: selected.mixed ? null : selected.value,
+              hint: Text(selected.mixed ? 'Mixed' : unsetHint),
+              items: items,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+List<DropdownMenuItem<int>> _noteMenuItems() {
+  return [
+    for (var value = 0; value < 128; value++)
+      DropdownMenuItem<int>(
+        value: value,
+        child: Text(PolyMultisampleParser.midiToNoteName(value)),
+      ),
+  ];
+}
+
+List<DropdownMenuItem<int>> _laneMenuItems() {
+  return [
+    for (var value = 1; value <= 32; value++)
+      DropdownMenuItem<int>(value: value, child: Text('$value')),
+  ];
 }
 
 class _WaveformSection extends StatelessWidget {

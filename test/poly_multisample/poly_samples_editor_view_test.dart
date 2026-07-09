@@ -79,7 +79,11 @@ void main() {
 
   testWidgets('dirty state enables Apply and Discard', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit()
-      ..setTestState(_state(dirty: true));
+      ..setTestState(
+        _state(
+          dirty: true,
+        ).copyWith(selectedPaths: const {}, clearFocusedPath: true),
+      );
     addTearDown(cubit.close);
 
     await _pumpEditor(tester, cubit);
@@ -211,6 +215,28 @@ void main() {
     expect(find.text('1 warning available. Expand to review.'), findsOneWidget);
   });
 
+  testWidgets(
+    'mapping warnings panel renders separately from import warnings',
+    (tester) async {
+      final cubit = _TestPolyMultisampleBuilderCubit()
+        ..setTestState(
+          _state(
+            warnings: const ['Import warning'],
+            mappingWarnings: const [
+              'Mapping warning: Piano_C3.wav root C3 is outside C4–C5.',
+            ],
+          ),
+        );
+      addTearDown(cubit.close);
+
+      await _pumpEditor(tester, cubit);
+
+      expect(find.text('Warnings (1)'), findsOneWidget);
+      expect(find.text('Mapping warnings (1)'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('expanding warnings reveals a bounded scrollable list', (
     tester,
   ) async {
@@ -267,6 +293,34 @@ void main() {
     );
     expect(find.byType(PolySampleList), findsOneWidget);
     expect(find.byType(PolySampleInspector), findsOneWidget);
+  });
+
+  testWidgets('toolbar discard label is selection scoped', (tester) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    expect(find.widgetWithText(TextButton, 'Discard selected'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Discard'), findsNothing);
+  });
+
+  testWidgets('toolbar unmap selected clears mapping without removing sample', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+    await tester.tap(find.byTooltip('More sample actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Unmap selected'));
+    await tester.pump();
+
+    expect(cubit.state.editedRegions, hasLength(2));
+    expect(cubit.state.editedRegions.first.rootMidi, isNull);
+    expect(cubit.state.editedRegions.first.rootName, isNull);
+    expect(cubit.state.editedRegions.last.rootMidi, isNull);
   });
 
   testWidgets('inline row stepper focuses row and updates inspector', (
@@ -368,7 +422,12 @@ PolyMultisampleBuilderState _state({
       PolyMultisampleActiveOperation.none,
   String? progressText,
   List<String> warnings = const [],
+  List<String> mappingWarnings = const [],
+  Set<String>? selectedPaths,
+  String? focusedPath,
+  List<PolySampleRegion>? editedRegions,
 }) {
+  final currentRegions = editedRegions ?? _regions;
   final baseline = dirty
       ? const [
           PolySampleRegion(
@@ -384,23 +443,24 @@ PolyMultisampleBuilderState _state({
             displayName: 'Piano_Unmapped.wav',
           ),
         ]
-      : _regions;
+      : currentRegions;
   return PolyMultisampleBuilderState(
     sourceMode: sourceMode,
     status: PolyMultisampleLoadStatus.ready,
     activeOperation: activeOperation,
     progressText: progressText,
-    currentInstrument: const PolySampleInstrument(
+    currentInstrument: PolySampleInstrument(
       name: 'Piano',
       sourcePath: '/tmp/Piano',
-      regions: _regions,
+      regions: currentRegions,
     ),
     baselineRegions: baseline,
-    editedRegions: _regions,
-    selectedPaths: const {'/tmp/Piano/Piano_C3.wav'},
-    focusedPath: '/tmp/Piano/Piano_C3.wav',
+    editedRegions: currentRegions,
+    selectedPaths: selectedPaths ?? const {'/tmp/Piano/Piano_C3.wav'},
+    focusedPath: focusedPath ?? '/tmp/Piano/Piano_C3.wav',
     wavEditDrafts: wavEditDrafts,
     warnings: warnings,
+    mappingWarnings: mappingWarnings,
   );
 }
 
