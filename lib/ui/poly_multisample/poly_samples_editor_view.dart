@@ -323,6 +323,7 @@ class _EditorBody extends StatelessWidget {
         );
         final sampleList = PolySampleList(
           regions: state.editedRegions,
+          mappingResolution: state.mappingResolution,
           selectedPaths: state.selectedPaths,
           focusedPath: state.focusedPath,
           previewVisiblePath: state.previewState.visiblePath,
@@ -331,13 +332,7 @@ class _EditorBody extends StatelessWidget {
           onPreview: (path) => cubit.playOrStopPreview(path, manager: manager),
           onUpdateRoot: (path, midi) =>
               cubit.updateRoot(path, midi, manager: manager, focusRegion: true),
-          onUpdateRangeLow: (path, midi) => cubit.updateRangeLow(
-            path,
-            midi,
-            manager: manager,
-            focusRegion: true,
-          ),
-          onUpdateRangeHigh: (path, midi) => cubit.updateRangeHigh(
+          onUpdateSwitchPoint: (path, midi) => cubit.updateSwitchPoint(
             path,
             midi,
             manager: manager,

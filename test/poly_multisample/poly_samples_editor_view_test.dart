@@ -373,9 +373,30 @@ void main() {
     final region = cubit.state.editedRegions.singleWhere(
       (region) => region.path == '/tmp/Piano/Piano_Unmapped.wav',
     );
-    expect(region.rootMidi, 61);
-    expect(region.rootName, 'C#4');
+    expect(region.rootMidi, 49);
+    expect(region.rootName, 'C#3');
     expect(find.text('Editing Piano_Unmapped.wav'), findsOneWidget);
+  });
+
+  testWidgets('inline Low stepper writes a Disting switch point', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    await tester.tap(find.byTooltip('Increase Low for Piano_Unmapped.wav'));
+    await tester.pump();
+
+    final region = cubit.state.editedRegions.singleWhere(
+      (region) => region.path == '/tmp/Piano/Piano_Unmapped.wav',
+    );
+    expect(region.switchPoint, 1);
+    expect(
+      cubit.state.mappingResolution.mappingForRegion(region)!.switchIsAutomatic,
+      isFalse,
+    );
   });
 
   testWidgets('landing shows three source cards and empty draft', (

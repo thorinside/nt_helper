@@ -3,6 +3,7 @@ import 'dart:ui' show SemanticsAction, Tristate;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_sample_list.dart';
 
@@ -29,10 +30,16 @@ void main() {
     );
 
     expect(find.textContaining('Root C3'), findsOneWidget);
-    expect(find.textContaining('Root Unset'), findsOneWidget);
+    expect(find.textContaining('Root Auto C3'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
-        'mapped.wav, root C3, low C3, high G9, velocity 1, RR 1',
+        'mapped.wav, root C3, low C-1, automatic, high G9, velocity 1, RR 1',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'unmapped.wav, root C3, automatic, low C-1, automatic, high G9, velocity 1, RR 1',
       ),
       findsOneWidget,
     );
@@ -60,7 +67,7 @@ void main() {
     final data = tester
         .getSemantics(
           find.bySemanticsLabel(
-            'mapped.wav, root C3, low C3, high G9, velocity 1, RR 1',
+            'mapped.wav, root C3, low C-1, automatic, high G9, velocity 1, RR 1',
           ),
         )
         .getSemanticsData();
@@ -121,7 +128,7 @@ void main() {
     expect(find.text('room/C4.wav'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
-        'close/C4.wav, root C4, low C4, high G9, velocity 1, RR 1',
+        'close/C4.wav, root C4, low C-1, automatic, high G9, velocity 1, RR 1',
       ),
       findsOneWidget,
     );
@@ -157,8 +164,7 @@ void main() {
       displayName: 'mapped.wav',
       rootMidi: 48,
       rootName: 'C3',
-      rangeLow: 47,
-      rangeHigh: 55,
+      switchPoint: 47,
       velocityLayer: 2,
       roundRobin: 3,
     );
@@ -167,7 +173,7 @@ void main() {
 
     expect(find.text('Root C3'), findsOneWidget);
     expect(find.text('Low B2'), findsOneWidget);
-    expect(find.text('High G3'), findsOneWidget);
+    expect(find.text('High G9'), findsOneWidget);
     expect(find.text('Vel 2'), findsOneWidget);
     expect(find.text('RR 3'), findsOneWidget);
   });
@@ -184,8 +190,7 @@ void main() {
       displayName: 'mapped.wav',
       rootMidi: 48,
       rootName: 'C3',
-      rangeLow: 47,
-      rangeHigh: 55,
+      switchPoint: 47,
       velocityLayer: 2,
       roundRobin: 3,
     );
@@ -252,8 +257,7 @@ void main() {
       displayName: longName,
       rootMidi: 60,
       rootName: 'C4',
-      rangeLow: 60,
-      rangeHigh: 64,
+      switchPoint: 60,
       velocityLayer: 1,
       roundRobin: 1,
     );
@@ -312,8 +316,7 @@ void main() {
       displayName: longName,
       rootMidi: 60,
       rootName: 'C4',
-      rangeLow: 60,
-      rangeHigh: 64,
+      switchPoint: 60,
       velocityLayer: 1,
       roundRobin: 1,
     );
@@ -356,7 +359,6 @@ void main() {
   testWidgets('inline steppers emit clamped mapping updates', (tester) async {
     int? root;
     int? low;
-    int? high;
     int? velocity;
     int? roundRobin;
     const region = PolySampleRegion(
@@ -365,8 +367,7 @@ void main() {
       displayName: 'boundary.wav',
       rootMidi: 0,
       rootName: 'C-1',
-      rangeLow: 0,
-      rangeHigh: 0,
+      switchPoint: 0,
       velocityLayer: 1,
       roundRobin: 1,
     );
@@ -375,21 +376,18 @@ void main() {
       tester,
       regions: const [region],
       onUpdateRoot: (_, midi) => root = midi,
-      onUpdateRangeLow: (_, midi) => low = midi,
-      onUpdateRangeHigh: (_, midi) => high = midi,
+      onUpdateSwitchPoint: (_, midi) => low = midi,
       onUpdateVelocity: (_, layer) => velocity = layer,
       onUpdateRoundRobin: (_, lane) => roundRobin = lane,
     );
 
     await _tapTooltipButton(tester, 'Decrease Root for boundary.wav');
     await _tapTooltipButton(tester, 'Decrease Low for boundary.wav');
-    await _tapTooltipButton(tester, 'Decrease High for boundary.wav');
     await _tapTooltipButton(tester, 'Decrease Vel for boundary.wav');
     await _tapTooltipButton(tester, 'Decrease RR for boundary.wav');
 
     expect(root, 0);
     expect(low, 0);
-    expect(high, 0);
     expect(velocity, 1);
     expect(roundRobin, 1);
   });
@@ -404,8 +402,7 @@ void main() {
       displayName: 'mapped.wav',
       rootMidi: 48,
       rootName: 'C3',
-      rangeLow: 48,
-      rangeHigh: 55,
+      switchPoint: 48,
       velocityLayer: 2,
       roundRobin: 3,
     );
@@ -414,12 +411,44 @@ void main() {
 
     expect(
       find.bySemanticsLabel(
-        'mapped.wav, root C3, low C3, high G3, velocity 2, RR 3',
+        'mapped.wav, root C3, low C3, high G9, velocity 2, RR 3',
       ),
       findsOneWidget,
     );
     expect(find.byTooltip('Decrease Root for mapped.wav'), findsOneWidget);
     expect(find.byTooltip('Increase RR for mapped.wav'), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('High is read-only and explains its derived value', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    const region = PolySampleRegion(
+      path: '/tmp/mapped.wav',
+      fileName: 'mapped.wav',
+      displayName: 'mapped.wav',
+      rootMidi: 48,
+      switchPoint: 47,
+    );
+
+    await _pumpList(tester, regions: const [region]);
+
+    expect(
+      find.byTooltip(['Increase', 'High for mapped.wav'].join(' ')),
+      findsNothing,
+    );
+    expect(
+      find.byTooltip(['Decrease', 'High for mapped.wav'].join(' ')),
+      findsNothing,
+    );
+    final high = tester.widget<Semantics>(
+      find.byKey(const ValueKey('poly-sample-stepper-/tmp/mapped.wav-high')),
+    );
+    expect(
+      high.properties.label,
+      'High G9 for mapped.wav, calculated from the next sample switch point',
+    );
     semantics.dispose();
   });
 }
@@ -442,11 +471,11 @@ Future<void> _pumpList(
   void Function(String path, PolyRegionSelectionMode mode)? onSelect,
   ValueChanged<String>? onPreview,
   void Function(String path, int midi)? onUpdateRoot,
-  void Function(String path, int midi)? onUpdateRangeLow,
-  void Function(String path, int midi)? onUpdateRangeHigh,
+  void Function(String path, int midi)? onUpdateSwitchPoint,
   void Function(String path, int layer)? onUpdateVelocity,
   void Function(String path, int lane)? onUpdateRoundRobin,
 }) async {
+  final mappingResolution = const PolySampleMappingResolver().resolve(regions);
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
@@ -454,14 +483,14 @@ Future<void> _pumpList(
           height: 220,
           child: PolySampleList(
             regions: regions,
+            mappingResolution: mappingResolution,
             selectedPaths: selectedPaths,
             focusedPath: focusedPath,
             previewVisiblePath: previewVisiblePath,
             onSelect: onSelect ?? (_, _) {},
             onPreview: onPreview ?? (_) {},
             onUpdateRoot: onUpdateRoot ?? (_, _) {},
-            onUpdateRangeLow: onUpdateRangeLow ?? (_, _) {},
-            onUpdateRangeHigh: onUpdateRangeHigh ?? (_, _) {},
+            onUpdateSwitchPoint: onUpdateSwitchPoint ?? (_, _) {},
             onUpdateVelocity: onUpdateVelocity ?? (_, _) {},
             onUpdateRoundRobin: onUpdateRoundRobin ?? (_, _) {},
           ),

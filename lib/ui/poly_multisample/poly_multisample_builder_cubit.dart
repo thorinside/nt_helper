@@ -665,6 +665,24 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
+  void updateSwitchPoint(
+    String path,
+    int midi, {
+    IDistingMidiManager? manager,
+    bool focusRegion = false,
+  }) {
+    final clampedMidi = midi.clamp(0, 127).toInt();
+    final updated = _updateRegion(
+      path,
+      (region) => region.copyWith(switchPoint: clampedMidi),
+      selectedPaths: focusRegion ? {path} : null,
+      focusedPathOverride: focusRegion ? path : null,
+    );
+    if (updated) {
+      _autoPreviewMappingEdit(path, manager: manager);
+    }
+  }
+
   void updateRangeHigh(
     String path,
     int midi, {

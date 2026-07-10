@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 
@@ -11,27 +12,27 @@ class PolySampleList extends StatefulWidget {
   const PolySampleList({
     super.key,
     required this.regions,
+    required this.mappingResolution,
     required this.selectedPaths,
     required this.focusedPath,
     required this.previewVisiblePath,
     required this.onSelect,
     required this.onPreview,
     required this.onUpdateRoot,
-    required this.onUpdateRangeLow,
-    required this.onUpdateRangeHigh,
+    required this.onUpdateSwitchPoint,
     required this.onUpdateVelocity,
     required this.onUpdateRoundRobin,
   });
 
   final List<PolySampleRegion> regions;
+  final PolySampleMappingResolution mappingResolution;
   final Set<String> selectedPaths;
   final String? focusedPath;
   final String? previewVisiblePath;
   final void Function(String path, PolyRegionSelectionMode mode) onSelect;
   final ValueChanged<String> onPreview;
   final void Function(String path, int midi) onUpdateRoot;
-  final void Function(String path, int midi) onUpdateRangeLow;
-  final void Function(String path, int midi) onUpdateRangeHigh;
+  final void Function(String path, int midi) onUpdateSwitchPoint;
   final void Function(String path, int layer) onUpdateVelocity;
   final void Function(String path, int lane) onUpdateRoundRobin;
 
@@ -145,47 +146,73 @@ class _PolySampleListState extends State<PolySampleList> {
         final label = sampleDisplayLabel(region, widget.regions);
         final selected = widget.selectedPaths.contains(region.path);
         final playing = widget.previewVisiblePath == region.path;
-        final issues = region.currentIssues;
-        final root = region.rootMidi ?? 60;
-        final low = effectiveLow(region);
-        final high = effectiveHigh(region, widget.regions);
+        final mapping = widget.mappingResolution.mappingForRegion(region);
+        final playable = mapping?.isPlayable == true;
+        final hasIssues =
+            region.currentIssues.isNotEmpty ||
+            widget.mappingResolution.issuesForPath(region.path).isNotEmpty;
+        final root = playable ? mapping!.naturalMidi : null;
+        final low = playable ? mapping!.lowMidi : null;
+        final high = playable ? mapping!.highMidi : null;
         final velocity = region.velocityLayer ?? 1;
         final roundRobin = region.roundRobin ?? 1;
-        final rootLabel = region.rootName ?? 'unmapped';
-        final lowLabel = PolyMultisampleParser.midiToNoteName(low);
-        final highLabel = PolyMultisampleParser.midiToNoteName(high);
+        final rootNote = root == null
+            ? 'Unresolved'
+            : PolyMultisampleParser.midiToNoteName(root);
+        final lowNote = low == null
+            ? 'Unresolved'
+            : PolyMultisampleParser.midiToNoteName(low);
+        final highLabel = high == null
+            ? 'Unresolved'
+            : PolyMultisampleParser.midiToNoteName(high);
+        final rootLabel = playable && mapping!.naturalIsAutomatic
+            ? 'Auto $rootNote'
+            : rootNote;
+        final lowLabel = playable && mapping!.switchIsAutomatic
+            ? 'Auto $lowNote'
+            : lowNote;
+        final rootSemantic = playable && mapping!.naturalIsAutomatic
+            ? '$rootNote, automatic'
+            : rootNote;
+        final lowSemantic = playable && mapping!.switchIsAutomatic
+            ? '$lowNote, automatic'
+            : lowNote;
         final steppers = [
           _InlineSampleStepper(
             stepperKey: ValueKey('poly-sample-stepper-${region.path}-root'),
             label: 'Root',
-            value: region.rootMidi == null
-                ? 'Unset'
-                : PolyMultisampleParser.midiToNoteName(root),
+            value: rootLabel,
             sampleLabel: label,
-            onDecrease: () =>
-                widget.onUpdateRoot(region.path, _clampMidi(root - 1)),
-            onIncrease: () =>
-                widget.onUpdateRoot(region.path, _clampMidi(root + 1)),
+            onDecrease: root == null
+                ? null
+                : () => widget.onUpdateRoot(region.path, _clampMidi(root - 1)),
+            onIncrease: root == null
+                ? null
+                : () => widget.onUpdateRoot(region.path, _clampMidi(root + 1)),
           ),
           _InlineSampleStepper(
             stepperKey: ValueKey('poly-sample-stepper-${region.path}-low'),
             label: 'Low',
-            value: PolyMultisampleParser.midiToNoteName(low),
+            value: lowLabel,
             sampleLabel: label,
-            onDecrease: () =>
-                widget.onUpdateRangeLow(region.path, _clampMidi(low - 1)),
-            onIncrease: () =>
-                widget.onUpdateRangeLow(region.path, _clampMidi(low + 1)),
+            onDecrease: low == null
+                ? null
+                : () => widget.onUpdateSwitchPoint(
+                    region.path,
+                    _clampMidi(low - 1),
+                  ),
+            onIncrease: low == null
+                ? null
+                : () => widget.onUpdateSwitchPoint(
+                    region.path,
+                    _clampMidi(low + 1),
+                  ),
           ),
-          _InlineSampleStepper(
+          _InlineSampleValue(
             stepperKey: ValueKey('poly-sample-stepper-${region.path}-high'),
             label: 'High',
-            value: PolyMultisampleParser.midiToNoteName(high),
+            value: highLabel,
             sampleLabel: label,
-            onDecrease: () =>
-                widget.onUpdateRangeHigh(region.path, _clampMidi(high - 1)),
-            onIncrease: () =>
-                widget.onUpdateRangeHigh(region.path, _clampMidi(high + 1)),
           ),
           _InlineSampleStepper(
             stepperKey: ValueKey('poly-sample-stepper-${region.path}-vel'),
@@ -217,7 +244,7 @@ class _PolySampleListState extends State<PolySampleList> {
           button: true,
           enabled: true,
           label:
-              '$label, root $rootLabel, low $lowLabel, high $highLabel, velocity $velocity, RR $roundRobin',
+              '$label, root $rootSemantic, low $lowSemantic, high $highLabel, velocity $velocity, RR $roundRobin',
           onTap: () => widget.onSelect(region.path, _selectionMode()),
           child: Material(
             color: selected
@@ -247,10 +274,10 @@ class _PolySampleListState extends State<PolySampleList> {
                           dimension: _leadingExtent,
                           child: Center(
                             child: Icon(
-                              issues.isEmpty
+                              !hasIssues && playable
                                   ? Icons.graphic_eq
                                   : Icons.warning_amber,
-                              semanticLabel: issues.isEmpty
+                              semanticLabel: !hasIssues && playable
                                   ? 'Mapped sample'
                                   : 'Sample warning',
                               size: 20,
@@ -364,8 +391,8 @@ class _InlineSampleStepper extends StatelessWidget {
   final String label;
   final String value;
   final String sampleLabel;
-  final VoidCallback onDecrease;
-  final VoidCallback onIncrease;
+  final VoidCallback? onDecrease;
+  final VoidCallback? onIncrease;
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +449,7 @@ class _InlineSampleStepper extends StatelessWidget {
     BuildContext context,
     String tooltip,
     IconData icon,
-    VoidCallback onPressed,
+    VoidCallback? onPressed,
   ) {
     return SizedBox.square(
       key: ValueKey('poly-sample-stepper-button-$tooltip'),
@@ -440,6 +467,51 @@ class _InlineSampleStepper extends StatelessWidget {
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         onPressed: onPressed,
+      ),
+    );
+  }
+}
+
+class _InlineSampleValue extends StatelessWidget {
+  const _InlineSampleValue({
+    required this.stepperKey,
+    required this.label,
+    required this.value,
+    required this.sampleLabel,
+  });
+
+  final Key? stepperKey;
+  final String label;
+  final String value;
+  final String sampleLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: stepperKey,
+      container: true,
+      label:
+          'High $value for $sampleLabel, calculated from the next sample switch point',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+          borderRadius: BorderRadius.circular(999),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        ),
+        child: SizedBox(
+          height: _InlineSampleStepper.height,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Center(
+              child: Text(
+                '$label $value',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
