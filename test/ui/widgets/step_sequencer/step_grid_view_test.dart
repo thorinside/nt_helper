@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +20,7 @@ void main() {
   late MockDistingCubit mockCubit;
   late MockDistingMidiManager mockManager;
   late Slot testSlot;
+  late DistingStateSynchronized initialState;
 
   setUp(() {
     mockCubit = MockDistingCubit();
@@ -85,7 +88,7 @@ void main() {
       valueStrings: const [],
     );
 
-    final initialState = DistingStateSynchronized(
+    initialState = DistingStateSynchronized(
       disting: mockManager,
       distingVersion: '1.0',
       firmwareVersion: FirmwareVersion('1.0'),
@@ -208,6 +211,33 @@ void main() {
         isNull,
         reason: 'onPanStart should be null in Ties mode',
       );
+    });
+
+    testWidgets('does not throw when its tracked slot is removed', (
+      tester,
+    ) async {
+      final states = StreamController<DistingState>.broadcast();
+      addTearDown(states.close);
+      when(() => mockCubit.stream).thenAnswer((_) => states.stream);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          StepGridView(
+            slot: testSlot,
+            slotIndex: 0,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.pitch,
+          ),
+        ),
+      );
+
+      states.add(initialState.copyWith(slots: []));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(StepColumnWidget), findsNothing);
     });
   });
 }

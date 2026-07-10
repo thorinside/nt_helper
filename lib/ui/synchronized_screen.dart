@@ -778,7 +778,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
   Future<void> _handleAddAlgorithmShortcut(DistingCubit cubit) async {
     if (_isAddAlgorithmOpen) return;
-    _isAddAlgorithmOpen = true;
+    setState(() {
+      _isAddAlgorithmOpen = true;
+    });
     try {
       final view = View.of(context);
       final result = await Navigator.push(
@@ -810,7 +812,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         }
       }
     } finally {
-      _isAddAlgorithmOpen = false;
+      if (mounted) {
+        setState(() {
+          _isAddAlgorithmOpen = false;
+        });
+      } else {
+        _isAddAlgorithmOpen = false;
+      }
     }
   }
 
@@ -1071,37 +1079,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       builder: (context) {
         return FloatingActionButton.small(
           tooltip: "Add Algorithm to Preset",
-          onPressed: () async {
-            final cubit = context.read<DistingCubit>();
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => BlocProvider.value(
-                  value: cubit,
-                  child: const AddAlgorithmScreen(),
-                ),
-              ),
-            );
-
-            if (result != null && result is Map) {
-              try {
-                await cubit.onAlgorithmSelected(
-                  result['algorithm'],
-                  result['specValues'],
-                  addBypassed: result['addBypassed'] == true,
-                );
-                SemanticsService.sendAnnouncement(
-                  WidgetsBinding.instance.platformDispatcher.views.first,
-                  'Algorithm added',
-                  TextDirection.ltr,
-                );
-              } on AlgorithmAddFailedException {
-                _showAlgorithmAddFailedNotification();
-              } on AlgorithmAddBypassFailedException {
-                _showAlgorithmAddBypassFailedNotification();
-              }
-            }
-          },
+          onPressed: _isAddAlgorithmOpen
+              ? null
+              : () => _handleAddAlgorithmShortcut(context.read<DistingCubit>()),
           child: Icon(
             Icons.add_circle_rounded,
             semanticLabel: 'Add Algorithm to Preset',

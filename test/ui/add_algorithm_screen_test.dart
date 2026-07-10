@@ -983,6 +983,61 @@ void main() {
       );
     });
 
+    testWidgets(
+      'Add Another disables add actions and prevents duplicate submissions '
+      'while verification is pending',
+      (tester) async {
+        final addCompleter = Completer<void>();
+        addTearDown(() {
+          if (!addCompleter.isCompleted) addCompleter.complete();
+        });
+        when(
+          () => mockCubit.state,
+        ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+        when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockCubit.onAlgorithmSelected(
+            any(),
+            any(),
+            addBypassed: any(named: 'addBypassed'),
+          ),
+        ).thenAnswer((_) => addCompleter.future);
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Clock'));
+        await tester.pumpAndSettle();
+
+        final addAnother = find.widgetWithText(ElevatedButton, 'Add Another');
+        await tester.tap(addAnother);
+        await tester.tap(addAnother);
+        await tester.pump();
+
+        verify(
+          () => mockCubit.onAlgorithmSelected(
+            any(that: predicate<AlgorithmInfo>((a) => a.guid == 'clck')),
+            any(),
+            addBypassed: false,
+          ),
+        ).called(1);
+        expect(
+          tester
+              .widget<ElevatedButton>(
+                find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+              )
+              .onPressed,
+          isNull,
+        );
+        expect(tester.widget<ElevatedButton>(addAnother).onPressed, isNull);
+
+        addCompleter.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.text('Clock added'), findsOneWidget);
+        expect(find.text('Select Algorithm'), findsOneWidget);
+      },
+    );
+
     testWidgets('Shift changes add button labels while held', (tester) async {
       addTearDown(() async {
         await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
@@ -1236,6 +1291,49 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'Add Another clears selection after confirmed add with bypass failure',
+      (tester) async {
+        addTearDown(() async {
+          await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        });
+        when(
+          () => mockCubit.state,
+        ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+        when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockCubit.onAlgorithmSelected(any(), any(), addBypassed: true),
+        ).thenAnswer(
+          (_) async => throw const AlgorithmAddBypassFailedException(),
+        );
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Clock'));
+        await tester.pumpAndSettle();
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pump();
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, 'Add Another Bypassed'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(algorithmAddBypassFailedMessage), findsOneWidget);
+        expect(find.text('Select Algorithm'), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, 'Add Another Bypassed'),
+          findsNothing,
+        );
+        verify(
+          () => mockCubit.onAlgorithmSelected(
+            any(that: predicate<AlgorithmInfo>((a) => a.guid == 'clck')),
+            any(),
+            addBypassed: true,
+          ),
+        ).called(1);
+      },
+    );
 
     testWidgets('Add Another button hidden when slot cap is reached', (
       tester,

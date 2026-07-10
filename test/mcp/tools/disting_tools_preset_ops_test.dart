@@ -170,6 +170,45 @@ void main() {
     await database.close();
   });
 
+  group('addAlgorithm — verification ownership', () {
+    test(
+      'trusts controller completion without polling slot count or GUID again',
+      () async {
+        final manager = MockDistingMidiManager();
+        when(() => cubit.state).thenReturn(
+          DistingState.synchronized(
+            disting: manager,
+            distingVersion: 'Test',
+            firmwareVersion: FirmwareVersion('1.17'),
+            presetName: 'Test Preset',
+            algorithms: const [],
+            slots: const [],
+            unitStrings: const [],
+          ),
+        );
+        when(() => cubit.requireDisting()).thenReturn(manager);
+        when(() => controller.addAlgorithm(any())).thenAnswer((_) async {});
+        when(
+          () => manager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 1);
+        when(() => manager.requestAlgorithmGuid(0)).thenAnswer(
+          (_) async =>
+              Algorithm(algorithmIndex: 0, guid: 'attn', name: 'Attenuator'),
+        );
+        final result = await distingTools.addAlgorithm({
+          'algorithm_guid': 'attn',
+        });
+        final json = jsonDecode(result) as Map<String, dynamic>;
+
+        expect(json['success'], isTrue);
+        verify(() => controller.addAlgorithm(any())).called(1);
+        verifyNever(() => cubit.refreshSlot(any()));
+        verifyNever(() => manager.requestNumAlgorithmsInPreset());
+        verifyNever(() => manager.requestAlgorithmGuid(any()));
+      },
+    );
+  });
+
   group('addSimple — validation', () {
     test('missing name and guid returns error', () async {
       final result = await distingTools.addSimple({});

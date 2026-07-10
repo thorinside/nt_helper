@@ -83,6 +83,11 @@ class _StepGridViewState extends State<StepGridView> {
         // Only rebuild when this slot's parameter values change
         if (curr is! DistingStateSynchronized) return false;
         if (prev is! DistingStateSynchronized) return true;
+        if (widget.slotIndex < 0 ||
+            widget.slotIndex >= curr.slots.length ||
+            widget.slotIndex >= prev.slots.length) {
+          return true;
+        }
 
         return prev.slots[widget.slotIndex].values !=
             curr.slots[widget.slotIndex].values;
@@ -90,6 +95,9 @@ class _StepGridViewState extends State<StepGridView> {
       builder: (context, state) {
         if (state is! DistingStateSynchronized) {
           return const Center(child: CircularProgressIndicator());
+        }
+        if (widget.slotIndex < 0 || widget.slotIndex >= state.slots.length) {
+          return const SizedBox.shrink();
         }
 
         final currentSlot = state.slots[widget.slotIndex];

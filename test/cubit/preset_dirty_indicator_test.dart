@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -21,8 +22,22 @@ class MockMetadataDao extends Mock implements MetadataDao {}
 
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
+class TestDistingCubit extends DistingCubit {
+  TestDistingCubit(super.database, {super.midiCommand});
+
+  Future<Slot> Function(IDistingMidiManager disting, int algorithmIndex)?
+  fetchSlotOverride;
+
+  @override
+  Future<Slot> fetchSlot(IDistingMidiManager disting, int algorithmIndex) {
+    final override = fetchSlotOverride;
+    if (override != null) return override(disting, algorithmIndex);
+    return super.fetchSlot(disting, algorithmIndex);
+  }
+}
+
 void main() {
-  late DistingCubit cubit;
+  late TestDistingCubit cubit;
   late MockAppDatabase mockDatabase;
   late MockMetadataDao mockMetadataDao;
   late MockDistingMidiManager mockDisting;
@@ -56,7 +71,7 @@ void main() {
       () => mockMetadataDao.hasCachedAlgorithms(),
     ).thenAnswer((_) async => false);
 
-    cubit = DistingCubit(mockDatabase, midiCommand: mockMidiCommand);
+    cubit = TestDistingCubit(mockDatabase, midiCommand: mockMidiCommand);
   });
 
   tearDown(() async {
@@ -393,6 +408,12 @@ void main() {
         when(
           () => mockDisting.setParameterValue(0, 0, 1),
         ).thenAnswer((_) async => throw Exception('send failed'));
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(
+            timeout: any(named: 'timeout'),
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ).thenAnswer((_) async => 1);
 
         cubit.emit(makeSyncState());
 
@@ -404,68 +425,408 @@ void main() {
         final state = cubit.state as DistingStateSynchronized;
         expect(state.slots, hasLength(1));
         expect(state.isDirty, isTrue);
+        verifyInOrder([
+          () => mockDisting.requestAddAlgorithm(any(), any()),
+          () => mockDisting.setParameterValue(0, 0, 1),
+          () => mockDisting.requestNumAlgorithmsInPreset(
+            timeout: any(named: 'timeout'),
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ]);
       },
     );
 
     test(
       'onAlgorithmSelected removes placeholder when slot count does not grow',
-      () async {
-        final algorithmInfo = AlgorithmInfo(
-          algorithmIndex: 0,
-          name: 'Rejected Algo',
-          guid: 'reject',
-          specifications: const [],
-        );
-        when(
-          () => mockDisting.requestAddAlgorithm(any(), any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockDisting.requestNumAlgorithmsInPreset(
-            timeout: any(named: 'timeout'),
-            maxRetries: any(named: 'maxRetries'),
-          ),
-        ).thenAnswer((_) async => 0);
+      () {
+        fakeAsync((async) {
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: 0,
+            name: 'Rejected Algo',
+            guid: 'reject',
+            specifications: const [],
+          );
+          Object? error;
+          when(
+            () => mockDisting.requestAddAlgorithm(any(), any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => 0);
 
-        cubit.emit(makeSyncState());
+          cubit.emit(makeSyncState());
+          cubit
+              .onAlgorithmSelected(algorithmInfo, const [])
+              .catchError((Object e) => error = e);
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 10));
 
-        await expectLater(
-          cubit.onAlgorithmSelected(algorithmInfo, const []),
-          throwsA(isA<AlgorithmAddFailedException>()),
-        );
-
-        final state = cubit.state as DistingStateSynchronized;
-        expect(state.slots, isEmpty);
-        expect(state.isDirty, isFalse);
+          expect(error, isA<AlgorithmAddFailedException>());
+          final state = cubit.state as DistingStateSynchronized;
+          expect(state.slots, isEmpty);
+          expect(state.isDirty, isFalse);
+          verify(
+            () => mockDisting.requestAddAlgorithm(algorithmInfo, const []),
+          ).called(1);
+          verify(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).called(9);
+        });
       },
     );
 
     test(
-      'onAlgorithmSelected keeps waiting briefly for delayed slot count growth',
-      () async {
-        final algorithmInfo = AlgorithmInfo(
-          algorithmIndex: 0,
-          name: 'Eventually Added Algo',
-          guid: 'eventual',
-          specifications: const [],
-        );
-        var countRequests = 0;
-        when(
-          () => mockDisting.requestAddAlgorithm(any(), any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockDisting.requestNumAlgorithmsInPreset(
-            timeout: any(named: 'timeout'),
-            maxRetries: any(named: 'maxRetries'),
-          ),
-        ).thenAnswer((_) async => ++countRequests == 1 ? 0 : 1);
+      'onAlgorithmSelected waits and keeps checking for delayed slot growth',
+      () {
+        fakeAsync((async) {
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: 0,
+            name: 'Eventually Added Algo',
+            guid: 'eventual',
+            specifications: const [],
+          );
+          var countRequests = 0;
+          var completed = false;
+          Object? error;
+          when(
+            () => mockDisting.requestAddAlgorithm(any(), any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => ++countRequests == 1 ? 0 : 1);
 
-        cubit.emit(makeSyncState());
-        await cubit.onAlgorithmSelected(algorithmInfo, const []);
+          cubit.emit(makeSyncState());
+          unawaited(
+            cubit
+                .onAlgorithmSelected(algorithmInfo, const [])
+                .then<void>(
+                  (_) {
+                    completed = true;
+                  },
+                  onError: (Object e, StackTrace _) {
+                    error = e;
+                  },
+                ),
+          );
+          async.flushMicrotasks();
 
-        final state = cubit.state as DistingStateSynchronized;
-        expect(state.slots, hasLength(1));
-        expect(state.isDirty, isTrue);
-        expect(countRequests, 2);
+          expect(countRequests, 0);
+          expect(completed, isFalse);
+
+          async.elapse(const Duration(seconds: 1));
+          expect(countRequests, 1);
+          expect(completed, isFalse);
+
+          async.elapse(const Duration(seconds: 1));
+          expect(countRequests, 2);
+          expect(completed, isTrue);
+          expect(error, isNull);
+
+          final state = cubit.state as DistingStateSynchronized;
+          expect(state.slots, hasLength(1));
+          expect(state.isDirty, isTrue);
+        });
+      },
+    );
+
+    test(
+      'slow unchanged response only gives the next request the remaining window',
+      () {
+        fakeAsync((async) {
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: 0,
+            name: 'Slow Algo',
+            guid: 'slow',
+            specifications: const [],
+          );
+          final retryBudgets = <int>[];
+          var completed = false;
+          when(
+            () => mockDisting.requestAddAlgorithm(any(), any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((invocation) {
+            retryBudgets.add(invocation.namedArguments[#maxRetries]! as int);
+            if (retryBudgets.length == 1) {
+              return Future<int?>.delayed(const Duration(seconds: 5), () => 0);
+            }
+            return Future<int?>.value(1);
+          });
+          cubit.fetchSlotOverride = (_, _) async =>
+              (cubit.state as DistingStateSynchronized).slots.single;
+
+          cubit.emit(makeSyncState());
+          unawaited(
+            cubit.onAlgorithmSelected(algorithmInfo, const []).then<void>((_) {
+              completed = true;
+            }),
+          );
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 7));
+
+          expect(completed, isTrue);
+          expect(retryBudgets, [9, 3]);
+        });
+      },
+    );
+
+    test(
+      'failed add rollback preserves other edits made during verification',
+      () {
+        fakeAsync((async) {
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: 1,
+            name: 'Rejected Algo',
+            guid: 'reject',
+            specifications: const [],
+          );
+          Object? error;
+          when(
+            () => mockDisting.requestAddAlgorithm(any(), any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => 1);
+
+          cubit.emit(makeSyncState(slots: [makeSlot()]));
+          cubit
+              .onAlgorithmSelected(algorithmInfo, const [])
+              .catchError((Object e) => error = e);
+          async.flushMicrotasks();
+
+          final pending = cubit.state as DistingStateSynchronized;
+          cubit.emit(
+            pending.copyWith(presetName: 'Edited while waiting', isDirty: true),
+          );
+          async.elapse(const Duration(seconds: 10));
+
+          expect(error, isA<AlgorithmAddFailedException>());
+          final state = cubit.state as DistingStateSynchronized;
+          expect(state.slots, hasLength(1));
+          expect(state.presetName, 'Edited while waiting');
+          expect(state.isDirty, isTrue);
+        });
+      },
+    );
+
+    test(
+      'failed add rollback does not remove a refreshed replacement slot',
+      () {
+        fakeAsync((async) {
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: 0,
+            name: 'Rejected Algo',
+            guid: 'reject',
+            specifications: const [],
+          );
+          Object? error;
+          when(
+            () => mockDisting.requestAddAlgorithm(any(), any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => 0);
+
+          cubit.emit(makeSyncState());
+          cubit
+              .onAlgorithmSelected(algorithmInfo, const [])
+              .catchError((Object e) => error = e);
+          async.flushMicrotasks();
+
+          final pending = cubit.state as DistingStateSynchronized;
+          final replacement = pending.slots.single.copyWith(
+            values: [
+              ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 42),
+            ],
+          );
+          cubit.emit(pending.copyWith(slots: [replacement]));
+          async.elapse(const Duration(seconds: 10));
+
+          expect(error, isA<AlgorithmAddFailedException>());
+          expect((cubit.state as DistingStateSynchronized).slots, [
+            replacement,
+          ]);
+        });
+      },
+    );
+
+    test(
+      'onAlgorithmSelected retries verification without resending the add',
+      () {
+        fakeAsync((async) {
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: 0,
+            name: 'Unresponsive Algo',
+            guid: 'silent',
+            specifications: const [],
+          );
+          Object? error;
+          when(
+            () => mockDisting.requestAddAlgorithm(any(), any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer(
+            (_) => Future<int?>.delayed(
+              const Duration(seconds: 9),
+              () => throw TimeoutException(
+                'no response',
+                const Duration(seconds: 1),
+              ),
+            ),
+          );
+
+          cubit.emit(makeSyncState());
+          cubit
+              .onAlgorithmSelected(algorithmInfo, const [])
+              .catchError((Object e) => error = e);
+          async.flushMicrotasks();
+
+          async.elapse(const Duration(seconds: 9));
+          expect(error, isNull);
+          expect((cubit.state as DistingStateSynchronized).slots, hasLength(1));
+
+          async.elapse(const Duration(seconds: 1));
+
+          expect(error, isA<AlgorithmAddFailedException>());
+          expect((cubit.state as DistingStateSynchronized).slots, isEmpty);
+          verify(
+            () => mockDisting.requestAddAlgorithm(algorithmInfo, const []),
+          ).called(1);
+          verify(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: const Duration(seconds: 1),
+              maxRetries: 9,
+            ),
+          ).called(1);
+        });
+      },
+    );
+
+    test(
+      'onAlgorithmSelected keeps the confirmed placeholder when hydration fails',
+      () {
+        fakeAsync((async) {
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: 0,
+            name: 'Broken Pages Algo',
+            guid: 'pages',
+            specifications: const [],
+          );
+          var completed = false;
+          Object? error;
+          when(
+            () => mockDisting.requestAddAlgorithm(any(), any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockDisting.requestNumberOfParameters(0),
+          ).thenThrow(StateError('broken slot details'));
+          when(() => mockDisting.requestAlgorithmGuid(0)).thenAnswer(
+            (_) async =>
+                Algorithm(algorithmIndex: 0, guid: 'pages', name: 'Broken'),
+          );
+
+          cubit.emit(makeSyncState());
+          unawaited(
+            cubit
+                .onAlgorithmSelected(algorithmInfo, const [])
+                .then<void>(
+                  (_) {
+                    completed = true;
+                  },
+                  onError: (Object e, StackTrace _) {
+                    error = e;
+                  },
+                ),
+          );
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 4));
+
+          expect(completed, isTrue);
+          expect(error, isNull);
+          final state = cubit.state as DistingStateSynchronized;
+          expect(state.slots, hasLength(1));
+          expect(state.slots.single.algorithm.guid, 'pages');
+          verify(() => mockDisting.requestNumberOfParameters(0)).called(1);
+        });
+      },
+    );
+
+    test(
+      'completed hydration does not overwrite a refreshed replacement slot',
+      () {
+        fakeAsync((async) {
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: 0,
+            name: 'Hydrating Algo',
+            guid: 'hydrate',
+            specifications: const [],
+          );
+          final fetchedSlot = Completer<Slot>();
+          when(
+            () => mockDisting.requestAddAlgorithm(any(), any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDisting.requestNumAlgorithmsInPreset(
+              timeout: any(named: 'timeout'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => 1);
+          cubit.fetchSlotOverride = (_, _) => fetchedSlot.future;
+
+          cubit.emit(makeSyncState());
+          unawaited(cubit.onAlgorithmSelected(algorithmInfo, const []));
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 1));
+
+          final pending = cubit.state as DistingStateSynchronized;
+          final replacement = pending.slots.single.copyWith(
+            values: [
+              ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 42),
+            ],
+          );
+          cubit.emit(pending.copyWith(slots: [replacement]));
+          fetchedSlot.complete(
+            pending.slots.single.copyWith(
+              values: [
+                ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 1),
+              ],
+            ),
+          );
+          async.flushMicrotasks();
+
+          expect((cubit.state as DistingStateSynchronized).slots, [
+            replacement,
+          ]);
+        });
       },
     );
 

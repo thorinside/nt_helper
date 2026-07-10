@@ -74,6 +74,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   AlgorithmInfo? _currentAlgoInfo;
   List<int>? specValues;
   bool _shiftHeld = false;
+  bool _isAddingAndStayingOpen = false;
 
   @override
   void initState() {
@@ -1344,7 +1345,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final canAdd = specValues != null;
     final addBypassed = _shiftHeld;
     final addButton = ElevatedButton(
-      onPressed: canAdd
+      onPressed: canAdd && !_isAddingAndStayingOpen
           ? () => _addAndClose(isOffline, addBypassed: _isAddBypassedRequested)
           : null,
       child: Text(addBypassed ? 'Add Algorithm Bypassed' : 'Add Algorithm'),
@@ -1360,10 +1361,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: ElevatedButton(
-            onPressed: () => _addAndStayOpen(
-              isOffline,
-              addBypassed: _isAddBypassedRequested,
-            ),
+            onPressed: _isAddingAndStayingOpen
+                ? null
+                : () => _addAndStayOpen(
+                    isOffline,
+                    addBypassed: _isAddBypassedRequested,
+                  ),
             child: Text(addBypassed ? 'Add Another Bypassed' : 'Add Another'),
           ),
         ),
@@ -1425,65 +1428,80 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     bool isOffline, {
     required bool addBypassed,
   }) async {
+    if (_isAddingAndStayingOpen) return;
+
     final algorithm = _currentAlgoInfo;
     if (algorithm == null) return;
 
-    final specs = await _resolveSpecificationValues(algorithm, isOffline);
-    if (specs == null || !mounted) return;
+    setState(() {
+      _isAddingAndStayingOpen = true;
+    });
 
-    final messenger = ScaffoldMessenger.of(context);
-    final name = algorithm.name;
     try {
-      await context.read<DistingCubit>().onAlgorithmSelected(
-        algorithm,
-        List<int>.from(specs),
-        addBypassed: addBypassed,
-      );
-    } on AlgorithmAddFailedException {
-      if (!mounted) return;
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: const Text(algorithmAddFailedMessage),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        algorithmAddFailedMessage,
-        TextDirection.ltr,
-      );
-      return;
-    } on AlgorithmAddBypassFailedException {
-      if (!mounted) return;
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: const Text(algorithmAddBypassFailedMessage),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        algorithmAddBypassFailedMessage,
-        TextDirection.ltr,
-      );
-      return;
-    }
+      final specs = await _resolveSpecificationValues(algorithm, isOffline);
+      if (specs == null || !mounted) return;
 
-    if (!mounted) return;
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('$name added'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      '$name added',
-      TextDirection.ltr,
-    );
-    _clearSelection();
+      final messenger = ScaffoldMessenger.of(context);
+      final name = algorithm.name;
+      try {
+        await context.read<DistingCubit>().onAlgorithmSelected(
+          algorithm,
+          List<int>.from(specs),
+          addBypassed: addBypassed,
+        );
+      } on AlgorithmAddFailedException {
+        if (!mounted) return;
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text(algorithmAddFailedMessage),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          algorithmAddFailedMessage,
+          TextDirection.ltr,
+        );
+        return;
+      } on AlgorithmAddBypassFailedException {
+        if (!mounted) return;
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text(algorithmAddBypassFailedMessage),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          algorithmAddBypassFailedMessage,
+          TextDirection.ltr,
+        );
+        _clearSelection();
+        return;
+      }
+
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('$name added'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        '$name added',
+        TextDirection.ltr,
+      );
+      _clearSelection();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddingAndStayingOpen = false;
+        });
+      }
+    }
   }
 }

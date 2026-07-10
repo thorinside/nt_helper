@@ -1,7 +1,19 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nt_helper/cubit/disting_cubit.dart' show Slot;
+import 'package:mocktail/mocktail.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
+import 'package:nt_helper/ui/widgets/step_sequencer/playback_controls.dart';
+
+class MockDistingCubit extends Mock implements DistingCubit {}
+
+class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
 void main() {
   late Slot testSlot;
@@ -671,4 +683,48 @@ void main() {
       expect(gateLengthValue.isDisabled, isFalse);
     });
   });
+
+  testWidgets(
+    'PlaybackControls does not throw when its tracked slot is removed',
+    (tester) async {
+      final mockCubit = MockDistingCubit();
+      final mockManager = MockDistingMidiManager();
+      final initialState = DistingStateSynchronized(
+        disting: mockManager,
+        distingVersion: '1.0',
+        firmwareVersion: FirmwareVersion('1.0'),
+        presetName: 'Test Preset',
+        algorithms: const [],
+        slots: [testSlot],
+        unitStrings: const [],
+      );
+      final states = StreamController<DistingState>.broadcast();
+      addTearDown(states.close);
+
+      when(() => mockCubit.state).thenReturn(initialState);
+      when(() => mockCubit.stream).thenAnswer((_) => states.stream);
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: PlaybackControls(
+                slotIndex: 0,
+                params: params,
+                slot: testSlot,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Slider), findsWidgets);
+
+      states.add(initialState.copyWith(slots: []));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(Slider), findsNothing);
+    },
+  );
 }

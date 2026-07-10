@@ -71,14 +71,8 @@ class DistingTools {
     return metadataAlgorithms;
   }
 
-  /// Adds an algorithm and verifies it was actually accepted by the device.
+  /// Adds an algorithm through the controller, which owns device verification.
   /// Returns the slot index where the algorithm was added.
-  /// Throws [StateError] on failure (device rejected the add, plugin failed to load, etc).
-  /// Whether a GUID belongs to a community plugin (has uppercase letters).
-  /// Factory algorithms use all-lowercase GUIDs and load quickly.
-  /// Community plugins can fail asynchronously (e.g. memory errors).
-  bool _isCommunityPlugin(String guid) => guid.contains(RegExp(r'[A-Z]'));
-
   Future<int> _addAlgorithmAndVerify(Algorithm algorithm) async {
     final state = _distingCubit.state;
     final preAddCount = (state is DistingStateSynchronized)
@@ -86,63 +80,7 @@ class DistingTools {
         : 0;
 
     await _controller.addAlgorithm(algorithm);
-
-    final disting = _distingCubit.requireDisting();
-    final isCommunity = _isCommunityPlugin(algorithm.guid);
-
-    // Poll the device every 250ms. Two consecutive identical slot counts
-    // means the device has settled. Factory algorithms (all-lowercase GUIDs)
-    // settle quickly; community plugins can fail asynchronously (e.g. memory
-    // error) so they get more time.
-    final maxPolls = isCommunity ? 40 : 10; // 10s or 2.5s max
-    int? lastDeviceCount;
-
-    for (int i = 0; i < maxPolls; i++) {
-      await Future.delayed(const Duration(milliseconds: 250));
-
-      final deviceCount = await disting.requestNumAlgorithmsInPreset() ?? 0;
-
-      if (deviceCount == lastDeviceCount) {
-        // Two consecutive identical counts — device has settled.
-        if (deviceCount > preAddCount) {
-          // Verify it's our algorithm.
-          final addedAlgo = await disting.requestAlgorithmGuid(preAddCount);
-          if (addedAlgo != null && addedAlgo.guid == algorithm.guid) {
-            try {
-              await _distingCubit.refreshSlot(preAddCount);
-            } catch (_) {}
-            return preAddCount;
-          }
-        }
-
-        // Device settled at or below pre-add count — rejected.
-        await _distingCubit.refresh();
-        throw StateError(
-          'Device rejected algorithm "${algorithm.guid}". '
-          'The plugin may have failed to load.',
-        );
-      }
-
-      lastDeviceCount = deviceCount;
-    }
-
-    // Timeout — do a final check.
-    final finalCount = await disting.requestNumAlgorithmsInPreset() ?? 0;
-    if (finalCount > preAddCount) {
-      final addedAlgo = await disting.requestAlgorithmGuid(preAddCount);
-      if (addedAlgo != null && addedAlgo.guid == algorithm.guid) {
-        try {
-          await _distingCubit.refreshSlot(preAddCount);
-        } catch (_) {}
-        return preAddCount;
-      }
-    }
-
-    await _distingCubit.refresh();
-    throw StateError(
-      'Could not verify algorithm "${algorithm.guid}" was added. '
-      'The device may not be responding.',
-    );
+    return preAddCount;
   }
 
   /// Looks up AlgorithmInfo from device state for a resolved GUID.

@@ -22,11 +22,11 @@ class AlgorithmAddBypassFailedException implements Exception {
 mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
   static const _bypassParameterNumber = 0;
   static const _bypassEnabledValue = 1;
-  static const _addAlgorithmSlotCountRequestTimeout = Duration(
-    milliseconds: 700,
-  );
+  static const _addAlgorithmInitialSettleDelay = Duration(seconds: 1);
+  static const _addAlgorithmPollInterval = Duration(seconds: 1);
+  static const _addAlgorithmRequestTimeout = Duration(seconds: 1);
+  static const _addAlgorithmVerificationWindow = Duration(seconds: 10);
   CancelableOperation<void>? _moveVerificationOperation;
-  CancelableOperation<void>? _addAlgorithmVerificationOperation;
 
   String _deriveOptimisticAlgorithmNameForAdd({
     required String algorithmGuid,
@@ -100,57 +100,80 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
     IDistingMidiManager disting, {
     required int previousSlotCount,
   }) async {
-    final deadline = DateTime.now().add(_addAlgorithmSlotCountRequestTimeout);
+    final deadlineReached = Completer<void>();
+    var remainingSeconds = _addAlgorithmVerificationWindow.inSeconds;
+    final countdown = Timer.periodic(_addAlgorithmPollInterval, (timer) {
+      remainingSeconds--;
+      if (remainingSeconds <= 0) {
+        timer.cancel();
+        deadlineReached.complete();
+      }
+    });
 
-    do {
-      try {
-        final remaining = deadline.difference(DateTime.now());
-        final currentCount = await disting.requestNumAlgorithmsInPreset(
-          timeout: remaining.isNegative || remaining == Duration.zero
-              ? const Duration(milliseconds: 1)
-              : remaining,
-          maxRetries: 1,
-        );
-        if (currentCount != null && currentCount > previousSlotCount) {
-          return true;
+    try {
+      await Future.any<void>([
+        Future<void>.delayed(_addAlgorithmInitialSettleDelay),
+        deadlineReached.future,
+      ]);
+
+      while (!deadlineReached.isCompleted) {
+        try {
+          final currentCount = await Future.any<int?>([
+            disting.requestNumAlgorithmsInPreset(
+              timeout: _addAlgorithmRequestTimeout,
+              maxRetries: remainingSeconds > 0 ? remainingSeconds : 1,
+            ),
+            deadlineReached.future.then<int?>((_) => null),
+          ]);
+          if (deadlineReached.isCompleted) return false;
+          if (currentCount != null && currentCount > previousSlotCount) {
+            return true;
+          }
+        } catch (_) {
+          if (deadlineReached.isCompleted) return false;
         }
-      } catch (_) {
-        return false;
+
+        await Future.any<void>([
+          Future<void>.delayed(_addAlgorithmPollInterval),
+          deadlineReached.future,
+        ]);
       }
 
-      final remaining = deadline.difference(DateTime.now());
-      if (remaining <= Duration.zero) break;
-      await Future.delayed(
-        remaining < const Duration(milliseconds: 100)
-            ? remaining
-            : const Duration(milliseconds: 100),
-      );
-    } while (DateTime.now().isBefore(deadline));
-
-    return false;
+      return false;
+    } finally {
+      countdown.cancel();
+    }
   }
 
   bool _removeOptimisticAlgorithmPlaceholder({
-    required int previousSlotCount,
-    required bool previousIsDirty,
-    required String algorithmGuid,
-    required String expectedPlaceholderName,
+    required DistingStateSynchronized previousState,
+    required Slot expectedPlaceholder,
   }) {
     final st = state;
     if (st is! DistingStateSynchronized) return false;
+    if (!identical(st.disting, previousState.disting)) return false;
+
+    final previousSlotCount = previousState.slots.length;
     if (st.slots.length != previousSlotCount + 1) return false;
 
-    final placeholder = st.slots[previousSlotCount].algorithm;
-    if (placeholder.guid != algorithmGuid ||
-        placeholder.name != expectedPlaceholderName) {
-      return false;
-    }
+    if (st.slots[previousSlotCount] != expectedPlaceholder) return false;
 
+    final retainedSlots = List<Slot>.from(st.slots)..removeLast();
+    final hasOtherPresetChanges =
+        st.presetName != previousState.presetName ||
+        !const DeepCollectionEquality().equals(
+          retainedSlots,
+          previousState.slots,
+        ) ||
+        !const DeepCollectionEquality().equals(
+          st.perfPageItems,
+          previousState.perfPageItems,
+        );
     emit(
       st.copyWith(
-        slots: List<Slot>.from(st.slots)..removeLast(),
+        slots: retainedSlots,
         loading: false,
-        isDirty: previousIsDirty,
+        isDirty: previousState.isDirty || hasOtherPresetChanges,
       ),
     );
     _rebuildCcLookup();
@@ -186,7 +209,6 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         // An algorithm can only be added to the next empty slot, so we can be
         // optimistic and only reconcile the newly-added slot.
         final newSlotIndex = syncstate.slots.length;
-        _addAlgorithmVerificationOperation?.cancel();
 
         // 1) Optimistic placeholder slot for instant UI feedback
         final placeholder = _createPlaceholderSlotForAdd(
@@ -194,7 +216,6 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           algorithm: algorithm,
           existingSlots: syncstate.slots,
         );
-        final expectedPlaceholderName = placeholder.algorithm.name;
         emit(
           syncstate.copyWith(
             slots: [...syncstate.slots, placeholder],
@@ -208,105 +229,75 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           await disting.requestAddAlgorithm(algorithm, specsToSend);
         } catch (_) {
           _removeOptimisticAlgorithmPlaceholder(
-            previousSlotCount: syncstate.slots.length,
-            previousIsDirty: syncstate.isDirty,
-            algorithmGuid: algorithm.guid,
-            expectedPlaceholderName: expectedPlaceholderName,
+            previousState: syncstate,
+            expectedPlaceholder: placeholder,
           );
           throw const AlgorithmAddFailedException();
         }
 
+        var bypassFailed = false;
         if (addBypassed) {
-          await _setNewAlgorithmBypassed(disting, newSlotIndex);
+          try {
+            await _setNewAlgorithmBypassed(disting, newSlotIndex);
+          } on AlgorithmAddBypassFailedException {
+            bypassFailed = true;
+          }
         }
 
-        // 3) Fail-fast verification: confirm the preset slot count increased
-        // before doing slower slot/parameter probing. This prevents a rejected
-        // add from leaving an optimistic placeholder visible for many seconds.
+        // 3) Give the module time to instantiate the algorithm, then verify
+        // only that the preset slot count increased. Slot hydration is a
+        // separate best-effort step and cannot turn a confirmed add into a
+        // failure.
         final didAppear = await _waitForAlgorithmSlotCountIncrease(
           disting,
           previousSlotCount: syncstate.slots.length,
         );
         if (!didAppear) {
           _removeOptimisticAlgorithmPlaceholder(
-            previousSlotCount: syncstate.slots.length,
-            previousIsDirty: syncstate.isDirty,
-            algorithmGuid: algorithm.guid,
-            expectedPlaceholderName: expectedPlaceholderName,
+            previousState: syncstate,
+            expectedPlaceholder: placeholder,
           );
           throw const AlgorithmAddFailedException();
         }
 
-        // 4) Reconciliation: fetch only the new slot and correct if needed.
-        _addAlgorithmVerificationOperation = CancelableOperation.fromFuture(
-          Future.delayed(const Duration(milliseconds: 700), () async {
+        // 4) Hydrate the new slot once in the background. If its pages or
+        // other details are malformed, keep the confirmed placeholder and let
+        // a later manual refresh try again.
+        unawaited(
+          Future<void>.sync(() async {
+            if (isClosed) return;
             final current = state;
             if (current is! DistingStateSynchronized) return;
+            if (!identical(current.disting, disting)) return;
+            if (current.slots.length <= newSlotIndex) return;
+            if (current.slots[newSlotIndex] != placeholder) return;
 
-            // Only proceed if the state still reflects our optimistic add.
-            if (current.slots.length != newSlotIndex + 1) return;
-            if (current.slots[newSlotIndex].algorithm.guid != algorithm.guid) {
-              return;
-            }
-            if (current.slots[newSlotIndex].algorithm.name !=
-                expectedPlaceholderName) {
-              return;
-            }
-
-            // Retry fetching just the new slot a few times; the module may need a moment.
-            Slot? fetched;
-            for (final delay in const [
-              Duration(milliseconds: 0),
-              Duration(milliseconds: 400),
-              Duration(milliseconds: 900),
-            ]) {
-              if (delay != Duration.zero) {
-                await Future.delayed(delay);
-              }
-              try {
-                fetched = await fetchSlot(disting, newSlotIndex);
-                break;
-              } catch (_) {
-                // Try again
-              }
-            }
-
-            if (fetched != null) {
-              final verified = state;
-              if (verified is! DistingStateSynchronized) return;
-              if (verified.slots.length != newSlotIndex + 1) return;
-              final updatedSlots = updateSlot(
-                newSlotIndex,
-                verified.slots,
-                (_) => fetched!,
-              );
-              emit(verified.copyWith(slots: updatedSlots, loading: false));
-              _rebuildCcLookup();
-              return;
-            }
-
-            // If we couldn't fetch the new slot, reconcile minimally via slot count.
+            final Slot fetched;
             try {
-              final actualCount = await disting.requestNumAlgorithmsInPreset();
-              if (actualCount == syncstate.slots.length) {
-                // Device didn't add: remove placeholder.
-                final verified = state;
-                if (verified is! DistingStateSynchronized) return;
-                if (verified.slots.length == syncstate.slots.length + 1) {
-                  emit(
-                    verified.copyWith(
-                      slots: List<Slot>.from(verified.slots)..removeLast(),
-                      loading: false,
-                    ),
-                  );
-                }
-              }
+              fetched = await fetchSlot(disting, newSlotIndex);
             } catch (_) {
-              // If even verification fails, do nothing; user can manual refresh.
+              return;
             }
+
+            if (isClosed) return;
+            final verified = state;
+            if (verified is! DistingStateSynchronized) return;
+            if (!identical(verified.disting, disting)) return;
+            if (verified.slots.length <= newSlotIndex) return;
+            if (verified.slots[newSlotIndex] != placeholder) return;
+
+            final updatedSlots = updateSlot(
+              newSlotIndex,
+              verified.slots,
+              (_) => fetched,
+            );
+            emit(verified.copyWith(slots: updatedSlots, loading: false));
+            _rebuildCcLookup();
           }),
-          onCancel: () {},
         );
+        if (bypassFailed) {
+          throw const AlgorithmAddBypassFailedException();
+        }
         break;
     }
   }

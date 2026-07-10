@@ -198,6 +198,11 @@ class _PlaybackControlsState extends State<PlaybackControls> {
         // Only rebuild when playback parameters change
         if (curr is! DistingStateSynchronized) return false;
         if (prev is! DistingStateSynchronized) return true;
+        if (widget.slotIndex < 0 ||
+            widget.slotIndex >= curr.slots.length ||
+            widget.slotIndex >= prev.slots.length) {
+          return true;
+        }
 
         // Check if any playback parameter changed
         final prevSlot = prev.slots[widget.slotIndex];
@@ -228,6 +233,9 @@ class _PlaybackControlsState extends State<PlaybackControls> {
       },
       builder: (context, state) {
         if (state is! DistingStateSynchronized) {
+          return const SizedBox.shrink();
+        }
+        if (widget.slotIndex < 0 || widget.slotIndex >= state.slots.length) {
           return const SizedBox.shrink();
         }
 
