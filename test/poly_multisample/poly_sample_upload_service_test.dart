@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_upload_service.dart';
 
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
@@ -36,6 +37,18 @@ void main() {
     if (tempRoot.existsSync()) {
       tempRoot.deleteSync(recursive: true);
     }
+  });
+
+  test('automatic rootless upload preserves raw filename', () {
+    final source = File('${tempRoot.path}/Kick.wav')..createSync();
+
+    final files = service.buildUploadFiles(
+      regions: [PolyMultisampleParser.parsePath(source.path)],
+      targetFolder: '/multisamples/Drums',
+    );
+
+    expect(files.single.targetPath, '/multisamples/Drums/Kick.wav');
+    expect(files.single.targetPath, isNot(contains('_C')));
   });
 
   test('buildUploadFiles rejects duplicate target names', () {

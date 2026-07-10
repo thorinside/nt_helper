@@ -11,8 +11,6 @@ class PolySampleRegion {
     required this.displayName,
     this.rootMidi,
     this.rootName,
-    this.rangeLow,
-    this.rangeHigh,
     this.switchPoint,
     this.velocityLayer,
     this.roundRobin,
@@ -26,8 +24,6 @@ class PolySampleRegion {
   final String displayName;
   final int? rootMidi;
   final String? rootName;
-  final int? rangeLow;
-  final int? rangeHigh;
   final int? switchPoint;
   final int? velocityLayer;
   final int? roundRobin;
@@ -46,16 +42,12 @@ class PolySampleRegion {
 
   bool get hasLoop => loopStart != null && loopEnd != null;
 
-  bool get isMapped => rootMidi != null;
-
   PolySampleRegion copyWith({
     String? path,
     String? fileName,
     String? displayName,
     int? rootMidi,
     String? rootName,
-    int? rangeLow,
-    int? rangeHigh,
     int? switchPoint,
     int? velocityLayer,
     int? roundRobin,
@@ -63,8 +55,6 @@ class PolySampleRegion {
     int? loopEnd,
     List<PolySampleIssue>? issues,
     bool clearRoot = false,
-    bool clearRangeLow = false,
-    bool clearRangeHigh = false,
     bool clearSwitchPoint = false,
     bool clearVelocityLayer = false,
     bool clearRoundRobin = false,
@@ -76,8 +66,6 @@ class PolySampleRegion {
       displayName: displayName ?? this.displayName,
       rootMidi: clearRoot ? null : rootMidi ?? this.rootMidi,
       rootName: clearRoot ? null : rootName ?? this.rootName,
-      rangeLow: clearRangeLow ? null : rangeLow ?? this.rangeLow,
-      rangeHigh: clearRangeHigh ? null : rangeHigh ?? this.rangeHigh,
       switchPoint: clearSwitchPoint ? null : switchPoint ?? this.switchPoint,
       velocityLayer: clearVelocityLayer
           ? null
@@ -97,8 +85,6 @@ class PolySampleRegion {
       displayName: displayName,
       rootMidi: rootMidi,
       rootName: rootName,
-      rangeLow: rangeLow,
-      rangeHigh: rangeHigh,
       switchPoint: switchPoint,
       velocityLayer: velocityLayer,
       roundRobin: roundRobin,
@@ -119,11 +105,6 @@ class PolySampleInstrument {
   final String name;
   final String sourcePath;
   final List<PolySampleRegion> regions;
-
-  int get mappedCount => regions.where((region) => region.isMapped).length;
-
-  int get warningCount =>
-      regions.where((region) => region.currentIssues.isNotEmpty).length;
 
   List<int> get velocityLayers {
     final layers = regions

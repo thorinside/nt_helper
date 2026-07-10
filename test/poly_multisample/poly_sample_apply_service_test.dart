@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_apply_service.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 
 void main() {
   group('PolySampleApplyService', () {
@@ -18,6 +19,42 @@ void main() {
       if (tempRoot.existsSync()) {
         tempRoot.deleteSync(recursive: true);
       }
+    });
+
+    test('automatic root remains absent from target filename', () {
+      final region = PolyMultisampleParser.parsePath('/tmp/Kick.wav');
+      final resolution = const PolySampleMappingResolver().resolve([region]);
+
+      expect(resolution.mappings.single.naturalMidi, 48);
+      expect(
+        const PolySampleApplyService().buildTargetFileName(region),
+        'Kick.wav',
+      );
+    });
+
+    test('explicit Low is serialized as SW', () {
+      final region = PolyMultisampleParser.parsePath(
+        '/tmp/Piano_C3.wav',
+      ).copyWith(switchPoint: 55);
+
+      expect(
+        const PolySampleApplyService().buildTargetFileName(region),
+        'Piano_C3_SW55.wav',
+      );
+    });
+
+    test('out-of-range parsed SW round trips until explicitly edited', () {
+      final region = PolyMultisampleParser.parsePath('/tmp/Piano_C3_SW999.wav');
+      final resolution = const PolySampleMappingResolver().resolve([region]);
+
+      expect(
+        resolution.issues.map((issue) => issue.kind),
+        contains(PolySampleMappingIssueKind.switchOutOfMidiRange),
+      );
+      expect(
+        const PolySampleApplyService().buildTargetFileName(region),
+        'Piano_C3_SW999.wav',
+      );
     });
 
     test('builds target filenames while preserving source prefixes', () {

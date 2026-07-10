@@ -402,8 +402,7 @@ void main() {
       );
 
       cubit.updateRoot('/tmp/b.wav', -4, focusRegion: true);
-      cubit.updateRangeLow('/tmp/b.wav', -1);
-      cubit.updateRangeHigh('/tmp/b.wav', 200);
+      cubit.updateSwitchPoint('/tmp/b.wav', -1);
       cubit.updateVelocity('/tmp/b.wav', 0);
       cubit.updateRoundRobin('/tmp/b.wav', 0);
 
@@ -414,10 +413,33 @@ void main() {
       );
       expect(region.rootMidi, 0);
       expect(region.rootName, 'C-1');
-      expect(region.rangeLow, 0);
-      expect(region.rangeHigh, 127);
+      expect(region.switchPoint, 0);
       expect(region.velocityLayer, 1);
       expect(region.roundRobin, 1);
+    });
+
+    test('updateSwitchPoint clamps editor values to MIDI', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+            ),
+          ],
+        ),
+      );
+
+      cubit.updateSwitchPoint('/tmp/a.wav', -1);
+      expect(cubit.state.editedRegions.single.switchPoint, 0);
+
+      cubit.updateSwitchPoint('/tmp/a.wav', 999);
+      expect(cubit.state.editedRegions.single.switchPoint, 127);
     });
 
     test('mapping edits preserve editor order', () {
@@ -451,8 +473,7 @@ void main() {
       );
 
       cubit.updateRoot('/tmp/z.wav', 36);
-      cubit.updateRangeLow('/tmp/a.wav', 40);
-      cubit.updateRangeHigh('/tmp/m.wav', 90);
+      cubit.updateSwitchPoint('/tmp/a.wav', 40);
       cubit.updateVelocity('/tmp/z.wav', 2);
       cubit.updateRoundRobin('/tmp/a.wav', 3);
 
@@ -591,8 +612,7 @@ void main() {
               fileName: 'a.wav',
               displayName: 'a.wav',
               rootMidi: 48,
-              rangeLow: 48,
-              rangeHigh: 48,
+              switchPoint: 48,
               velocityLayer: 1,
               roundRobin: 1,
             ),
@@ -601,8 +621,7 @@ void main() {
               fileName: 'b.wav',
               displayName: 'b.wav',
               rootMidi: 50,
-              rangeLow: 50,
-              rangeHigh: 50,
+              switchPoint: 50,
               velocityLayer: 2,
               roundRobin: 2,
             ),
@@ -611,8 +630,7 @@ void main() {
               fileName: 'c.wav',
               displayName: 'c.wav',
               rootMidi: 52,
-              rangeLow: 52,
-              rangeHigh: 52,
+              switchPoint: 52,
               velocityLayer: 3,
               roundRobin: 3,
             ),
@@ -623,8 +641,7 @@ void main() {
 
       cubit.updateSelectedMappings(
         rootMidi: 61,
-        rangeLow: 60,
-        rangeHigh: 64,
+        switchPoint: 60,
         velocityLayer: 4,
         roundRobin: 5,
       );
@@ -635,19 +652,16 @@ void main() {
       expect(cubit.changeCount, 1);
       expect(a.rootMidi, 61);
       expect(a.rootName, 'C#4');
-      expect(a.rangeLow, 60);
-      expect(a.rangeHigh, 64);
+      expect(a.switchPoint, 60);
       expect(a.velocityLayer, 4);
       expect(a.roundRobin, 5);
       expect(b.rootMidi, 50);
-      expect(b.rangeLow, 50);
-      expect(b.rangeHigh, 50);
+      expect(b.switchPoint, 50);
       expect(b.velocityLayer, 2);
       expect(b.roundRobin, 2);
       expect(c.rootMidi, 61);
       expect(c.rootName, 'C#4');
-      expect(c.rangeLow, 60);
-      expect(c.rangeHigh, 64);
+      expect(c.switchPoint, 60);
       expect(c.velocityLayer, 4);
       expect(c.roundRobin, 5);
     });
@@ -668,8 +682,6 @@ void main() {
               displayName: 'a.wav',
               rootMidi: 48,
               rootName: 'C3',
-              rangeLow: 48,
-              rangeHigh: 60,
               switchPoint: 50,
               velocityLayer: 2,
               roundRobin: 3,
@@ -680,8 +692,6 @@ void main() {
               displayName: 'b.wav',
               rootMidi: 50,
               rootName: 'D3',
-              rangeLow: 50,
-              rangeHigh: 62,
               switchPoint: 54,
               velocityLayer: 4,
               roundRobin: 5,
@@ -697,15 +707,11 @@ void main() {
       expect(cubit.state.editedRegions, hasLength(2));
       expect(a.rootMidi, isNull);
       expect(a.rootName, isNull);
-      expect(a.rangeLow, isNull);
-      expect(a.rangeHigh, isNull);
       expect(a.switchPoint, isNull);
       expect(a.velocityLayer, 2);
       expect(a.roundRobin, 3);
       expect(b.rootMidi, 50);
       expect(b.rootName, 'D3');
-      expect(b.rangeLow, 50);
-      expect(b.rangeHigh, 62);
       expect(b.switchPoint, 54);
       expect(b.velocityLayer, 4);
       expect(b.roundRobin, 5);
@@ -733,8 +739,7 @@ void main() {
                   displayName: 'a.wav',
                   rootMidi: 48,
                   rootName: 'C3',
-                  rangeLow: 48,
-                  rangeHigh: 48,
+                  switchPoint: 48,
                   velocityLayer: 1,
                   roundRobin: 1,
                 ),
@@ -744,8 +749,7 @@ void main() {
                   displayName: 'b.wav',
                   rootMidi: 50,
                   rootName: 'D3',
-                  rangeLow: 50,
-                  rangeHigh: 50,
+                  switchPoint: 50,
                   velocityLayer: 2,
                   roundRobin: 2,
                 ),
@@ -758,8 +762,7 @@ void main() {
                 displayName: 'a.wav',
                 rootMidi: 48,
                 rootName: 'C3',
-                rangeLow: 48,
-                rangeHigh: 48,
+                switchPoint: 48,
                 velocityLayer: 1,
                 roundRobin: 1,
               ),
@@ -769,8 +772,7 @@ void main() {
                 displayName: 'b.wav',
                 rootMidi: 50,
                 rootName: 'D3',
-                rangeLow: 50,
-                rangeHigh: 50,
+                switchPoint: 50,
                 velocityLayer: 2,
                 roundRobin: 2,
               ),
@@ -782,8 +784,7 @@ void main() {
                 displayName: 'a.wav',
                 rootMidi: 49,
                 rootName: 'C#3',
-                rangeLow: 49,
-                rangeHigh: 49,
+                switchPoint: 49,
                 velocityLayer: 3,
                 roundRobin: 3,
               ),
@@ -793,8 +794,7 @@ void main() {
                 displayName: 'b.wav',
                 rootMidi: 51,
                 rootName: 'D#3',
-                rangeLow: 51,
-                rangeHigh: 51,
+                switchPoint: 51,
                 velocityLayer: 4,
                 roundRobin: 4,
               ),
@@ -804,8 +804,7 @@ void main() {
                 displayName: 'new.wav',
                 rootMidi: 53,
                 rootName: 'F3',
-                rangeLow: 53,
-                rangeHigh: 53,
+                switchPoint: 53,
                 velocityLayer: 5,
                 roundRobin: 5,
               ),
@@ -835,14 +834,12 @@ void main() {
         final b = cubit.state.editedRegions[1];
         expect(a.rootMidi, 48);
         expect(a.rootName, 'C3');
-        expect(a.rangeLow, 48);
-        expect(a.rangeHigh, 48);
+        expect(a.switchPoint, 48);
         expect(a.velocityLayer, 1);
         expect(a.roundRobin, 1);
         expect(b.rootMidi, 51);
         expect(b.rootName, 'D#3');
-        expect(b.rangeLow, 51);
-        expect(b.rangeHigh, 51);
+        expect(b.switchPoint, 51);
         expect(b.velocityLayer, 4);
         expect(b.roundRobin, 4);
         expect(cubit.state.loopDrafts, isNot(contains('/tmp/a.wav')));
@@ -1174,8 +1171,7 @@ void main() {
                 fileName: 'Piano_C4.wav',
                 displayName: 'Piano_C4.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
               ),
             ],
           ),
@@ -1213,8 +1209,7 @@ void main() {
                 fileName: 'Piano_C4.wav',
                 displayName: 'Piano_C4.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
               ),
             ],
             wavEditDrafts: {
@@ -1292,8 +1287,7 @@ void main() {
                 fileName: 'Piano_C4.wav',
                 displayName: 'Piano_C4.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
               ),
             ],
           ),
@@ -1450,8 +1444,7 @@ void main() {
                 fileName: 'lane1.wav',
                 displayName: 'lane1.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
                 velocityLayer: 1,
               ),
               PolySampleRegion(
@@ -1459,8 +1452,7 @@ void main() {
                 fileName: 'lane2.wav',
                 displayName: 'lane2.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
                 velocityLayer: 2,
               ),
             ],
@@ -1491,8 +1483,7 @@ void main() {
                 fileName: 'Piano_C4.wav',
                 displayName: 'Piano_C4.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
               ),
             ],
           ),
@@ -1524,8 +1515,7 @@ void main() {
               fileName: 'Piano_C4.aif',
               displayName: 'Piano_C4.aif',
               rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 60,
+              switchPoint: 60,
             ),
           ],
         ),
@@ -1553,8 +1543,7 @@ void main() {
               fileName: 'missing_C4.wav',
               displayName: 'missing_C4.wav',
               rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 60,
+              switchPoint: 60,
             ),
           ],
         ),
@@ -1587,16 +1576,14 @@ void main() {
               fileName: 'Piano_C4.wav',
               displayName: 'Piano_C4.wav',
               rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 60,
+              switchPoint: 60,
             ),
             PolySampleRegion(
               path: d4.path,
               fileName: 'Piano_D4.wav',
               displayName: 'Piano_D4.wav',
               rootMidi: 62,
-              rangeLow: 62,
-              rangeHigh: 62,
+              switchPoint: 62,
             ),
           ],
         ),
@@ -1634,8 +1621,7 @@ void main() {
               fileName: 'Piano_C4.wav',
               displayName: 'Piano_C4.wav',
               rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 60,
+              switchPoint: 60,
             ),
           ],
         ),
@@ -1675,16 +1661,14 @@ void main() {
                 fileName: 'Piano_C4.wav',
                 displayName: 'Piano_C4.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
               ),
               PolySampleRegion(
                 path: d4.path,
                 fileName: 'Piano_D4.wav',
                 displayName: 'Piano_D4.wav',
                 rootMidi: 62,
-                rangeLow: 62,
-                rangeHigh: 62,
+                switchPoint: 62,
               ),
             ],
           ),
@@ -1726,8 +1710,7 @@ void main() {
                 fileName: 'Piano_C4.wav',
                 displayName: 'Piano_C4.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
               ),
             ],
           ),
@@ -1765,8 +1748,7 @@ void main() {
                 fileName: 'Piano_C4.wav',
                 displayName: 'Piano_C4.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
               ),
             ],
           ),
@@ -1804,8 +1786,7 @@ void main() {
               fileName: 'Piano_C4.wav',
               displayName: 'Piano_C4.wav',
               rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 60,
+              switchPoint: 60,
             ),
           ],
         ),
@@ -1841,8 +1822,7 @@ void main() {
                 fileName: 'Piano_C4.wav',
                 displayName: 'Piano_C4.wav',
                 rootMidi: 60,
-                rangeLow: 60,
-                rangeHigh: 60,
+                switchPoint: 60,
               ),
             ],
           ),
@@ -1874,8 +1854,7 @@ void main() {
               fileName: 'Piano_C4.wav',
               displayName: 'Piano_C4.wav',
               rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 60,
+              switchPoint: 60,
             ),
           ],
         ),

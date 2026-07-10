@@ -647,24 +647,6 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     }
   }
 
-  void updateRangeLow(
-    String path,
-    int midi, {
-    IDistingMidiManager? manager,
-    bool focusRegion = false,
-  }) {
-    final clampedMidi = midi.clamp(0, 127).toInt();
-    final updated = _updateRegion(
-      path,
-      (region) => region.copyWith(rangeLow: clampedMidi),
-      selectedPaths: focusRegion ? {path} : null,
-      focusedPathOverride: focusRegion ? path : null,
-    );
-    if (updated) {
-      _autoPreviewMappingEdit(path, manager: manager);
-    }
-  }
-
   void updateSwitchPoint(
     String path,
     int midi, {
@@ -675,24 +657,6 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     final updated = _updateRegion(
       path,
       (region) => region.copyWith(switchPoint: clampedMidi),
-      selectedPaths: focusRegion ? {path} : null,
-      focusedPathOverride: focusRegion ? path : null,
-    );
-    if (updated) {
-      _autoPreviewMappingEdit(path, manager: manager);
-    }
-  }
-
-  void updateRangeHigh(
-    String path,
-    int midi, {
-    IDistingMidiManager? manager,
-    bool focusRegion = false,
-  }) {
-    final clampedMidi = midi.clamp(0, 127).toInt();
-    final updated = _updateRegion(
-      path,
-      (region) => region.copyWith(rangeHigh: clampedMidi),
       selectedPaths: focusRegion ? {path} : null,
       focusedPathOverride: focusRegion ? path : null,
     );
@@ -740,13 +704,9 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   void updateSelectedMappings({
     int? rootMidi,
     int? switchPoint,
-    int? rangeLow,
-    int? rangeHigh,
     int? velocityLayer,
     int? roundRobin,
     bool clearRoot = false,
-    bool clearRangeLow = false,
-    bool clearRangeHigh = false,
     bool clearSwitchPoint = false,
     bool clearVelocityLayer = false,
     bool clearRoundRobin = false,
@@ -754,8 +714,6 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   }) {
     final clampedRootMidi = rootMidi?.clamp(0, 127).toInt();
     final clampedSwitchPoint = switchPoint?.clamp(0, 127).toInt();
-    final clampedRangeLow = rangeLow?.clamp(0, 127).toInt();
-    final clampedRangeHigh = rangeHigh?.clamp(0, 127).toInt();
     final clampedVelocityLayer = velocityLayer == null
         ? null
         : math.max(1, velocityLayer);
@@ -770,16 +728,10 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
             : clampedRootMidi == null
             ? region.rootName
             : PolyMultisampleParser.midiToNoteName(clampedRootMidi),
-        rangeLow: clearRangeLow ? null : (clampedRangeLow ?? region.rangeLow),
-        rangeHigh: clearRangeHigh
-            ? null
-            : (clampedRangeHigh ?? region.rangeHigh),
         switchPoint: clearSwitchPoint
             ? null
             : (clampedSwitchPoint ?? region.switchPoint),
         clearRoot: clearRoot,
-        clearRangeLow: clearRangeLow,
-        clearRangeHigh: clearRangeHigh,
         clearSwitchPoint: clearSwitchPoint,
         clearVelocityLayer: clearVelocityLayer,
         clearRoundRobin: clearRoundRobin,
@@ -798,16 +750,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     updateSelectedMappings(rootMidi: midi, manager: manager);
   }
 
-  void updateSelectedRangeLow(int midi, {IDistingMidiManager? manager}) {
-    updateSelectedMappings(rangeLow: midi, manager: manager);
-  }
-
   void updateSelectedSwitchPoint(int midi, {IDistingMidiManager? manager}) {
     updateSelectedMappings(switchPoint: midi, manager: manager);
-  }
-
-  void updateSelectedRangeHigh(int midi, {IDistingMidiManager? manager}) {
-    updateSelectedMappings(rangeHigh: midi, manager: manager);
   }
 
   void updateSelectedVelocity(int layer, {IDistingMidiManager? manager}) {
@@ -818,17 +762,8 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     updateSelectedMappings(roundRobin: lane, manager: manager);
   }
 
-  void unmapSelectedRegions() {
-    resetSelectedToAutomaticNotes();
-  }
-
   void resetSelectedToAutomaticNotes() {
-    updateSelectedMappings(
-      clearRoot: true,
-      clearRangeLow: true,
-      clearRangeHigh: true,
-      clearSwitchPoint: true,
-    );
+    updateSelectedMappings(clearRoot: true, clearSwitchPoint: true);
   }
 
   void removeSelectedRegions() {
@@ -2898,8 +2833,6 @@ String _fingerprintRegions(List<PolySampleRegion> regions) {
         region.displayName,
         region.rootMidi,
         region.rootName,
-        region.rangeLow,
-        region.rangeHigh,
         region.switchPoint,
         region.velocityLayer,
         region.roundRobin,
