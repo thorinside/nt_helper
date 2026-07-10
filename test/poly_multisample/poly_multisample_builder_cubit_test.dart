@@ -652,69 +652,64 @@ void main() {
       expect(c.roundRobin, 5);
     });
 
-    test(
-      'unmapSelectedRegions clears mapping fields without removing rows',
-      () {
-        final cubit = _ExposedPolyMultisampleBuilderCubit(
-          previewService: PolyAudioPreviewService(
-            adapter: _FakePreviewAdapter(),
-          ),
-        );
-        addTearDown(cubit.close);
-        cubit.setTestState(
-          const PolyMultisampleBuilderState(
-            selectedPaths: {'/tmp/a.wav'},
-            focusedPath: '/tmp/a.wav',
-            editedRegions: [
-              PolySampleRegion(
-                path: '/tmp/a.wav',
-                fileName: 'a.wav',
-                displayName: 'a.wav',
-                rootMidi: 48,
-                rootName: 'C3',
-                rangeLow: 48,
-                rangeHigh: 60,
-                switchPoint: 50,
-                velocityLayer: 2,
-                roundRobin: 3,
-              ),
-              PolySampleRegion(
-                path: '/tmp/b.wav',
-                fileName: 'b.wav',
-                displayName: 'b.wav',
-                rootMidi: 50,
-                rootName: 'D3',
-                rangeLow: 50,
-                rangeHigh: 62,
-                switchPoint: 54,
-                velocityLayer: 4,
-                roundRobin: 5,
-              ),
-            ],
-          ),
-        );
+    test('reset automatic notes preserves variant lanes and rows', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          selectedPaths: {'/tmp/a.wav'},
+          focusedPath: '/tmp/a.wav',
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/a.wav',
+              fileName: 'a.wav',
+              displayName: 'a.wav',
+              rootMidi: 48,
+              rootName: 'C3',
+              rangeLow: 48,
+              rangeHigh: 60,
+              switchPoint: 50,
+              velocityLayer: 2,
+              roundRobin: 3,
+            ),
+            PolySampleRegion(
+              path: '/tmp/b.wav',
+              fileName: 'b.wav',
+              displayName: 'b.wav',
+              rootMidi: 50,
+              rootName: 'D3',
+              rangeLow: 50,
+              rangeHigh: 62,
+              switchPoint: 54,
+              velocityLayer: 4,
+              roundRobin: 5,
+            ),
+          ],
+        ),
+      );
 
-        cubit.unmapSelectedRegions();
+      cubit.resetSelectedToAutomaticNotes();
 
-        final a = cubit.state.editedRegions[0];
-        final b = cubit.state.editedRegions[1];
-        expect(cubit.state.editedRegions, hasLength(2));
-        expect(a.rootMidi, isNull);
-        expect(a.rootName, isNull);
-        expect(a.rangeLow, isNull);
-        expect(a.rangeHigh, isNull);
-        expect(a.switchPoint, isNull);
-        expect(a.velocityLayer, isNull);
-        expect(a.roundRobin, isNull);
-        expect(b.rootMidi, 50);
-        expect(b.rootName, 'D3');
-        expect(b.rangeLow, 50);
-        expect(b.rangeHigh, 62);
-        expect(b.switchPoint, 54);
-        expect(b.velocityLayer, 4);
-        expect(b.roundRobin, 5);
-      },
-    );
+      final a = cubit.state.editedRegions[0];
+      final b = cubit.state.editedRegions[1];
+      expect(cubit.state.editedRegions, hasLength(2));
+      expect(a.rootMidi, isNull);
+      expect(a.rootName, isNull);
+      expect(a.rangeLow, isNull);
+      expect(a.rangeHigh, isNull);
+      expect(a.switchPoint, isNull);
+      expect(a.velocityLayer, 2);
+      expect(a.roundRobin, 3);
+      expect(b.rootMidi, 50);
+      expect(b.rootName, 'D3');
+      expect(b.rangeLow, 50);
+      expect(b.rangeHigh, 62);
+      expect(b.switchPoint, 54);
+      expect(b.velocityLayer, 4);
+      expect(b.roundRobin, 5);
+    });
 
     test(
       'discardChanges resets only selected existing rows and removes selected new rows',

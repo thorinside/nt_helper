@@ -139,9 +139,9 @@ class _Toolbar extends StatelessWidget {
                 ),
               ),
               Text('${instrument.regions.length} samples'),
-              Text('${instrument.mappedCount} mapped'),
-              if (instrument.warningCount > 0)
-                Text('${instrument.warningCount} warnings'),
+              Text('${state.mappingResolution.mappedCount} mapped'),
+              if (state.mappingWarnings.isNotEmpty)
+                Text('${state.mappingWarnings.length} warnings'),
               if (state.isDirty) const Chip(label: Text('Unsaved changes')),
               FilledButton.tonalIcon(
                 onPressed: canUpload ? onUpload : null,
@@ -180,7 +180,7 @@ class _Toolbar extends StatelessWidget {
               Builder(
                 builder: (context) {
                   final destructiveLabel = hasSelection
-                      ? 'Unmap selected'
+                      ? 'Use automatic notes'
                       : 'Discard all';
                   final canUseDestructiveAction =
                       hasSelection || state.editedRegions.isNotEmpty;
@@ -193,7 +193,7 @@ class _Toolbar extends StatelessWidget {
                         onPressed: canUseDestructiveAction
                             ? () async {
                                 if (hasSelection) {
-                                  cubit.unmapSelectedRegions();
+                                  cubit.resetSelectedToAutomaticNotes();
                                   return;
                                 }
                                 final discardAll = await showDialog<bool>(
@@ -223,7 +223,9 @@ class _Toolbar extends StatelessWidget {
                                 }
                               }
                             : null,
-                        icon: const Icon(Icons.delete_outline),
+                        icon: Icon(
+                          hasSelection ? Icons.auto_fix_high : Icons.restore,
+                        ),
                         label: Text(destructiveLabel),
                       ),
                     ),

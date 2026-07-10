@@ -5,6 +5,7 @@ import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_samples_editor_view.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_samples_landing_view.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_key_map.dart';
@@ -22,7 +23,7 @@ void main() {
     await _pumpEditor(tester, cubit);
 
     expect(find.text('2 samples'), findsOneWidget);
-    expect(find.text('1 mapped'), findsOneWidget);
+    expect(find.text('2 mapped'), findsOneWidget);
     expect(find.byType(PolyKeyMap), findsOneWidget);
     expect(find.byType(PolySampleList), findsOneWidget);
     expect(find.byType(PolySampleInspector), findsOneWidget);
@@ -46,6 +47,41 @@ void main() {
 
     expect(cubit.previewedNotes, [60]);
     semantics.dispose();
+  });
+
+  testWidgets('unsupported regions remain in the total warning count', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit()
+      ..setTestState(
+        _state(
+          editedRegions: const [
+            PolySampleRegion(
+              path: '/tmp/Kick.wav',
+              fileName: 'Kick.wav',
+              displayName: 'Kick.wav',
+            ),
+            PolySampleRegion(
+              path: '/tmp/readme.txt',
+              fileName: 'readme.txt',
+              displayName: 'readme.txt',
+            ),
+          ],
+        ),
+      );
+    addTearDown(cubit.close);
+
+    await _pumpEditor(tester, cubit);
+
+    expect(find.text('1 mapped'), findsOneWidget);
+    expect(find.text('1 warnings'), findsOneWidget);
+    expect(find.text('Mapping warnings (1)'), findsOneWidget);
+    await tester.tap(find.text('Mapping warnings (1)'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Unsupported sample: readme.txt has an unsupported file type.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('keyboard map semantics explains note preview affordance', (
@@ -128,12 +164,31 @@ void main() {
     expect(cubit.discardChangesCount, 1);
   });
 
-  testWidgets('unmap selected clears mappings without removing samples', (
+  testWidgets('Use automatic notes preserves rows and variant lanes', (
     tester,
   ) async {
     final cubit = _TestPolyMultisampleBuilderCubit()
       ..setTestState(
-        _state(dirty: true).copyWith(
+        _state(
+          dirty: true,
+          editedRegions: const [
+            PolySampleRegion(
+              path: '/tmp/Piano/Piano_C3.wav',
+              fileName: 'Piano_C3.wav',
+              displayName: 'Piano_C3.wav',
+              rootMidi: 48,
+              rootName: 'C3',
+              switchPoint: 40,
+              velocityLayer: 2,
+              roundRobin: 3,
+            ),
+            PolySampleRegion(
+              path: '/tmp/Piano/Piano_Unmapped.wav',
+              fileName: 'Piano_Unmapped.wav',
+              displayName: 'Piano_Unmapped.wav',
+            ),
+          ],
+        ).copyWith(
           selectedPaths: const {'/tmp/Piano/Piano_C3.wav'},
           clearFocusedPath: true,
         ),
@@ -141,15 +196,22 @@ void main() {
     addTearDown(cubit.close);
 
     await _pumpEditor(tester, cubit);
-    await tester.tap(find.widgetWithText(TextButton, 'Unmap selected'));
+    await tester.tap(find.widgetWithText(TextButton, 'Use automatic notes'));
     await tester.pumpAndSettle();
 
     expect(cubit.state.editedRegions, hasLength(2));
     expect(cubit.state.editedRegions.first.rootMidi, isNull);
     expect(cubit.state.editedRegions.first.rootName, isNull);
+    expect(cubit.state.editedRegions.first.switchPoint, isNull);
+    expect(cubit.state.editedRegions.first.velocityLayer, 2);
+    expect(cubit.state.editedRegions.first.roundRobin, 3);
     expect(cubit.removeSelectedRegionsCount, 0);
     expect(cubit.clearDraftCount, 0);
     expect(find.byType(AlertDialog), findsNothing);
+    expect(
+      find.bySemanticsLabel('Keyboard map with 2 mapped samples'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('waveform drafts explain disabled primary save action', (
@@ -264,7 +326,7 @@ void main() {
     await _pumpEditor(tester, cubit);
 
     expect(find.text('Warnings (1)'), findsOneWidget);
-    expect(find.text('1 warning available. Expand to review.'), findsOneWidget);
+    expect(find.text('1 warning available. Expand to review.'), findsWidgets);
   });
 
   testWidgets(
@@ -353,7 +415,10 @@ void main() {
 
     await _pumpEditor(tester, cubit);
 
-    expect(find.widgetWithText(TextButton, 'Unmap selected'), findsOneWidget);
+    expect(
+      find.widgetWithText(TextButton, 'Use automatic notes'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(TextButton, 'Discard all'), findsNothing);
   });
 
@@ -575,10 +640,15 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   }
 
   void setTestState(PolyMultisampleBuilderState state) {
+    final mappingResolution = const PolySampleMappingResolver().resolve(
+      state.editedRegions,
+    );
     emit(
       state.copyWith(
-        mappingResolution: const PolySampleMappingResolver().resolve(
+        mappingResolution: mappingResolution,
+        mappingWarnings: mappingWarningMessages(
           state.editedRegions,
+          mappingResolution,
         ),
       ),
     );

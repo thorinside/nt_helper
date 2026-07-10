@@ -201,20 +201,40 @@ class _MappingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedRegions = _selectedRegionsForMapping(state, region);
     final selectedCount = selectedRegions.length;
-    final rootSelection = _selectionValue<int>(
+    final rootSelection = _selectionValue<_AutomaticMidiValue>(
       selectedRegions,
-      (region) => region.rootMidi,
+      (region) {
+        final mapping = state.mappingResolution.mappingForRegion(region);
+        if (mapping?.isPlayable != true) return null;
+        return (
+          midi: mapping!.naturalMidi,
+          automatic: mapping.naturalIsAutomatic,
+        );
+      },
     );
-    final rootDisplay = rootSelection.mixed
+    final rootDisplay = _automaticMidiDisplay(rootSelection);
+    final lowSelection = _selectionValue<_AutomaticMidiValue>(selectedRegions, (
+      region,
+    ) {
+      final mapping = state.mappingResolution.mappingForRegion(region);
+      if (mapping?.isPlayable != true) return null;
+      return (midi: mapping!.lowMidi!, automatic: mapping.switchIsAutomatic);
+    });
+    final lowDisplay = _automaticMidiDisplay(lowSelection);
+    final lowDropdownSelection = lowSelection.mixed
+        ? const _SelectionValue<int>.mixed()
+        : lowSelection.value == null || lowSelection.value!.automatic
+        ? const _SelectionValue<int>.value(null)
+        : _SelectionValue<int>.value(lowSelection.value!.midi);
+    final highSelection = _selectionValue<int>(selectedRegions, (region) {
+      final mapping = state.mappingResolution.mappingForRegion(region);
+      return mapping?.isPlayable == true ? mapping!.highMidi : null;
+    });
+    final highDisplay = highSelection.mixed
         ? 'Mixed'
-        : rootSelection.value == null
-        ? 'Unset'
-        : PolyMultisampleParser.midiToNoteName(rootSelection.value!);
-    final lowSelection = _selectionValue<int>(selectedRegions, effectiveLow);
-    final highSelection = _selectionValue<int>(
-      selectedRegions,
-      (region) => effectiveHigh(region, state.editedRegions),
-    );
+        : highSelection.value == null
+        ? 'Unresolved'
+        : PolyMultisampleParser.midiToNoteName(highSelection.value!);
     final velocitySelection = _selectionValue<int>(
       selectedRegions,
       (region) => region.velocityLayer ?? 1,
@@ -231,9 +251,20 @@ class _MappingSection extends StatelessWidget {
       32,
       (maximum, region) => math.max(maximum, region.roundRobin ?? 1),
     );
-    final root = region.rootMidi ?? 60;
-    final low = effectiveLow(region);
-    final high = effectiveHigh(region, state.editedRegions);
+    final focusedMapping = state.mappingResolution.mappingForRegion(region);
+    final focusedPlayable = focusedMapping?.isPlayable == true;
+    final root = focusedPlayable ? focusedMapping!.naturalMidi : null;
+    final low = focusedPlayable ? focusedMapping!.lowMidi : null;
+    final focusedRootDisplay = root == null
+        ? 'Unresolved'
+        : focusedMapping!.naturalIsAutomatic
+        ? 'Auto ${PolyMultisampleParser.midiToNoteName(root)}'
+        : PolyMultisampleParser.midiToNoteName(root);
+    final focusedLowDisplay = low == null
+        ? 'Unresolved'
+        : focusedMapping!.switchIsAutomatic
+        ? 'Auto ${PolyMultisampleParser.midiToNoteName(low)}'
+        : PolyMultisampleParser.midiToNoteName(low);
     final velocity = region.velocityLayer ?? 1;
     final roundRobin = region.roundRobin ?? 1;
     final title = selectedCount == 1 ? 'Mapping' : 'Mapping selection';
@@ -267,9 +298,12 @@ class _MappingSection extends StatelessWidget {
                     key: const ValueKey('poly-mapping-root-menu'),
                     tooltip: 'Choose root note',
                     padding: EdgeInsets.zero,
-                    initialValue: rootSelection.mixed
+                    initialValue:
+                        rootSelection.mixed ||
+                            rootSelection.value == null ||
+                            rootSelection.value!.automatic
                         ? null
-                        : rootSelection.value,
+                        : rootSelection.value!.midi,
                     itemBuilder: (context) => _rootNoteMenuEntries(),
                     onSelected: (value) {
                       cubit.updateSelectedRoot(value, manager: manager);
@@ -295,24 +329,19 @@ class _MappingSection extends StatelessWidget {
         _MappingDropdownRow<int>(
           dropdownKey: const ValueKey('poly-mapping-low-dropdown'),
           label: 'Low',
-          selected: lowSelection,
+          selected: lowDropdownSelection,
           items: _noteMenuItems(),
-          unsetHint: 'Mixed',
+          unsetHint: lowSelection.value == null ? 'Unresolved' : lowDisplay,
           onChanged: (value) {
             if (value == null) return;
-            cubit.updateSelectedRangeLow(value, manager: manager);
+            cubit.updateSelectedSwitchPoint(value, manager: manager);
           },
         ),
-        _MappingDropdownRow<int>(
-          dropdownKey: const ValueKey('poly-mapping-high-dropdown'),
+        _MappingReadOnlyRow(
+          key: const ValueKey('poly-mapping-high-value'),
           label: 'High',
-          selected: highSelection,
-          items: _noteMenuItems(),
-          unsetHint: 'Mixed',
-          onChanged: (value) {
-            if (value == null) return;
-            cubit.updateSelectedRangeHigh(value, manager: manager);
-          },
+          value: highDisplay,
+          hint: 'Calculated from the next sample switch point.',
         ),
         _MappingDropdownRow<int>(
           dropdownKey: const ValueKey('poly-mapping-velocity-dropdown'),
@@ -338,38 +367,38 @@ class _MappingSection extends StatelessWidget {
         Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(
-            key: const ValueKey('poly-mapping-unmap-selected'),
-            onPressed: cubit.unmapSelectedRegions,
-            icon: const Icon(Icons.link_off),
-            label: Text(selectedCount == 1 ? 'Unmap sample' : 'Unmap selected'),
+            key: const ValueKey('poly-mapping-use-automatic'),
+            onPressed: cubit.resetSelectedToAutomaticNotes,
+            icon: const Icon(Icons.auto_fix_high),
+            label: Text(
+              selectedCount == 1 ? 'Use automatic note' : 'Use automatic notes',
+            ),
           ),
         ),
         const SizedBox(height: 8),
         _StepRow(
           rowKeySuffix: 'root',
           label: 'Root',
-          value: region.rootMidi == null
-              ? 'Unset'
-              : PolyMultisampleParser.midiToNoteName(root),
-          onMinus: () => cubit.updateSelectedRoot(root - 1, manager: manager),
-          onPlus: () => cubit.updateSelectedRoot(root + 1, manager: manager),
+          value: focusedRootDisplay,
+          onMinus: root == null
+              ? null
+              : () => cubit.updateSelectedRoot(root - 1, manager: manager),
+          onPlus: root == null
+              ? null
+              : () => cubit.updateSelectedRoot(root + 1, manager: manager),
         ),
         _StepRow(
           rowKeySuffix: 'low',
           label: 'Low',
-          value: PolyMultisampleParser.midiToNoteName(low),
-          onMinus: () =>
-              cubit.updateSelectedRangeLow(low - 1, manager: manager),
-          onPlus: () => cubit.updateSelectedRangeLow(low + 1, manager: manager),
-        ),
-        _StepRow(
-          rowKeySuffix: 'high',
-          label: 'High',
-          value: PolyMultisampleParser.midiToNoteName(high),
-          onMinus: () =>
-              cubit.updateSelectedRangeHigh(high - 1, manager: manager),
-          onPlus: () =>
-              cubit.updateSelectedRangeHigh(high + 1, manager: manager),
+          value: focusedLowDisplay,
+          onMinus: low == null
+              ? null
+              : () =>
+                    cubit.updateSelectedSwitchPoint(low - 1, manager: manager),
+          onPlus: low == null
+              ? null
+              : () =>
+                    cubit.updateSelectedSwitchPoint(low + 1, manager: manager),
         ),
         _StepRow(
           rowKeySuffix: 'velocity',
@@ -396,6 +425,16 @@ class _MappingSection extends StatelessWidget {
       ],
     );
   }
+}
+
+typedef _AutomaticMidiValue = ({int midi, bool automatic});
+
+String _automaticMidiDisplay(_SelectionValue<_AutomaticMidiValue> selection) {
+  if (selection.mixed) return 'Mixed';
+  final value = selection.value;
+  if (value == null) return 'Unresolved';
+  final note = PolyMultisampleParser.midiToNoteName(value.midi);
+  return value.automatic ? 'Auto $note' : note;
 }
 
 class _SelectionValue<T extends Object> {
@@ -468,6 +507,45 @@ class _MappingDropdownRow<T extends Object> extends StatelessWidget {
               hint: Text(selected.mixed ? 'Mixed' : unsetHint),
               items: items,
               onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MappingReadOnlyRow extends StatelessWidget {
+  const _MappingReadOnlyRow({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.hint,
+  });
+
+  final String label;
+  final String value;
+  final String hint;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: PolySampleSidebarLayout.rowHeight,
+      child: Row(
+        children: [
+          SizedBox(
+            width: PolySampleSidebarLayout.mappingLabelWidth,
+            child: Text(label),
+          ),
+          Expanded(
+            child: Semantics(
+              label: '$label value',
+              value: value,
+              hint: hint,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(value, overflow: TextOverflow.ellipsis),
+              ),
             ),
           ),
         ],
@@ -1061,8 +1139,8 @@ class _StepRow extends StatelessWidget {
   final String rowKeySuffix;
   final String label;
   final String value;
-  final VoidCallback onMinus;
-  final VoidCallback onPlus;
+  final VoidCallback? onMinus;
+  final VoidCallback? onPlus;
 
   @override
   Widget build(BuildContext context) {
