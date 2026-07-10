@@ -1,8 +1,34 @@
+import 'dart:ui' show SemanticsAction;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/ui/poly_multisample/widgets/poly_key_map.dart';
+
+Widget _keyMap({
+  required List<PolySampleRegion> regions,
+  required String? selectedPath,
+  required ValueChanged<PolySampleRegion> onSelect,
+  double height = 180,
+  ValueChanged<int>? onPreviewNote,
+  ValueChanged<int>? onPreviewNoteStart,
+  VoidCallback? onPreviewNoteEnd,
+  int? playedMidiNote,
+}) {
+  return PolyKeyMap(
+    regions: regions,
+    mappingResolution: const PolySampleMappingResolver().resolve(regions),
+    selectedPath: selectedPath,
+    onSelect: onSelect,
+    height: height,
+    onPreviewNote: onPreviewNote,
+    onPreviewNoteStart: onPreviewNoteStart,
+    onPreviewNoteEnd: onPreviewNoteEnd,
+    playedMidiNote: playedMidiNote,
+  );
+}
 
 void main() {
   test('piano geometry renders black keys only at standard pitch classes', () {
@@ -120,7 +146,7 @@ void main() {
           body: SizedBox(
             width: 800,
             height: 200,
-            child: PolyKeyMap(
+            child: _keyMap(
               height: 200,
               regions: const [
                 PolySampleRegion(
@@ -149,7 +175,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('a.wav, root C3, range C3 to B3, velocity 1'),
+      find.bySemanticsLabel('a.wav, root C3, range C-1 to E3, velocity 1'),
       findsOneWidget,
     );
     semantics.dispose();
@@ -162,8 +188,7 @@ void main() {
       fileName: 'c3.wav',
       displayName: 'c3.wav',
       rootMidi: 48,
-      rangeLow: 0,
-      rangeHigh: 127,
+      switchPoint: 0,
     );
 
     await tester.pumpWidget(
@@ -172,7 +197,7 @@ void main() {
           body: SizedBox(
             width: 800,
             height: 200,
-            child: PolyKeyMap(
+            child: _keyMap(
               height: 200,
               regions: const [region],
               selectedPath: null,
@@ -199,8 +224,7 @@ void main() {
       fileName: 'c3.wav',
       displayName: 'c3.wav',
       rootMidi: 60,
-      rangeLow: 0,
-      rangeHigh: 127,
+      switchPoint: 0,
     );
 
     await tester.pumpWidget(
@@ -209,7 +233,7 @@ void main() {
           body: SizedBox(
             width: 800,
             height: 200,
-            child: PolyKeyMap(
+            child: _keyMap(
               height: 200,
               regions: const [region],
               selectedPath: null,
@@ -244,8 +268,7 @@ void main() {
       fileName: 'c3.wav',
       displayName: 'c3.wav',
       rootMidi: 60,
-      rangeLow: 0,
-      rangeHigh: 127,
+      switchPoint: 0,
     );
 
     await tester.pumpWidget(
@@ -254,7 +277,7 @@ void main() {
           body: SizedBox(
             width: 800,
             height: 200,
-            child: PolyKeyMap(
+            child: _keyMap(
               height: 200,
               regions: const [region],
               selectedPath: null,
@@ -294,8 +317,7 @@ void main() {
       fileName: 'c3.wav',
       displayName: 'c3.wav',
       rootMidi: 48,
-      rangeLow: 0,
-      rangeHigh: 127,
+      switchPoint: 0,
     );
 
     await tester.pumpWidget(
@@ -304,7 +326,7 @@ void main() {
           body: SizedBox(
             width: 800,
             height: 200,
-            child: PolyKeyMap(
+            child: _keyMap(
               height: 200,
               regions: const [region],
               selectedPath: null,
@@ -332,8 +354,7 @@ void main() {
         fileName: 'c4.wav',
         displayName: 'c4.wav',
         rootMidi: 60,
-        rangeLow: 60,
-        rangeHigh: 60,
+        switchPoint: 60,
       );
 
       await tester.pumpWidget(
@@ -345,7 +366,7 @@ void main() {
             body: SizedBox(
               width: 800,
               height: 200,
-              child: PolyKeyMap(
+              child: _keyMap(
                 height: 200,
                 regions: const [region],
                 selectedPath: region.path,
@@ -383,7 +404,7 @@ void main() {
           body: SizedBox(
             width: 800,
             height: 200,
-            child: PolyKeyMap(
+            child: _keyMap(
               height: 200,
               regions: const [
                 PolySampleRegion(
@@ -413,8 +434,7 @@ void main() {
       fileName: 'c3.wav',
       displayName: 'c3.wav',
       rootMidi: 48,
-      rangeLow: 0,
-      rangeHigh: 127,
+      switchPoint: 0,
     );
 
     await tester.pumpWidget(
@@ -426,7 +446,7 @@ void main() {
               SizedBox(
                 width: 800,
                 height: 200,
-                child: PolyKeyMap(
+                child: _keyMap(
                   height: 200,
                   regions: const [region],
                   selectedPath: null,
@@ -460,7 +480,7 @@ void main() {
           body: SizedBox(
             width: 800,
             height: 200,
-            child: PolyKeyMap(
+            child: _keyMap(
               height: 200,
               regions: const [
                 PolySampleRegion(
@@ -486,12 +506,14 @@ void main() {
 
     expect(
       find.bySemanticsLabel(
-        'close/C4.wav, root C4, range C4 to C#4, velocity 1',
+        'close/C4.wav, root C4, range C-1 to C4, velocity 1',
       ),
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('room/C4.wav, root D4, range D4 to G9, velocity 1'),
+      find.bySemanticsLabel(
+        'room/C4.wav, root D4, range C#4 to G9, velocity 1',
+      ),
       findsOneWidget,
     );
     semantics.dispose();
@@ -504,7 +526,7 @@ void main() {
           body: SizedBox(
             width: 800,
             height: 200,
-            child: PolyKeyMap(
+            child: _keyMap(
               height: 200,
               regions: const [],
               selectedPath: null,
@@ -522,5 +544,96 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('rootless zones are mapped focusable and selectable', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    PolySampleRegion? selected;
+    const regions = [
+      PolySampleRegion(
+        path: '/tmp/Kick.wav',
+        fileName: 'Kick.wav',
+        displayName: 'Kick.wav',
+      ),
+      PolySampleRegion(
+        path: '/tmp/Snare.wav',
+        fileName: 'Snare.wav',
+        displayName: 'Snare.wav',
+      ),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 800,
+            height: 200,
+            child: _keyMap(
+              height: 200,
+              regions: regions,
+              selectedPath: null,
+              onSelect: (region) => selected = region,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsLabel('Keyboard map with 2 mapped samples'),
+      findsOneWidget,
+    );
+    final kick = find.bySemanticsLabel(
+      'Kick.wav, root C3, automatic, range C-1 to C3, velocity 1',
+    );
+    expect(kick, findsOneWidget);
+    expect(
+      tester
+          .getSemantics(kick)
+          .getSemanticsData()
+          .hasAction(SemanticsAction.tap),
+      isTrue,
+    );
+    await tester.tap(kick);
+    await tester.pump();
+    expect(selected, regions.first);
+    semantics.dispose();
+  });
+
+  testWidgets('EVOS A1 semantic range is F1 through B1', (tester) async {
+    final semantics = tester.ensureSemantics();
+    const naturals = [12, 19, 26, 33, 40, 47, 54, 61, 68, 75];
+    final regions = [
+      for (final natural in naturals)
+        PolySampleRegion(
+          path: '/tmp/EVOS_$natural.wav',
+          fileName: 'EVOS_$natural.wav',
+          displayName: 'EVOS_$natural.wav',
+          rootMidi: natural,
+        ),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 800,
+            height: 200,
+            child: _keyMap(
+              height: 200,
+              regions: regions,
+              selectedPath: null,
+              onSelect: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsLabel('EVOS_33.wav, root A1, range F1 to B1, velocity 1'),
+      findsOneWidget,
+    );
+    semantics.dispose();
   });
 }

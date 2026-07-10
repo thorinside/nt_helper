@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 
 class PolyKeyMap extends StatefulWidget {
   const PolyKeyMap({
     super.key,
     required this.regions,
+    required this.mappingResolution,
     required this.selectedPath,
     required this.onSelect,
     this.height = 180,
@@ -21,6 +23,7 @@ class PolyKeyMap extends StatefulWidget {
   });
 
   final List<PolySampleRegion> regions;
+  final PolySampleMappingResolution mappingResolution;
   final String? selectedPath;
   final ValueChanged<PolySampleRegion> onSelect;
   final double height;
@@ -47,7 +50,8 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
   @override
   void didUpdateWidget(covariant PolyKeyMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedPath != widget.selectedPath) {
+    if (oldWidget.selectedPath != widget.selectedPath ||
+        oldWidget.mappingResolution != widget.mappingResolution) {
       _pendingAutoScrollPath = widget.selectedPath;
     }
   }
@@ -76,21 +80,18 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     final selectedPath = _pendingAutoScrollPath;
     if (selectedPath == null) return;
     _pendingAutoScrollPath = null;
-    final selected = widget.regions
-        .where(
-          (region) => region.path == selectedPath && region.rootMidi != null,
-        )
-        .firstOrNull;
-    if (selected == null) return;
+    final selected = widget.mappingResolution.mappingForPath(selectedPath);
+    if (selected == null || !selected.isPlayable) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
       final layout = _PolyKeyMapLayout(
         canvasSize,
-        velocityLanes(widget.regions),
+        widget.mappingResolution.velocityLanes,
       );
       final span = math.max(1, maxMidi - minMidi + 1);
       final rootX =
-          layout.left + ((selected.rootMidi! - minMidi) / span) * layout.width;
+          layout.left +
+          ((selected.naturalMidi - minMidi) / span) * layout.width;
       final viewportWidth = _scrollController.position.viewportDimension;
       final current = _scrollController.offset;
       if (rootX >= current && rootX <= current + viewportWidth) return;
@@ -108,7 +109,10 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     int minMidi,
     int maxMidi,
   ) {
-    final layout = _PolyKeyMapLayout(size, velocityLanes(widget.regions));
+    final layout = _PolyKeyMapLayout(
+      size,
+      widget.mappingResolution.velocityLanes,
+    );
     final keyboardRect = Rect.fromLTRB(
       layout.left,
       layout.keyboardTop,
@@ -127,14 +131,15 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     int minMidi,
     int maxMidi,
   ) {
-    final layout = _PolyKeyMapLayout(canvasSize, velocityLanes(widget.regions));
+    final layout = _PolyKeyMapLayout(
+      canvasSize,
+      widget.mappingResolution.velocityLanes,
+    );
     final span = math.max(1, maxMidi - minMidi + 1);
     return [
-      for (final region in widget.regions.where(
-        (region) => region.rootMidi != null,
-      ))
+      for (final mapping in widget.mappingResolution.playableMappings)
         Positioned.fromRect(
-          rect: _regionRect(region, layout, span, minMidi, widget.regions),
+          rect: _regionRect(mapping, layout, span, minMidi),
           child: FocusableActionDetector(
             mouseCursor: SystemMouseCursors.click,
             shortcuts: const {
@@ -144,28 +149,28 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
             actions: {
               ActivateIntent: CallbackAction<ActivateIntent>(
                 onInvoke: (_) {
-                  widget.onSelect(region);
+                  widget.onSelect(mapping.region);
                   return null;
                 },
               ),
             },
             onFocusChange: (focused) {
               setState(() {
-                _focusedRegionPath = focused ? region.path : null;
+                _focusedRegionPath = focused ? mapping.region.path : null;
               });
             },
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => widget.onSelect(region),
+              onTap: () => widget.onSelect(mapping.region),
               child: Semantics(
                 button: true,
-                selected: region.path == widget.selectedPath,
-                label: _regionSemanticLabel(region, widget.regions),
-                onTap: () => widget.onSelect(region),
+                selected: mapping.region.path == widget.selectedPath,
+                label: _regionSemanticLabel(mapping, widget.regions),
+                onTap: () => widget.onSelect(mapping.region),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: _focusedRegionPath == region.path
+                      color: _focusedRegionPath == mapping.region.path
                           ? Theme.of(context).colorScheme.primary
                           : Colors.transparent,
                       width: 2,
@@ -184,7 +189,10 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
     final onPreviewNoteStart =
         widget.onPreviewNoteStart ?? widget.onPreviewNote;
     if (onPreviewNoteStart == null) return const [];
-    final layout = _PolyKeyMapLayout(canvasSize, velocityLanes(widget.regions));
+    final layout = _PolyKeyMapLayout(
+      canvasSize,
+      widget.mappingResolution.velocityLanes,
+    );
     final keyboardRect = Rect.fromLTRB(
       layout.left,
       layout.keyboardTop,
@@ -235,10 +243,8 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
 
   @override
   Widget build(BuildContext context) {
-    final mappedCount = widget.regions
-        .where((region) => region.rootMidi != null)
-        .length;
-    final extents = midiExtents(widget.regions);
+    final mappedCount = widget.mappingResolution.mappedCount;
+    final extents = widget.mappingResolution.midiExtents;
     final minMidi = extents == null ? 24 : math.max(0, extents.$1 - 6);
     final maxMidi = extents == null ? 96 : math.min(127, extents.$2 + 6);
     return Semantics(
@@ -285,7 +291,7 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
                             final region = _regionAtPosition(
                               details.localPosition,
                               canvasSize,
-                              widget.regions,
+                              widget.mappingResolution,
                               minMidi,
                               maxMidi,
                             );
@@ -308,6 +314,7 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
                           child: CustomPaint(
                             painter: _PolyKeyMapPainter(
                               regions: widget.regions,
+                              mappingResolution: widget.mappingResolution,
                               selectedPath: widget.selectedPath,
                               playedMidiNote: widget.playedMidiNote,
                               minMidi: minMidi,
@@ -333,19 +340,17 @@ class _PolyKeyMapState extends State<PolyKeyMap> {
 }
 
 Rect _regionRect(
-  PolySampleRegion region,
+  PolySampleResolvedMapping mapping,
   _PolyKeyMapLayout layout,
   int span,
   int minMidi,
-  List<PolySampleRegion> regions,
 ) {
+  final region = mapping.region;
   final laneIndex = layout.lanes.indexOf(region.velocityLayer ?? 1);
   final lane = laneIndex < 0 ? 0 : laneIndex;
-  final x0 =
-      layout.left + ((effectiveLow(region) - minMidi) / span) * layout.width;
+  final x0 = layout.left + ((mapping.lowMidi! - minMidi) / span) * layout.width;
   final x1 =
-      layout.left +
-      ((effectiveHigh(region, regions) + 1 - minMidi) / span) * layout.width;
+      layout.left + ((mapping.highMidi! + 1 - minMidi) / span) * layout.width;
   final y0 = layout.zoneTop + lane * layout.laneHeight;
   return Rect.fromLTWH(
     x0 + 1,
@@ -356,17 +361,15 @@ Rect _regionRect(
 }
 
 String _regionSemanticLabel(
-  PolySampleRegion region,
+  PolySampleResolvedMapping mapping,
   List<PolySampleRegion> regions,
 ) {
-  final root = region.rootMidi == null
-      ? 'unset'
-      : region.rootName ??
-            PolyMultisampleParser.midiToNoteName(region.rootMidi!);
+  final region = mapping.region;
+  final root = PolyMultisampleParser.midiToNoteName(mapping.naturalMidi);
   return [
     sampleDisplayLabel(region, regions),
-    'root $root',
-    'range ${PolyMultisampleParser.midiToNoteName(effectiveLow(region))} to ${PolyMultisampleParser.midiToNoteName(effectiveHigh(region, regions))}',
+    mapping.naturalIsAutomatic ? 'root $root, automatic' : 'root $root',
+    'range ${PolyMultisampleParser.midiToNoteName(mapping.lowMidi!)} to ${PolyMultisampleParser.midiToNoteName(mapping.highMidi!)}',
     'velocity ${region.velocityLayer ?? 1}',
   ].join(', ');
 }
@@ -374,11 +377,11 @@ String _regionSemanticLabel(
 PolySampleRegion? _regionAtPosition(
   Offset position,
   Size size,
-  List<PolySampleRegion> regions,
+  PolySampleMappingResolution mappingResolution,
   int minMidi,
   int maxMidi,
 ) {
-  final layout = _PolyKeyMapLayout(size, velocityLanes(regions));
+  final layout = _PolyKeyMapLayout(size, mappingResolution.velocityLanes);
   if (!layout.zoneRect.contains(position)) return null;
   final span = math.max(1, maxMidi - minMidi + 1);
   final midi = (minMidi + ((position.dx - layout.left) / layout.width) * span)
@@ -388,19 +391,18 @@ PolySampleRegion? _regionAtPosition(
       .floor()
       .clamp(0, layout.lanes.length - 1);
   final velocity = layout.lanes[laneIndex];
-  final matches = regions.where((region) {
-    if (region.rootMidi == null) return false;
-    return (region.velocityLayer ?? 1) == velocity &&
-        midi >= effectiveLow(region) &&
-        midi <= effectiveHigh(region, regions);
+  final matches = mappingResolution.playableMappings.where((mapping) {
+    return (mapping.region.velocityLayer ?? 1) == velocity &&
+        midi >= mapping.lowMidi! &&
+        midi <= mapping.highMidi!;
   }).toList();
   if (matches.isEmpty) return null;
   matches.sort((a, b) {
-    final rootCompare = (a.rootMidi ?? 0).compareTo(b.rootMidi ?? 0);
+    final rootCompare = a.naturalMidi.compareTo(b.naturalMidi);
     if (rootCompare != 0) return rootCompare;
-    return (a.roundRobin ?? 1).compareTo(b.roundRobin ?? 1);
+    return (a.region.roundRobin ?? 1).compareTo(b.region.roundRobin ?? 1);
   });
-  return matches.first;
+  return matches.first.region;
 }
 
 class _PolyKeyMapLayout {
@@ -631,6 +633,7 @@ class _KeyboardUnitSpan {
 class _PolyKeyMapPainter extends CustomPainter {
   _PolyKeyMapPainter({
     required this.regions,
+    required this.mappingResolution,
     required this.selectedPath,
     required this.playedMidiNote,
     required this.minMidi,
@@ -639,6 +642,7 @@ class _PolyKeyMapPainter extends CustomPainter {
   });
 
   final List<PolySampleRegion> regions;
+  final PolySampleMappingResolution mappingResolution;
   final String? selectedPath;
   final int? playedMidiNote;
   final int minMidi;
@@ -647,7 +651,7 @@ class _PolyKeyMapPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final lanes = velocityLanes(regions);
+    final lanes = mappingResolution.velocityLanes;
     final layout = _PolyKeyMapLayout(size, lanes);
     final span = math.max(1, maxMidi - minMidi + 1);
     final gridPaint = Paint()
@@ -710,16 +714,15 @@ class _PolyKeyMapPainter extends CustomPainter {
       }
     }
 
-    for (final region in regions.where((region) => region.rootMidi != null)) {
+    for (final mapping in mappingResolution.playableMappings) {
+      final region = mapping.region;
       final laneIndex = lanes.indexOf(region.velocityLayer ?? 1);
       final lane = laneIndex < 0 ? 0 : laneIndex;
       final x0 =
-          layout.left +
-          ((effectiveLow(region) - minMidi) / span) * layout.width;
+          layout.left + ((mapping.lowMidi! - minMidi) / span) * layout.width;
       final x1 =
           layout.left +
-          ((effectiveHigh(region, regions) + 1 - minMidi) / span) *
-              layout.width;
+          ((mapping.highMidi! + 1 - minMidi) / span) * layout.width;
       final y0 = layout.zoneTop + lane * layout.laneHeight;
       final rect = Rect.fromLTRB(
         x0 + 1,
@@ -745,9 +748,7 @@ class _PolyKeyMapPainter extends CustomPainter {
         );
       }
       if (rect.width > 26) {
-        final label =
-            region.rootName ??
-            PolyMultisampleParser.midiToNoteName(region.rootMidi!);
+        final label = PolyMultisampleParser.midiToNoteName(mapping.naturalMidi);
         final text = TextPainter(
           text: TextSpan(
             text: label,
@@ -836,6 +837,7 @@ class _PolyKeyMapPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PolyKeyMapPainter oldDelegate) {
     return oldDelegate.regions != regions ||
+        oldDelegate.mappingResolution != mappingResolution ||
         oldDelegate.selectedPath != selectedPath ||
         oldDelegate.playedMidiNote != playedMidiNote ||
         oldDelegate.minMidi != minMidi ||

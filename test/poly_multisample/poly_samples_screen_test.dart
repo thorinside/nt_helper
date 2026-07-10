@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_samples_screen.dart';
 
@@ -581,7 +582,13 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   String? savedCustomDraftPath;
 
   void setTestState(PolyMultisampleBuilderState state) {
-    emit(state);
+    emit(
+      state.copyWith(
+        mappingResolution: const PolySampleMappingResolver().resolve(
+          state.editedRegions,
+        ),
+      ),
+    );
   }
 
   @override

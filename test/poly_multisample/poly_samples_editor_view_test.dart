@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_samples_editor_view.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_samples_landing_view.dart';
@@ -57,7 +58,7 @@ void main() {
     await _pumpEditor(tester, cubit);
 
     final node = tester.getSemantics(
-      find.bySemanticsLabel('Keyboard map with 1 mapped samples'),
+      find.bySemanticsLabel('Keyboard map with 2 mapped samples'),
     );
     expect(
       node.hint,
@@ -461,6 +462,9 @@ PolyMultisampleBuilderState _state({
   List<PolySampleRegion>? editedRegions,
 }) {
   final currentRegions = editedRegions ?? _regions;
+  final mappingResolution = const PolySampleMappingResolver().resolve(
+    currentRegions,
+  );
   final baseline = dirty
       ? const [
           PolySampleRegion(
@@ -489,6 +493,7 @@ PolyMultisampleBuilderState _state({
     ),
     baselineRegions: baseline,
     editedRegions: currentRegions,
+    mappingResolution: mappingResolution,
     selectedPaths: selectedPaths ?? const {'/tmp/Piano/Piano_C3.wav'},
     focusedPath: focusedPath ?? '/tmp/Piano/Piano_C3.wav',
     wavEditDrafts: wavEditDrafts,
@@ -549,7 +554,13 @@ class _TestPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   }
 
   void setTestState(PolyMultisampleBuilderState state) {
-    emit(state);
+    emit(
+      state.copyWith(
+        mappingResolution: const PolySampleMappingResolver().resolve(
+          state.editedRegions,
+        ),
+      ),
+    );
   }
 }
 
