@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
 import 'package:path/path.dart' as p;
 
@@ -56,86 +57,40 @@ List<int> velocityLanes(List<PolySampleRegion> regions) {
   return lanes.isEmpty ? const [1] : lanes.reversed.toList();
 }
 
-List<String> mappingWarnings(List<PolySampleRegion> regions) {
-  final warnings = <String>[];
-
-  int lowFor(PolySampleRegion region) {
-    return (region.rangeLow ?? region.switchPoint ?? region.rootMidi ?? 0)
-        .clamp(0, 127)
-        .toInt();
+List<String> mappingWarningMessages(
+  List<PolySampleRegion> regions,
+  PolySampleMappingResolution resolution,
+) {
+  final messages = <String>[
+    for (final region in regions)
+      if (region.currentIssues.contains(PolySampleIssue.unsupportedFileType))
+        'Unsupported sample: ${region.displayName} has an unsupported file type.',
+  ];
+  for (final issue in resolution.issues) {
+    final mapping = issue.mapping;
+    final region = mapping.region;
+    final other = issue.other;
+    messages.add(switch (issue.kind) {
+      PolySampleMappingIssueKind.naturalOutOfMidiRange =>
+        'Mapping impossible: ${region.displayName} natural MIDI ${mapping.naturalMidi} is outside 0-127.',
+      PolySampleMappingIssueKind.switchOutOfMidiRange =>
+        'Mapping impossible: ${region.displayName} Low MIDI ${region.switchPoint} is outside 0-127.',
+      PolySampleMappingIssueKind.impossibleRange =>
+        'Mapping impossible: ${region.displayName} has low ${_noteLabel(mapping.lowMidi!)} above high ${_noteLabel(mapping.highMidi!)}.',
+      PolySampleMappingIssueKind.naturalOutsideRange =>
+        'Mapping impossible: ${region.displayName} natural ${_noteLabel(mapping.naturalMidi)} is outside ${_noteLabel(mapping.lowMidi!)} to ${_noteLabel(mapping.highMidi!)}.',
+      PolySampleMappingIssueKind.variantSwitchMismatch =>
+        'Mapping mismatch: ${region.displayName} and ${other!.region.displayName} share natural ${_noteLabel(mapping.naturalMidi)} but use different Low values.',
+      PolySampleMappingIssueKind.overlappingRange =>
+        'Mapping overlap: ${region.displayName} overlaps ${other!.region.displayName} on velocity ${region.velocityLayer ?? 1}, RR ${region.roundRobin ?? 1}.',
+    });
   }
-
-  int highFor(PolySampleRegion region) {
-    final explicit = region.rangeHigh;
-    if (explicit != null) return explicit.clamp(0, 127).toInt();
-    final low = lowFor(region);
-    final velocity = region.velocityLayer ?? 1;
-    final rr = region.roundRobin ?? 1;
-    final laterLows =
-        regions
-            .where(
-              (candidate) =>
-                  candidate.rootMidi != null &&
-                  (candidate.velocityLayer ?? 1) == velocity &&
-                  (candidate.roundRobin ?? 1) == rr &&
-                  lowFor(candidate) > low,
-            )
-            .map(lowFor)
-            .toList()
-          ..sort();
-    if (laterLows.isEmpty) return 127;
-    return math.max(low, laterLows.first - 1);
-  }
-
-  for (final region in regions) {
-    final low = lowFor(region);
-    final high = highFor(region);
-    if (low > high) {
-      warnings.add(
-        'Mapping impossible: ${region.displayName} has low ${_noteLabel(low)} above high ${_noteLabel(high)}.',
-      );
-    }
-  }
-  for (final region in regions) {
-    final root = region.rootMidi;
-    if (root == null) continue;
-    final low = lowFor(region);
-    final high = highFor(region);
-    if (root < low || root > high) {
-      warnings.add(
-        'Mapping impossible: ${region.displayName} root ${_noteLabel(root)} is outside ${_noteLabel(low)}–${_noteLabel(high)}.',
-      );
-    }
-  }
-  for (var i = 0; i < regions.length; i++) {
-    final a = regions[i];
-    if (a.rootMidi == null) continue;
-    final lowA = lowFor(a);
-    final highA = highFor(a);
-    final velocityA = a.velocityLayer ?? 1;
-    final rrA = a.roundRobin ?? 1;
-    for (var j = i + 1; j < regions.length; j++) {
-      final b = regions[j];
-      if (b.rootMidi == null) continue;
-      if ((b.velocityLayer ?? 1) != velocityA || (b.roundRobin ?? 1) != rrA) {
-        continue;
-      }
-      final lowB = lowFor(b);
-      final highB = highFor(b);
-      final overlapLow = math.max(lowA, lowB);
-      final overlapHigh = math.min(highA, highB);
-      if (overlapLow <= overlapHigh) {
-        warnings.add(
-          'Mapping overlap: ${a.displayName} overlaps ${b.displayName} on velocity $velocityA, RR $rrA.',
-        );
-      }
-    }
-  }
-
-  return warnings;
+  return messages;
 }
 
-String _noteLabel(int midi) => PolyMultisampleParser.midiToNoteName(midi);
+String _noteLabel(int midi) => midi >= 0 && midi <= 127
+    ? PolyMultisampleParser.midiToNoteName(midi)
+    : 'MIDI $midi';
 
 PolySampleRegion? selectedRegionFor(PolyMultisampleBuilderState state) {
   final focused = state.focusedPath;

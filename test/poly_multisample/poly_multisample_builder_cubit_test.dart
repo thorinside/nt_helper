@@ -14,11 +14,13 @@ import 'package:nt_helper/poly_multisample/poly_sample_apply_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_folder_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_hardware_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_preferences_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_upload_service.dart';
 import 'package:nt_helper/poly_multisample/poly_wav_service.dart';
 import 'package:nt_helper/poly_multisample/wav_metadata.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_multisample_builder_cubit.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDistingMidiManager extends Mock implements IDistingMidiManager {}
@@ -461,66 +463,54 @@ void main() {
       ]);
     });
 
-    test(
-      'mapping warnings report invalid range root outside range and overlaps',
-      () {
-        final cubit = _ExposedPolyMultisampleBuilderCubit(
-          previewService: PolyAudioPreviewService(
-            adapter: _FakePreviewAdapter(),
-          ),
-        );
-        addTearDown(cubit.close);
-        cubit.setTestState(
-          const PolyMultisampleBuilderState(
-            editedRegions: [
-              PolySampleRegion(
-                path: '/tmp/invalid.wav',
-                fileName: 'invalid.wav',
-                displayName: 'invalid.wav',
-                rangeLow: 72,
-                rangeHigh: 60,
-              ),
-              PolySampleRegion(
-                path: '/tmp/outside.wav',
-                fileName: 'outside.wav',
-                displayName: 'outside.wav',
-                rootMidi: 74,
-                rangeLow: 48,
-                rangeHigh: 60,
-              ),
-              PolySampleRegion(
-                path: '/tmp/overlap-a.wav',
-                fileName: 'overlap-a.wav',
-                displayName: 'overlap-a.wav',
-                rootMidi: 66,
-                rangeLow: 64,
-                rangeHigh: 72,
-                velocityLayer: 2,
-                roundRobin: 3,
-              ),
-              PolySampleRegion(
-                path: '/tmp/overlap-b.wav',
-                fileName: 'overlap-b.wav',
-                displayName: 'overlap-b.wav',
-                rootMidi: 71,
-                rangeLow: 70,
-                rangeHigh: 80,
-                velocityLayer: 2,
-                roundRobin: 3,
-              ),
-            ],
-          ),
-        );
+    test('mapping warnings use structured firmware resolution', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        const PolyMultisampleBuilderState(
+          editedRegions: [
+            PolySampleRegion(
+              path: '/tmp/invalid.wav',
+              fileName: 'invalid.wav',
+              displayName: 'invalid.wav',
+              rootMidi: 60,
+              switchPoint: 70,
+            ),
+            PolySampleRegion(
+              path: '/tmp/next.wav',
+              fileName: 'next.wav',
+              displayName: 'next.wav',
+              rootMidi: 67,
+              switchPoint: 65,
+            ),
+            PolySampleRegion(
+              path: '/tmp/overlap-a.wav',
+              fileName: 'overlap-a.wav',
+              displayName: 'overlap-a.wav',
+              rootMidi: 72,
+              velocityLayer: 2,
+              roundRobin: 3,
+            ),
+            PolySampleRegion(
+              path: '/tmp/overlap-b.wav',
+              fileName: 'overlap-b.wav',
+              displayName: 'overlap-b.wav',
+              rootMidi: 72,
+              velocityLayer: 2,
+              roundRobin: 3,
+            ),
+          ],
+        ),
+      );
 
-        cubit.updateRoot('/tmp/overlap-a.wav', 66);
-
-        expect(cubit.state.mappingWarnings, [
-          'Mapping impossible: invalid.wav has low C5 above high C4.',
-          'Mapping impossible: outside.wav root D5 is outside C3–C4.',
-          'Mapping overlap: overlap-a.wav overlaps overlap-b.wav on velocity 2, RR 3.',
-        ]);
-      },
-    );
+      expect(cubit.state.mappingWarnings, [
+        'Mapping impossible: invalid.wav has low A#4 above high E4.',
+        'Mapping impossible: invalid.wav natural C4 is outside A#4 to E4.',
+        'Mapping overlap: overlap-a.wav overlaps overlap-b.wav on velocity 2, RR 3.',
+      ]);
+    });
 
     test('mapping warnings allow different velocity and rr overlaps', () {
       final cubit = _ExposedPolyMultisampleBuilderCubit(
@@ -535,8 +525,6 @@ void main() {
               fileName: 'a.wav',
               displayName: 'a.wav',
               rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 64,
               velocityLayer: 1,
               roundRobin: 1,
             ),
@@ -544,9 +532,7 @@ void main() {
               path: '/tmp/b.wav',
               fileName: 'b.wav',
               displayName: 'b.wav',
-              rootMidi: 62,
-              rangeLow: 61,
-              rangeHigh: 65,
+              rootMidi: 60,
               velocityLayer: 2,
               roundRobin: 1,
             ),
@@ -554,9 +540,7 @@ void main() {
               path: '/tmp/c.wav',
               fileName: 'c.wav',
               displayName: 'c.wav',
-              rootMidi: 64,
-              rangeLow: 62,
-              rangeHigh: 66,
+              rootMidi: 60,
               velocityLayer: 1,
               roundRobin: 2,
             ),
@@ -564,9 +548,32 @@ void main() {
         ),
       );
 
-      cubit.updateRoot('/tmp/a.wav', 60);
-
       expect(cubit.state.mappingWarnings, isEmpty);
+    });
+
+    test('raw unsupported warning precedes mapping warnings', () {
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: _FakePreviewAdapter()),
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          editedRegions: [
+            const PolySampleRegion(
+              path: '/tmp/readme.txt',
+              fileName: 'readme.txt',
+              displayName: 'readme.txt',
+            ),
+            PolyMultisampleParser.parsePath('/tmp/Piano_C3_SW999.wav'),
+          ],
+        ),
+      );
+
+      expect(cubit.state.mappingWarnings.take(2), [
+        'Unsupported sample: readme.txt has an unsupported file type.',
+        'Mapping impossible: Piano_C3_SW999.wav Low MIDI 999 is outside 0-127.',
+      ]);
+      expect(cubit.state.mappingWarnings, hasLength(4));
     });
 
     test('selected bulk mapping edits only selected rows', () {
@@ -1230,8 +1237,8 @@ void main() {
     );
 
     test('keyboard note preview rotates same-range round robins', () async {
-      final sourceA = File('${tempRoot.path}/Piano_C4_rr1.wav');
-      final sourceB = File('${tempRoot.path}/Piano_C4_rr2.wav');
+      final sourceA = File('${tempRoot.path}/Snare_RR1.wav');
+      final sourceB = File('${tempRoot.path}/Snare_RR2.wav');
       _writeTinyPreviewWav(sourceA);
       _writeTinyPreviewWav(sourceB);
       final adapter = _FakePreviewAdapter();
@@ -1247,29 +1254,23 @@ void main() {
           editedRegions: [
             PolySampleRegion(
               path: sourceA.path,
-              fileName: 'rr1.wav',
-              displayName: 'rr1.wav',
-              rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 60,
+              fileName: 'Snare_RR1.wav',
+              displayName: 'Snare_RR1.wav',
               roundRobin: 1,
             ),
             PolySampleRegion(
               path: sourceB.path,
-              fileName: 'rr2.wav',
-              displayName: 'rr2.wav',
-              rootMidi: 60,
-              rangeLow: 60,
-              rangeHigh: 60,
+              fileName: 'Snare_RR2.wav',
+              displayName: 'Snare_RR2.wav',
               roundRobin: 2,
             ),
           ],
         ),
       );
 
-      await cubit.playKeyboardNotePreview(60);
+      await cubit.playKeyboardNotePreview(48);
       expect(cubit.state.focusedPath, sourceA.path);
-      await cubit.playKeyboardNotePreview(60);
+      await cubit.playKeyboardNotePreview(48);
 
       expect(cubit.state.focusedPath, sourceB.path);
       expect(cubit.state.previewState.visiblePath, sourceB.path);
@@ -1313,17 +1314,56 @@ void main() {
       },
     );
 
+    test('keyboard note preview honors an explicit switch boundary', () async {
+      final lower = File('${tempRoot.path}/Lower_C3.wav');
+      final higher = File('${tempRoot.path}/Higher_C4_SW54.wav');
+      _writeTinyPreviewWav(lower);
+      _writeTinyPreviewWav(higher);
+      final adapter = _FakePreviewAdapter();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: adapter),
+        notePreviewRenderer: _ImmediateNotePreviewRenderer().render,
+      );
+      addTearDown(cubit.close);
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            PolySampleRegion(
+              path: lower.path,
+              fileName: 'Lower_C3.wav',
+              displayName: 'Lower_C3.wav',
+              rootMidi: 48,
+            ),
+            PolySampleRegion(
+              path: higher.path,
+              fileName: 'Higher_C4_SW54.wav',
+              displayName: 'Higher_C4_SW54.wav',
+              rootMidi: 60,
+              switchPoint: 54,
+            ),
+          ],
+        ),
+      );
+
+      await cubit.playKeyboardNotePreview(53);
+      expect(cubit.state.focusedPath, lower.path);
+      await cubit.playKeyboardNotePreview(54);
+
+      expect(cubit.state.focusedPath, higher.path);
+      expect(cubit.state.previewState.visiblePath, higher.path);
+    });
+
     test(
-      'keyboard note preview prefers the most specific overlapping range',
+      'keyboard note preview uses automatic natural for rootless wav',
       () async {
-        final wide = File('${tempRoot.path}/Wide_C4.wav');
-        final narrow = File('${tempRoot.path}/Narrow_C4.wav');
-        _writeTinyPreviewWav(wide);
-        _writeTinyPreviewWav(narrow);
+        final source = File('${tempRoot.path}/Kick.wav');
+        _writeTinyPreviewWav(source);
         final adapter = _FakePreviewAdapter();
+        final renderer = _ImmediateNotePreviewRenderer();
         final cubit = _ExposedPolyMultisampleBuilderCubit(
           previewService: PolyAudioPreviewService(adapter: adapter),
-          notePreviewRenderer: _ImmediateNotePreviewRenderer().render,
+          notePreviewRenderer: renderer.render,
         );
         addTearDown(cubit.close);
         cubit.setTestState(
@@ -1331,20 +1371,9 @@ void main() {
             sourceMode: PolySampleSourceMode.local,
             editedRegions: [
               PolySampleRegion(
-                path: wide.path,
-                fileName: 'wide.wav',
-                displayName: 'wide.wav',
-                rootMidi: 60,
-                rangeLow: 48,
-                rangeHigh: 72,
-              ),
-              PolySampleRegion(
-                path: narrow.path,
-                fileName: 'narrow.wav',
-                displayName: 'narrow.wav',
-                rootMidi: 60,
-                rangeLow: 59,
-                rangeHigh: 61,
+                path: source.path,
+                fileName: 'Kick.wav',
+                displayName: 'Kick.wav',
               ),
             ],
           ),
@@ -1352,10 +1381,55 @@ void main() {
 
         await cubit.playKeyboardNotePreview(60);
 
-        expect(cubit.state.focusedPath, narrow.path);
-        expect(cubit.state.previewState.visiblePath, narrow.path);
+        expect(cubit.state.focusedPath, source.path);
+        expect(renderer.ratios.single, closeTo(2, 0.0001));
+        expect(
+          cubit.state.previewState.sourcePlayback!.pitchRatio,
+          closeTo(2, 0.0001),
+        );
       },
     );
+
+    test('keyboard note preview follows EVOS contextual boundary', () async {
+      final a1 = File('${tempRoot.path}/EVOS_A1.wav');
+      final e2 = File('${tempRoot.path}/EVOS_E2.wav');
+      _writeTinyPreviewWav(a1);
+      _writeTinyPreviewWav(e2);
+      final adapter = _FakePreviewAdapter();
+      final cubit = _ExposedPolyMultisampleBuilderCubit(
+        previewService: PolyAudioPreviewService(adapter: adapter),
+        notePreviewRenderer: _ImmediateNotePreviewRenderer().render,
+      );
+      addTearDown(cubit.close);
+      const naturals = [12, 19, 26, 33, 40, 47, 54, 61, 68, 75];
+      cubit.setTestState(
+        PolyMultisampleBuilderState(
+          sourceMode: PolySampleSourceMode.local,
+          editedRegions: [
+            for (final natural in naturals)
+              PolySampleRegion(
+                path: natural == 33
+                    ? a1.path
+                    : natural == 40
+                    ? e2.path
+                    : '${tempRoot.path}/EVOS_$natural.aif',
+                fileName: natural == 33
+                    ? 'EVOS_A1.wav'
+                    : natural == 40
+                    ? 'EVOS_E2.wav'
+                    : 'EVOS_$natural.aif',
+                displayName: 'EVOS_$natural',
+                rootMidi: natural,
+              ),
+          ],
+        ),
+      );
+
+      await cubit.playKeyboardNotePreview(35);
+      expect(cubit.state.focusedPath, a1.path);
+      await cubit.playKeyboardNotePreview(36);
+      expect(cubit.state.focusedPath, e2.path);
+    });
 
     test(
       'keyboard note preview uses focused velocity lane before lane one',
@@ -3190,6 +3264,15 @@ void main() {
       expect(cubit.state.isDirty, isFalse);
       expect(cubit.state.currentInstrument?.sourcePath, outputFolder.path);
       expect(cubit.state.lastCustomOutputFolder, outputFolder.parent.path);
+      expect(
+        File(
+          '${outputFolder.path}/poly_multisample_build_report.txt',
+        ).readAsStringSync(),
+        contains(
+          'SoftPiano_C3.wav natural=C3 (explicit) low=C-1 (automatic) '
+          'high=G9 velocity=- rr=-',
+        ),
+      );
     });
 
     test(
@@ -4081,7 +4164,18 @@ class _ExposedPolyMultisampleBuilderCubit extends PolyMultisampleBuilderCubit {
   }
 
   void setTestState(PolyMultisampleBuilderState state) {
-    emit(state);
+    final resolution = const PolySampleMappingResolver().resolve(
+      state.editedRegions,
+    );
+    emit(
+      state.copyWith(
+        mappingResolution: resolution,
+        mappingWarnings: mappingWarningMessages(
+          state.editedRegions,
+          resolution,
+        ),
+      ),
+    );
   }
 }
 

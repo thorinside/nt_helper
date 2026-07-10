@@ -6,7 +6,9 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/midi_command_factory.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_folder_service.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_upload_service.dart';
+import 'package:nt_helper/ui/poly_multisample/poly_region_math.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,9 +69,16 @@ Future<int> runDebugPolySampleUploadCommand(List<String> args) async {
     stderr.writeln('No supported audio files found in ${sourceDir.path}.');
     return 65;
   }
+  final mappingResolution = const PolySampleMappingResolver().resolve(
+    instrument.regions,
+  );
+  final warningMessages = mappingWarningMessages(
+    instrument.regions,
+    mappingResolution,
+  );
   stdout.writeln(
     'Found ${instrument.regions.length} sample(s); '
-    '${instrument.warningCount} mapping warning(s).',
+    '${warningMessages.length} mapping warning(s).',
   );
 
   final midi = createNativeMidiCommand();

@@ -15,6 +15,7 @@ import 'package:nt_helper/poly_multisample/poly_sample_apply_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_folder_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_hardware_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_preferences_service.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_upload_service.dart';
 import 'package:nt_helper/poly_multisample/poly_wav_service.dart';
@@ -50,6 +51,7 @@ class PolyMultisampleBuilderState {
     this.currentInstrument,
     this.baselineRegions = const [],
     this.editedRegions = const [],
+    this.mappingResolution = const PolySampleMappingResolution.empty(),
     this.selectedPaths = const {},
     this.focusedPath,
     this.mapRevision = 0,
@@ -84,6 +86,7 @@ class PolyMultisampleBuilderState {
   final PolySampleInstrument? currentInstrument;
   final List<PolySampleRegion> baselineRegions;
   final List<PolySampleRegion> editedRegions;
+  final PolySampleMappingResolution mappingResolution;
   final Set<String> selectedPaths;
   final String? focusedPath;
   final int mapRevision;
@@ -129,6 +132,7 @@ class PolyMultisampleBuilderState {
     bool clearCurrentInstrument = false,
     List<PolySampleRegion>? baselineRegions,
     List<PolySampleRegion>? editedRegions,
+    PolySampleMappingResolution? mappingResolution,
     Set<String>? selectedPaths,
     String? focusedPath,
     bool clearFocusedPath = false,
@@ -170,6 +174,7 @@ class PolyMultisampleBuilderState {
           : currentInstrument ?? this.currentInstrument,
       baselineRegions: baselineRegions ?? this.baselineRegions,
       editedRegions: editedRegions ?? this.editedRegions,
+      mappingResolution: mappingResolution ?? this.mappingResolution,
       selectedPaths: selectedPaths ?? this.selectedPaths,
       focusedPath: clearFocusedPath ? null : focusedPath ?? this.focusedPath,
       mapRevision: mapRevision ?? this.mapRevision,
@@ -212,6 +217,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     PolyAudioPreviewService? previewService,
     PolySamplePreferencesService? preferencesService,
     PolySampleUploadService? uploadService,
+    PolySampleMappingResolver? mappingResolver,
     FutureOr<Uint8List> Function(Uint8List bytes, double pitchRatio)?
     notePreviewRenderer,
   }) : _folderService = folderService ?? const PolySampleFolderService(),
@@ -222,6 +228,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
        _previewService = previewService ?? PolyAudioPreviewService(),
        _preferencesService = preferencesService,
        _uploadService = uploadService ?? const PolySampleUploadService(),
+       _mappingResolver = mappingResolver ?? const PolySampleMappingResolver(),
        _notePreviewRenderer =
            notePreviewRenderer ??
            ((bytes, pitchRatio) => WavAudioRenderer.renderPitchedPreview(
@@ -243,6 +250,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   final PolyAudioPreviewService _previewService;
   PolySamplePreferencesService? _preferencesService;
   final PolySampleUploadService _uploadService;
+  final PolySampleMappingResolver _mappingResolver;
   final FutureOr<Uint8List> Function(Uint8List bytes, double pitchRatio)
   _notePreviewRenderer;
   late final StreamSubscription<PolyAudioPreviewState> _previewSub;
@@ -351,6 +359,12 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
             activeOperation: PolyMultisampleActiveOperation.none,
             warnings: [result.summary],
             clearCurrentInstrument: true,
+            baselineRegions: const [],
+            editedRegions: const [],
+            mappingResolution: const PolySampleMappingResolution.empty(),
+            selectedPaths: const {},
+            clearFocusedPath: true,
+            mappingWarnings: const [],
           ),
         );
         return;
@@ -384,9 +398,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         clearCurrentInstrument: true,
         baselineRegions: const [],
         editedRegions: const [],
+        mappingResolution: const PolySampleMappingResolution.empty(),
         selectedPaths: const {},
         clearFocusedPath: true,
         warnings: const [],
+        mappingWarnings: const [],
         clearError: true,
       ),
     );
@@ -876,6 +892,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         clearCurrentInstrument: true,
         baselineRegions: const [],
         editedRegions: const [],
+        mappingResolution: const PolySampleMappingResolution.empty(),
         selectedPaths: const {},
         clearFocusedPath: true,
         hardwareFolders: const [],
@@ -1797,15 +1814,16 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       }
 
       selectRegion(
-        match.region.path,
+        match.resolvedMapping.region.path,
         PolyRegionSelectionMode.replace,
         autoPreviewSelection: false,
       );
       if (requestId != _notePreviewRequest || _isClosing) return;
 
       final renderedPath = await _renderedKeyboardNotePreviewPath(
-        match.region,
+        match.resolvedMapping.region,
         clampedMidi,
+        naturalMidi: match.resolvedMapping.naturalMidi,
       );
       if (requestId != _notePreviewRequest || _isClosing) return;
 
@@ -1813,13 +1831,14 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
           (_notePreviewRoundRobinCursor[match.roundRobinCursorKey] ?? 0) + 1;
       _notePreviewRoundRobinCursor[match.roundRobinCursorKey] = nextCursor;
       final sourcePlayback = await _keyboardPreviewSourcePlayback(
-        match.region,
+        match.resolvedMapping.region,
         clampedMidi,
+        naturalMidi: match.resolvedMapping.naturalMidi,
       );
       if (requestId != _notePreviewRequest || _isClosing) return;
       await _previewService.restartPreview(
         renderedPath,
-        displayPath: match.region.path,
+        displayPath: match.resolvedMapping.region.path,
         playingMidiNote: clampedMidi,
         sourcePlayback: sourcePlayback,
         gainDb: state.previewGainDb,
@@ -2044,116 +2063,93 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   }
 
   _KeyboardNotePreviewMatch? _resolveKeyboardNotePreviewRegion(int midi) {
-    final allRegions = state.editedRegions;
     final candidates = [
-      for (final region in allRegions)
-        if (region.rootMidi != null &&
-            _isLocalMountedWavPreviewPath(region.path) &&
-            _notePreviewEffectiveLow(region) <= midi &&
-            _notePreviewEffectiveHigh(region, allRegions) >= midi)
-          region,
+      for (final mapping in state.mappingResolution.playableMappings)
+        if (_isLocalMountedWavPreviewPath(mapping.region.path) &&
+            mapping.lowMidi! <= midi &&
+            mapping.highMidi! >= midi)
+          mapping,
     ];
     if (candidates.isEmpty) return null;
 
     final focusedPath = state.focusedPath;
     int? velocityLane;
     if (focusedPath != null) {
-      final focused = candidates.where((region) => region.path == focusedPath);
+      final focused = candidates.where(
+        (mapping) => mapping.region.path == focusedPath,
+      );
       if (focused.isNotEmpty) {
-        velocityLane = focused.first.velocityLayer ?? 1;
+        velocityLane = focused.first.region.velocityLayer ?? 1;
       }
     }
     if (velocityLane == null && state.selectedPaths.isNotEmpty) {
       final selectedPath = state.selectedPaths.first;
       final selected = candidates.where(
-        (region) => region.path == selectedPath,
+        (mapping) => mapping.region.path == selectedPath,
       );
       if (selected.isNotEmpty) {
-        velocityLane = selected.first.velocityLayer ?? 1;
+        velocityLane = selected.first.region.velocityLayer ?? 1;
       }
     }
     velocityLane ??=
-        candidates.any((region) => (region.velocityLayer ?? 1) == 1)
+        candidates.any((mapping) => (mapping.region.velocityLayer ?? 1) == 1)
         ? 1
         : candidates
-              .map((region) => region.velocityLayer ?? 1)
+              .map((mapping) => mapping.region.velocityLayer ?? 1)
               .reduce(math.min);
 
     final laneCandidates = [
-      for (final region in candidates)
-        if ((region.velocityLayer ?? 1) == velocityLane) region,
+      for (final mapping in candidates)
+        if ((mapping.region.velocityLayer ?? 1) == velocityLane) mapping,
     ];
     laneCandidates.sort((a, b) {
-      final lowA = _notePreviewEffectiveLow(a);
-      final lowB = _notePreviewEffectiveLow(b);
-      final highA = _notePreviewEffectiveHigh(a, allRegions);
-      final highB = _notePreviewEffectiveHigh(b, allRegions);
+      final lowA = a.lowMidi!;
+      final lowB = b.lowMidi!;
+      final highA = a.highMidi!;
+      final highB = b.highMidi!;
       final spanCompare = (highA - lowA).compareTo(highB - lowB);
       if (spanCompare != 0) return spanCompare;
       final lowCompare = lowB.compareTo(lowA);
       if (lowCompare != 0) return lowCompare;
-      final rootCompare = (a.rootMidi! - midi).abs().compareTo(
-        (b.rootMidi! - midi).abs(),
+      final rootCompare = (a.naturalMidi - midi).abs().compareTo(
+        (b.naturalMidi - midi).abs(),
       );
       if (rootCompare != 0) return rootCompare;
-      final rrCompare = (a.roundRobin ?? 1).compareTo(b.roundRobin ?? 1);
+      final rrCompare = (a.region.roundRobin ?? 1).compareTo(
+        b.region.roundRobin ?? 1,
+      );
       if (rrCompare != 0) return rrCompare;
-      return a.displayName.compareTo(b.displayName);
+      return a.region.displayName.compareTo(b.region.displayName);
     });
 
     final primary = laneCandidates.first;
-    final groupLow = _notePreviewEffectiveLow(primary);
-    final groupHigh = _notePreviewEffectiveHigh(primary, allRegions);
-    final groupVelocity = primary.velocityLayer ?? 1;
+    final groupLow = primary.lowMidi!;
+    final groupHigh = primary.highMidi!;
+    final groupVelocity = primary.region.velocityLayer ?? 1;
     final roundRobinGroup =
         [
-          for (final region in laneCandidates)
-            if (_notePreviewEffectiveLow(region) == groupLow &&
-                _notePreviewEffectiveHigh(region, allRegions) == groupHigh &&
-                (region.velocityLayer ?? 1) == groupVelocity)
-              region,
+          for (final mapping in laneCandidates)
+            if (mapping.lowMidi == groupLow &&
+                mapping.highMidi == groupHigh &&
+                (mapping.region.velocityLayer ?? 1) == groupVelocity)
+              mapping,
         ]..sort((a, b) {
-          final rrCompare = (a.roundRobin ?? 1).compareTo(b.roundRobin ?? 1);
+          final rrCompare = (a.region.roundRobin ?? 1).compareTo(
+            b.region.roundRobin ?? 1,
+          );
           if (rrCompare != 0) return rrCompare;
-          final nameCompare = a.displayName.compareTo(b.displayName);
+          final nameCompare = a.region.displayName.compareTo(
+            b.region.displayName,
+          );
           if (nameCompare != 0) return nameCompare;
-          return a.path.compareTo(b.path);
+          return a.region.path.compareTo(b.region.path);
         });
     final cursorKey = '$groupLow:$groupHigh:$groupVelocity';
     final cursor = _notePreviewRoundRobinCursor[cursorKey] ?? 0;
     return _KeyboardNotePreviewMatch(
-      region: roundRobinGroup[cursor % roundRobinGroup.length],
+      resolvedMapping: roundRobinGroup[cursor % roundRobinGroup.length],
       roundRobinCursorKey: cursorKey,
     );
-  }
-
-  int _notePreviewEffectiveLow(PolySampleRegion region) {
-    return (region.rangeLow ?? region.switchPoint ?? region.rootMidi ?? 0)
-        .clamp(0, 127)
-        .toInt();
-  }
-
-  int _notePreviewEffectiveHigh(
-    PolySampleRegion region,
-    List<PolySampleRegion> regions,
-  ) {
-    final explicit = region.rangeHigh;
-    if (explicit != null) return explicit.clamp(0, 127).toInt();
-    final low = _notePreviewEffectiveLow(region);
-    final velocity = region.velocityLayer ?? 1;
-    final laterLows =
-        regions
-            .where(
-              (candidate) =>
-                  candidate.rootMidi != null &&
-                  (candidate.velocityLayer ?? 1) == velocity &&
-                  _notePreviewEffectiveLow(candidate) > low,
-            )
-            .map(_notePreviewEffectiveLow)
-            .toList()
-          ..sort();
-    if (laterLows.isEmpty) return 127;
-    return math.max(low, laterLows.first - 1);
   }
 
   bool _isLocalMountedWavPreviewPath(String path) {
@@ -2164,13 +2160,12 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
   bool _hasDirectHardwareWavPreviewCandidate(int midi) {
     if (state.sourceMode != PolySampleSourceMode.hardware) return false;
-    return state.editedRegions.any(
-      (region) =>
-          region.rootMidi != null &&
-          region.path.startsWith('/') &&
-          region.path.toLowerCase().endsWith('.wav') &&
-          _notePreviewEffectiveLow(region) <= midi &&
-          _notePreviewEffectiveHigh(region, state.editedRegions) >= midi,
+    return state.mappingResolution.playableMappings.any(
+      (mapping) =>
+          mapping.region.path.startsWith('/') &&
+          mapping.region.path.toLowerCase().endsWith('.wav') &&
+          mapping.lowMidi! <= midi &&
+          mapping.highMidi! >= midi,
     );
   }
 
@@ -2286,12 +2281,13 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
   Future<PolyAudioPreviewSourcePlayback?> _keyboardPreviewSourcePlayback(
     PolySampleRegion region,
-    int midi,
-  ) async {
+    int midi, {
+    required int naturalMidi,
+  }) async {
     final overview =
         state.waveformSummaries[region.path] ??
         WavMetadataReader.parse(await File(region.path).readAsBytes());
-    if (overview == null || region.rootMidi == null) return null;
+    if (overview == null) return null;
     final maxFrame = math.max(0, overview.frameCount - 1);
     final edit = state.wavEditDrafts[region.path];
     final startFrame = (edit?.trimStart ?? 0).clamp(0, maxFrame).toInt();
@@ -2308,7 +2304,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       startFrame: startFrame,
       endFrame: endFrame,
       sampleRate: overview.sampleRate,
-      pitchRatio: math.pow(2, (midi - region.rootMidi!) / 12).toDouble(),
+      pitchRatio: math.pow(2, (midi - naturalMidi) / 12).toDouble(),
       loopStartFrame: loopStart,
       loopEndFrame: loopEnd,
     );
@@ -2316,8 +2312,9 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
 
   Future<String> _renderedKeyboardNotePreviewPath(
     PolySampleRegion region,
-    int midi,
-  ) async {
+    int midi, {
+    required int naturalMidi,
+  }) async {
     final generation = _notePreviewGeneration;
     final file = File(region.path);
     final stat = await file.stat();
@@ -2325,7 +2322,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       p.normalize(region.path),
       stat.modified.millisecondsSinceEpoch,
       stat.size,
-      region.rootMidi,
+      naturalMidi,
       midi,
       _previewDraftFingerprint(region.path),
     ].join('|');
@@ -2339,7 +2336,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     final future = (() async {
       final bytes = await file.readAsBytes();
       final preparedBytes = _preparedKeyboardPreviewBytes(region.path, bytes);
-      final pitchRatio = math.pow(2, (midi - region.rootMidi!) / 12).toDouble();
+      final pitchRatio = math.pow(2, (midi - naturalMidi) / 12).toDouble();
       final rendered = await Future<Uint8List>.value(
         _notePreviewRenderer(preparedBytes, pitchRatio),
       );
@@ -2566,7 +2563,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
   }) {
     _contentRevision++;
     final regions = List<PolySampleRegion>.from(instrument.regions);
-    final mappingWarningList = mappingWarnings(regions);
+    final mappingResolution = _mappingResolver.resolve(regions);
+    final mappingWarningList = mappingWarningMessages(
+      regions,
+      mappingResolution,
+    );
     final previewVisiblePath = state.previewState.visiblePath;
     final shouldStopPreview =
         previewVisiblePath != null &&
@@ -2584,6 +2585,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         baselineRegions:
             baselineRegions ?? List<PolySampleRegion>.from(regions),
         editedRegions: List<PolySampleRegion>.from(regions),
+        mappingResolution: mappingResolution,
         selectedPaths: regions.isEmpty
             ? const <String>{}
             : {regions.first.path},
@@ -2637,7 +2639,11 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     _contentRevision++;
     final instrument = state.currentInstrument;
     final remainingPaths = {for (final region in regions) region.path};
-    final mappingWarningList = mappingWarnings(regions);
+    final mappingResolution = _mappingResolver.resolve(regions);
+    final mappingWarningList = mappingWarningMessages(
+      regions,
+      mappingResolution,
+    );
     final nextSelectedPaths = (selectedPaths ?? state.selectedPaths)
         .where(remainingPaths.contains)
         .toSet();
@@ -2666,6 +2672,7 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       state.copyWith(
         currentInstrument: instrument?.copyWith(regions: regions),
         editedRegions: List<PolySampleRegion>.from(regions),
+        mappingResolution: mappingResolution,
         selectedPaths: nextSelectedPaths,
         focusedPath: focusedPath,
         clearFocusedPath: focusedPath == null,
@@ -2784,10 +2791,18 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
       ..writeln('Instrument: $instrumentName')
       ..writeln('Samples: ${regions.length}')
       ..writeln();
-    for (final region in regions) {
+    final resolution = _mappingResolver.resolve(regions);
+    for (final mapping in resolution.mappings) {
+      final region = mapping.region;
       buffer.writeln(
-        '${region.displayName} root=${region.rootName ?? 'unmapped'} '
-        'velocity=${region.velocityLayer ?? '-'} rr=${region.roundRobin ?? '-'}',
+        '${region.displayName} '
+        'natural=${_mappingReportNote(mapping.naturalMidi)} '
+        '(${mapping.naturalIsAutomatic ? 'automatic' : 'explicit'}) '
+        'low=${_mappingReportNote(mapping.lowMidi)} '
+        '(${mapping.switchIsAutomatic ? 'automatic' : 'explicit'}) '
+        'high=${_mappingReportNote(mapping.highMidi)} '
+        'velocity=${region.velocityLayer ?? '-'} '
+        'rr=${region.roundRobin ?? '-'}',
       );
     }
     await Directory(outputFolder).create(recursive: true);
@@ -2807,12 +2822,19 @@ class _StaleWaveformPreviewRequest implements Exception {
 
 class _KeyboardNotePreviewMatch {
   const _KeyboardNotePreviewMatch({
-    required this.region,
+    required this.resolvedMapping,
     required this.roundRobinCursorKey,
   });
 
-  final PolySampleRegion region;
+  final PolySampleResolvedMapping resolvedMapping;
   final String roundRobinCursorKey;
+}
+
+String _mappingReportNote(int? midi) {
+  if (midi == null) return 'unresolved';
+  return midi >= 0 && midi <= 127
+      ? PolyMultisampleParser.midiToNoteName(midi)
+      : 'MIDI $midi';
 }
 
 String _safeHardwareFolderName(String name) {
