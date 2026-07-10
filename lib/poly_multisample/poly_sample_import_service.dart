@@ -116,14 +116,9 @@ class PolySampleImportService {
     PolyMultisampleParser.sortRegions(sorted);
     return switch (options.mode) {
       PolyLooseWavMappingMode.preserve => sorted,
-      PolyLooseWavMappingMode.unmapped => [
+      PolyLooseWavMappingMode.automaticNotes => [
         for (final region in sorted)
-          region.copyWith(
-            clearRoot: true,
-            clearSwitchPoint: true,
-            clearVelocityLayer: true,
-            clearRoundRobin: true,
-          ),
+          region.copyWith(clearRoot: true, clearSwitchPoint: true),
       ],
       PolyLooseWavMappingMode.chromaticSpread => [
         for (var i = 0; i < sorted.length; i++)

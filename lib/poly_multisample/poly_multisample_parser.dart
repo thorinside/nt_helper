@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:path/path.dart' as p;
 
 import 'poly_multisample_models.dart';
@@ -91,10 +92,6 @@ class PolyMultisampleParser {
 
     final rootName = _findRootName(stem);
     final rootMidi = rootName == null ? null : noteNameToMidi(rootName);
-    if (rootMidi == null && supported) {
-      issues.add(PolySampleIssue.missingRootNote);
-    }
-
     return PolySampleRegion(
       path: path,
       fileName: fileName,
@@ -141,16 +138,31 @@ class PolyMultisampleParser {
   }
 
   static void sortRegions(List<PolySampleRegion> regions) {
+    final resolution = const PolySampleMappingResolver().resolve(regions);
     regions.sort((a, b) {
-      final rootCompare = (a.rootMidi ?? 999).compareTo(b.rootMidi ?? 999);
-      if (rootCompare != 0) return rootCompare;
+      final mappingA = resolution.mappingForRegion(a);
+      final mappingB = resolution.mappingForRegion(b);
+      final playableCompare = (mappingA?.isPlayable == true ? 0 : 1).compareTo(
+        mappingB?.isPlayable == true ? 0 : 1,
+      );
+      if (playableCompare != 0) return playableCompare;
+      final naturalCompare = (mappingA?.naturalMidi ?? 999).compareTo(
+        mappingB?.naturalMidi ?? 999,
+      );
+      if (naturalCompare != 0) return naturalCompare;
       final velocityCompare = (a.velocityLayer ?? 1).compareTo(
         b.velocityLayer ?? 1,
       );
       if (velocityCompare != 0) return velocityCompare;
       final rrCompare = (a.roundRobin ?? 1).compareTo(b.roundRobin ?? 1);
       if (rrCompare != 0) return rrCompare;
-      return a.displayName.compareTo(b.displayName);
+      final foldedNameCompare = a.displayName.toLowerCase().compareTo(
+        b.displayName.toLowerCase(),
+      );
+      if (foldedNameCompare != 0) return foldedNameCompare;
+      final exactNameCompare = a.displayName.compareTo(b.displayName);
+      if (exactNameCompare != 0) return exactNameCompare;
+      return a.path.compareTo(b.path);
     });
   }
 }

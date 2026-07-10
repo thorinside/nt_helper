@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/poly_multisample/decent_sampler_converter.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
+import 'package:nt_helper/poly_multisample/poly_sample_mapping_resolver.dart';
 import 'package:nt_helper/poly_multisample/poly_sample_import_service.dart';
 
 void main() {
@@ -60,7 +61,7 @@ void main() {
     });
 
     test(
-      'maps loose WAV files using chromatic, RR, velocity, and unmapped modes',
+      'maps loose WAV files using chromatic RR velocity and automatic modes',
       () async {
         final c = File('${tempRoot.path}/Loose_C3.wav')..writeAsBytesSync([0]);
         final d = File('${tempRoot.path}/Loose_D3.wav')..writeAsBytesSync([0]);
@@ -95,20 +96,33 @@ void main() {
         expect(velocity.regions.map((region) => region.rootMidi), [60, 60]);
         expect(velocity.regions.map((region) => region.velocityLayer), [1, 2]);
 
-        final unmapped = await service.stageLooseFiles(
-          [c.path, d.path],
+        final automaticA = File('${tempRoot.path}/Snare_C3_V2_RR3.wav')
+          ..writeAsBytesSync([0]);
+        final automaticB = File('${tempRoot.path}/Tom_D3_V4_RR5.wav')
+          ..writeAsBytesSync([0]);
+        final automatic = await service.stageLooseFiles(
+          [automaticA.path, automaticB.path],
           const PolyLooseWavMappingOptions(
-            mode: PolyLooseWavMappingMode.unmapped,
+            mode: PolyLooseWavMappingMode.automaticNotes,
           ),
         );
-        expect(unmapped.regions.map((region) => region.rootMidi), [null, null]);
+        expect(automatic.regions.map((region) => region.rootMidi), [
+          null,
+          null,
+        ]);
+        expect(automatic.regions.map((region) => region.velocityLayer), [2, 4]);
+        expect(automatic.regions.map((region) => region.roundRobin), [3, 5]);
         expect(
-          unmapped.regions.every(
-            (region) =>
-                region.currentIssues.contains(PolySampleIssue.missingRootNote),
-          ),
+          automatic.regions.every((region) => region.currentIssues.isEmpty),
           isTrue,
         );
+        final resolution = const PolySampleMappingResolver().resolve(
+          automatic.regions,
+        );
+        expect(resolution.mappings.map((mapping) => mapping.naturalMidi), [
+          48,
+          49,
+        ]);
       },
     );
   });

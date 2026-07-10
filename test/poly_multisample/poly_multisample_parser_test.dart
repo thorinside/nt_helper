@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nt_helper/poly_multisample/poly_multisample_models.dart';
 import 'package:nt_helper/poly_multisample/poly_multisample_parser.dart';
 
 void main() {
@@ -57,16 +56,17 @@ void main() {
       expect(region.rootName, 'A#3');
     });
 
-    test('flags audio files without root notes', () {
+    test('accepts audio files that use automatic naturals', () {
       final region = PolyMultisampleParser.parseFile(
         File('/samples/drums/kick.wav'),
       );
 
       expect(region.rootMidi, isNull);
-      expect(region.issues, contains(PolySampleIssue.missingRootNote));
+      expect(region.rootName, isNull);
+      expect(region.currentIssues, isEmpty);
     });
 
-    test('clears missing-root issue after manual root edit', () {
+    test('manual root edit replaces an automatic natural', () {
       final region = PolyMultisampleParser.parseFile(
         File('/samples/drums/kick.wav'),
       );
@@ -76,6 +76,31 @@ void main() {
       expect(edited.rootName, 'B3');
       expect(edited.currentIssues, isEmpty);
       expect(edited.issues, isEmpty);
+    });
+
+    test('sortRegions uses resolved naturals for rootless families', () {
+      final regions = [
+        PolyMultisampleParser.parsePath(
+          '/samples/Snare_V2_RR2.wav',
+          basePath: '/samples',
+        ),
+        PolyMultisampleParser.parsePath(
+          '/samples/Kick.wav',
+          basePath: '/samples',
+        ),
+        PolyMultisampleParser.parsePath(
+          '/samples/Snare_V1_RR1.wav',
+          basePath: '/samples',
+        ),
+      ];
+
+      PolyMultisampleParser.sortRegions(regions);
+
+      expect(regions.map((region) => region.displayName), [
+        'Kick.wav',
+        'Snare_V1_RR1.wav',
+        'Snare_V2_RR2.wav',
+      ]);
     });
   });
 }

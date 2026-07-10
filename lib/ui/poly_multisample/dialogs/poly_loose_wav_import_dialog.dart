@@ -210,7 +210,8 @@ class _StartNoteRow extends StatelessWidget {
 String _mappingModeLabel(PolyLooseWavMappingMode mode) {
   return switch (mode) {
     PolyLooseWavMappingMode.preserve => 'Use note names from file names',
-    PolyLooseWavMappingMode.unmapped => 'Leave unmapped',
+    PolyLooseWavMappingMode.automaticNotes =>
+      'Use Disting automatic notes from C3',
     PolyLooseWavMappingMode.chromaticSpread =>
       'Spread chromatically from start note',
     PolyLooseWavMappingMode.roundRobinStack =>
@@ -223,7 +224,7 @@ String _mappingModeLabel(PolyLooseWavMappingMode mode) {
 bool _showsStartNote(PolyLooseWavMappingMode mode) {
   return switch (mode) {
     PolyLooseWavMappingMode.preserve ||
-    PolyLooseWavMappingMode.unmapped => false,
+    PolyLooseWavMappingMode.automaticNotes => false,
     PolyLooseWavMappingMode.chromaticSpread ||
     PolyLooseWavMappingMode.roundRobinStack ||
     PolyLooseWavMappingMode.velocityLayers => true,

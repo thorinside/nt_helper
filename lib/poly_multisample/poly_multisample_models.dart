@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'wav_metadata.dart';
 
-enum PolySampleIssue { missingRootNote, unsupportedFileType }
+enum PolySampleIssue { unsupportedFileType }
 
 class PolySampleRegion {
   const PolySampleRegion({
@@ -40,9 +40,6 @@ class PolySampleRegion {
     final supported = isSupportedAudioName(fileName);
     if (!supported || issues.contains(PolySampleIssue.unsupportedFileType)) {
       current.add(PolySampleIssue.unsupportedFileType);
-    }
-    if (rootMidi == null && supported) {
-      current.add(PolySampleIssue.missingRootNote);
     }
     return current;
   }
@@ -300,7 +297,7 @@ class PolyStagedImport {
 
 enum PolyLooseWavMappingMode {
   preserve,
-  unmapped,
+  automaticNotes,
   chromaticSpread,
   roundRobinStack,
   velocityLayers,

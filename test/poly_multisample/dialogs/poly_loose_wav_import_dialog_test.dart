@@ -15,12 +15,17 @@ void main() {
     expect(find.text('A.wav'), findsOneWidget);
     expect(find.text('B.wav'), findsOneWidget);
     expect(find.text('Use note names from file names'), findsOneWidget);
-    expect(find.text('Leave unmapped'), findsOneWidget);
+    expect(find.text('Use Disting automatic notes from C3'), findsOneWidget);
+    expect(find.text(['Leave', 'unmapped'].join(' ')), findsNothing);
     expect(find.text('Spread chromatically from start note'), findsOneWidget);
     expect(find.text('Stack as round robins on one note'), findsOneWidget);
     expect(find.text('Stack as velocity layers on one note'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(find.text('None'), findsOneWidget);
+
+    await tester.tap(find.text('Use Disting automatic notes from C3'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Start note:'), findsNothing);
   });
 
   testWidgets('start note row appears for chromatic mode', (tester) async {
