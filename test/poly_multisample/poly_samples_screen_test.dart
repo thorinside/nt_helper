@@ -80,7 +80,9 @@ void main() {
       );
     });
 
-    testWidgets('shows a hardware-specific empty folder state', (tester) async {
+    testWidgets('hardware empty state can return to sample sources', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       final cubit = _TestPolyMultisampleBuilderCubit();
       addTearDown(cubit.close);
@@ -99,6 +101,14 @@ void main() {
         find.bySemanticsLabel('No sample folders found on /samples.'),
         findsOneWidget,
       );
+      await tester.tap(find.byTooltip('Back to sample sources'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Build or edit a Disting NT multisample folder'),
+        findsOneWidget,
+      );
+      expect(cubit.state.sourceMode, PolySampleSourceMode.none);
       semantics.dispose();
     });
 

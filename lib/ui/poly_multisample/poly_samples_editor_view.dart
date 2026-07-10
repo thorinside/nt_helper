@@ -193,7 +193,7 @@ class _Toolbar extends StatelessWidget {
                         onPressed: canUseDestructiveAction
                             ? () async {
                                 if (hasSelection) {
-                                  cubit.removeSelectedRegions();
+                                  cubit.unmapSelectedRegions();
                                   return;
                                 }
                                 final discardAll = await showDialog<bool>(

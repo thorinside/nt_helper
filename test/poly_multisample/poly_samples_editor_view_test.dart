@@ -127,7 +127,9 @@ void main() {
     expect(cubit.discardChangesCount, 1);
   });
 
-  testWidgets('unmap selected proceeds immediately', (tester) async {
+  testWidgets('unmap selected clears mappings without removing samples', (
+    tester,
+  ) async {
     final cubit = _TestPolyMultisampleBuilderCubit()
       ..setTestState(
         _state(dirty: true).copyWith(
@@ -141,7 +143,10 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Unmap selected'));
     await tester.pumpAndSettle();
 
-    expect(cubit.removeSelectedRegionsCount, 1);
+    expect(cubit.state.editedRegions, hasLength(2));
+    expect(cubit.state.editedRegions.first.rootMidi, isNull);
+    expect(cubit.state.editedRegions.first.rootName, isNull);
+    expect(cubit.removeSelectedRegionsCount, 0);
     expect(cubit.clearDraftCount, 0);
     expect(find.byType(AlertDialog), findsNothing);
   });
@@ -349,20 +354,6 @@ void main() {
 
     expect(find.widgetWithText(TextButton, 'Unmap selected'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Discard all'), findsNothing);
-  });
-
-  testWidgets('toolbar unmap selected button removes selected sample', (
-    tester,
-  ) async {
-    final cubit = _TestPolyMultisampleBuilderCubit()..setTestState(_state());
-    addTearDown(cubit.close);
-
-    await _pumpEditor(tester, cubit);
-    await tester.tap(find.widgetWithText(TextButton, 'Unmap selected'));
-    await tester.pump();
-
-    expect(cubit.removeSelectedRegionsCount, 1);
-    expect(find.byType(AlertDialog), findsNothing);
   });
 
   testWidgets('inline row stepper focuses row and updates inspector', (

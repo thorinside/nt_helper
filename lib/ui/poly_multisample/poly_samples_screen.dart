@@ -143,7 +143,7 @@ class PolySamplesView extends StatelessWidget {
     if (state.sourceMode == PolySampleSourceMode.hardware &&
         state.status == PolyMultisampleLoadStatus.ready &&
         state.currentInstrument == null) {
-      return const _HardwareEmptyState();
+      return _HardwareEmptyState(onBack: cubit.returnToSources);
     }
 
     if (state.currentInstrument == null) {
@@ -700,18 +700,34 @@ class _HardwareUploadFolderDialogState
 }
 
 class _HardwareEmptyState extends StatelessWidget {
-  const _HardwareEmptyState();
+  const _HardwareEmptyState({required this.onBack});
+
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Semantics(
-        container: true,
-        liveRegion: true,
-        label: 'No sample folders found on /samples.',
-        child: const ExcludeSemantics(
-          child: Text('No sample folders found on /samples.'),
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            container: true,
+            liveRegion: true,
+            label: 'No sample folders found on /samples.',
+            child: const ExcludeSemantics(
+              child: Text('No sample folders found on /samples.'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Tooltip(
+            message: 'Back to sample sources',
+            child: OutlinedButton.icon(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Sources'),
+            ),
+          ),
+        ],
       ),
     );
   }

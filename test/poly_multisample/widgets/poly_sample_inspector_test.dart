@@ -82,6 +82,42 @@ void main() {
     expect(find.text('Mixed'), findsNothing);
   });
 
+  testWidgets('renders imported velocity and round-robin lanes above 32', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState(
+        editedRegions: const [
+          PolySampleRegion(
+            path: '/tmp/Piano/Piano_C3_V33_RR34.wav',
+            fileName: 'Piano_C3_V33_RR34.wav',
+            displayName: 'Piano_C3_V33_RR34.wav',
+            rootMidi: 48,
+            rootName: 'C3',
+            velocityLayer: 33,
+            roundRobin: 34,
+          ),
+        ],
+        selectedPaths: const {'/tmp/Piano/Piano_C3_V33_RR34.wav'},
+        focusedPath: '/tmp/Piano/Piano_C3_V33_RR34.wav',
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+
+    final velocityDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-velocity-dropdown')),
+    );
+    final roundRobinDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-rr-dropdown')),
+    );
+    expect(velocityDropdown.value, 33);
+    expect(roundRobinDropdown.value, 34);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('root stepper updates the cubit', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit();
     addTearDown(cubit.close);

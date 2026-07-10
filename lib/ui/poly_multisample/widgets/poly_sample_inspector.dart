@@ -223,6 +223,14 @@ class _MappingSection extends StatelessWidget {
       selectedRegions,
       (region) => region.roundRobin ?? 1,
     );
+    final maxVelocityLane = selectedRegions.fold<int>(
+      32,
+      (maximum, region) => math.max(maximum, region.velocityLayer ?? 1),
+    );
+    final maxRoundRobinLane = selectedRegions.fold<int>(
+      32,
+      (maximum, region) => math.max(maximum, region.roundRobin ?? 1),
+    );
     final root = region.rootMidi ?? 60;
     final low = effectiveLow(region);
     final high = effectiveHigh(region, state.editedRegions);
@@ -310,7 +318,7 @@ class _MappingSection extends StatelessWidget {
           dropdownKey: const ValueKey('poly-mapping-velocity-dropdown'),
           label: 'Velocity',
           selected: velocitySelection,
-          items: _laneMenuItems(),
+          items: _laneMenuItems(maxVelocityLane),
           onChanged: (value) {
             if (value == null) return;
             cubit.updateSelectedVelocity(value, manager: manager);
@@ -320,7 +328,7 @@ class _MappingSection extends StatelessWidget {
           dropdownKey: const ValueKey('poly-mapping-rr-dropdown'),
           label: 'RR',
           selected: rrSelection,
-          items: _laneMenuItems(),
+          items: _laneMenuItems(maxRoundRobinLane),
           onChanged: (value) {
             if (value == null) return;
             cubit.updateSelectedRoundRobin(value, manager: manager);
@@ -489,9 +497,9 @@ List<DropdownMenuItem<int>> _noteMenuItems() {
   ];
 }
 
-List<DropdownMenuItem<int>> _laneMenuItems() {
+List<DropdownMenuItem<int>> _laneMenuItems(int maxValue) {
   return [
-    for (var value = 1; value <= 32; value++)
+    for (var value = 1; value <= maxValue; value++)
       DropdownMenuItem<int>(value: value, child: Text('$value')),
   ];
 }
