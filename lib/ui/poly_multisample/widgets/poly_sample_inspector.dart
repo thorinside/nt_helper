@@ -210,13 +210,10 @@ class _MappingSection extends StatelessWidget {
         : rootSelection.value == null
         ? 'Unset'
         : PolyMultisampleParser.midiToNoteName(rootSelection.value!);
-    final lowSelection = _selectionValue<int>(
-      selectedRegions,
-      (region) => region.rangeLow,
-    );
+    final lowSelection = _selectionValue<int>(selectedRegions, effectiveLow);
     final highSelection = _selectionValue<int>(
       selectedRegions,
-      (region) => region.rangeHigh,
+      (region) => effectiveHigh(region, state.editedRegions),
     );
     final velocitySelection = _selectionValue<int>(
       selectedRegions,

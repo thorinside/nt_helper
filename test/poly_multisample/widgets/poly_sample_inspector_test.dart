@@ -41,6 +41,47 @@ void main() {
     expect(find.byTooltip('Increase Round robin'), findsOneWidget);
   });
 
+  testWidgets('single selected sample shows its effective note range', (
+    tester,
+  ) async {
+    final cubit = _TestPolyMultisampleBuilderCubit();
+    addTearDown(cubit.close);
+    cubit.setTestState(
+      _selectedState(
+        selectedPaths: const {'/tmp/EVOS/EVOS_A1.wav'},
+        focusedPath: '/tmp/EVOS/EVOS_A1.wav',
+        editedRegions: const [
+          PolySampleRegion(
+            path: '/tmp/EVOS/EVOS_A1.wav',
+            fileName: 'EVOS_A1.wav',
+            displayName: 'EVOS_A1.wav',
+            rootMidi: 33,
+            rootName: 'A1',
+          ),
+          PolySampleRegion(
+            path: '/tmp/EVOS/EVOS_E2.wav',
+            fileName: 'EVOS_E2.wav',
+            displayName: 'EVOS_E2.wav',
+            rootMidi: 40,
+            rootName: 'E2',
+          ),
+        ],
+      ),
+    );
+
+    await _pumpInspector(tester, cubit);
+
+    final lowDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-low-dropdown')),
+    );
+    final highDropdown = tester.widget<DropdownButton<int>>(
+      find.byKey(const ValueKey('poly-mapping-high-dropdown')),
+    );
+    expect(lowDropdown.value, 33);
+    expect(highDropdown.value, 39);
+    expect(find.text('Mixed'), findsNothing);
+  });
+
   testWidgets('root stepper updates the cubit', (tester) async {
     final cubit = _TestPolyMultisampleBuilderCubit();
     addTearDown(cubit.close);
