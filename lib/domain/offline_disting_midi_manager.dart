@@ -1,5 +1,6 @@
 import 'dart:math'; // Added for pow
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
@@ -15,12 +16,15 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
+import 'package:nt_helper/services/offline_algorithm_shape_resolver.dart';
 
 /// An implementation of [IDistingMidiManager] that interacts with the
 /// cached database instead of a physical MIDI device.
 class OfflineDistingMidiManager implements IDistingMidiManager {
   final AppDatabase _database;
   late final MetadataDao _metadataDao;
+  late final OfflineAlgorithmShapeResolver _shapeResolver;
+  final Map<String, Future<ResolvedAlgorithmShape>> _resolvedShapeCache = {};
 
   // Internal state for the simulated preset
   int? _loadedPresetId;
@@ -36,11 +40,13 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   OfflineDistingMidiManager(this._database) {
     _metadataDao = _database.metadataDao;
+    _shapeResolver = OfflineAlgorithmShapeResolver(_metadataDao);
   }
 
   // Initialize state from loaded preset details
   Future<void> initializeFromDb(FullPresetDetails? details) async {
     _presetAlgorithmGuids.clear();
+    _resolvedShapeCache.clear();
     _presetSpecificationValues.clear();
     _presetSlotIds.clear();
     _parameterValues.clear();
@@ -119,15 +125,17 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       }
 
       final algorithmGuid = _presetAlgorithmGuids[algorithmIndex];
-
-      // Query database for output mode usage
-      final affectedOutputs = await _metadataDao.getOutputModeUsage(
+      final snapshot = (await _resolvedShape(
+        algorithmIndex,
         algorithmGuid,
-        parameterNumber,
-      );
+      )).snapshot;
+      final affectedOutputs = snapshot.outputUsage
+          .where((usage) => usage.parameterNumber == parameterNumber)
+          .map((usage) => usage.affectedParameterNumber)
+          .toList();
 
       // If no data, return null
-      if (affectedOutputs == null || affectedOutputs.isEmpty) {
+      if (affectedOutputs.isEmpty) {
         return null;
       }
 
@@ -217,25 +225,20 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     int parameterNumber,
   ) {
     return _runForGuid<ParameterInfo?>(algorithmIndex, (guid) async {
-      final paramEntry =
-          await (_metadataDao.select(_metadataDao.parameters)..where(
-                (p) =>
-                    p.algorithmGuid.equals(guid) &
-                    p.parameterNumber.equals(parameterNumber),
-              ))
-              .getSingleOrNull();
-
-      if (paramEntry != null) {
+      final snapshot = (await _resolvedShape(algorithmIndex, guid)).snapshot;
+      if (parameterNumber >= 0 &&
+          parameterNumber < snapshot.parameters.length) {
+        final parameter = snapshot.parameters[parameterNumber];
         return ParameterInfo(
           algorithmIndex: algorithmIndex,
-          parameterNumber: paramEntry.parameterNumber,
-          min: paramEntry.minValue ?? 0,
-          max: paramEntry.maxValue ?? 0,
-          defaultValue: paramEntry.defaultValue ?? 0,
-          unit: paramEntry.rawUnitIndex ?? 0,
-          name: paramEntry.name,
-          powerOfTen: paramEntry.powerOfTen ?? 0,
-          ioFlags: paramEntry.ioFlags ?? 0, // Default null to 0 (no flags set)
+          parameterNumber: parameterNumber,
+          min: parameter.min,
+          max: parameter.max,
+          defaultValue: parameter.defaultValue,
+          unit: parameter.rawUnitIndex,
+          name: parameter.name,
+          powerOfTen: parameter.powerOfTen,
+          ioFlags: parameter.ioFlags,
         );
       } else {
         return null;
@@ -298,25 +301,18 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<ParameterPages?> requestParameterPages(int algorithmIndex) {
     return _runForGuid<ParameterPages?>(algorithmIndex, (guid) async {
-      final pagesQuery = _metadataDao.select(_metadataDao.parameterPages)
-        ..where((p) => p.algorithmGuid.equals(guid))
-        ..orderBy([(p) => OrderingTerm.asc(p.pageIndex)]);
-      final pageEntries = await pagesQuery.get();
-
-      final itemsQuery = _metadataDao.select(_metadataDao.parameterPageItems)
-        ..where((i) => i.algorithmGuid.equals(guid));
-      final itemEntries = await itemsQuery.get();
-
+      final snapshot = (await _resolvedShape(algorithmIndex, guid)).snapshot;
       final Map<int, List<int>> itemsByPageIndex = {};
-      for (final item in itemEntries) {
+      for (final item in snapshot.pageMemberships) {
         (itemsByPageIndex[item.pageIndex] ??= []).add(item.parameterNumber);
-        itemsByPageIndex[item.pageIndex]!.sort();
       }
-
-      final pages = pageEntries.map((pageEntry) {
+      for (final items in itemsByPageIndex.values) {
+        items.sort();
+      }
+      final pages = snapshot.pages.indexed.map((entry) {
         return ParameterPage(
-          name: pageEntry.name,
-          parameters: itemsByPageIndex[pageEntry.pageIndex] ?? [],
+          name: entry.$2.name,
+          parameters: itemsByPageIndex[entry.$1] ?? [],
         );
       }).toList();
       return ParameterPages(algorithmIndex: algorithmIndex, pages: pages);
@@ -334,19 +330,17 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     final String guid = _presetAlgorithmGuids[algorithmIndex];
 
     try {
-      final enumsQuery = _metadataDao.select(_metadataDao.parameterEnums)
-        ..where(
-          (e) =>
-              e.algorithmGuid.equals(guid) &
-              e.parameterNumber.equals(parameterNumber),
-        )
-        ..orderBy([(e) => OrderingTerm.asc(e.enumIndex)]);
-      final enumEntries = await enumsQuery.get();
-      if (enumEntries.isNotEmpty) {
+      final parameters = (await _resolvedShape(
+        algorithmIndex,
+        guid,
+      )).snapshot.parameters;
+      if (parameterNumber >= 0 &&
+          parameterNumber < parameters.length &&
+          parameters[parameterNumber].enumStrings.isNotEmpty) {
         return ParameterEnumStrings(
           algorithmIndex: algorithmIndex,
           parameterNumber: parameterNumber,
-          values: enumEntries.map((e) => e.enumString).toList(),
+          values: parameters[parameterNumber].enumStrings,
         );
       } else {
         return ParameterEnumStrings.filler();
@@ -457,17 +451,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<NumParameters?> requestNumberOfParameters(int algorithmIndex) {
     return _runForGuid<NumParameters?>(algorithmIndex, (guid) async {
-      final countQuery = _metadataDao.parameters.selectOnly()
-        ..where(_metadataDao.parameters.algorithmGuid.equals(guid))
-        ..addColumns([_metadataDao.parameters.parameterNumber.count()]);
-      final count =
-          await countQuery
-              .map(
-                (row) =>
-                    row.read(_metadataDao.parameters.parameterNumber.count()),
-              )
-              .getSingleOrNull() ??
-          0;
+      final count = (await _resolvedShape(
+        algorithmIndex,
+        guid,
+      )).snapshot.parameters.length;
       return NumParameters(
         algorithmIndex: algorithmIndex,
         numParameters: count,
@@ -788,6 +775,20 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       debugPrintStack(stackTrace: stackTrace);
       return errorValue;
     }
+  }
+
+  Future<ResolvedAlgorithmShape> _resolvedShape(
+    int algorithmIndex,
+    String guid,
+  ) {
+    final values = List<int>.unmodifiable(
+      _presetSpecificationValues[algorithmIndex],
+    );
+    final cacheKey = jsonEncode([guid, values]);
+    return _resolvedShapeCache.putIfAbsent(
+      cacheKey,
+      () => _shapeResolver.resolve(guid, values),
+    );
   }
 
   Future<FullPresetDetails?> _buildPresetDetailsForSave() async {
