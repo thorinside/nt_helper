@@ -54,6 +54,47 @@ void main() {
   );
 
   test(
+    'offline add reconstitutes the selected shape after database reload',
+    () async {
+      await manager.initializeFromDb(null);
+      final algorithm = await manager.requestAlgorithmInfo(0);
+
+      expect(algorithm?.guid, 'quan');
+      await manager.requestSetPresetName('Four Channel Quantizer');
+      await manager.requestAddAlgorithm(algorithm!, const [4]);
+
+      expect((await manager.requestNumberOfParameters(0))!.numParameters, 9);
+      expect((await manager.requestParameterInfo(0, 8))!.name, '4:CV output');
+      expect((await manager.requestParameterPages(0))!.pages, hasLength(5));
+
+      await manager.requestSavePreset();
+      final savedPreset = await database.presetsDao.getPresetByName(
+        'Four Channel Quantizer',
+      );
+      final savedDetails = await database.presetsDao.getFullPresetDetails(
+        savedPreset!.id,
+      );
+      expect(savedDetails!.slots.single.specificationValues, const [4]);
+
+      final reloadedManager = OfflineDistingMidiManager(database);
+      await reloadedManager.initializeFromDb(savedDetails);
+
+      expect(
+        (await reloadedManager.requestNumberOfParameters(0))!.numParameters,
+        9,
+      );
+      expect(
+        (await reloadedManager.requestParameterInfo(0, 8))!.name,
+        '4:CV output',
+      );
+      expect(
+        (await reloadedManager.requestParameterPages(0))!.pages,
+        hasLength(5),
+      );
+    },
+  );
+
+  test(
     'malformed grammar falls back to the complete canonical shape',
     () async {
       await (database.update(

@@ -575,44 +575,49 @@ void main() {
       expect(routeResult, 'not-set');
     });
 
-    testWidgets('offline mode shows disabled defaults and submits them', (
-      tester,
-    ) async {
-      Object? routeResult;
-      when(
-        () => mockCubit.state,
-      ).thenReturn(synchronizedWith([mockLoadedPlugin], offline: true));
-      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+    testWidgets(
+      'offline mode allows cached specification values to be edited',
+      (tester) async {
+        Object? routeResult;
+        when(
+          () => mockCubit.state,
+        ).thenReturn(synchronizedWith([mockLoadedPlugin], offline: true));
+        when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
-      await tester.pumpWidget(
-        createRouteTestWidget((result) {
-          routeResult = result;
-        }),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          createRouteTestWidget((result) {
+            routeResult = result;
+          }),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Open Add Algorithm'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Test Plugin'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Add Algorithm'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Test Plugin'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Defaults are used in offline mode.'), findsOneWidget);
-      final specField = tester.widget<TextField>(
-        find.descendant(
-          of: find.byKey(const ValueKey('TestPlugin_spec_0')),
-          matching: find.byType(TextField),
-        ),
-      );
-      expect(specField.readOnly, isTrue);
+        final specField = tester.widget<TextField>(
+          find.descendant(
+            of: find.byKey(const ValueKey('TestPlugin_spec_0')),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(specField.readOnly, isFalse);
 
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('TestPlugin_spec_0')),
+          '7',
+        );
 
-      final result = routeResult as Map<String, dynamic>;
-      expect(result['specValues'], [5, 0]);
-    });
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+        await tester.pumpAndSettle();
+
+        final result = routeResult as Map<String, dynamic>;
+        expect(result['specValues'], [7, 0]);
+      },
+    );
 
     testWidgets('specification dialog exposes accessible semantics', (
       tester,

@@ -1346,7 +1346,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final addBypassed = _shiftHeld;
     final addButton = ElevatedButton(
       onPressed: canAdd && !_isAddingAndStayingOpen
-          ? () => _addAndClose(isOffline, addBypassed: _isAddBypassedRequested)
+          ? () => _addAndClose(addBypassed: _isAddBypassedRequested)
           : null,
       child: Text(addBypassed ? 'Add Algorithm Bypassed' : 'Add Algorithm'),
     );
@@ -1363,10 +1363,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           child: ElevatedButton(
             onPressed: _isAddingAndStayingOpen
                 ? null
-                : () => _addAndStayOpen(
-                    isOffline,
-                    addBypassed: _isAddBypassedRequested,
-                  ),
+                : () => _addAndStayOpen(addBypassed: _isAddBypassedRequested),
             child: Text(addBypassed ? 'Add Another Bypassed' : 'Add Another'),
           ),
         ),
@@ -1382,7 +1379,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   Future<List<int>?> _resolveSpecificationValues(
     AlgorithmInfo algorithm,
-    bool isOffline,
   ) async {
     final currentSpecValues =
         specValues ??
@@ -1395,7 +1391,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       context: context,
       algorithm: algorithm,
       initialValues: currentSpecValues,
-      readOnly: isOffline,
+      readOnly: false,
     );
 
     if (selectedValues != null && mounted) {
@@ -1407,14 +1403,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     return selectedValues;
   }
 
-  Future<void> _addAndClose(bool isOffline, {required bool addBypassed}) async {
+  Future<void> _addAndClose({required bool addBypassed}) async {
     final algorithm = _currentAlgoInfo;
     if (algorithm == null) return;
 
-    final selectedValues = await _resolveSpecificationValues(
-      algorithm,
-      isOffline,
-    );
+    final selectedValues = await _resolveSpecificationValues(algorithm);
     if (selectedValues == null || !mounted) return;
 
     Navigator.pop(context, {
@@ -1424,10 +1417,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     });
   }
 
-  Future<void> _addAndStayOpen(
-    bool isOffline, {
-    required bool addBypassed,
-  }) async {
+  Future<void> _addAndStayOpen({required bool addBypassed}) async {
     if (_isAddingAndStayingOpen) return;
 
     final algorithm = _currentAlgoInfo;
@@ -1438,7 +1428,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     });
 
     try {
-      final specs = await _resolveSpecificationValues(algorithm, isOffline);
+      final specs = await _resolveSpecificationValues(algorithm);
       if (specs == null || !mounted) return;
 
       final messenger = ScaffoldMessenger.of(context);
