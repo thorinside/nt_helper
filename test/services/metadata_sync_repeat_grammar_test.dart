@@ -28,15 +28,21 @@ void main() {
       final database = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
       await _seedAlgorithm(database, algorithm);
+      final statuses = <String>[];
 
       await MetadataSyncService(
         manager,
         database,
-      ).rescanSingleAlgorithm(algorithm);
+      ).rescanSingleAlgorithm(algorithm, onStatus: statuses.add);
 
       expect(manager.requestedVectors, [
         [2],
         [1],
+      ]);
+      expect(statuses, [
+        'Capturing canonical repeat witness (Channels=2)...',
+        'Capturing lower repeat witness (Channels=1)...',
+        'Repeat grammar proven from 2 hardware shapes.',
       ]);
       expect(await database.metadataDao.getAllParameters(), hasLength(3));
       final row = await database.metadataDao.getAlgorithmRepeatGrammar('quan');

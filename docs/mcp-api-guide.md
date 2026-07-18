@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Disting NT MCP (Model Context Protocol) API provides 18 individual, well-named tools for interacting with your hardware. Each tool does one thing with a flat parameter structure, making it easy for any LLM to use correctly.
+The Disting NT MCP (Model Context Protocol) API provides individual, well-named tools for interacting with your hardware. Each tool does one thing with a flat parameter structure, making it easy for any LLM to use correctly.
 
 ### Design Philosophy
 
-- **18 individual tools**: Each tool has a single purpose with simple parameters
+- **Individual tools**: Each tool has a single purpose with simple parameters
 - **No multiplexing**: No `target` parameters to route behavior — tool name says what it does
 - **Flat schemas**: Parameters are top-level, not nested inside `data` objects
 - **Mapping support**: Full CV/MIDI/i2c/performance page mapping for parameter control
@@ -231,6 +231,23 @@ Show a slot with parameter summaries. Each parameter shows its name, current val
     {"parameter_number": 1, "parameter_name": "Waveform", "is_disabled": false, "is_enum": true, "value": "Sawtooth", "has_mapping": true, "performance_page": 1}
   ]
 }
+```
+
+---
+
+#### show_slot_metadata
+
+Show the complete raw metadata shape currently reported by the physical device
+for one slot. This read-only tool includes specification values, parameter
+definitions and enum strings, pages and page memberships, and output-mode usage.
+It exists for deterministic hardware validation; large responses are returned
+as a `tool_reference`.
+
+**Parameters**:
+- `slot_index` (required, integer): Slot index (0-39)
+
+```json
+{"tool": "show_slot_metadata", "arguments": {"slot_index": 2}}
 ```
 
 ---

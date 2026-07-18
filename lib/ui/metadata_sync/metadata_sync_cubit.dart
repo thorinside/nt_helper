@@ -677,7 +677,20 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // Use the metadata sync service to rescan
       final syncService = MetadataSyncService(manager, _database);
-      await syncService.rescanSingleAlgorithm(targetAlgoInfo);
+      await syncService.rescanSingleAlgorithm(
+        targetAlgoInfo,
+        onStatus: (status) {
+          if (!isClosed) {
+            emit(
+              MetadataSyncState.syncingMetadata(
+                progress: 0.5,
+                mainMessage: targetAlgoInfo!.name,
+                subMessage: status,
+              ),
+            );
+          }
+        },
+      );
 
       emit(
         const MetadataSyncState.metadataSyncSuccess(

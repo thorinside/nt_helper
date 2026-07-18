@@ -416,6 +416,27 @@ class ToolRegistry {
 
     _entries.add(
       ToolRegistryEntry(
+        name: 'show_slot_metadata',
+        description:
+            'Show the complete raw metadata shape currently reported by the connected device for a slot: specifications, parameters, enums, pages, page memberships, and output-mode usage. Intended for deterministic hardware validation; large results may be returned as references.',
+        inputSchema: {
+          'properties': {
+            'slot_index': {
+              'type': 'integer',
+              'minimum': _slotMinimum,
+              'maximum': _slotMaximum,
+              'description': 'Slot index ($_slotRangeDescription).',
+            },
+          },
+          'required': ['slot_index'],
+        },
+        handler: (args) => _algoTools.showSlotMetadata(args['slot_index']),
+        timeout: const Duration(seconds: 30),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
         name: 'show_screen',
         description:
             'Capture and return the current device screen as a base64 PNG image.',

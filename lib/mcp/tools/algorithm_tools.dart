@@ -738,6 +738,93 @@ class MCPAlgorithmTools {
     );
   }
 
+  /// Show the complete metadata shape reported by the connected device for a
+  /// slot. This intentionally returns raw values so automated hardware suites
+  /// can compare the device with the offline metadata resolver exactly.
+  Future<String> showSlotMetadata(dynamic identifier) async {
+    final slotIndex = switch (identifier) {
+      int value => value,
+      String value => int.tryParse(value),
+      _ => null,
+    };
+    if (slotIndex == null) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Invalid slot index: expected an integer',
+        }),
+      );
+    }
+    if (slotIndex < 0 || slotIndex >= MCPConstants.maxSlots) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error':
+              'Invalid slot index: $slotIndex. Must be 0-${MCPConstants.maxSlots - 1}.',
+        }),
+      );
+    }
+    if (!_controller.isSynchronized) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Device not synchronized',
+        }),
+      );
+    }
+
+    await _ensureSlotReady(slotIndex);
+    final algorithm = await _controller.getAlgorithmInSlot(slotIndex);
+    final snapshot = await _controller.getAlgorithmShapeForSlot(slotIndex);
+    if (algorithm == null || snapshot == null) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Slot $slotIndex is empty',
+        }),
+      );
+    }
+
+    return jsonEncode(
+      convertToSnakeCaseKeys({
+        'success': true,
+        'slot_index': slotIndex,
+        'algorithm': {'guid': algorithm.guid, 'name': algorithm.name},
+        'specification_values': snapshot.specificationValues,
+        'parameters': [
+          for (final parameter in snapshot.parameters)
+            {
+              'name': parameter.name,
+              'min': parameter.min,
+              'max': parameter.max,
+              'default_value': parameter.defaultValue,
+              'raw_unit_index': parameter.rawUnitIndex,
+              'power_of_ten': parameter.powerOfTen,
+              'io_flags': parameter.ioFlags,
+              'enum_strings': parameter.enumStrings,
+            },
+        ],
+        'pages': [
+          for (final page in snapshot.pages) {'name': page.name},
+        ],
+        'page_memberships': [
+          for (final edge in snapshot.pageMemberships)
+            {
+              'page_index': edge.pageIndex,
+              'parameter_number': edge.parameterNumber,
+            },
+        ],
+        'output_usage': [
+          for (final edge in snapshot.outputUsage)
+            {
+              'parameter_number': edge.parameterNumber,
+              'affected_parameter_number': edge.affectedParameterNumber,
+            },
+        ],
+      }),
+    );
+  }
+
   /// Show single parameter with value and optional mapping.
   /// Accepts identifier in "slot_index:parameter_number" format.
   Future<String> showParameter(dynamic identifier) async {

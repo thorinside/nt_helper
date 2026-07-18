@@ -8,6 +8,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
         Mapping,
         ParameterValue;
 import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/algorithm_shape_snapshot.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart'
     show PackedMappingData;
 
@@ -161,6 +162,11 @@ abstract class DistingController {
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index is invalid.
   Future<List<Mapping>> getMappingsForSlot(int slotIndex);
+
+  /// Returns the complete immutable metadata shape currently reported for a
+  /// slot, including enums, pages, memberships, and output-mode usage.
+  /// Returns null when the slot is empty.
+  Future<AlgorithmShapeSnapshot?> getAlgorithmShapeForSlot(int slotIndex);
 
   /// Saves a mapping for a specific parameter.
   /// Throws StateError if the Disting is not in a synchronized state.

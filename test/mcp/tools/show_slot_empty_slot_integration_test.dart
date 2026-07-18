@@ -68,5 +68,116 @@ void main() {
         expect((json['algorithm'] as Map<String, dynamic>)['name'], equals(''));
       },
     );
+
+    test('returns the complete raw slot metadata shape', () async {
+      final manager = MockDistingMidiManager();
+      when(() => manager.requestParameterEnumStrings(0, 1)).thenAnswer(
+        (_) async => ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 1,
+          values: const ['Off', 'Include'],
+        ),
+      );
+      when(() => cubit.state).thenReturn(
+        DistingState.synchronized(
+          disting: manager,
+          distingVersion: '1.17.0',
+          firmwareVersion: FirmwareVersion('1.17.0'),
+          presetName: 'Test Preset',
+          algorithms: const [],
+          slots: [
+            Slot(
+              algorithm: Algorithm(
+                algorithmIndex: 0,
+                guid: 'quan',
+                name: 'Quantizer',
+                specifications: const [2],
+              ),
+              routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+              pages: ParameterPages(
+                algorithmIndex: 0,
+                pages: [
+                  ParameterPage(name: 'Channel 1', parameters: const [0]),
+                ],
+              ),
+              parameters: [
+                ParameterInfo(
+                  algorithmIndex: 0,
+                  parameterNumber: 0,
+                  min: 0,
+                  max: 2,
+                  defaultValue: 1,
+                  unit: 1,
+                  name: '1:Mode',
+                  powerOfTen: 0,
+                  ioFlags: 8,
+                ),
+                ParameterInfo(
+                  algorithmIndex: 0,
+                  parameterNumber: 1,
+                  min: 0,
+                  max: 1,
+                  defaultValue: 1,
+                  unit: 1,
+                  name: 'Hidden note',
+                  powerOfTen: 0,
+                ),
+              ],
+              values: const [],
+              enums: [
+                ParameterEnumStrings(
+                  algorithmIndex: 0,
+                  parameterNumber: 0,
+                  values: const ['Off', 'On', 'Auto'],
+                ),
+              ],
+              mappings: const [],
+              valueStrings: const [],
+              outputModeMap: const {
+                0: [0],
+              },
+            ),
+          ],
+          unitStrings: const [],
+        ),
+      );
+
+      final result = await tools.showSlotMetadata(0);
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isTrue);
+      expect(json['specification_values'], [2]);
+      expect(json['parameters'], [
+        {
+          'name': '1:Mode',
+          'min': 0,
+          'max': 2,
+          'default_value': 1,
+          'raw_unit_index': 1,
+          'power_of_ten': 0,
+          'io_flags': 8,
+          'enum_strings': ['Off', 'On', 'Auto'],
+        },
+        {
+          'name': 'Hidden note',
+          'min': 0,
+          'max': 1,
+          'default_value': 1,
+          'raw_unit_index': 1,
+          'power_of_ten': 0,
+          'io_flags': 0,
+          'enum_strings': ['Off', 'Include'],
+        },
+      ]);
+      expect(json['pages'], [
+        {'name': 'Channel 1'},
+      ]);
+      expect(json['page_memberships'], [
+        {'page_index': 0, 'parameter_number': 0},
+      ]);
+      expect(json['output_usage'], [
+        {'parameter_number': 0, 'affected_parameter_number': 0},
+      ]);
+    });
   });
 }

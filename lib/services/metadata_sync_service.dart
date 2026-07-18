@@ -55,6 +55,14 @@ class MetadataSyncService {
     return algoInfo.specifications.map(_scanSpecValue).toList();
   }
 
+  String _describeSpecificationVector(
+    AlgorithmInfo algoInfo,
+    List<int> values,
+  ) => [
+    for (final (index, value) in values.indexed)
+      '${algoInfo.specifications[index].name}=$value',
+  ].join(', ');
+
   /// Poll until the preset count matches [expected], or [maxAttempts] is reached.
   Future<int> _pollPresetCount({
     required int expected,
@@ -172,6 +180,10 @@ class MetadataSyncService {
     if (hasCountAxes) {
       try {
         final snapshots = <SpecificationVector, AlgorithmShapeSnapshot>{};
+        onStatus?.call(
+          'Capturing canonical repeat witness '
+          '(${_describeSpecificationVector(algoInfo, plan.canonical.values)})...',
+        );
         canonical = await _probeAlgorithmShape(
           algoInfo: algoInfo,
           specificationValues: plan.canonical.values,
@@ -185,6 +197,10 @@ class MetadataSyncService {
         }
         snapshots[plan.canonical] = canonical;
         for (final witness in plan.lowerWitnessByAxis.values) {
+          onStatus?.call(
+            'Capturing lower repeat witness '
+            '(${_describeSpecificationVector(algoInfo, witness.values)})...',
+          );
           final snapshot = await _probeAlgorithmShape(
             algoInfo: algoInfo,
             specificationValues: witness.values,
@@ -204,6 +220,10 @@ class MetadataSyncService {
           snapshots: snapshots,
         );
         for (final witness in inference.interactionWitnesses(analysis)) {
+          onStatus?.call(
+            'Capturing interaction witness '
+            '(${_describeSpecificationVector(algoInfo, witness.values)})...',
+          );
           final snapshot = await _probeAlgorithmShape(
             algoInfo: algoInfo,
             specificationValues: witness.values,
@@ -220,14 +240,17 @@ class MetadataSyncService {
         switch (inference.compile(analysis: analysis, snapshots: snapshots)) {
           case ProvenAlgorithmRepeatGrammar(grammar: final provenGrammar):
             grammar = provenGrammar;
-            status = 'repeat grammar: proven';
+            status =
+                'Repeat grammar proven from ${snapshots.length} hardware shapes.';
           case NoAlgorithmRepeats():
-            status = 'no repeats';
+            status =
+                'No repeat topology found across ${snapshots.length} hardware shapes.';
           case UnprovenAlgorithmRepeats():
-            status = 'unproven';
+            status =
+                'Repeat topology unproven across ${snapshots.length} hardware shapes.';
         }
       } catch (_) {
-        status = 'unproven';
+        status = 'Repeat topology unproven; using a conservative flat shape.';
         grammar = null;
       }
     }
@@ -983,7 +1006,10 @@ class MetadataSyncService {
   }
 
   /// Rescan a single algorithm's parameters
-  Future<void> rescanSingleAlgorithm(AlgorithmInfo algoInfo) async {
+  Future<void> rescanSingleAlgorithm(
+    AlgorithmInfo algoInfo, {
+    void Function(String status)? onStatus,
+  }) async {
     final metadataDao = _database.metadataDao;
     final firmwareVersion = await _requestFirmwareVersionSafe();
     final dbUnits = await metadataDao.getAllUnits();
@@ -1000,17 +1026,19 @@ class MetadataSyncService {
         unitIdMap: unitIdMap,
         dbUnitStrings: dbUnitStrings,
         firmwareVersion: firmwareVersion,
+        onStatus: onStatus,
       );
     } catch (error) {
       if (_isTimeoutError(error)) {
         // Timeout — reboot and retry once
-        await _rebootAndWaitForReconnection();
+        await _rebootAndWaitForReconnection(onStatus: onStatus);
         await _tryScanAlgorithm(
           algoInfo: algoInfo,
           metadataDao: metadataDao,
           unitIdMap: unitIdMap,
           dbUnitStrings: dbUnitStrings,
           firmwareVersion: firmwareVersion,
+          onStatus: onStatus,
         );
       } else {
         rethrow;

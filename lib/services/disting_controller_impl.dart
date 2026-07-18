@@ -12,6 +12,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/algorithm_shape_snapshot.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart'
     show PackedMappingData;
 
@@ -116,6 +117,74 @@ class DistingControllerImpl implements DistingController {
     }
     final Slot slot = state.slots[slotIndex];
     return slot.parameters;
+  }
+
+  @override
+  Future<AlgorithmShapeSnapshot?> getAlgorithmShapeForSlot(
+    int slotIndex,
+  ) async {
+    _validateSlotIndex(slotIndex);
+    final state = _getSynchronizedState();
+    if (slotIndex >= state.slots.length) return null;
+    final slot = state.slots[slotIndex];
+    if (slot.algorithm.guid.isEmpty) return null;
+
+    final enumsByParameter = <int, List<String>>{
+      for (final entry in slot.enums)
+        if (entry.parameterNumber >= 0) entry.parameterNumber: entry.values,
+    };
+    // The regular synchronized view fetches enums only for parameters that
+    // appear on a device page. Hardware metadata validation needs the raw
+    // shape for hidden parameters too, so fill those gaps directly from NT.
+    for (final parameter in slot.parameters) {
+      if (parameter.unit != 1 ||
+          (enumsByParameter[parameter.parameterNumber]?.isNotEmpty ?? false)) {
+        continue;
+      }
+      final response = await state.disting.requestParameterEnumStrings(
+        slot.algorithm.algorithmIndex,
+        parameter.parameterNumber,
+      );
+      if (response != null) {
+        enumsByParameter[parameter.parameterNumber] = response.values;
+      }
+    }
+    return AlgorithmShapeSnapshot(
+      specificationValues: slot.algorithm.specifications,
+      parameters: [
+        for (final parameter in slot.parameters)
+          ShapeParameterAtom(
+            name: parameter.name,
+            min: parameter.min,
+            max: parameter.max,
+            defaultValue: parameter.defaultValue,
+            rawUnitIndex: parameter.unit,
+            powerOfTen: parameter.powerOfTen,
+            ioFlags: parameter.ioFlags,
+            enumStrings:
+                enumsByParameter[parameter.parameterNumber] ?? const [],
+          ),
+      ],
+      pages: [
+        for (final page in slot.pages.pages) ShapePageAtom(name: page.name),
+      ],
+      pageMemberships: [
+        for (final (pageIndex, page) in slot.pages.pages.indexed)
+          for (final parameterNumber in page.parameters)
+            ShapePageMembershipAtom(
+              pageIndex: pageIndex,
+              parameterNumber: parameterNumber,
+            ),
+      ],
+      outputUsage: [
+        for (final entry in slot.outputModeMap.entries)
+          for (final affectedParameterNumber in entry.value)
+            ShapeOutputUsageAtom(
+              parameterNumber: entry.key,
+              affectedParameterNumber: affectedParameterNumber,
+            ),
+      ],
+    );
   }
 
   @override
