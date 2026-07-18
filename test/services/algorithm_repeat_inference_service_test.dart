@@ -89,6 +89,35 @@ void main() {
       expect(grammar.expand(_quantizer(2), [12]).parameters.last.name, 'Ch 12');
     });
 
+    test('Quantizer relationship streams follow repeated logical rows', () {
+      final specs = [_spec('Channels', min: 1, max: 12)];
+      final plan = service.buildInitialPlan(specs);
+      final snapshots = <SpecificationVector, AlgorithmShapeSnapshot>{
+        plan.canonical: _quantizerWithRelationships(2),
+        plan.lowerWitnessByAxis[0]!: _quantizerWithRelationships(1),
+      };
+
+      final result = service.compile(
+        analysis: service.analyzeInitial(
+          specifications: specs,
+          plan: plan,
+          snapshots: snapshots,
+        ),
+        snapshots: snapshots,
+      );
+
+      expect(result, isA<ProvenAlgorithmRepeatGrammar>());
+      final grammar = (result as ProvenAlgorithmRepeatGrammar).grammar;
+      expect(
+        grammar.expand(_quantizerWithRelationships(2), [4]),
+        _quantizerWithRelationships(4),
+      );
+      expect(
+        grammar.expand(_quantizerWithRelationships(2), [12]),
+        _quantizerWithRelationships(12),
+      );
+    });
+
     test('one count axis can add two disjoint sections', () {
       final specs = [_spec('Inputs', min: 1, max: 8)];
       final plan = service.buildInitialPlan(specs);
@@ -170,6 +199,38 @@ void main() {
         'Channel 4 Send 1',
         'Channel 4 Send 2',
       ]);
+    });
+
+    test('Mixer nests pages, memberships, and output usage with Sends', () {
+      final specs = [
+        _spec('Channels', min: 1, max: 8),
+        _spec('Sends', min: 0, max: 4),
+      ];
+      final plan = service.buildInitialPlan(specs);
+      final initial = <SpecificationVector, AlgorithmShapeSnapshot>{
+        plan.canonical: _mixerWithRelationships(2, 1),
+        plan.lowerWitnessByAxis[0]!: _mixerWithRelationships(1, 1),
+        plan.lowerWitnessByAxis[1]!: _mixerWithRelationships(2, 0),
+      };
+      final analysis = service.analyzeInitial(
+        specifications: specs,
+        plan: plan,
+        snapshots: initial,
+      );
+      final interaction = service.interactionWitnesses(analysis).single;
+      final snapshots = {
+        ...initial,
+        interaction: _mixerWithRelationships(1, 0),
+      };
+
+      final result = service.compile(analysis: analysis, snapshots: snapshots);
+
+      expect(result, isA<ProvenAlgorithmRepeatGrammar>());
+      final grammar = (result as ProvenAlgorithmRepeatGrammar).grammar;
+      expect(
+        grammar.expand(_mixerWithRelationships(2, 1), [4, 2]),
+        _mixerWithRelationships(4, 2),
+      );
     });
 
     test('scalar-only fixed-row change contributes no repeat section', () {
@@ -262,6 +323,47 @@ AlgorithmShapeSnapshot _quantizer(int channels) => _shape(
   ],
 );
 
+AlgorithmShapeSnapshot _quantizerWithRelationships(int channels) {
+  final parameters = <ShapeParameterAtom>[_parameter('Mode')];
+  final pages = <ShapePageAtom>[const ShapePageAtom(name: 'General')];
+  final memberships = <ShapePageMembershipAtom>[
+    const ShapePageMembershipAtom(pageIndex: 0, parameterNumber: 0),
+  ];
+  final outputUsage = <ShapeOutputUsageAtom>[];
+  for (var channel = 1; channel <= channels; channel++) {
+    final firstParameter = parameters.length;
+    parameters.addAll([
+      _parameter('Ch $channel Output mode'),
+      _parameter('Ch $channel CV output'),
+    ]);
+    final pageIndex = pages.length;
+    pages.add(ShapePageAtom(name: 'Channel $channel'));
+    memberships.addAll([
+      ShapePageMembershipAtom(
+        pageIndex: pageIndex,
+        parameterNumber: firstParameter,
+      ),
+      ShapePageMembershipAtom(
+        pageIndex: pageIndex,
+        parameterNumber: firstParameter + 1,
+      ),
+    ]);
+    outputUsage.add(
+      ShapeOutputUsageAtom(
+        parameterNumber: firstParameter,
+        affectedParameterNumber: firstParameter + 1,
+      ),
+    );
+  }
+  return AlgorithmShapeSnapshot(
+    specificationValues: [channels],
+    parameters: parameters,
+    pages: pages,
+    pageMemberships: memberships,
+    outputUsage: outputUsage,
+  );
+}
+
 AlgorithmShapeSnapshot _mixer(int channels, int sends) => _shape(
   [channels, sends],
   [
@@ -272,6 +374,54 @@ AlgorithmShapeSnapshot _mixer(int channels, int sends) => _shape(
     ],
   ],
 );
+
+AlgorithmShapeSnapshot _mixerWithRelationships(int channels, int sends) {
+  final parameters = <ShapeParameterAtom>[];
+  final pages = <ShapePageAtom>[];
+  final memberships = <ShapePageMembershipAtom>[];
+  final outputUsage = <ShapeOutputUsageAtom>[];
+  for (var channel = 1; channel <= channels; channel++) {
+    final channelParameter = parameters.length;
+    parameters.add(_parameter('Channel $channel Level'));
+    final pageIndex = pages.length;
+    pages.add(ShapePageAtom(name: 'Channel $channel'));
+    memberships.add(
+      ShapePageMembershipAtom(
+        pageIndex: pageIndex,
+        parameterNumber: channelParameter,
+      ),
+    );
+    for (var send = 1; send <= sends; send++) {
+      final sendParameter = parameters.length;
+      parameters.add(
+        _parameter(
+          'Channel $channel Send $send Gain',
+          max: 100 + channel,
+          enumStrings: ['Channel $channel Send $send'],
+        ),
+      );
+      memberships.add(
+        ShapePageMembershipAtom(
+          pageIndex: pageIndex,
+          parameterNumber: sendParameter,
+        ),
+      );
+      outputUsage.add(
+        ShapeOutputUsageAtom(
+          parameterNumber: sendParameter,
+          affectedParameterNumber: channelParameter,
+        ),
+      );
+    }
+  }
+  return AlgorithmShapeSnapshot(
+    specificationValues: [channels, sends],
+    parameters: parameters,
+    pages: pages,
+    pageMemberships: memberships,
+    outputUsage: outputUsage,
+  );
+}
 
 AlgorithmShapeSnapshot _shape(
   List<int> specifications,
@@ -284,7 +434,11 @@ AlgorithmShapeSnapshot _shape(
   outputUsage: const [],
 );
 
-ShapeParameterAtom _parameter(String name, {int max = 1}) => ShapeParameterAtom(
+ShapeParameterAtom _parameter(
+  String name, {
+  int max = 1,
+  List<String> enumStrings = const [],
+}) => ShapeParameterAtom(
   name: name,
   min: 0,
   max: max,
@@ -292,5 +446,5 @@ ShapeParameterAtom _parameter(String name, {int max = 1}) => ShapeParameterAtom(
   rawUnitIndex: 0,
   powerOfTen: 0,
   ioFlags: 0,
-  enumStrings: const [],
+  enumStrings: enumStrings,
 );

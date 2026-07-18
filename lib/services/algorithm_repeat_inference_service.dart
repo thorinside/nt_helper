@@ -346,21 +346,30 @@ final class AlgorithmRepeatInferenceService {
       throw const FormatException('ambiguous relationship ownership');
     }
     sections.addAll(
-      _relationshipSections(
-        axis,
-        specification,
-        ShapeStream.memberships,
-        canonical.pageMemberships.length,
-        membershipAlignment.unmatchedCanonical,
+      _relationshipSections<ShapePageMembershipAtom>(
+        axis: axis,
+        specification: specification,
+        stream: ShapeStream.memberships,
+        canonical: canonical.pageMemberships,
+        unmatched: membershipAlignment.unmatchedCanonical,
+        structuralSections: sections,
+        parameterReferences: (edge) => [edge.parameterNumber],
+        pageReferences: (edge) => [edge.pageIndex],
       ),
     );
     sections.addAll(
-      _relationshipSections(
-        axis,
-        specification,
-        ShapeStream.outputUsage,
-        canonical.outputUsage.length,
-        usageAlignment.unmatchedCanonical,
+      _relationshipSections<ShapeOutputUsageAtom>(
+        axis: axis,
+        specification: specification,
+        stream: ShapeStream.outputUsage,
+        canonical: canonical.outputUsage,
+        unmatched: usageAlignment.unmatchedCanonical,
+        structuralSections: sections,
+        parameterReferences: (edge) => [
+          edge.parameterNumber,
+          edge.affectedParameterNumber,
+        ],
+        pageReferences: (_) => const [],
       ),
     );
 
@@ -462,30 +471,133 @@ final class AlgorithmRepeatInferenceService {
   int canonicalSpecificationValue(Specification specification) =>
       specification.min + 1;
 
-  List<RepeatSection> _relationshipSections(
-    int axis,
-    Specification specification,
-    ShapeStream stream,
-    int canonicalLength,
-    List<int> unmatched,
-  ) {
-    return [
-      for (final range in _contiguousRanges(unmatched))
-        RepeatSection(
-          specificationIndex: axis,
-          countBias: 1 - canonicalSpecificationValue(specification),
-          sourceOrdinal: 0,
-          runs: [
-            ShapeStreamRun(
-              stream: stream,
-              firstStart: range.start,
-              itemCount: range.end - range.start,
-            ),
-          ],
-          substitutions: const [],
-          children: const [],
-        ),
-    ];
+  List<RepeatSection> _relationshipSections<T>({
+    required int axis,
+    required Specification specification,
+    required ShapeStream stream,
+    required List<T> canonical,
+    required List<int> unmatched,
+    required List<RepeatSection> structuralSections,
+    required Iterable<int> Function(T row) parameterReferences,
+    required Iterable<int> Function(T row) pageReferences,
+  }) {
+    if (unmatched.isEmpty) return const [];
+    final canonicalSpecification = canonicalSpecificationValue(specification);
+
+    ({int countBias, int ordinal})? ownerFor(T row) {
+      ({int countBias, int ordinal})? owner;
+      void includeReference(int reference, ShapeStream referenceStream) {
+        for (final section in structuralSections) {
+          if (section.specificationIndex != axis) continue;
+          final run = section.runFor(referenceStream);
+          if (run == null) continue;
+          final occurrenceCount = canonicalSpecification + section.countBias;
+          final end = run.firstStart + occurrenceCount * run.itemCount;
+          if (reference < run.firstStart || reference >= end) continue;
+          final next = (
+            countBias: section.countBias,
+            ordinal: (reference - run.firstStart) ~/ run.itemCount,
+          );
+          if (owner != null && owner != next) {
+            throw const FormatException(
+              'relationship endpoints have different repeat owners',
+            );
+          }
+          owner = next;
+        }
+      }
+
+      for (final reference in parameterReferences(row)) {
+        includeReference(reference, ShapeStream.parameters);
+      }
+      for (final reference in pageReferences(row)) {
+        includeReference(reference, ShapeStream.pages);
+      }
+      return owner;
+    }
+
+    final owners = canonical.map(ownerFor).toList();
+    final unmatchedSet = unmatched.toSet();
+    final consumed = <int>{};
+    final sections = <RepeatSection>[];
+    var cursor = 0;
+    while (cursor < owners.length) {
+      final first = owners[cursor];
+      if (first == null || first.ordinal != 0) {
+        cursor++;
+        continue;
+      }
+      var itemCount = 0;
+      while (cursor + itemCount < owners.length &&
+          owners[cursor + itemCount] == first) {
+        itemCount++;
+      }
+      final occurrenceCount = canonicalSpecification + first.countBias;
+      if (occurrenceCount <= 0) {
+        throw const FormatException('invalid relationship repeat count');
+      }
+      final runEnd = cursor + occurrenceCount * itemCount;
+      var complete = runEnd <= owners.length;
+      if (complete) {
+        for (var ordinal = 0; ordinal < occurrenceCount; ordinal++) {
+          for (var offset = 0; offset < itemCount; offset++) {
+            if (owners[cursor + ordinal * itemCount + offset] !=
+                (countBias: first.countBias, ordinal: ordinal)) {
+              complete = false;
+              break;
+            }
+          }
+          if (!complete) break;
+        }
+      }
+      if (!complete) {
+        cursor++;
+        continue;
+      }
+
+      final removedOrdinals = <int>[];
+      for (var ordinal = 0; ordinal < occurrenceCount; ordinal++) {
+        final indexes = [
+          for (var offset = 0; offset < itemCount; offset++)
+            cursor + ordinal * itemCount + offset,
+        ];
+        final removed = indexes.where(unmatchedSet.contains).length;
+        if (removed == indexes.length) {
+          removedOrdinals.add(ordinal);
+        } else if (removed != 0) {
+          throw const FormatException(
+            'relationship occurrence is only partially inserted',
+          );
+        }
+      }
+      if (removedOrdinals.length == 1) {
+        sections.add(
+          RepeatSection(
+            specificationIndex: axis,
+            countBias: first.countBias,
+            sourceOrdinal: removedOrdinals.single,
+            runs: [
+              ShapeStreamRun(
+                stream: stream,
+                firstStart: cursor,
+                itemCount: itemCount,
+              ),
+            ],
+            substitutions: const [],
+            children: const [],
+          ),
+        );
+        consumed.addAll([
+          for (var offset = 0; offset < itemCount; offset++)
+            cursor + removedOrdinals.single * itemCount + offset,
+        ]);
+      }
+      cursor = runEnd;
+    }
+    if (!consumed.containsAll(unmatchedSet)) {
+      throw const FormatException('unresolved relationship ownership');
+    }
+    return sections;
   }
 
   int _parameterMatch(ShapeParameterAtom a, ShapeParameterAtom b) {
@@ -876,61 +988,85 @@ final class AlgorithmRepeatInferenceService {
     while (changed) {
       changed = false;
       for (final outer in [...sections]) {
-        final outerRun = outer.runFor(ShapeStream.parameters);
-        if (outerRun == null) continue;
         final outerCount = baseline[outer.specificationIndex] + outer.countBias;
-        final candidates = sections.where((inner) {
+        final candidates = <_NestedCandidate>[];
+        for (final inner in sections) {
           if (inner == outer ||
-              inner.specificationIndex == outer.specificationIndex) {
-            return false;
+              inner.specificationIndex == outer.specificationIndex ||
+              inner.runs.length != 1) {
+            continue;
           }
-          final innerRun = inner.runFor(ShapeStream.parameters);
-          if (innerRun == null) return false;
-          final outerEnd =
-              outerRun.firstStart + outerCount * outerRun.itemCount;
-          return innerRun.firstStart >= outerRun.firstStart &&
-              innerRun.firstStart < outerEnd;
-        }).toList();
-        if (candidates.isEmpty) continue;
-        final innerAxis = candidates.first.specificationIndex;
-        final sameAxis = candidates
-            .where((section) => section.specificationIndex == innerAxis)
-            .toList();
-        if (sameAxis.length != outerCount) continue;
-        sameAxis.sort(
-          (a, b) => a.runs.first.firstStart.compareTo(b.runs.first.firstStart),
-        );
-        final relativeOffsets = <int>[];
-        for (var ordinal = 0; ordinal < outerCount; ordinal++) {
-          final run = sameAxis[ordinal].runFor(ShapeStream.parameters)!;
-          relativeOffsets.add(
-            run.firstStart -
-                (outerRun.firstStart + ordinal * outerRun.itemCount),
+          final innerRun = inner.runs.single;
+          final outerRun = outer.runFor(innerRun.stream);
+          if (outerRun == null) continue;
+          final innerCount =
+              baseline[inner.specificationIndex] + inner.countBias;
+          final relativeStart = innerRun.firstStart - outerRun.firstStart;
+          if (relativeStart < 0) continue;
+          final outerOrdinal = relativeStart ~/ outerRun.itemCount;
+          if (outerOrdinal >= outerCount) continue;
+          final relativeOffset = relativeStart % outerRun.itemCount;
+          if (relativeOffset + innerCount * innerRun.itemCount >
+              outerRun.itemCount) {
+            continue;
+          }
+          candidates.add(
+            _NestedCandidate(
+              section: inner,
+              run: innerRun,
+              outerOrdinal: outerOrdinal,
+              relativeOffset: relativeOffset,
+            ),
           );
         }
-        if (relativeOffsets.toSet().length != 1) continue;
-        final template =
-            sameAxis[outer.sourceOrdinal.clamp(0, sameAxis.length - 1)];
-        final templateRun = template.runFor(ShapeStream.parameters)!;
+        if (candidates.isEmpty) continue;
+        _NestedCandidate? seed;
+        List<_NestedCandidate> group = const [];
+        for (final candidate in candidates) {
+          final matches = candidates.where((other) {
+            return other.section.specificationIndex ==
+                    candidate.section.specificationIndex &&
+                other.section.countBias == candidate.section.countBias &&
+                other.section.sourceOrdinal ==
+                    candidate.section.sourceOrdinal &&
+                other.run.stream == candidate.run.stream &&
+                other.run.itemCount == candidate.run.itemCount &&
+                other.relativeOffset == candidate.relativeOffset;
+          }).toList();
+          if (matches.length == outerCount &&
+              matches.map((entry) => entry.outerOrdinal).toSet().length ==
+                  outerCount) {
+            seed = candidate;
+            group = matches;
+            break;
+          }
+        }
+        if (seed == null) continue;
+        final innerAxis = seed.section.specificationIndex;
+        final innerCount = baseline[innerAxis] + seed.section.countBias;
+        final outerRun = outer.runFor(seed.run.stream)!;
         final child = RepeatSection(
           specificationIndex: innerAxis,
-          countBias: template.countBias,
-          sourceOrdinal: template.sourceOrdinal,
+          countBias: seed.section.countBias,
+          sourceOrdinal: seed.section.sourceOrdinal,
           runs: [
             ShapeStreamRun(
-              stream: ShapeStream.parameters,
-              firstStart: relativeOffsets.first,
-              itemCount: templateRun.itemCount,
+              stream: seed.run.stream,
+              firstStart: seed.relativeOffset,
+              itemCount: seed.run.itemCount,
             ),
           ],
-          substitutions: _nestedParameterSubstitutions(
-            canonical.parameters,
-            outer,
-            relativeOffsets.first,
-            templateRun.itemCount,
-            innerAxis,
-            template.sourceOrdinal,
-            outerCount,
+          substitutions: _nestedSubstitutions(
+            canonical: canonical,
+            stream: seed.run.stream,
+            outerRun: outerRun,
+            outerAxis: outer.specificationIndex,
+            outerCount: outerCount,
+            relativeOffset: seed.relativeOffset,
+            itemCount: seed.run.itemCount,
+            innerAxis: innerAxis,
+            innerCount: innerCount,
+            innerSourceOrdinal: seed.section.sourceOrdinal,
           ),
           children: const [],
         );
@@ -946,7 +1082,7 @@ final class AlgorithmRepeatInferenceService {
           for (final section in sections)
             if (section == outer)
               replacement
-            else if (!sameAxis.contains(section))
+            else if (!group.any((entry) => entry.section == section))
               section,
         ];
         changed = true;
@@ -959,52 +1095,131 @@ final class AlgorithmRepeatInferenceService {
     return sections;
   }
 
-  List<OrdinalSubstitution> _nestedParameterSubstitutions(
-    List<ShapeParameterAtom> canonical,
-    RepeatSection outer,
-    int relativeOffset,
-    int itemCount,
-    int innerAxis,
-    int innerSourceOrdinal,
-    int outerCount,
-  ) {
-    final outerRun = outer.runFor(ShapeStream.parameters)!;
+  List<OrdinalSubstitution> _nestedSubstitutions({
+    required AlgorithmShapeSnapshot canonical,
+    required ShapeStream stream,
+    required ShapeStreamRun outerRun,
+    required int outerAxis,
+    required int outerCount,
+    required int relativeOffset,
+    required int itemCount,
+    required int innerAxis,
+    required int innerCount,
+    required int innerSourceOrdinal,
+  }) {
+    if (stream != ShapeStream.parameters && stream != ShapeStream.pages) {
+      return const [];
+    }
+    final rows = switch (stream) {
+      ShapeStream.parameters => canonical.parameters.cast<Object>(),
+      ShapeStream.pages => canonical.pages.cast<Object>(),
+      _ => const <Object>[],
+    };
     final result = <OrdinalSubstitution>[];
     for (var offset = 0; offset < itemCount; offset++) {
-      final rows = <ShapeParameterAtom>[
+      final samples = <_NestedAtomSample>[
         for (var outerOrdinal = 0; outerOrdinal < outerCount; outerOrdinal++)
-          canonical[outerRun.firstStart +
-              outerOrdinal * outerRun.itemCount +
-              relativeOffset +
-              innerSourceOrdinal * itemCount +
-              offset],
+          for (var innerOrdinal = 0; innerOrdinal < innerCount; innerOrdinal++)
+            _NestedAtomSample(
+              value:
+                  rows[outerRun.firstStart +
+                      outerOrdinal * outerRun.itemCount +
+                      relativeOffset +
+                      innerOrdinal * itemCount +
+                      offset],
+              outerOrdinal: outerOrdinal,
+              innerOrdinal: innerOrdinal,
+            ),
       ];
-      final parts = _inferNestedTextParts(
-        rows.map((row) => row.name).toList(),
-        outer.specificationIndex,
-        innerAxis,
-        innerSourceOrdinal,
+      if (stream == ShapeStream.pages) {
+        final parts = _inferNestedTextParts(
+          samples
+              .map(
+                (sample) => _NestedTextSample(
+                  value: (sample.value as ShapePageAtom).name,
+                  outerOrdinal: sample.outerOrdinal,
+                  innerOrdinal: sample.innerOrdinal,
+                ),
+              )
+              .toList(),
+          outerAxis: outerAxis,
+          innerAxis: innerAxis,
+          innerSourceOrdinal: innerSourceOrdinal,
+        );
+        if (parts != null) {
+          result.add(
+            OrdinalTextSubstitution(
+              stream: stream,
+              rowOffset: offset,
+              field: OrdinalField.pageName,
+              parts: parts,
+            ),
+          );
+        }
+        continue;
+      }
+
+      final parameters = samples
+          .map(
+            (sample) => _NestedParameterSample(
+              value: sample.value as ShapeParameterAtom,
+              outerOrdinal: sample.outerOrdinal,
+              innerOrdinal: sample.innerOrdinal,
+            ),
+          )
+          .toList();
+      final first = parameters.first.value;
+      if (parameters.any(
+        (sample) =>
+            sample.value.rawUnitIndex != first.rawUnitIndex ||
+            sample.value.powerOfTen != first.powerOfTen ||
+            sample.value.ioFlags != first.ioFlags ||
+            sample.value.enumStrings.length != first.enumStrings.length,
+      )) {
+        throw const FormatException('non-isomorphic nested parameter');
+      }
+      final nameParts = _inferNestedTextParts(
+        parameters
+            .map(
+              (sample) => _NestedTextSample(
+                value: sample.value.name,
+                outerOrdinal: sample.outerOrdinal,
+                innerOrdinal: sample.innerOrdinal,
+              ),
+            )
+            .toList(),
+        outerAxis: outerAxis,
+        innerAxis: innerAxis,
+        innerSourceOrdinal: innerSourceOrdinal,
       );
-      if (parts != null) {
+      if (nameParts != null) {
         result.add(
           OrdinalTextSubstitution(
-            stream: ShapeStream.parameters,
+            stream: stream,
             rowOffset: offset,
             field: OrdinalField.parameterName,
-            parts: parts,
+            parts: nameParts,
           ),
         );
       }
       for (
         var enumIndex = 0;
-        enumIndex < rows.first.enumStrings.length;
+        enumIndex < first.enumStrings.length;
         enumIndex++
       ) {
         final enumParts = _inferNestedTextParts(
-          rows.map((row) => row.enumStrings[enumIndex]).toList(),
-          outer.specificationIndex,
-          innerAxis,
-          innerSourceOrdinal,
+          parameters
+              .map(
+                (sample) => _NestedTextSample(
+                  value: sample.value.enumStrings[enumIndex],
+                  outerOrdinal: sample.outerOrdinal,
+                  innerOrdinal: sample.innerOrdinal,
+                ),
+              )
+              .toList(),
+          outerAxis: outerAxis,
+          innerAxis: innerAxis,
+          innerSourceOrdinal: innerSourceOrdinal,
         );
         if (enumParts != null) {
           result.add(
@@ -1018,17 +1233,89 @@ final class AlgorithmRepeatInferenceService {
           );
         }
       }
+      for (final field in const [
+        OrdinalField.parameterMin,
+        OrdinalField.parameterMax,
+        OrdinalField.parameterDefault,
+      ]) {
+        int valueOf(ShapeParameterAtom parameter) => switch (field) {
+          OrdinalField.parameterMin => parameter.min,
+          OrdinalField.parameterMax => parameter.max,
+          OrdinalField.parameterDefault => parameter.defaultValue,
+          _ => throw StateError('unreachable'),
+        };
+        final base = parameters
+            .singleWhere(
+              (sample) => sample.outerOrdinal == 0 && sample.innerOrdinal == 0,
+            )
+            .value;
+        final constant = valueOf(base);
+        final outerCoefficient = outerCount > 1
+            ? valueOf(
+                    parameters
+                        .singleWhere(
+                          (sample) =>
+                              sample.outerOrdinal == 1 &&
+                              sample.innerOrdinal == 0,
+                        )
+                        .value,
+                  ) -
+                  constant
+            : 0;
+        final innerCoefficient = innerCount > 1
+            ? valueOf(
+                    parameters
+                        .singleWhere(
+                          (sample) =>
+                              sample.outerOrdinal == 0 &&
+                              sample.innerOrdinal == 1,
+                        )
+                        .value,
+                  ) -
+                  constant
+            : 0;
+        if (parameters.any(
+          (sample) =>
+              valueOf(sample.value) !=
+              constant +
+                  outerCoefficient * sample.outerOrdinal +
+                  innerCoefficient * sample.innerOrdinal,
+        )) {
+          throw const FormatException('non-affine nested integer occurrence');
+        }
+        if (outerCoefficient == 0 && innerCoefficient == 0) continue;
+        result.add(
+          AffineIntegerSubstitution(
+            stream: stream,
+            rowOffset: offset,
+            field: field,
+            constant: constant,
+            coefficients: [
+              if (outerCoefficient != 0)
+                AffineCoefficient(
+                  specificationIndex: outerAxis,
+                  coefficient: outerCoefficient,
+                ),
+              if (innerCoefficient != 0)
+                AffineCoefficient(
+                  specificationIndex: innerAxis,
+                  coefficient: innerCoefficient,
+                ),
+            ],
+          ),
+        );
+      }
     }
     return result;
   }
 
   List<OrdinalTextPart>? _inferNestedTextParts(
-    List<String> values,
-    int outerAxis,
-    int innerAxis,
-    int innerSourceOrdinal,
-  ) {
-    final split = values.map(_splitDigits).toList();
+    List<_NestedTextSample> samples, {
+    required int outerAxis,
+    required int innerAxis,
+    required int innerSourceOrdinal,
+  }) {
+    final split = samples.map((sample) => _splitDigits(sample.value)).toList();
     if (split.any((parts) => parts.length != split.first.length)) {
       throw const FormatException('unsupported nested text');
     }
@@ -1044,12 +1331,21 @@ final class AlgorithmRepeatInferenceService {
         continue;
       }
       final digits = parts.cast<int>();
-      final outerBias = digits.first;
+      final outerBias = digits.first - samples.first.outerOrdinal;
+      final innerBias = digits.first - samples.first.innerOrdinal;
       final followsOuter = [
-        for (var ordinal = 0; ordinal < digits.length; ordinal++)
-          digits[ordinal] == ordinal + outerBias,
+        for (var index = 0; index < digits.length; index++)
+          digits[index] == samples[index].outerOrdinal + outerBias,
       ].every((value) => value);
-      if (followsOuter && digits.length > 1) {
+      final followsInner = [
+        for (var index = 0; index < digits.length; index++)
+          digits[index] == samples[index].innerOrdinal + innerBias,
+      ].every((value) => value);
+      final outerVaries =
+          samples.map((sample) => sample.outerOrdinal).toSet().length > 1;
+      final innerVaries =
+          samples.map((sample) => sample.innerOrdinal).toSet().length > 1;
+      if (outerVaries && followsOuter && !(innerVaries && followsInner)) {
         result.add(
           OrdinalTextPlaceholder(
             specificationIndex: outerAxis,
@@ -1057,7 +1353,18 @@ final class AlgorithmRepeatInferenceService {
           ),
         );
         usedPlaceholder = true;
-      } else if (digits.toSet().length == 1 &&
+      } else if (innerVaries &&
+          followsInner &&
+          !(outerVaries && followsOuter)) {
+        result.add(
+          OrdinalTextPlaceholder(
+            specificationIndex: innerAxis,
+            displayBias: innerBias,
+          ),
+        );
+        usedPlaceholder = true;
+      } else if (!innerVaries &&
+          digits.toSet().length == 1 &&
           digits.first == innerSourceOrdinal + 1) {
         result.add(
           OrdinalTextPlaceholder(specificationIndex: innerAxis, displayBias: 1),
@@ -1102,4 +1409,54 @@ final class _Alignment {
   final Map<int, int> lowerToCanonical;
   final List<int> unmatchedCanonical;
   final bool ambiguous;
+}
+
+final class _NestedCandidate {
+  const _NestedCandidate({
+    required this.section,
+    required this.run,
+    required this.outerOrdinal,
+    required this.relativeOffset,
+  });
+
+  final RepeatSection section;
+  final ShapeStreamRun run;
+  final int outerOrdinal;
+  final int relativeOffset;
+}
+
+final class _NestedAtomSample {
+  const _NestedAtomSample({
+    required this.value,
+    required this.outerOrdinal,
+    required this.innerOrdinal,
+  });
+
+  final Object value;
+  final int outerOrdinal;
+  final int innerOrdinal;
+}
+
+final class _NestedParameterSample {
+  const _NestedParameterSample({
+    required this.value,
+    required this.outerOrdinal,
+    required this.innerOrdinal,
+  });
+
+  final ShapeParameterAtom value;
+  final int outerOrdinal;
+  final int innerOrdinal;
+}
+
+final class _NestedTextSample {
+  const _NestedTextSample({
+    required this.value,
+    required this.outerOrdinal,
+    required this.innerOrdinal,
+  });
+
+  final String value;
+  final int outerOrdinal;
+  final int innerOrdinal;
 }
