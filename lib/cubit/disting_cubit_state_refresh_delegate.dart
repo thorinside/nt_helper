@@ -4,6 +4,7 @@ class _StateRefreshDelegate {
   _StateRefreshDelegate(this._cubit);
 
   final DistingCubit _cubit;
+  int _refreshGeneration = 0;
 
   Future<void> refreshStateFromManager({
     Duration delay = const Duration(milliseconds: 50),
@@ -16,7 +17,9 @@ class _StateRefreshDelegate {
       return;
     }
 
+    final generation = ++_refreshGeneration;
     _cubit._emitState(currentState.copyWith(loading: true));
+    final guardedState = _cubit.state;
     await Future.delayed(delay);
 
     final disting = currentState.disting; // Could be online or offline
@@ -32,7 +35,16 @@ class _StateRefreshDelegate {
       final presetName = await disting.requestPresetName() ?? "Error";
       _diag('refresh requestPresetName done name="$presetName"');
       _diag('refresh fetchSlots start count=$numAlgorithmsInPreset');
-      final slots = await _cubit.fetchSlots(numAlgorithmsInPreset, disting);
+      final fetchedSlots = await _cubit.fetchSlots(
+        numAlgorithmsInPreset,
+        disting,
+      );
+      final slots = _cubit._preserveKnownSlotSpecificationsForRefresh(
+        previousState: currentState,
+        refreshedDisting: disting,
+        refreshedPresetName: presetName,
+        refreshedSlots: fetchedSlots,
+      );
       _diag(
         'refresh fetchSlots done fetched=${slots.length} '
         'elapsed=${stopwatch.elapsedMilliseconds}ms',
@@ -49,6 +61,12 @@ class _StateRefreshDelegate {
           'refresh perfPageItems done count=${perfPageItems.length} '
           'elapsed=${stopwatch.elapsedMilliseconds}ms',
         );
+      }
+
+      if (!_isCurrentRefresh(generation, guardedState, disting)) {
+        _diag('refresh discarded because newer state superseded it');
+        _clearLoadingIfOwned(generation, disting);
+        return;
       }
 
       _cubit._emitState(
@@ -70,7 +88,35 @@ class _StateRefreshDelegate {
         'error=$e',
       );
       debugPrintStack(stackTrace: stackTrace);
-      _cubit._emitState(currentState.copyWith(loading: false));
+      if (_isCurrentRefresh(generation, guardedState, disting)) {
+        _cubit._emitState(currentState.copyWith(loading: false));
+      } else {
+        _clearLoadingIfOwned(generation, disting);
+      }
+    }
+  }
+
+  bool _isCurrentRefresh(
+    int generation,
+    DistingState guardedState,
+    IDistingMidiManager disting,
+  ) {
+    if (generation != _refreshGeneration ||
+        !identical(_cubit.state, guardedState)) {
+      return false;
+    }
+    final state = _cubit.state;
+    return state is DistingStateSynchronized &&
+        identical(state.disting, disting);
+  }
+
+  void _clearLoadingIfOwned(int generation, IDistingMidiManager disting) {
+    if (generation != _refreshGeneration) return;
+    final state = _cubit.state;
+    if (state is DistingStateSynchronized &&
+        identical(state.disting, disting) &&
+        state.loading) {
+      _cubit._emitState(state.copyWith(loading: false));
     }
   }
 

@@ -408,6 +408,140 @@ void main() {
       },
     );
 
+    test('applies the template slot specification values', () async {
+      when(
+        () => mockMidiManager.requestNumAlgorithmsInPreset(),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockMidiManager.requestAddAlgorithm(any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockMidiManager.requestSendSlotName(any(), any()),
+      ).thenAnswer((_) async {});
+      when(() => mockMetadataDao.getFullAlgorithmDetails('quan')).thenAnswer(
+        (_) async => FullAlgorithmDetails(
+          algorithm: AlgorithmEntry(
+            guid: 'quan',
+            name: 'Quantizer',
+            numSpecifications: 1,
+          ),
+          specifications: [
+            SpecificationEntry(
+              algorithmGuid: 'quan',
+              specIndex: 0,
+              name: 'Channels',
+              minValue: 1,
+              maxValue: 12,
+              defaultValue: 1,
+              type: 0,
+            ),
+          ],
+          parameters: [],
+          parameterPages: [],
+          enums: {},
+        ),
+      );
+      when(
+        () => mockMetadataDao.getAllAlgorithms(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockMetadataDao.getAlgorithmParameterCounts(),
+      ).thenAnswer((_) async => {});
+      when(() => mockPresetsDao.getAllPresets()).thenAnswer((_) async => []);
+      final template = FullPresetDetails(
+        preset: PresetEntry(
+          id: 1,
+          name: 'Four Channel Quantizer',
+          lastModified: DateTime.now(),
+          isTemplate: true,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: 1,
+              presetId: 1,
+              slotIndex: 0,
+              algorithmGuid: 'quan',
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'quan',
+              name: 'Quantizer',
+              numSpecifications: 1,
+            ),
+            specificationValues: const [4],
+            parameterValues: const {},
+            parameterStringValues: const {},
+            mappings: const {},
+          ),
+        ],
+      );
+
+      await cubit.injectTemplateToDevice(template, mockMidiManager);
+
+      verify(
+        () => mockMidiManager.requestAddAlgorithm(any(), const [4]),
+      ).called(1);
+    });
+
+    test('rejects invalid specification values before adding a slot', () async {
+      when(() => mockMetadataDao.getFullAlgorithmDetails('quan')).thenAnswer(
+        (_) async => FullAlgorithmDetails(
+          algorithm: AlgorithmEntry(
+            guid: 'quan',
+            name: 'Quantizer',
+            numSpecifications: 1,
+          ),
+          specifications: [
+            SpecificationEntry(
+              algorithmGuid: 'quan',
+              specIndex: 0,
+              name: 'Channels',
+              minValue: 1,
+              maxValue: 12,
+              defaultValue: 1,
+              type: 0,
+            ),
+          ],
+          parameters: [],
+          parameterPages: [],
+          enums: {},
+        ),
+      );
+
+      final template = FullPresetDetails(
+        preset: PresetEntry(
+          id: 1,
+          name: 'Invalid Quantizer',
+          lastModified: DateTime.now(),
+          isTemplate: true,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: 1,
+              presetId: 1,
+              slotIndex: 0,
+              algorithmGuid: 'quan',
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'quan',
+              name: 'Quantizer',
+              numSpecifications: 1,
+            ),
+            specificationValues: const [13],
+            parameterValues: const {},
+            parameterStringValues: const {},
+            mappings: const {},
+          ),
+        ],
+      );
+
+      await cubit.injectTemplateToDevice(template, mockMidiManager);
+
+      verifyNever(() => mockMidiManager.requestAddAlgorithm(any(), any()));
+      expect(cubit.state, isA<PresetLoadFailure>());
+    });
+
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'sets parameter values with correct slot offset (current slot count + template slot index)',
       build: () {

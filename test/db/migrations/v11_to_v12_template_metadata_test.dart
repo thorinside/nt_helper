@@ -15,8 +15,8 @@ void main() {
       await database.close();
     });
 
-    test('schema version is 12', () {
-      expect(database.schemaVersion, 12);
+    test('current schema includes the later v13 migration', () {
+      expect(database.schemaVersion, 13);
     });
 
     test(

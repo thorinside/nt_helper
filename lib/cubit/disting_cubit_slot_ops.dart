@@ -64,13 +64,21 @@ mixin _DistingCubitSlotOps on _DistingCubitBase {
 
               final actual = await disting.requestAlgorithmGuid(algorithmIndex);
               if (actual == null) return;
+              if (!identical(state, verificationState)) return;
 
               // If the device accepted it, the name should match. Otherwise, correct locally.
               if (actual.name != trimmed) {
+                final correctedSlot = _preserveKnownSlotSpecifications(
+                  previousState: verificationState,
+                  refreshedDisting: disting,
+                  refreshedPresetName: verificationState.presetName,
+                  slotIndex: algorithmIndex,
+                  refreshedSlot: currentSlot.copyWith(algorithm: actual),
+                );
                 final correctedSlots = updateSlot(
                   algorithmIndex,
                   verificationState.slots,
-                  (s) => s.copyWith(algorithm: actual),
+                  (s) => correctedSlot,
                 );
                 emit(
                   verificationState.copyWith(

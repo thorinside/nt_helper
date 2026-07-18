@@ -25,6 +25,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   // Internal state for the simulated preset
   int? _loadedPresetId;
   final List<String> _presetAlgorithmGuids = [];
+  final List<List<int>> _presetSpecificationValues = [];
   final Map<int, int> _presetSlotIds = {}; // Maps slotIndex -> presetSlotId
   final Map<int, Map<int, int>> _parameterValues = {};
   final Map<int, Map<int, String>> _parameterStringValues = {};
@@ -40,6 +41,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   // Initialize state from loaded preset details
   Future<void> initializeFromDb(FullPresetDetails? details) async {
     _presetAlgorithmGuids.clear();
+    _presetSpecificationValues.clear();
     _presetSlotIds.clear();
     _parameterValues.clear();
     _parameterStringValues.clear();
@@ -59,6 +61,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       final slotData = details.slots[i];
       final guid = slotData.algorithm.guid;
       _presetAlgorithmGuids.add(guid);
+      _presetSpecificationValues.add(
+        List<int>.unmodifiable(slotData.specificationValues),
+      );
       _presetSlotIds[i] = slotData.slot.id; // Store presetSlotId
 
       // Calculate default name with instance number during init
@@ -193,6 +198,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
           algorithmIndex: algorithmIndex,
           guid: algoEntry.guid,
           name: customName ?? defaultName ?? "Error: Name Missing",
+          specifications: List<int>.from(
+            _presetSpecificationValues[algorithmIndex],
+          ),
         );
       } else {
         return null;
@@ -553,6 +561,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestNewPreset() async {
     _presetAlgorithmGuids.clear();
+    _presetSpecificationValues.clear();
+    _presetSlotIds.clear();
     _parameterValues.clear();
     _parameterStringValues.clear();
     _mappings.clear();
@@ -582,6 +592,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
     // Add GUID and initialize state maps
     _presetAlgorithmGuids.add(guid);
+    _presetSpecificationValues.add(List<int>.unmodifiable(specifications));
     final slotIndex = _presetAlgorithmGuids.length - 1;
     _defaultNames[slotIndex] = defaultName;
     _parameterValues[slotIndex] = {};
@@ -594,6 +605,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Future<void> requestRemoveAlgorithm(int algorithmIndex) async {
     if (algorithmIndex >= 0 && algorithmIndex < _presetAlgorithmGuids.length) {
       _presetAlgorithmGuids.removeAt(algorithmIndex);
+      _presetSpecificationValues.removeAt(algorithmIndex);
       _removeAndShiftState(algorithmIndex);
     } else {}
   }
@@ -608,6 +620,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     if (algorithmIndex > 0 && algorithmIndex < _presetAlgorithmGuids.length) {
       final guid = _presetAlgorithmGuids.removeAt(algorithmIndex);
       _presetAlgorithmGuids.insert(algorithmIndex - 1, guid);
+      final specifications = _presetSpecificationValues.removeAt(
+        algorithmIndex,
+      );
+      _presetSpecificationValues.insert(algorithmIndex - 1, specifications);
       _shiftStateUp(algorithmIndex);
     } else {}
   }
@@ -618,6 +634,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         algorithmIndex < _presetAlgorithmGuids.length - 1) {
       final guid = _presetAlgorithmGuids.removeAt(algorithmIndex);
       _presetAlgorithmGuids.insert(algorithmIndex + 1, guid);
+      final specifications = _presetSpecificationValues.removeAt(
+        algorithmIndex,
+      );
+      _presetSpecificationValues.insert(algorithmIndex + 1, specifications);
       _shiftStateDown(algorithmIndex);
     } else {}
   }
@@ -809,6 +829,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
             customName: _customNames[i],
           ),
           algorithm: algoEntry,
+          specificationValues: List<int>.from(_presetSpecificationValues[i]),
           parameterValues: _parameterValues[i] ?? {},
           parameterStringValues: _parameterStringValues[i] ?? {},
           mappings: _mappings[i] ?? {},
@@ -938,7 +959,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<FullPresetDetails?> requestCurrentPresetDetails() =>
-      throw UnsupportedError('Not available in offline mode');
+      _buildPresetDetailsForSave();
 
   @override
   Future<DirectoryListing?> requestDirectoryListing(String path) =>

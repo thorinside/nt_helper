@@ -66,6 +66,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
   Slot _createPlaceholderSlotForAdd({
     required int slotIndex,
     required AlgorithmInfo algorithm,
+    required List<int> specificationValues,
     required List<Slot> existingSlots,
   }) {
     final displayName = _deriveOptimisticAlgorithmNameForAdd(
@@ -79,9 +80,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         algorithmIndex: slotIndex,
         guid: algorithm.guid,
         name: displayName,
-        specifications: algorithm.specifications
-            .map((s) => s.defaultValue)
-            .toList(),
+        specifications: List<int>.unmodifiable(specificationValues),
       ),
       routing: RoutingInfo(
         algorithmIndex: slotIndex,
@@ -192,19 +191,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         break;
       case DistingStateSynchronized syncstate:
         final disting = syncstate.disting;
-        List<int> specsToSend = specifications;
-
-        // *** Adjust for offline: Use stored default specs if offline ***
-        if (syncstate.offline) {
-          final storedAlgoInfo = syncstate.algorithms.firstWhereOrNull(
-            (a) => a.guid == algorithm.guid,
-          );
-          if (storedAlgoInfo != null) {
-            specsToSend = storedAlgoInfo.specifications
-                .map((s) => s.defaultValue)
-                .toList();
-          } else {}
-        }
+        final specsToSend = List<int>.unmodifiable(specifications);
 
         // An algorithm can only be added to the next empty slot, so we can be
         // optimistic and only reconcile the newly-added slot.
@@ -214,6 +201,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         final placeholder = _createPlaceholderSlotForAdd(
           slotIndex: newSlotIndex,
           algorithm: algorithm,
+          specificationValues: specsToSend,
           existingSlots: syncstate.slots,
         );
         emit(
@@ -286,10 +274,18 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
             if (verified.slots.length <= newSlotIndex) return;
             if (verified.slots[newSlotIndex] != placeholder) return;
 
+            final hydrated =
+                fetched.algorithm.guid == placeholder.algorithm.guid
+                ? fetched.copyWith(
+                    algorithm: fetched.algorithm.copyWith(
+                      specifications: placeholder.algorithm.specifications,
+                    ),
+                  )
+                : fetched;
             final updatedSlots = updateSlot(
               newSlotIndex,
               verified.slots,
-              (_) => fetched,
+              (_) => hydrated,
             );
             emit(verified.copyWith(slots: updatedSlots, loading: false));
             _rebuildCcLookup();
@@ -477,6 +473,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           bool mismatchDetected = false;
           for (int i = 0; i < optimisticSlotsCorrected.length; i++) {
             final actualAlgorithm = await disting.requestAlgorithmGuid(i);
+            if (!identical(state, verificationState)) return;
             final optimisticAlgorithm = optimisticSlotsCorrected[i].algorithm;
 
             // Compare GUID and Name
@@ -495,6 +492,14 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               optimisticSlotsCorrected.length,
               disting,
             );
+            if (!identical(state, verificationState)) return;
+            final preservedActualSlots =
+                _preserveKnownSlotSpecificationsForRefresh(
+                  previousState: verificationState,
+                  refreshedDisting: disting,
+                  refreshedPresetName: verificationState.presetName,
+                  refreshedSlots: actualSlots,
+                );
 
             emit(
               DistingState.synchronized(
@@ -505,7 +510,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
                 presetName: verificationState.presetName,
                 // Use existing preset name
                 algorithms: verificationState.algorithms,
-                slots: actualSlots,
+                slots: preservedActualSlots,
                 // Use actual slots
                 unitStrings: verificationState.unitStrings,
                 inputDevice: verificationState.inputDevice,
@@ -597,6 +602,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           bool mismatchDetected = false;
           for (int i = 0; i < optimisticSlotsCorrected.length; i++) {
             final actualAlgorithm = await disting.requestAlgorithmGuid(i);
+            if (!identical(state, verificationState)) return;
             final optimisticAlgorithm = optimisticSlotsCorrected[i].algorithm;
 
             // Compare GUID and Name
@@ -615,6 +621,14 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               optimisticSlotsCorrected.length,
               disting,
             );
+            if (!identical(state, verificationState)) return;
+            final preservedActualSlots =
+                _preserveKnownSlotSpecificationsForRefresh(
+                  previousState: verificationState,
+                  refreshedDisting: disting,
+                  refreshedPresetName: verificationState.presetName,
+                  refreshedSlots: actualSlots,
+                );
 
             emit(
               DistingState.synchronized(
@@ -625,7 +639,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
                 presetName: verificationState.presetName,
                 // Use existing preset name
                 algorithms: verificationState.algorithms,
-                slots: actualSlots,
+                slots: preservedActualSlots,
                 // Use actual slots
                 unitStrings: verificationState.unitStrings,
                 inputDevice: verificationState.inputDevice,

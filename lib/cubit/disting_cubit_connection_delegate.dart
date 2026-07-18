@@ -4,6 +4,7 @@ class _ConnectionDelegate {
   _ConnectionDelegate(this._cubit);
 
   final DistingCubit _cubit;
+  int _syncGeneration = 0;
 
   Future<void> initialize() async {
     StartupLogService.log(
@@ -235,7 +236,12 @@ class _ConnectionDelegate {
 
   static const _syncTimeout = Duration(seconds: 60);
 
-  void _emitSyncProgress(String status, {double? progress}) {
+  void _emitSyncProgress(
+    String status, {
+    double? progress,
+    int? syncGeneration,
+  }) {
+    if (syncGeneration != null && syncGeneration != _syncGeneration) return;
     final currentState = _cubit.state;
     if (currentState is DistingStateConnected) {
       _cubit._emitState(
@@ -249,6 +255,8 @@ class _ConnectionDelegate {
       'DistingCubit.performSyncAndEmit: starting Disting NT sync',
     );
     final currentState = _cubit.state;
+    final generation = ++_syncGeneration;
+    var syncCommitted = false;
     MidiDevice? inputDevice; // Variables to hold devices from state
     MidiDevice? outputDevice;
 
@@ -273,7 +281,11 @@ class _ConnectionDelegate {
       await Future(() async {
         // --- Fetch ALL data from device REGARDLESS ---
 
-        _emitSyncProgress('Querying device...', progress: 0.0);
+        _emitSyncProgress(
+          'Querying device...',
+          progress: 0.0,
+          syncGeneration: generation,
+        );
 
         // Load algorithm library (try cache first for fast startup)
         List<AlgorithmInfo> algorithms = [];
@@ -302,7 +314,11 @@ class _ConnectionDelegate {
           debugPrintStack(stackTrace: stackTrace);
         }
 
-        _emitSyncProgress('Reading firmware version...', progress: 0.15);
+        _emitSyncProgress(
+          'Reading firmware version...',
+          progress: 0.15,
+          syncGeneration: generation,
+        );
 
         final versionResponse =
             await distingManager.requestVersionString() ?? "";
@@ -317,14 +333,26 @@ class _ConnectionDelegate {
         // Set the parameter unit scheme based on firmware version
         ParameterEditorRegistry.setFirmwareVersion(firmwareVersion);
 
-        _emitSyncProgress('Reading preset...', progress: 0.25);
+        _emitSyncProgress(
+          'Reading preset...',
+          progress: 0.25,
+          syncGeneration: generation,
+        );
         final presetName =
             await distingManager.requestPresetName() ?? "Default";
 
-        _emitSyncProgress('Loading unit strings...', progress: 0.30);
+        _emitSyncProgress(
+          'Loading unit strings...',
+          progress: 0.30,
+          syncGeneration: generation,
+        );
         var unitStrings = await distingManager.requestUnitStrings() ?? [];
 
-        _emitSyncProgress('Loading slots...', progress: 0.35);
+        _emitSyncProgress(
+          'Loading slots...',
+          progress: 0.35,
+          syncGeneration: generation,
+        );
         List<Slot> slots = await _cubit.fetchSlots(
           numInPreset,
           distingManager,
@@ -332,20 +360,44 @@ class _ConnectionDelegate {
             _emitSyncProgress(
               'Loading slot $completed of $total...',
               progress: 0.35 + (completed / total) * 0.55,
+              syncGeneration: generation,
             );
           },
         );
+        if (!_isCurrentSync(generation, currentState, distingManager)) {
+          return;
+        }
+        if (currentState is DistingStateSynchronized) {
+          slots = _cubit._preserveKnownSlotSpecificationsForRefresh(
+            previousState: currentState,
+            refreshedDisting: distingManager,
+            refreshedPresetName: presetName,
+            refreshedSlots: slots,
+          );
+        }
 
         // Fetch performance page items if firmware supports them (v1.16+)
         List<PerformancePageItem> perfPageItems = [];
         if (firmwareVersion.hasPerfPageItems) {
-          _emitSyncProgress('Loading performance pages...', progress: 0.90);
+          _emitSyncProgress(
+            'Loading performance pages...',
+            progress: 0.90,
+            syncGeneration: generation,
+          );
           perfPageItems = await _cubit._perfPageDelegate.fetchAllPerfPageItems(
             distingManager,
           );
         }
 
-        _emitSyncProgress('Finalizing...', progress: 0.95);
+        if (!_isCurrentSync(generation, currentState, distingManager)) {
+          return;
+        }
+
+        _emitSyncProgress(
+          'Finalizing...',
+          progress: 0.95,
+          syncGeneration: generation,
+        );
 
         // --- Emit final synchronized state --- (Ensure offline is false)
         _cubit._emitState(
@@ -364,6 +416,7 @@ class _ConnectionDelegate {
             perfPageItems: perfPageItems,
           ),
         );
+        syncCommitted = true;
         StartupLogService.log(
           'DistingCubit.performSyncAndEmit: Disting NT sync complete; '
           'firmware="$distingVersion", preset="$presetName", slots=${slots.length}',
@@ -394,8 +447,9 @@ class _ConnectionDelegate {
           _cubit.checkForFirmwareUpdate();
         }
       }).timeout(_syncTimeout);
-      return true;
+      return syncCommitted;
     } on TimeoutException catch (e, stackTrace) {
+      if (!_invalidateSync(generation)) return false;
       StartupLogService.logError(
         'DistingCubit.performSyncAndEmit: sync timed out while querying Disting NT',
         e,
@@ -407,6 +461,7 @@ class _ConnectionDelegate {
       );
       return false;
     } catch (e, stackTrace) {
+      if (!_invalidateSync(generation)) return false;
       StartupLogService.logError(
         'DistingCubit.performSyncAndEmit: sync failed while querying Disting NT',
         e,
@@ -417,6 +472,31 @@ class _ConnectionDelegate {
       await loadDevices();
       return false;
     }
+  }
+
+  bool _invalidateSync(int generation) {
+    if (generation != _syncGeneration) return false;
+    _syncGeneration++;
+    return true;
+  }
+
+  bool _isCurrentSync(
+    int generation,
+    DistingState startingState,
+    IDistingMidiManager disting,
+  ) {
+    if (generation != _syncGeneration) return false;
+    final currentState = _cubit.state;
+    return switch (startingState) {
+      DistingStateSynchronized() =>
+        identical(currentState, startingState) &&
+            currentState is DistingStateSynchronized &&
+            identical(currentState.disting, disting),
+      DistingStateConnected() =>
+        currentState is DistingStateConnected &&
+            identical(currentState.disting, disting),
+      _ => false,
+    };
   }
 
   Future<void> connectToDevices(

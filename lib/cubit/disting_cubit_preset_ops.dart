@@ -8,6 +8,7 @@ mixin _DistingCubitPresetOps on _DistingCubitBase {
     if (currentState is DistingStateSynchronized) {
       final disting = requireDisting();
       await disting.requestNewPreset();
+      _forgetSlotSpecificationsAfterPresetReplacement(disting);
       await _refreshStateFromManager();
     }
   }
@@ -25,8 +26,32 @@ mixin _DistingCubitPresetOps on _DistingCubitBase {
 
       await disting.requestLoadPreset(name, append);
 
+      if (!append) {
+        _forgetSlotSpecificationsAfterPresetReplacement(disting);
+      }
+
       await _refreshStateFromManager();
     }
+  }
+
+  void _forgetSlotSpecificationsAfterPresetReplacement(
+    IDistingMidiManager disting,
+  ) {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized ||
+        !identical(currentState.disting, disting)) {
+      return;
+    }
+    emit(
+      currentState.copyWith(
+        slots: [
+          for (final slot in currentState.slots)
+            slot.copyWith(
+              algorithm: slot.algorithm.copyWith(specifications: const []),
+            ),
+        ],
+      ),
+    );
   }
 
   void renamePresetImpl(String newName) async {

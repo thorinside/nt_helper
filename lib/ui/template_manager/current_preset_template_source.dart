@@ -58,6 +58,7 @@ FullPresetSlot _fullPresetSlotFromSlot(Slot slot, int index) {
       name: slot.algorithm.name,
       numSpecifications: slot.algorithm.specifications.length,
     ),
+    specificationValues: List<int>.from(slot.algorithm.specifications),
     parameterValues: parameterValues,
     parameterStringValues: parameterStringValues,
     mappings: mappings,

@@ -16,8 +16,9 @@ FullPresetSlot _slotWithMapping(
   int index,
   String guid,
   String name,
-  PackedMappingData mapping,
-) {
+  PackedMappingData mapping, {
+  List<int> specificationValues = const [],
+}) {
   return FullPresetSlot(
     slot: PresetSlotEntry(
       id: index + 1,
@@ -26,7 +27,12 @@ FullPresetSlot _slotWithMapping(
       algorithmGuid: guid,
       customName: 'Slot $index',
     ),
-    algorithm: AlgorithmEntry(guid: guid, name: name, numSpecifications: 0),
+    algorithm: AlgorithmEntry(
+      guid: guid,
+      name: name,
+      numSpecifications: specificationValues.length,
+    ),
+    specificationValues: specificationValues,
     parameterValues: {0: index + 10},
     parameterStringValues: {1: 'Value $index'},
     mappings: {2: mapping},
@@ -89,7 +95,16 @@ void main() {
           author: 'Neal',
         ).toJsonString(),
       ),
-      slots: [_slot(0, 'AAAA', 'Alpha'), _slot(1, 'BBBB', 'Beta')],
+      slots: [
+        _slotWithMapping(
+          0,
+          'AAAA',
+          'Alpha',
+          _mapping(),
+          specificationValues: const [4, 2],
+        ),
+        _slot(1, 'BBBB', 'Beta'),
+      ],
     );
 
     final jsonText = service.encodeTemplate(source);
@@ -107,6 +122,7 @@ void main() {
       'BBBB',
     ]);
     expect(imported.slots.first.parameterValues[0], 10);
+    expect(imported.slots.first.specificationValues, const [4, 2]);
     expect(imported.slots.first.parameterStringValues[1], 'Value 0');
     expect(imported.slots.first.mappings[2], _mapping());
     expect(imported.slots.first.routing?.routingInfoJson, [0, 1, 2]);
@@ -149,6 +165,33 @@ void main() {
       expect(imported.slots.single.mappings[2], expressiveMapping);
     },
   );
+
+  test('imports version 1 templates without specification values', () async {
+    final importedId = await TemplateShareService(db).importTemplate(
+      jsonEncode({
+        'exportType': TemplateShareService.exportType,
+        'exportVersion': 1,
+        'template': {
+          'name': 'Legacy Template',
+          'slots': [
+            {
+              'algorithm': {
+                'guid': 'quan',
+                'name': 'Quantizer',
+                'numSpecifications': 1,
+              },
+              'parameterValues': <String, int>{},
+              'parameterStringValues': <String, String>{},
+              'mappings': <String, Object?>{},
+            },
+          ],
+        },
+      }),
+    );
+
+    final imported = await db.presetsDao.getFullPresetDetails(importedId);
+    expect(imported!.slots.single.specificationValues, isEmpty);
+  });
 
   test('rejects unrelated JSON payloads', () async {
     await expectLater(

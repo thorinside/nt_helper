@@ -84,6 +84,19 @@ abstract class _DistingCubitBase extends Cubit<DistingState> {
     List<Slot> slots,
     Slot Function(Slot) updateFunction,
   );
+  Slot _preserveKnownSlotSpecifications({
+    required DistingStateSynchronized previousState,
+    required IDistingMidiManager refreshedDisting,
+    required String refreshedPresetName,
+    required int slotIndex,
+    required Slot refreshedSlot,
+  });
+  List<Slot> _preserveKnownSlotSpecificationsForRefresh({
+    required DistingStateSynchronized previousState,
+    required IDistingMidiManager refreshedDisting,
+    required String refreshedPresetName,
+    required List<Slot> refreshedSlots,
+  });
 }
 
 class DistingCubit extends _DistingCubitBase
@@ -322,6 +335,51 @@ class DistingCubit extends _DistingCubitBase
   Future<void> refresh({bool fullRefresh = false}) async {
     return _refreshDelegate.refresh(fullRefresh: fullRefresh);
   }
+
+  /// Restores specification values that the app supplied while creating
+  /// slots. The device's slot query does not return these values, so a refresh
+  /// can only retain them from app-owned state or a saved preset/template.
+  void restoreSlotSpecificationValues(
+    Iterable<FullPresetSlot> sourceSlots, {
+    required int startingSlotIndex,
+    required IDistingMidiManager expectedDisting,
+    required String expectedPresetName,
+  }) {
+    _stateHelpersDelegate.restoreSlotSpecificationValues(
+      sourceSlots,
+      startingSlotIndex: startingSlotIndex,
+      expectedDisting: expectedDisting,
+      expectedPresetName: expectedPresetName,
+    );
+  }
+
+  @override
+  Slot _preserveKnownSlotSpecifications({
+    required DistingStateSynchronized previousState,
+    required IDistingMidiManager refreshedDisting,
+    required String refreshedPresetName,
+    required int slotIndex,
+    required Slot refreshedSlot,
+  }) => _stateHelpersDelegate.preserveKnownSlotSpecifications(
+    previousState: previousState,
+    refreshedDisting: refreshedDisting,
+    refreshedPresetName: refreshedPresetName,
+    slotIndex: slotIndex,
+    refreshedSlot: refreshedSlot,
+  );
+
+  @override
+  List<Slot> _preserveKnownSlotSpecificationsForRefresh({
+    required DistingStateSynchronized previousState,
+    required IDistingMidiManager refreshedDisting,
+    required String refreshedPresetName,
+    required List<Slot> refreshedSlots,
+  }) => _stateHelpersDelegate.preserveKnownSlotSpecificationsForRefresh(
+    previousState: previousState,
+    refreshedDisting: refreshedDisting,
+    refreshedPresetName: refreshedPresetName,
+    refreshedSlots: refreshedSlots,
+  );
 
   // Helper to create parameter queue for current manager
   void _createParameterQueue() {

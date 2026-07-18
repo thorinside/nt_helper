@@ -18,8 +18,9 @@ void main() {
 
     test('Fresh v10 schema includes ioFlags column', () async {
       // Schema version was 11 when ParameterOutputModeUsage was added; it was
-      // bumped to 12 for Presets.category + Presets.templateMetadata.
-      expect(database.schemaVersion, 12);
+      // bumped to 12 for Presets.category + Presets.templateMetadata and 13
+      // for per-slot algorithm specification values.
+      expect(database.schemaVersion, 13);
 
       // Insert a test algorithm
       await database

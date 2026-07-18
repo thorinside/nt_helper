@@ -7,7 +7,11 @@ import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/ui/template_manager/create_template_from_preset_dialog.dart';
 
-FullPresetSlot _slot(int index, String guid) {
+FullPresetSlot _slot(
+  int index,
+  String guid, {
+  List<int> specificationValues = const [],
+}) {
   return FullPresetSlot(
     slot: PresetSlotEntry(
       id: -1,
@@ -19,8 +23,9 @@ FullPresetSlot _slot(int index, String guid) {
     algorithm: AlgorithmEntry(
       guid: guid,
       name: 'Alg $guid',
-      numSpecifications: 0,
+      numSpecifications: specificationValues.length,
     ),
+    specificationValues: specificationValues,
     parameterValues: {index: index + 100},
     parameterStringValues: {},
     mappings: {},
@@ -126,5 +131,51 @@ void main() {
     expect(metadata['tags'], ['wide', 'live']);
     expect(metadata['author'], 'Neal');
     expect(metadata['schemaVersion'], 1);
+  });
+
+  testWidgets('preserves user-selected specifications in the template', (
+    tester,
+  ) async {
+    final source = FullPresetDetails(
+      preset: PresetEntry(
+        id: 7,
+        name: 'Quantizer Source',
+        lastModified: DateTime(2026),
+        isTemplate: false,
+      ),
+      slots: [
+        _slot(0, 'AAAA', specificationValues: const [4]),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () {
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => CreateTemplateFromPresetDialog(
+                    database: db,
+                    source: source,
+                  ),
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Select all visible slots'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create template'));
+    await tester.pumpAndSettle();
+
+    final created = (await db.presetsDao.getTemplates()).single;
+    expect(created.slots.single.specificationValues, const [4]);
   });
 }

@@ -40,6 +40,7 @@ FullPresetSlot _slot({
   required int slotIndex,
   required String guid,
   String? customName,
+  List<int>? specificationValues,
   Map<int, int>? values,
   Map<int, String>? strings,
   Map<int, PackedMappingData>? mappings,
@@ -55,9 +56,10 @@ FullPresetSlot _slot({
     algorithm: AlgorithmEntry(
       guid: guid,
       name: 'Alg $guid',
-      numSpecifications: 0,
+      numSpecifications: specificationValues?.length ?? 0,
       pluginFilePath: null,
     ),
+    specificationValues: specificationValues ?? const [],
     parameterValues: values ?? {},
     parameterStringValues: strings ?? {},
     mappings: mappings ?? {},
@@ -413,6 +415,7 @@ void main() {
             _slot(
               slotIndex: 2,
               guid: 'TARG',
+              specificationValues: const [9],
               mappings: {3: _mapping(source: 99, delta: 7)},
             ),
             _slot(slotIndex: 3, guid: 'TARG'),
@@ -469,6 +472,10 @@ void main() {
           db.presetRoutings,
         )..where((r) => r.presetSlotId.equals(slotIdsBeforeReplace[2]!))).get();
         expect(routingsLeft, isEmpty);
+        final specificationValuesLeft = await (db.select(
+          db.presetSpecificationValues,
+        )..where((v) => v.presetSlotId.equals(slotIdsBeforeReplace[2]!))).get();
+        expect(specificationValuesLeft, isEmpty);
       },
     );
 
@@ -730,71 +737,76 @@ void main() {
   });
 
   group('PresetsDao.applyTemplateSlots — slot fidelity', () {
-    test('copies parameter values, strings, mappings, and routing', () async {
-      await _seedAlgorithm(db, 'AAAA');
+    test(
+      'copies specifications, parameter values, strings, mappings, and routing',
+      () async {
+        await _seedAlgorithm(db, 'AAAA');
 
-      final templateId = await _savePreset(
-        db,
-        'Tmpl',
-        isTemplate: true,
-        slots: [
-          _slot(
-            slotIndex: 0,
-            guid: 'AAAA',
-            customName: 'verbatim-name',
-            values: {0: 1, 1: 2, 2: 3},
-            strings: {0: 'hello', 5: 'world'},
-            mappings: {
-              0: _mapping(source: 9, perfPageIndex: 3),
-              1: _mapping(source: 12, midiCC: 7, perfPageIndex: 0),
-            },
-          ),
-        ],
-      );
-
-      // Attach a PresetRouting row to the template slot manually.
-      final tmplSlotId = (await (db.select(
-        db.presetSlots,
-      )..where((s) => s.presetId.equals(templateId))).getSingle()).id;
-      await db
-          .into(db.presetRoutings)
-          .insert(
-            PresetRoutingsCompanion.insert(
-              presetSlotId: Value(tmplSlotId),
-              routingInfoJson: const [4, 5, 6, 7, 8, 9],
+        final templateId = await _savePreset(
+          db,
+          'Tmpl',
+          isTemplate: true,
+          slots: [
+            _slot(
+              slotIndex: 0,
+              guid: 'AAAA',
+              customName: 'verbatim-name',
+              specificationValues: const [4],
+              values: {0: 1, 1: 2, 2: 3},
+              strings: {0: 'hello', 5: 'world'},
+              mappings: {
+                0: _mapping(source: 9, perfPageIndex: 3),
+                1: _mapping(source: 12, midiCC: 7, perfPageIndex: 0),
+              },
             ),
-          );
+          ],
+        );
 
-      final targetId = await _savePreset(db, 'Target');
+        // Attach a PresetRouting row to the template slot manually.
+        final tmplSlotId = (await (db.select(
+          db.presetSlots,
+        )..where((s) => s.presetId.equals(templateId))).getSingle()).id;
+        await db
+            .into(db.presetRoutings)
+            .insert(
+              PresetRoutingsCompanion.insert(
+                presetSlotId: Value(tmplSlotId),
+                routingInfoJson: const [4, 5, 6, 7, 8, 9],
+              ),
+            );
 
-      await db.presetsDao.applyTemplateSlots(
-        templateId: templateId,
-        targetPresetId: targetId,
-        templateSlotIndices: const [0],
-        insertionOffset: 0,
-      );
+        final targetId = await _savePreset(db, 'Target');
 
-      final loaded = await db.presetsDao.getFullPresetDetails(targetId);
-      expect(loaded, isNotNull);
-      final slot = loaded!.slots.single;
-      expect(slot.slot.customName, 'verbatim-name');
-      expect(slot.parameterValues, {0: 1, 1: 2, 2: 3});
-      expect(slot.parameterStringValues, {0: 'hello', 5: 'world'});
-      expect(slot.mappings[0]?.source, 9);
-      expect(slot.mappings[0]?.perfPageIndex, 3);
-      expect(slot.mappings[1]?.source, 12);
-      expect(slot.mappings[1]?.midiCC, 7);
+        await db.presetsDao.applyTemplateSlots(
+          templateId: templateId,
+          targetPresetId: targetId,
+          templateSlotIndices: const [0],
+          insertionOffset: 0,
+        );
 
-      // Routing should also have been copied.
-      final newSlot = await (db.select(
-        db.presetSlots,
-      )..where((s) => s.presetId.equals(targetId))).getSingle();
-      final routings = await (db.select(
-        db.presetRoutings,
-      )..where((r) => r.presetSlotId.equals(newSlot.id))).get();
-      expect(routings, hasLength(1));
-      expect(routings.first.routingInfoJson, [4, 5, 6, 7, 8, 9]);
-    });
+        final loaded = await db.presetsDao.getFullPresetDetails(targetId);
+        expect(loaded, isNotNull);
+        final slot = loaded!.slots.single;
+        expect(slot.slot.customName, 'verbatim-name');
+        expect(slot.specificationValues, const [4]);
+        expect(slot.parameterValues, {0: 1, 1: 2, 2: 3});
+        expect(slot.parameterStringValues, {0: 'hello', 5: 'world'});
+        expect(slot.mappings[0]?.source, 9);
+        expect(slot.mappings[0]?.perfPageIndex, 3);
+        expect(slot.mappings[1]?.source, 12);
+        expect(slot.mappings[1]?.midiCC, 7);
+
+        // Routing should also have been copied.
+        final newSlot = await (db.select(
+          db.presetSlots,
+        )..where((s) => s.presetId.equals(targetId))).getSingle();
+        final routings = await (db.select(
+          db.presetRoutings,
+        )..where((r) => r.presetSlotId.equals(newSlot.id))).get();
+        expect(routings, hasLength(1));
+        expect(routings.first.routingInfoJson, [4, 5, 6, 7, 8, 9]);
+      },
+    );
 
     test('templateSlotIndices respects template slotIndex ordering', () async {
       for (final g in const ['AAAA', 'BBBB', 'CCCC']) {

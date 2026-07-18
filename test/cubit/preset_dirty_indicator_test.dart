@@ -27,12 +27,32 @@ class TestDistingCubit extends DistingCubit {
 
   Future<Slot> Function(IDistingMidiManager disting, int algorithmIndex)?
   fetchSlotOverride;
+  Future<List<Slot>> Function(
+    int numAlgorithmsInPreset,
+    IDistingMidiManager disting,
+  )?
+  fetchSlotsOverride;
 
   @override
   Future<Slot> fetchSlot(IDistingMidiManager disting, int algorithmIndex) {
     final override = fetchSlotOverride;
     if (override != null) return override(disting, algorithmIndex);
     return super.fetchSlot(disting, algorithmIndex);
+  }
+
+  @override
+  Future<List<Slot>> fetchSlots(
+    int numAlgorithmsInPreset,
+    IDistingMidiManager disting, {
+    void Function(int completed, int total)? onSlotProgress,
+  }) {
+    final override = fetchSlotsOverride;
+    if (override != null) return override(numAlgorithmsInPreset, disting);
+    return super.fetchSlots(
+      numAlgorithmsInPreset,
+      disting,
+      onSlotProgress: onSlotProgress,
+    );
   }
 }
 
@@ -70,6 +90,12 @@ void main() {
     when(
       () => mockMetadataDao.hasCachedAlgorithms(),
     ).thenAnswer((_) async => false);
+    when(
+      () => mockMetadataDao.getAlgorithmInfoCache(
+        any(),
+        cacheFreshnessDays: any(named: 'cacheFreshnessDays'),
+      ),
+    ).thenAnswer((_) async => const []);
 
     cubit = TestDistingCubit(mockDatabase, midiCommand: mockMidiCommand);
   });
@@ -139,6 +165,8 @@ void main() {
     String presetName = 'Test Preset',
     String firmwareVersion = '1.14.0',
     bool isDirty = false,
+    bool offline = false,
+    List<AlgorithmInfo> algorithms = const [],
     List<Slot>? slots,
   }) {
     return DistingStateSynchronized(
@@ -146,10 +174,10 @@ void main() {
       distingVersion: firmwareVersion,
       firmwareVersion: FirmwareVersion(firmwareVersion),
       presetName: presetName,
-      algorithms: const [],
+      algorithms: algorithms,
       slots: slots ?? const [],
       unitStrings: const [],
-      offline: false,
+      offline: offline,
       isDirty: isDirty,
     );
   }
@@ -330,6 +358,618 @@ void main() {
   });
 
   group('cubit algorithm ops', () {
+    test(
+      'refresh preserves known specifications for the same preset slot',
+      () async {
+        final quantizerSlot = makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+            specifications: const [4],
+          ),
+        );
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Test Preset');
+        when(
+          () => mockDisting.requestNumberOfAlgorithms(),
+        ).thenAnswer((_) async => 0);
+        cubit.fetchSlotsOverride = (_, _) async => [
+          quantizerSlot.copyWith(
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'quan',
+              name: 'Quantizer',
+            ),
+          ),
+        ];
+
+        cubit.emit(makeSyncState(slots: [quantizerSlot]));
+        await cubit.refresh();
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots.single.algorithm.specifications, const [4]);
+      },
+    );
+
+    test(
+      'refresh does not carry specifications to a different preset',
+      () async {
+        final quantizerSlot = makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+            specifications: const [4],
+          ),
+        );
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Different Preset');
+        when(
+          () => mockDisting.requestNumberOfAlgorithms(),
+        ).thenAnswer((_) async => 0);
+        cubit.fetchSlotsOverride = (_, _) async => [
+          quantizerSlot.copyWith(
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'quan',
+              name: 'Quantizer',
+            ),
+          ),
+        ];
+
+        cubit.emit(makeSyncState(slots: [quantizerSlot]));
+        await cubit.refresh();
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots.single.algorithm.specifications, isEmpty);
+      },
+    );
+
+    test('refresh does not carry specifications to a different GUID', () async {
+      final quantizerSlot = makeSlot().copyWith(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'quan',
+          name: 'Quantizer',
+          specifications: const [4],
+        ),
+      );
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDisting.requestPresetName(),
+      ).thenAnswer((_) async => 'Test Preset');
+      when(
+        () => mockDisting.requestNumberOfAlgorithms(),
+      ).thenAnswer((_) async => 0);
+      cubit.fetchSlotsOverride = (_, _) async => [makeSlot()];
+
+      cubit.emit(makeSyncState(slots: [quantizerSlot]));
+      await cubit.refresh();
+
+      final state = cubit.state as DistingStateSynchronized;
+      expect(state.slots.single.algorithm.specifications, isEmpty);
+    });
+
+    test(
+      'refresh keeps nonempty specifications returned by the manager',
+      () async {
+        final quantizerSlot = makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+            specifications: const [4],
+          ),
+        );
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Test Preset');
+        when(
+          () => mockDisting.requestNumberOfAlgorithms(),
+        ).thenAnswer((_) async => 0);
+        cubit.fetchSlotsOverride = (_, _) async => [
+          quantizerSlot.copyWith(
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'quan',
+              name: 'Quantizer',
+              specifications: const [8],
+            ),
+          ),
+        ];
+
+        cubit.emit(makeSyncState(slots: [quantizerSlot]));
+        await cubit.refresh();
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots.single.algorithm.specifications, const [8]);
+      },
+    );
+
+    test('late refresh does not overwrite newer specification state', () async {
+      final fetchedSlots = Completer<List<Slot>>();
+      final fetchStarted = Completer<void>();
+      final quantizerSlot = makeSlot().copyWith(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'quan',
+          name: 'Quantizer',
+          specifications: const [4],
+        ),
+      );
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDisting.requestPresetName(),
+      ).thenAnswer((_) async => 'Test Preset');
+      when(
+        () => mockDisting.requestNumberOfAlgorithms(),
+      ).thenAnswer((_) async => 0);
+      cubit.fetchSlotsOverride = (_, _) {
+        fetchStarted.complete();
+        return fetchedSlots.future;
+      };
+
+      cubit.emit(makeSyncState(slots: [quantizerSlot]));
+      final refresh = cubit.refresh();
+      await fetchStarted.future;
+      cubit.emit(
+        makeSyncState(
+          slots: [
+            quantizerSlot.copyWith(
+              algorithm: quantizerSlot.algorithm.copyWith(
+                specifications: const [8],
+              ),
+            ),
+          ],
+        ),
+      );
+      fetchedSlots.complete([
+        quantizerSlot.copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+          ),
+        ),
+      ]);
+      await refresh;
+
+      final state = cubit.state as DistingStateSynchronized;
+      expect(state.slots.single.algorithm.specifications, const [8]);
+    });
+
+    test(
+      'newer overlapping refresh wins even when the older finishes first',
+      () async {
+        final firstFetchedSlots = Completer<List<Slot>>();
+        final secondFetchedSlots = Completer<List<Slot>>();
+        final firstFetchStarted = Completer<void>();
+        final secondFetchStarted = Completer<void>();
+        var fetchCount = 0;
+        final quantizerSlot = makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+            specifications: const [4],
+          ),
+        );
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Test Preset');
+        when(
+          () => mockDisting.requestNumberOfAlgorithms(),
+        ).thenAnswer((_) async => 0);
+        cubit.fetchSlotsOverride = (_, _) {
+          fetchCount++;
+          if (fetchCount == 1) {
+            firstFetchStarted.complete();
+            return firstFetchedSlots.future;
+          }
+          secondFetchStarted.complete();
+          return secondFetchedSlots.future;
+        };
+
+        cubit.emit(makeSyncState(slots: [quantizerSlot]));
+        final firstRefresh = cubit.refresh();
+        await firstFetchStarted.future;
+        final secondRefresh = cubit.refresh();
+        await secondFetchStarted.future;
+
+        firstFetchedSlots.complete([
+          quantizerSlot.copyWith(
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'quan',
+              name: 'Quantizer',
+            ),
+          ),
+        ]);
+        await firstRefresh;
+        secondFetchedSlots.complete([
+          quantizerSlot.copyWith(
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'quan',
+              name: 'Quantizer',
+              specifications: const [8],
+            ),
+          ),
+        ]);
+        await secondRefresh;
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots.single.algorithm.specifications, const [8]);
+      },
+    );
+
+    test('late refresh does not restore a replaced manager', () async {
+      final replacementManager = MockDistingMidiManager();
+      when(
+        () => replacementManager.requestNumberOfAlgorithms(),
+      ).thenAnswer((_) async => 0);
+      final fetchedSlots = Completer<List<Slot>>();
+      final fetchStarted = Completer<void>();
+      final quantizerSlot = makeSlot().copyWith(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'quan',
+          name: 'Quantizer',
+          specifications: const [4],
+        ),
+      );
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDisting.requestPresetName(),
+      ).thenAnswer((_) async => 'Test Preset');
+      when(
+        () => mockDisting.requestNumberOfAlgorithms(),
+      ).thenAnswer((_) async => 0);
+      cubit.fetchSlotsOverride = (_, _) {
+        fetchStarted.complete();
+        return fetchedSlots.future;
+      };
+
+      cubit.emit(makeSyncState(slots: [quantizerSlot]));
+      final refresh = cubit.refresh();
+      await fetchStarted.future;
+      cubit.emit(
+        makeSyncState(
+          slots: [quantizerSlot],
+        ).copyWith(disting: replacementManager),
+      );
+      fetchedSlots.complete([
+        quantizerSlot.copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+          ),
+        ),
+      ]);
+      await refresh;
+
+      final state = cubit.state as DistingStateSynchronized;
+      expect(state.disting, same(replacementManager));
+      expect(state.slots.single.algorithm.specifications, const [4]);
+    });
+
+    test(
+      'full refresh preserves known specifications for the same slot',
+      () async {
+        final quantizerSlot = makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+            specifications: const [4],
+          ),
+        );
+        when(
+          () => mockDisting.requestNumberOfAlgorithms(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDisting.requestVersionString(),
+        ).thenAnswer((_) async => '1.14.0');
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Test Preset');
+        when(
+          () => mockDisting.requestUnitStrings(),
+        ).thenAnswer((_) async => const []);
+        cubit.fetchSlotsOverride = (_, _) async => [
+          quantizerSlot.copyWith(
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'quan',
+              name: 'Quantizer',
+            ),
+          ),
+        ];
+
+        cubit.emit(makeSyncState(slots: [quantizerSlot]));
+        await cubit.refresh(fullRefresh: true);
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots.single.algorithm.specifications, const [4]);
+      },
+    );
+
+    test('late full refresh does not overwrite newer specifications', () async {
+      final fetchedSlots = Completer<List<Slot>>();
+      final fetchStarted = Completer<void>();
+      final quantizerSlot = makeSlot().copyWith(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'quan',
+          name: 'Quantizer',
+          specifications: const [4],
+        ),
+      );
+      when(
+        () => mockDisting.requestNumberOfAlgorithms(),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDisting.requestVersionString(),
+      ).thenAnswer((_) async => '1.14.0');
+      when(
+        () => mockDisting.requestPresetName(),
+      ).thenAnswer((_) async => 'Test Preset');
+      when(
+        () => mockDisting.requestUnitStrings(),
+      ).thenAnswer((_) async => const []);
+      cubit.fetchSlotsOverride = (_, _) {
+        fetchStarted.complete();
+        return fetchedSlots.future;
+      };
+
+      cubit.emit(makeSyncState(slots: [quantizerSlot]));
+      final refresh = cubit.refresh(fullRefresh: true);
+      await fetchStarted.future;
+      cubit.emit(
+        makeSyncState(
+          slots: [
+            quantizerSlot.copyWith(
+              algorithm: quantizerSlot.algorithm.copyWith(
+                specifications: const [8],
+              ),
+            ),
+          ],
+        ),
+      );
+      fetchedSlots.complete([
+        quantizerSlot.copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+          ),
+        ),
+      ]);
+      await refresh;
+
+      final state = cubit.state as DistingStateSynchronized;
+      expect(state.slots.single.algorithm.specifications, const [8]);
+    });
+
+    test('timed-out full refresh cannot emit a late result', () {
+      fakeAsync((async) {
+        final fetchedSlots = Completer<List<Slot>>();
+        final quantizerSlot = makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+            specifications: const [4],
+          ),
+        );
+        when(
+          () => mockDisting.requestNumberOfAlgorithms(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDisting.requestVersionString(),
+        ).thenAnswer((_) async => '1.14.0');
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Test Preset');
+        when(
+          () => mockDisting.requestUnitStrings(),
+        ).thenAnswer((_) async => const []);
+        cubit.fetchSlotsOverride = (_, _) => fetchedSlots.future;
+
+        cubit.emit(makeSyncState(slots: [quantizerSlot]));
+        unawaited(cubit.refresh(fullRefresh: true));
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 60));
+        async.flushMicrotasks();
+
+        fetchedSlots.complete([
+          quantizerSlot.copyWith(
+            algorithm: quantizerSlot.algorithm.copyWith(
+              specifications: const [8],
+            ),
+          ),
+        ]);
+        async.flushMicrotasks();
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots.single.algorithm.specifications, const [4]);
+      });
+    });
+
+    test(
+      'replacement load forgets specifications even when name and GUID match',
+      () async {
+        final quantizerSlot = makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+            specifications: const [4],
+          ),
+        );
+        when(
+          () => mockDisting.requestLoadPreset('same-name.json', false),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Test Preset');
+        cubit.fetchSlotsOverride = (_, _) async => [
+          quantizerSlot.copyWith(
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'quan',
+              name: 'Quantizer',
+            ),
+          ),
+        ];
+
+        cubit.emit(makeSyncState(slots: [quantizerSlot]));
+        await cubit.loadPreset('same-name.json', false);
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots.single.algorithm.specifications, isEmpty);
+      },
+    );
+
+    test('append load preserves specifications for existing slots', () async {
+      final quantizerSlot = makeSlot().copyWith(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'quan',
+          name: 'Quantizer',
+          specifications: const [4],
+        ),
+      );
+      when(
+        () => mockDisting.requestLoadPreset('append.json', true),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDisting.requestPresetName(),
+      ).thenAnswer((_) async => 'Test Preset');
+      cubit.fetchSlotsOverride = (_, _) async => [
+        quantizerSlot.copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+          ),
+        ),
+      ];
+
+      cubit.emit(makeSyncState(slots: [quantizerSlot]));
+      await cubit.loadPreset('append.json', true);
+
+      final state = cubit.state as DistingStateSynchronized;
+      expect(state.slots.single.algorithm.specifications, const [4]);
+    });
+
+    test('single-slot refresh preserves known specifications', () async {
+      final quantizerSlot = makeSlot().copyWith(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'quan',
+          name: 'Quantizer',
+          specifications: const [4],
+        ),
+      );
+      cubit.fetchSlotOverride = (_, _) async => quantizerSlot.copyWith(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'quan',
+          name: 'Quantizer',
+        ),
+      );
+
+      cubit.emit(makeSyncState(slots: [quantizerSlot]));
+      await cubit.refreshSlot(0);
+
+      final state = cubit.state as DistingStateSynchronized;
+      expect(state.slots.single.algorithm.specifications, const [4]);
+    });
+
+    test(
+      'single-slot refresh does not carry specifications between managers',
+      () async {
+        final replacementManager = MockDistingMidiManager();
+        final fetchedSlot = Completer<Slot>();
+        final quantizerSlot = makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+            specifications: const [4],
+          ),
+        );
+        cubit.fetchSlotOverride = (_, _) => fetchedSlot.future;
+
+        cubit.emit(makeSyncState(slots: [quantizerSlot]));
+        final refresh = cubit.refreshSlot(0);
+        await Future<void>.delayed(Duration.zero);
+        cubit.emit(
+          makeSyncState(
+            slots: [
+              quantizerSlot.copyWith(
+                algorithm: quantizerSlot.algorithm.copyWith(
+                  specifications: const [8],
+                ),
+              ),
+            ],
+          ).copyWith(disting: replacementManager),
+        );
+        fetchedSlot.complete(
+          quantizerSlot.copyWith(
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'quan',
+              name: 'Quantizer',
+            ),
+          ),
+        );
+        await refresh;
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.disting, same(replacementManager));
+        expect(state.slots.single.algorithm.specifications, const [8]);
+      },
+    );
+
     test('onAlgorithmSelected marks state dirty', () async {
       final algorithmInfo = AlgorithmInfo(
         algorithmIndex: 0,
@@ -353,6 +993,92 @@ void main() {
       expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
       expect((cubit.state as DistingStateSynchronized).slots, hasLength(1));
       verifyNever(() => mockDisting.setParameterValue(any(), any(), any()));
+    });
+
+    test(
+      'onAlgorithmSelected retains the user-selected specifications',
+      () async {
+        final algorithmInfo = AlgorithmInfo(
+          algorithmIndex: 0,
+          name: 'Quantizer',
+          guid: 'quan',
+          specifications: [
+            Specification(
+              name: 'Channels',
+              min: 1,
+              max: 12,
+              defaultValue: 1,
+              type: 0,
+            ),
+          ],
+        );
+        when(
+          () => mockDisting.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(
+            timeout: any(named: 'timeout'),
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ).thenAnswer((_) async => 1);
+        cubit.fetchSlotOverride = (_, _) async => throw StateError(
+          'Hydration is intentionally unavailable for this state assertion.',
+        );
+
+        cubit.emit(makeSyncState(offline: true, algorithms: [algorithmInfo]));
+        await cubit.onAlgorithmSelected(algorithmInfo, const [4]);
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots.single.algorithm.specifications, const [4]);
+        verify(
+          () => mockDisting.requestAddAlgorithm(algorithmInfo, const [4]),
+        ).called(1);
+      },
+    );
+
+    test('slot hydration preserves the user-selected specifications', () async {
+      final algorithmInfo = AlgorithmInfo(
+        algorithmIndex: 0,
+        name: 'Quantizer',
+        guid: 'quan',
+        specifications: [
+          Specification(
+            name: 'Channels',
+            min: 1,
+            max: 12,
+            defaultValue: 1,
+            type: 0,
+          ),
+        ],
+      );
+      final fetchedSlot = Completer<Slot>();
+      when(
+        () => mockDisting.requestAddAlgorithm(any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(
+          timeout: any(named: 'timeout'),
+          maxRetries: any(named: 'maxRetries'),
+        ),
+      ).thenAnswer((_) async => 1);
+      cubit.fetchSlotOverride = (_, _) => fetchedSlot.future;
+
+      cubit.emit(makeSyncState());
+      await cubit.onAlgorithmSelected(algorithmInfo, const [4]);
+      fetchedSlot.complete(
+        makeSlot().copyWith(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'quan',
+            name: 'Quantizer',
+          ),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      final state = cubit.state as DistingStateSynchronized;
+      expect(state.slots.single.algorithm.specifications, const [4]);
     });
 
     test('onAlgorithmSelected can add bypassed immediately', () async {

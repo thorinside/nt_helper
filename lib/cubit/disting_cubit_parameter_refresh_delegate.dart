@@ -98,23 +98,31 @@ class _ParameterRefreshDelegate {
     }
 
     try {
-      final disting = _cubit.requireDisting();
+      final disting = currentState.disting;
       final updatedSlot = await _cubit.fetchSlot(disting, slotIndex);
 
       // Check if state is still synchronized and slot still exists
       final newState = _cubit.state;
-      if (newState is! DistingStateSynchronized ||
+      if (!identical(newState, currentState) ||
+          newState is! DistingStateSynchronized ||
           slotIndex >= newState.slots.length) {
         return;
       }
 
       // Update the slot in the state
+      final preservedSlot = _cubit._preserveKnownSlotSpecifications(
+        previousState: currentState,
+        refreshedDisting: disting,
+        refreshedPresetName: currentState.presetName,
+        slotIndex: slotIndex,
+        refreshedSlot: updatedSlot,
+      );
       _cubit._emitState(
         newState.copyWith(
           slots: _cubit.updateSlot(
             slotIndex,
             newState.slots,
-            (slot) => updatedSlot,
+            (slot) => preservedSlot,
           ),
         ),
       );

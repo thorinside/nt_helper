@@ -136,6 +136,7 @@ class _CreateTemplateFromPresetDialogState
               customName: sourceSlot.slot.customName,
             ),
             algorithm: algorithm,
+            specificationValues: List<int>.from(sourceSlot.specificationValues),
             parameterValues: Map<int, int>.from(sourceSlot.parameterValues),
             parameterStringValues: Map<int, String>.from(
               sourceSlot.parameterStringValues,

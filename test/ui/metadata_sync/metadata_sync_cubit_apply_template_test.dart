@@ -26,6 +26,8 @@ class FakeAlgorithmInfo extends Fake implements AlgorithmInfo {}
 
 class FakePackedMappingData extends Fake implements PackedMappingData {}
 
+class FakeFullPresetDetails extends Fake implements FullPresetDetails {}
+
 FullPresetDetails _template({
   int id = 1,
   String name = 'Tmpl',
@@ -99,18 +101,34 @@ void _stubRefreshableDevice(
 DistingStateSynchronized _synchronizedState(
   IDistingMidiManager manager, {
   String firmwareVersion = '1.10.0',
+  String presetName = 'Initial',
+  List<Slot> slots = const [],
 }) {
   return DistingStateSynchronized(
     disting: manager,
     distingVersion: firmwareVersion,
     firmwareVersion: FirmwareVersion(firmwareVersion),
-    presetName: 'Initial',
+    presetName: presetName,
     algorithms: const [],
-    slots: const [],
+    slots: slots,
     unitStrings: const [],
     offline: true,
   );
 }
+
+Slot _deviceSlot(Algorithm algorithm) => Slot(
+  algorithm: algorithm,
+  routing: RoutingInfo.filler(),
+  pages: ParameterPages(
+    algorithmIndex: algorithm.algorithmIndex,
+    pages: const [],
+  ),
+  parameters: const [],
+  values: const [],
+  enums: const [],
+  mappings: const [],
+  valueStrings: const [],
+);
 
 void main() {
   late MetadataSyncCubit cubit;
@@ -123,6 +141,131 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     registerFallbackValue(FakeAlgorithmInfo());
     registerFallbackValue(FakePackedMappingData());
+    registerFallbackValue(FakeFullPresetDetails());
+  });
+
+  group('saveCurrentPreset', () {
+    test('uses the attached cubit specification values when saving', () async {
+      final managerDetails = _template(
+        name: 'Four Channel Quantizer',
+        slots: [
+          FullPresetSlot(
+            slot: const PresetSlotEntry(
+              id: 1,
+              presetId: 1,
+              slotIndex: 0,
+              algorithmGuid: 'quan',
+            ),
+            algorithm: const AlgorithmEntry(
+              guid: 'quan',
+              name: 'Quantizer',
+              numSpecifications: 1,
+            ),
+            parameterValues: const {},
+            parameterStringValues: const {},
+            mappings: const {},
+          ),
+        ],
+      );
+      when(
+        () => mockManager.requestCurrentPresetDetails(),
+      ).thenAnswer((_) async => managerDetails);
+
+      late FullPresetDetails savedDetails;
+      when(() => mockPresetsDao.saveFullPreset(any())).thenAnswer((invocation) {
+        savedDetails =
+            invocation.positionalArguments.single as FullPresetDetails;
+        return Future.value(1);
+      });
+      when(
+        () => mockMetadataDao.getAllAlgorithms(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockMetadataDao.getAlgorithmParameterCounts(),
+      ).thenAnswer((_) async => <String, int>{});
+      when(() => mockPresetsDao.getAllPresets()).thenAnswer((_) async => []);
+
+      final distingCubit =
+          DistingCubit(mockDatabase, midiCommand: MockMidiCommand())..emit(
+            _synchronizedState(
+              mockManager,
+              presetName: 'Four Channel Quantizer',
+              slots: [
+                _deviceSlot(
+                  Algorithm(
+                    algorithmIndex: 0,
+                    guid: 'quan',
+                    name: 'Quantizer',
+                    specifications: [4],
+                  ),
+                ),
+              ],
+            ),
+          );
+      final syncCubit = MetadataSyncCubit(mockDatabase, distingCubit);
+      addTearDown(syncCubit.close);
+      addTearDown(distingCubit.close);
+
+      await syncCubit.saveCurrentPreset(mockManager);
+
+      expect(savedDetails.slots.single.specificationValues, const [4]);
+    });
+  });
+
+  group('specification restoration guards', () {
+    test('does not restore into a different manager or preset', () async {
+      final replacementManager = MockDistingMidiManager();
+      final slot = _deviceSlot(
+        Algorithm(
+          algorithmIndex: 0,
+          guid: 'quan',
+          name: 'Quantizer',
+          specifications: const [8],
+        ),
+      );
+      final distingCubit =
+          DistingCubit(mockDatabase, midiCommand: MockMidiCommand())..emit(
+            _synchronizedState(
+              replacementManager,
+              presetName: 'Replacement Preset',
+              slots: [slot],
+            ),
+          );
+      addTearDown(distingCubit.close);
+      final sourceSlot = FullPresetSlot(
+        slot: const PresetSlotEntry(
+          id: 1,
+          presetId: 1,
+          slotIndex: 0,
+          algorithmGuid: 'quan',
+        ),
+        algorithm: const AlgorithmEntry(
+          guid: 'quan',
+          name: 'Quantizer',
+          numSpecifications: 1,
+        ),
+        specificationValues: const [4],
+        parameterValues: const {},
+        parameterStringValues: const {},
+        mappings: const {},
+      );
+
+      distingCubit.restoreSlotSpecificationValues(
+        [sourceSlot],
+        startingSlotIndex: 0,
+        expectedDisting: mockManager,
+        expectedPresetName: 'Replacement Preset',
+      );
+      distingCubit.restoreSlotSpecificationValues(
+        [sourceSlot],
+        startingSlotIndex: 0,
+        expectedDisting: replacementManager,
+        expectedPresetName: 'Different Preset',
+      );
+
+      final state = distingCubit.state as DistingStateSynchronized;
+      expect(state.slots.single.algorithm.specifications, const [8]);
+    });
   });
 
   setUp(() {
@@ -272,6 +415,64 @@ void main() {
 
   group('loadPresetToDevice', () {
     test(
+      'rejects invalid specification values before clearing device',
+      () async {
+        when(() => mockMetadataDao.getFullAlgorithmDetails('quan')).thenAnswer(
+          (_) async => FullAlgorithmDetails(
+            algorithm: const AlgorithmEntry(
+              guid: 'quan',
+              name: 'Quantizer',
+              numSpecifications: 1,
+            ),
+            specifications: const [
+              SpecificationEntry(
+                algorithmGuid: 'quan',
+                specIndex: 0,
+                name: 'Channels',
+                minValue: 1,
+                maxValue: 12,
+                defaultValue: 1,
+                type: 0,
+              ),
+            ],
+            parameters: const [],
+            parameterPages: const [],
+            enums: const {},
+          ),
+        );
+
+        await cubit.loadPresetToDevice(
+          _template(
+            slots: [
+              FullPresetSlot(
+                slot: const PresetSlotEntry(
+                  id: 1,
+                  presetId: 1,
+                  slotIndex: 0,
+                  algorithmGuid: 'quan',
+                ),
+                algorithm: const AlgorithmEntry(
+                  guid: 'quan',
+                  name: 'Quantizer',
+                  numSpecifications: 1,
+                ),
+                specificationValues: const [0],
+                parameterValues: const {},
+                parameterStringValues: const {},
+                mappings: const {},
+              ),
+            ],
+          ),
+          mockManager,
+        );
+
+        verifyNever(() => mockManager.requestNewPreset());
+        verifyNever(() => mockManager.requestAddAlgorithm(any(), any()));
+        expect(cubit.state, isA<PresetLoadFailure>());
+      },
+    );
+
+    test(
       'refreshes attached DistingCubit slots after replacing preset',
       () async {
         final deviceAlgorithms = <Algorithm>[
@@ -312,10 +513,54 @@ void main() {
         when(() => mockManager.requestSavePreset()).thenAnswer((_) async => {});
         when(
           () => mockMetadataDao.getFullAlgorithmDetails('guid-1'),
-        ).thenAnswer((_) async => _fullAlgorithmDetails('guid-1', 'Alg 1'));
+        ).thenAnswer(
+          (_) async => FullAlgorithmDetails(
+            algorithm: const AlgorithmEntry(
+              guid: 'guid-1',
+              name: 'Alg 1',
+              numSpecifications: 1,
+            ),
+            specifications: const [
+              SpecificationEntry(
+                algorithmGuid: 'guid-1',
+                specIndex: 0,
+                name: 'Channels',
+                minValue: 1,
+                maxValue: 12,
+                defaultValue: 1,
+                type: 0,
+              ),
+            ],
+            parameters: const [],
+            parameterPages: const [],
+            enums: const {},
+          ),
+        );
         when(
           () => mockMetadataDao.getFullAlgorithmDetails('guid-2'),
-        ).thenAnswer((_) async => _fullAlgorithmDetails('guid-2', 'Alg 2'));
+        ).thenAnswer(
+          (_) async => FullAlgorithmDetails(
+            algorithm: const AlgorithmEntry(
+              guid: 'guid-2',
+              name: 'Alg 2',
+              numSpecifications: 1,
+            ),
+            specifications: const [
+              SpecificationEntry(
+                algorithmGuid: 'guid-2',
+                specIndex: 0,
+                name: 'Voices',
+                minValue: 1,
+                maxValue: 8,
+                defaultValue: 2,
+                type: 0,
+              ),
+            ],
+            parameters: const [],
+            parameterPages: const [],
+            enums: const {},
+          ),
+        );
         when(
           () => mockMetadataDao.getAllAlgorithms(),
         ).thenAnswer((_) async => []);
@@ -349,8 +594,9 @@ void main() {
                 algorithm: const AlgorithmEntry(
                   guid: 'guid-1',
                   name: 'Alg 1',
-                  numSpecifications: 0,
+                  numSpecifications: 1,
                 ),
+                specificationValues: const [4],
                 parameterValues: {},
                 parameterStringValues: {},
                 mappings: {},
@@ -366,7 +612,7 @@ void main() {
                 algorithm: const AlgorithmEntry(
                   guid: 'guid-2',
                   name: 'Alg 2',
-                  numSpecifications: 0,
+                  numSpecifications: 1,
                 ),
                 parameterValues: {},
                 parameterStringValues: {},
@@ -382,11 +628,19 @@ void main() {
           'guid-1',
           'guid-2',
         ]);
+        expect(refreshedState.slots.first.algorithm.specifications, const [4]);
+        expect(refreshedState.slots.last.algorithm.specifications, const [2]);
         verify(
           () => mockManager.requestSendSlotName(0, 'Custom Alg 1'),
         ).called(1);
         verify(
           () => mockManager.requestSendSlotName(1, 'Custom Alg 2'),
+        ).called(1);
+        verify(
+          () => mockManager.requestAddAlgorithm(any(), const [4]),
+        ).called(1);
+        verify(
+          () => mockManager.requestAddAlgorithm(any(), const [2]),
         ).called(1);
       },
     );

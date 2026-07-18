@@ -18,6 +18,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 part 'metadata_sync_cubit.freezed.dart';
 part 'metadata_sync_state.dart';
 
+class _PreparedPresetSlot {
+  const _PreparedPresetSlot({
+    required this.details,
+    required this.specificationValues,
+  });
+
+  final FullAlgorithmDetails details;
+  final List<int> specificationValues;
+
+  AlgorithmInfo algorithmInfoAt(int algorithmIndex) => AlgorithmInfo(
+    algorithmIndex: algorithmIndex,
+    guid: details.algorithm.guid,
+    name: details.algorithm.name,
+    specifications: details.specifications
+        .map(
+          (spec) => Specification(
+            name: spec.name,
+            min: spec.minValue,
+            max: spec.maxValue,
+            defaultValue: spec.defaultValue,
+            type: spec.type,
+          ),
+        )
+        .toList(growable: false),
+  );
+}
+
 class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   final AppDatabase _database;
   final DistingCubit? _distingCubit;
@@ -174,14 +201,19 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     emit(const MetadataSyncState.savingPreset());
     try {
       // 1. Fetch full preset details directly from the manager (online or offline)
-      final FullPresetDetails? detailsToSave = await manager
+      final FullPresetDetails? managerDetails = await manager
           .requestCurrentPresetDetails();
 
-      if (detailsToSave == null) {
+      if (managerDetails == null) {
         throw Exception(
           "Failed to retrieve current preset details from the manager.",
         );
       }
+
+      final detailsToSave = _mergeAttachedSpecificationValues(
+        managerDetails,
+        manager,
+      );
 
       final name = detailsToSave.preset.name; // Get name for success message
 
@@ -210,6 +242,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     if (kDebugMode) {}
     try {
       _validateTemplateMappingsForAttachedFirmware(preset.slots);
+      final preparedSlots = await _preparePresetSlots(preset.slots);
 
       // 0. Clear the current preset on the device
       if (kDebugMode) {}
@@ -220,45 +253,15 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // 1. Add all algorithms first
       if (kDebugMode) {}
-      for (int i = 0; i < preset.slots.length; i++) {
-        final slot = preset.slots[i];
-        final algorithmGuid = slot.algorithm.guid;
+      for (int i = 0; i < preparedSlots.length; i++) {
+        final preparedSlot = preparedSlots[i];
         if (kDebugMode) {}
 
-        // Fetch full details to get specifications and AlgorithmInfo fields
-        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
-          algorithmGuid,
+        if (kDebugMode) {}
+        await manager.requestAddAlgorithm(
+          preparedSlot.algorithmInfoAt(i),
+          preparedSlot.specificationValues,
         );
-        if (algoDetails == null) {
-          throw Exception(
-            "Algorithm metadata for GUID '$algorithmGuid' not found locally. Cannot add slot ${i + 1}.",
-          );
-        }
-        if (kDebugMode) {}
-
-        // Prepare AlgorithmInfo and default specifications
-        final algorithmInfo = AlgorithmInfo(
-          algorithmIndex: i, // Use the target slot index
-          guid: algoDetails.algorithm.guid,
-          name: algoDetails.algorithm.name, // Use the canonical name
-          specifications: algoDetails.specifications
-              .map(
-                (spec) => Specification(
-                  name: spec.name,
-                  min: spec.minValue,
-                  max: spec.maxValue,
-                  defaultValue: spec.defaultValue,
-                  type: spec.type,
-                ),
-              )
-              .toList(),
-        );
-        final defaultSpecifications = algoDetails.specifications
-            .map((s) => s.defaultValue)
-            .toList();
-
-        if (kDebugMode) {}
-        await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
         // Add delay after adding each algorithm
         await Future.delayed(const Duration(milliseconds: 150));
       }
@@ -267,7 +270,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       if (kDebugMode) {}
       for (int i = 0; i < preset.slots.length; i++) {
         final slot = preset.slots[i];
-        final algorithmGuid = slot.algorithm.guid; // Needed again for metadata
+        final algoDetails = preparedSlots[i].details;
         if (kDebugMode) {}
 
         // Send the saved slot display name to the device, falling back to the
@@ -276,14 +279,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           i,
           slot.slot.customName ?? slot.algorithm.name,
         );
-
-        // Fetch metadata again to get parameter names for logging
-        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
-          algorithmGuid,
-        );
-        if (algoDetails == null) {
-          continue; // Skip configuration for this slot if metadata missing
-        }
 
         // 2a. Send Parameter Values
         if (kDebugMode) {}
@@ -343,7 +338,10 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       // 3. Add a final delay after all commands are sent
       await Future.delayed(const Duration(milliseconds: 100));
 
-      final refreshError = await _refreshAttachedDistingCubit();
+      final refreshError = await _refreshAttachedDistingCubit(
+        manager,
+        expectedPresetName: presetName,
+      );
       if (refreshError != null) {
         emit(
           MetadataSyncState.presetLoadFailure(
@@ -353,6 +351,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         );
         return;
       }
+      _distingCubit?.restoreSlotSpecificationValues(
+        _slotsWithPreparedSpecificationValues(preset.slots, preparedSlots),
+        startingSlotIndex: 0,
+        expectedDisting: manager,
+        expectedPresetName: presetName,
+      );
 
       emit(
         MetadataSyncState.presetLoadSuccess(
@@ -736,6 +740,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
     final total = templateSlotIndices.length;
     emit(MetadataSyncState.injectingTemplate(applied: 0, total: total));
+    final attachedStateAtStart = _distingCubit?.state;
+    final expectedAttachedPresetName =
+        attachedStateAtStart is DistingStateSynchronized &&
+            identical(attachedStateAtStart.disting, manager)
+        ? attachedStateAtStart.presetName
+        : null;
 
     try {
       if (template.slots.isEmpty) {
@@ -758,17 +768,11 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         );
       }
 
-      // Pre-flight metadata check on every slot we will apply.
+      // Pre-flight metadata and specification validation on every slot we will
+      // apply. This must complete before the first device mutation.
+      final preparedSlots = <_PreparedPresetSlot>[];
       for (final i in templateSlotIndices) {
-        final slot = template.slots[i];
-        final details = await _metadataDao.getFullAlgorithmDetails(
-          slot.algorithm.guid,
-        );
-        if (details == null) {
-          throw Exception(
-            'Template missing algorithm metadata. Sync algorithms first.',
-          );
-        }
+        preparedSlots.add(await _preparePresetSlot(template.slots[i]));
       }
       _validateTemplateMappingsForAttachedFirmware(
         templateSlotIndices.map((i) => template.slots[i]),
@@ -802,43 +806,13 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
         final sourceIndex = templateSlotIndices[i];
         final slot = template.slots[sourceIndex];
-        final algorithmGuid = slot.algorithm.guid;
+        final preparedSlot = preparedSlots[i];
 
         try {
-          final details = await _metadataDao.getFullAlgorithmDetails(
-            algorithmGuid,
-          );
-          if (details == null) {
-            throw Exception(
-              "Algorithm metadata for GUID '$algorithmGuid' not found locally. "
-              "Cannot add template slot ${i + 1}.",
-            );
-          }
-
           final targetSlotIndex = startingSlotIndex + i;
-          final algorithmInfo = AlgorithmInfo(
-            algorithmIndex: targetSlotIndex,
-            guid: details.algorithm.guid,
-            name: details.algorithm.name,
-            specifications: details.specifications
-                .map(
-                  (spec) => Specification(
-                    name: spec.name,
-                    min: spec.minValue,
-                    max: spec.maxValue,
-                    defaultValue: spec.defaultValue,
-                    type: spec.type,
-                  ),
-                )
-                .toList(),
-          );
-          final defaultSpecifications = details.specifications
-              .map((s) => s.defaultValue)
-              .toList();
-
           await manager.requestAddAlgorithm(
-            algorithmInfo,
-            defaultSpecifications,
+            preparedSlot.algorithmInfoAt(targetSlotIndex),
+            preparedSlot.specificationValues,
           );
           await Future.delayed(const Duration(milliseconds: 150));
 
@@ -865,19 +839,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         final sourceIndex = templateSlotIndices[i];
         final slot = template.slots[sourceIndex];
         final targetSlotIndex = startingSlotIndex + i;
-        final algorithmGuid = slot.algorithm.guid;
+        final details = preparedSlots[i].details;
 
         await manager.requestSendSlotName(
           targetSlotIndex,
           slot.slot.customName ?? slot.algorithm.name,
         );
-
-        final details = await _metadataDao.getFullAlgorithmDetails(
-          algorithmGuid,
-        );
-        if (details == null) {
-          continue;
-        }
 
         for (final paramEntry in slot.parameterValues.entries) {
           final parameterNumber = paramEntry.key;
@@ -910,7 +877,10 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       await Future.delayed(const Duration(milliseconds: 100));
 
-      final refreshError = await _refreshAttachedDistingCubit();
+      final refreshError = await _refreshAttachedDistingCubit(
+        manager,
+        expectedPresetName: expectedAttachedPresetName,
+      );
       if (refreshError != null) {
         emit(
           MetadataSyncState.presetLoadFailure(
@@ -919,6 +889,17 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           ),
         );
         return;
+      }
+      if (expectedAttachedPresetName != null) {
+        final selectedSlots = [
+          for (final index in templateSlotIndices) template.slots[index],
+        ];
+        _distingCubit?.restoreSlotSpecificationValues(
+          _slotsWithPreparedSpecificationValues(selectedSlots, preparedSlots),
+          startingSlotIndex: startingSlotIndex,
+          expectedDisting: manager,
+          expectedPresetName: expectedAttachedPresetName,
+        );
       }
 
       emit(
@@ -952,16 +933,145 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     }
   }
 
-  Future<Object?> _refreshAttachedDistingCubit() async {
+  Future<Object?> _refreshAttachedDistingCubit(
+    IDistingMidiManager expectedDisting, {
+    String? expectedPresetName,
+  }) async {
     final distingCubit = _distingCubit;
     if (distingCubit == null) return null;
+    final beforeRefresh = distingCubit.state;
+    if (beforeRefresh is! DistingStateSynchronized ||
+        !identical(beforeRefresh.disting, expectedDisting)) {
+      return StateError(
+        'Attached device state changed before it could be refreshed.',
+      );
+    }
     try {
       await distingCubit.refresh();
+      final afterRefresh = distingCubit.state;
+      if (afterRefresh is! DistingStateSynchronized ||
+          !identical(afterRefresh.disting, expectedDisting) ||
+          (expectedPresetName != null &&
+              afterRefresh.presetName != expectedPresetName)) {
+        return StateError(
+          'Attached device or preset changed while it was being refreshed.',
+        );
+      }
       return null;
     } catch (error) {
       return error;
     }
   }
+
+  FullPresetDetails _mergeAttachedSpecificationValues(
+    FullPresetDetails details,
+    IDistingMidiManager manager,
+  ) {
+    final attachedState = _distingCubit?.state;
+    if (attachedState is! DistingStateSynchronized ||
+        !identical(attachedState.disting, manager) ||
+        attachedState.presetName != details.preset.name) {
+      return details;
+    }
+
+    var changed = false;
+    final mergedSlots = details.slots
+        .map((slot) {
+          final slotIndex = slot.slot.slotIndex;
+          if (slotIndex < 0 || slotIndex >= attachedState.slots.length) {
+            return slot;
+          }
+          final attachedSlot = attachedState.slots[slotIndex];
+          final values = attachedSlot.algorithm.specifications;
+          if (attachedSlot.algorithm.guid != slot.algorithm.guid ||
+              values.isEmpty ||
+              const ListEquality<int>().equals(
+                values,
+                slot.specificationValues,
+              )) {
+            return slot;
+          }
+
+          changed = true;
+          return FullPresetSlot(
+            slot: slot.slot,
+            algorithm: slot.algorithm,
+            specificationValues: List<int>.unmodifiable(values),
+            parameterValues: slot.parameterValues,
+            parameterStringValues: slot.parameterStringValues,
+            mappings: slot.mappings,
+            routing: slot.routing,
+          );
+        })
+        .toList(growable: false);
+
+    return changed
+        ? FullPresetDetails(preset: details.preset, slots: mergedSlots)
+        : details;
+  }
+
+  Future<List<_PreparedPresetSlot>> _preparePresetSlots(
+    Iterable<FullPresetSlot> slots,
+  ) async {
+    final prepared = <_PreparedPresetSlot>[];
+    for (final slot in slots) {
+      prepared.add(await _preparePresetSlot(slot));
+    }
+    return prepared;
+  }
+
+  Future<_PreparedPresetSlot> _preparePresetSlot(FullPresetSlot slot) async {
+    final details = await _metadataDao.getFullAlgorithmDetails(
+      slot.algorithm.guid,
+    );
+    if (details == null) {
+      throw Exception(
+        "Algorithm metadata for GUID '${slot.algorithm.guid}' not found locally.",
+      );
+    }
+
+    final values = slot.specificationValues.isEmpty
+        ? details.specifications.map((spec) => spec.defaultValue).toList()
+        : List<int>.from(slot.specificationValues);
+    if (values.length != details.specifications.length) {
+      throw Exception(
+        'Algorithm "${details.algorithm.name}" requires '
+        '${details.specifications.length} specification value(s), but the '
+        'saved slot contains ${values.length}.',
+      );
+    }
+    for (final (index, specification) in details.specifications.indexed) {
+      final value = values[index];
+      if (value < specification.minValue || value > specification.maxValue) {
+        throw Exception(
+          'Specification "${specification.name}" for '
+          '"${details.algorithm.name}" must be between '
+          '${specification.minValue} and ${specification.maxValue}; got $value.',
+        );
+      }
+    }
+
+    return _PreparedPresetSlot(
+      details: details,
+      specificationValues: List<int>.unmodifiable(values),
+    );
+  }
+
+  List<FullPresetSlot> _slotsWithPreparedSpecificationValues(
+    List<FullPresetSlot> slots,
+    List<_PreparedPresetSlot> preparedSlots,
+  ) => [
+    for (final (index, slot) in slots.indexed)
+      FullPresetSlot(
+        slot: slot.slot,
+        algorithm: slot.algorithm,
+        specificationValues: preparedSlots[index].specificationValues,
+        parameterValues: slot.parameterValues,
+        parameterStringValues: slot.parameterStringValues,
+        mappings: slot.mappings,
+        routing: slot.routing,
+      ),
+  ];
 
   void _validateTemplateMappingsForAttachedFirmware(
     Iterable<FullPresetSlot> slots,

@@ -7,7 +7,7 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 
 class TemplateShareService {
   static const exportType = 'nt_helper_template';
-  static const exportVersion = 1;
+  static const exportVersion = 2;
 
   final AppDatabase database;
 
@@ -33,6 +33,7 @@ class TemplateShareService {
                 'pluginFilePath': slot.algorithm.pluginFilePath,
               },
               'customName': slot.slot.customName,
+              'specifications': slot.specificationValues,
               'parameterValues': _intKeyMap(slot.parameterValues),
               'parameterStringValues': _intKeyMap(slot.parameterStringValues),
               'mappings': {
@@ -100,6 +101,9 @@ class TemplateShareService {
             customName: rawSlot['customName'] as String?,
           ),
           algorithm: algorithm,
+          specificationValues: _readSpecificationValues(
+            rawSlot['specifications'],
+          ),
           parameterValues: _readIntMap(rawSlot['parameterValues']),
           parameterStringValues: _readStringMap(
             rawSlot['parameterStringValues'],
@@ -274,6 +278,23 @@ class TemplateShareService {
     return PresetRoutingEntry(
       presetSlotId: -1,
       routingInfoJson: [for (final item in value) _requiredInt(item)],
+    );
+  }
+
+  List<int> _readSpecificationValues(Object? value) {
+    if (value == null) return const [];
+    if (value is! List) {
+      throw const FormatException('Specifications payload must be a list.');
+    }
+    return List<int>.unmodifiable(
+      value.map((item) {
+        if (item is! int) {
+          throw FormatException(
+            'Specification values must be integers, got "$item".',
+          );
+        }
+        return item;
+      }),
     );
   }
 

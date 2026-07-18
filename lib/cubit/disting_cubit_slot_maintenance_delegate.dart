@@ -83,15 +83,22 @@ class _SlotMaintenanceDelegate {
     }
 
     try {
-      final disting = _cubit.requireDisting();
+      final disting = syncState.disting;
       final Slot updatedSlot = await _cubit.fetchSlot(disting, algorithmIndex);
       final currentState = _cubit.state;
-      if (currentState is! DistingStateSynchronized ||
+      if (!identical(currentState, syncState) ||
+          currentState is! DistingStateSynchronized ||
           algorithmIndex >= currentState.slots.length) {
         return;
       }
       final newSlots = List<Slot>.from(currentState.slots);
-      newSlots[algorithmIndex] = updatedSlot;
+      newSlots[algorithmIndex] = _cubit._preserveKnownSlotSpecifications(
+        previousState: syncState,
+        refreshedDisting: disting,
+        refreshedPresetName: syncState.presetName,
+        slotIndex: algorithmIndex,
+        refreshedSlot: updatedSlot,
+      );
       _cubit._emitState(currentState.copyWith(slots: newSlots));
       _cubit._rebuildCcLookup();
     } catch (e, stackTrace) {
@@ -117,15 +124,22 @@ class _SlotMaintenanceDelegate {
     _lastAnomalyRefreshAttempt[algorithmIndex] = now;
 
     try {
-      final disting = _cubit.requireDisting();
+      final disting = syncState.disting;
       final Slot updatedSlot = await _cubit.fetchSlot(disting, algorithmIndex);
       final currentState = _cubit.state;
-      if (currentState is! DistingStateSynchronized ||
+      if (!identical(currentState, syncState) ||
+          currentState is! DistingStateSynchronized ||
           algorithmIndex >= currentState.slots.length) {
         return;
       }
       final newSlots = List<Slot>.from(currentState.slots);
-      newSlots[algorithmIndex] = updatedSlot;
+      newSlots[algorithmIndex] = _cubit._preserveKnownSlotSpecifications(
+        previousState: syncState,
+        refreshedDisting: disting,
+        refreshedPresetName: syncState.presetName,
+        slotIndex: algorithmIndex,
+        refreshedSlot: updatedSlot,
+      );
       _cubit._emitState(currentState.copyWith(slots: newSlots));
       _cubit._rebuildCcLookup();
     } catch (e, stackTrace) {

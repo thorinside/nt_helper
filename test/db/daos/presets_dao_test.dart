@@ -16,6 +16,112 @@ void main() {
     await database.close();
   });
 
+  group('PresetsDao - specification value persistence', () {
+    test('saves and loads user-selected slot specifications', () async {
+      await database.metadataDao.upsertAlgorithms([
+        AlgorithmEntry(
+          guid: 'quan',
+          name: 'Quantizer',
+          numSpecifications: 1,
+          pluginFilePath: null,
+        ),
+      ]);
+
+      final presetId = await database.presetsDao.saveFullPreset(
+        FullPresetDetails(
+          preset: PresetEntry(
+            id: -1,
+            name: 'Four Channel Quantizer',
+            lastModified: DateTime.now(),
+            isTemplate: true,
+          ),
+          slots: [
+            FullPresetSlot(
+              slot: PresetSlotEntry(
+                id: -1,
+                presetId: -1,
+                slotIndex: 0,
+                algorithmGuid: 'quan',
+                customName: 'Quantizer',
+              ),
+              algorithm: AlgorithmEntry(
+                guid: 'quan',
+                name: 'Quantizer',
+                numSpecifications: 1,
+                pluginFilePath: null,
+              ),
+              specificationValues: const [4],
+              parameterValues: const {},
+              parameterStringValues: const {},
+              mappings: const {},
+            ),
+          ],
+        ),
+        isTemplate: true,
+      );
+
+      final loaded = await database.presetsDao.getFullPresetDetails(presetId);
+
+      expect(loaded!.slots.single.specificationValues, const [4]);
+    });
+
+    test('delete rollback does not strip specification values', () async {
+      await database.metadataDao.upsertAlgorithms([
+        const AlgorithmEntry(
+          guid: 'quan',
+          name: 'Quantizer',
+          numSpecifications: 1,
+          pluginFilePath: null,
+        ),
+      ]);
+      final presetId = await database.presetsDao.saveFullPreset(
+        FullPresetDetails(
+          preset: PresetEntry(
+            id: -1,
+            name: 'Protected Quantizer',
+            lastModified: DateTime.now(),
+            isTemplate: true,
+          ),
+          slots: [
+            FullPresetSlot(
+              slot: const PresetSlotEntry(
+                id: -1,
+                presetId: -1,
+                slotIndex: 0,
+                algorithmGuid: 'quan',
+              ),
+              algorithm: const AlgorithmEntry(
+                guid: 'quan',
+                name: 'Quantizer',
+                numSpecifications: 1,
+                pluginFilePath: null,
+              ),
+              specificationValues: const [4],
+              parameterValues: const {},
+              parameterStringValues: const {},
+              mappings: const {},
+            ),
+          ],
+        ),
+        isTemplate: true,
+      );
+      await database.customStatement(
+        'CREATE TRIGGER prevent_protected_preset_delete '
+        'BEFORE DELETE ON presets '
+        'WHEN OLD.id = $presetId '
+        "BEGIN SELECT RAISE(ABORT, 'protected'); END",
+      );
+
+      await expectLater(
+        database.presetsDao.deletePreset(presetId),
+        throwsA(anything),
+      );
+
+      final loaded = await database.presetsDao.getFullPresetDetails(presetId);
+      expect(loaded!.slots.single.specificationValues, const [4]);
+    });
+  });
+
   group('PresetsDao - perfPageIndex persistence', () {
     test('saves and loads mapping with perfPageIndex > 0', () async {
       // 1. Create test algorithm

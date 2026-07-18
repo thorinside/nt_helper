@@ -155,6 +155,21 @@ class PresetSlots extends Table {
   List<String> get customConstraints => ['UNIQUE (preset_id, slot_index)']; // Ensure slot order is unique per preset
 }
 
+/// Stores the ordered specification values used to instantiate a preset slot.
+///
+/// Specifications belong to a slot instance, not to the algorithm metadata:
+/// two slots using the same algorithm GUID may have different values.
+@DataClassName('PresetSpecificationValueEntry')
+class PresetSpecificationValues extends Table {
+  IntColumn get presetSlotId =>
+      integer().references(PresetSlots, #id, onDelete: KeyAction.cascade)();
+  IntColumn get specificationIndex => integer()();
+  IntColumn get value => integer()();
+
+  @override
+  Set<Column> get primaryKey => {presetSlotId, specificationIndex};
+}
+
 @DataClassName('PresetParameterValueEntry')
 class PresetParameterValues extends Table {
   IntColumn get id =>

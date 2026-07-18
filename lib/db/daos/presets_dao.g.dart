@@ -7,6 +7,8 @@ mixin _$PresetsDaoMixin on DatabaseAccessor<AppDatabase> {
   $PresetsTable get presets => attachedDatabase.presets;
   $AlgorithmsTable get algorithms => attachedDatabase.algorithms;
   $PresetSlotsTable get presetSlots => attachedDatabase.presetSlots;
+  $PresetSpecificationValuesTable get presetSpecificationValues =>
+      attachedDatabase.presetSpecificationValues;
   $PresetParameterValuesTable get presetParameterValues =>
       attachedDatabase.presetParameterValues;
   $PresetMappingsTable get presetMappings => attachedDatabase.presetMappings;
@@ -25,6 +27,11 @@ class PresetsDaoManager {
       $$AlgorithmsTableTableManager(_db.attachedDatabase, _db.algorithms);
   $$PresetSlotsTableTableManager get presetSlots =>
       $$PresetSlotsTableTableManager(_db.attachedDatabase, _db.presetSlots);
+  $$PresetSpecificationValuesTableTableManager get presetSpecificationValues =>
+      $$PresetSpecificationValuesTableTableManager(
+        _db.attachedDatabase,
+        _db.presetSpecificationValues,
+      );
   $$PresetParameterValuesTableTableManager get presetParameterValues =>
       $$PresetParameterValuesTableTableManager(
         _db.attachedDatabase,
