@@ -31,7 +31,7 @@ void main() {
       'specification_index',
       'value',
     ]);
-    expect(userVersion.read<int>('user_version'), 13);
+    expect(userVersion.read<int>('user_version'), 14);
 
     expect(
       await database.select(database.presetSpecificationValues).get(),

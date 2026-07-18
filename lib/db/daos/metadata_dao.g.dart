@@ -5,6 +5,8 @@ part of 'metadata_dao.dart';
 // ignore_for_file: type=lint
 mixin _$MetadataDaoMixin on DatabaseAccessor<AppDatabase> {
   $AlgorithmsTable get algorithms => attachedDatabase.algorithms;
+  $AlgorithmRepeatGrammarsTable get algorithmRepeatGrammars =>
+      attachedDatabase.algorithmRepeatGrammars;
   $SpecificationsTable get specifications => attachedDatabase.specifications;
   $UnitsTable get units => attachedDatabase.units;
   $ParametersTable get parameters => attachedDatabase.parameters;
@@ -23,6 +25,11 @@ class MetadataDaoManager {
   MetadataDaoManager(this._db);
   $$AlgorithmsTableTableManager get algorithms =>
       $$AlgorithmsTableTableManager(_db.attachedDatabase, _db.algorithms);
+  $$AlgorithmRepeatGrammarsTableTableManager get algorithmRepeatGrammars =>
+      $$AlgorithmRepeatGrammarsTableTableManager(
+        _db.attachedDatabase,
+        _db.algorithmRepeatGrammars,
+      );
   $$SpecificationsTableTableManager get specifications =>
       $$SpecificationsTableTableManager(
         _db.attachedDatabase,

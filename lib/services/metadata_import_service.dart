@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/models/algorithm_repeat_grammar.dart';
 
 class MetadataImportService {
   final AppDatabase database;
@@ -31,25 +32,46 @@ class MetadataImportService {
         return false;
       }
 
+      final exportVersion = (data['exportVersion'] as int?) ?? 1;
+      if (exportVersion < 1 || exportVersion > 3) return false;
+
       final tables = data['tables'] as Map<String, dynamic>;
       if (tables.isEmpty) {
         return false;
       }
 
+      // Validate every grammar before opening the transaction. This also makes
+      // unknown grammar versions/tags a clean all-or-nothing import failure.
+      final grammars = exportVersion >= 3
+          ? _parseAlgorithmRepeatGrammars(
+              tables['algorithmRepeatGrammars'] as List<dynamic>?,
+            )
+          : const <AlgorithmRepeatGrammarEntry>[];
+
       // Import in the correct order to respect foreign key constraints
-      await _importUnits(tables['units'] as List<dynamic>?);
-      await _importAlgorithms(tables['algorithms'] as List<dynamic>?);
-      await _importSpecifications(tables['specifications'] as List<dynamic>?);
-      await _importParameters(tables['parameters'] as List<dynamic>?);
-      await _importParameterEnums(tables['parameterEnums'] as List<dynamic>?);
-      await _importParameterPages(tables['parameterPages'] as List<dynamic>?);
-      await _importParameterPageItems(
-        tables['parameterPageItems'] as List<dynamic>?,
-      );
-      await _importParameterOutputModeUsage(
-        tables['parameterOutputModeUsage'] as List<dynamic>?,
-      );
-      await _importMetadataCache(tables['metadataCache'] as List<dynamic>?);
+      await database.transaction(() async {
+        await _importUnits(tables['units'] as List<dynamic>?);
+        await _importAlgorithms(tables['algorithms'] as List<dynamic>?);
+        await _importSpecifications(tables['specifications'] as List<dynamic>?);
+        await _importParameters(tables['parameters'] as List<dynamic>?);
+        await _importParameterEnums(tables['parameterEnums'] as List<dynamic>?);
+        await _importParameterPages(tables['parameterPages'] as List<dynamic>?);
+        await _importParameterPageItems(
+          tables['parameterPageItems'] as List<dynamic>?,
+        );
+        await _importParameterOutputModeUsage(
+          tables['parameterOutputModeUsage'] as List<dynamic>?,
+        );
+        if (exportVersion >= 3 && grammars.isNotEmpty) {
+          await database.batch((batch) {
+            batch.insertAllOnConflictUpdate(
+              database.algorithmRepeatGrammars,
+              grammars,
+            );
+          });
+        }
+        await _importMetadataCache(tables['metadataCache'] as List<dynamic>?);
+      });
 
       // Log import summary
       final summary = data['summary'] as Map<String, dynamic>?;
@@ -69,6 +91,26 @@ class MetadataImportService {
   }
 
   // --- Private import methods for each table ---
+
+  List<AlgorithmRepeatGrammarEntry> _parseAlgorithmRepeatGrammars(
+    List<dynamic>? rows,
+  ) {
+    if (rows == null) return const [];
+    return rows.map((row) {
+      final data = row as Map<String, dynamic>;
+      final grammarVersion = data['grammarVersion'] as int;
+      final compact = data['grammar'];
+      if (grammarVersion != AlgorithmRepeatGrammar.currentVersion) {
+        throw FormatException('Unsupported grammar version $grammarVersion');
+      }
+      final grammar = AlgorithmRepeatGrammar.fromCompactJson(compact);
+      return AlgorithmRepeatGrammarEntry(
+        algorithmGuid: data['algorithmGuid'] as String,
+        grammarVersion: grammarVersion,
+        grammarJson: jsonEncode(grammar.toCompactJson()),
+      );
+    }).toList();
+  }
 
   Future<void> _importUnits(List<dynamic>? unitsList) async {
     if (unitsList == null || unitsList.isEmpty) {
@@ -114,11 +156,7 @@ class MetadataImportService {
     }
 
     await database.batch((batch) {
-      batch.insertAll(
-        database.algorithms,
-        entries,
-        mode: InsertMode.insertOrReplace,
-      );
+      batch.insertAllOnConflictUpdate(database.algorithms, entries);
     });
   }
 

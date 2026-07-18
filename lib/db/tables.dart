@@ -18,6 +18,19 @@ class Algorithms extends Table {
   Set<Column> get primaryKey => {guid};
 }
 
+/// Compact repeat grammar for algorithms whose metadata shape is controlled by
+/// one or more count specifications.
+@DataClassName('AlgorithmRepeatGrammarEntry')
+class AlgorithmRepeatGrammars extends Table {
+  TextColumn get algorithmGuid =>
+      text().references(Algorithms, #guid, onDelete: KeyAction.cascade)();
+  IntColumn get grammarVersion => integer()();
+  TextColumn get grammarJson => text()();
+
+  @override
+  Set<Column> get primaryKey => {algorithmGuid};
+}
+
 @DataClassName('SpecificationEntry')
 class Specifications extends Table {
   TextColumn get algorithmGuid => text().references(Algorithms, #guid)();

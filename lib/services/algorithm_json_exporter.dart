@@ -154,12 +154,15 @@ class AlgorithmJsonExporter {
           (await database.select(database.parameterOutputModeUsage).get())
               .where((p) => factoryGuids.contains(p.algorithmGuid))
               .toList();
+      final algorithmRepeatGrammars =
+          (await dao.getAllAlgorithmRepeatGrammars())
+              .where((grammar) => factoryGuids.contains(grammar.algorithmGuid))
+              .toList();
 
       // Build the complete export structure
       final Map<String, dynamic> exportJson = {
         'exportDate': DateTime.now().toIso8601String(),
-        'exportVersion':
-            2, // Incremented for ioFlags column in Parameters table
+        'exportVersion': 3,
         'exportType': 'full_metadata',
         'debugExport': true,
         'tables': {
@@ -259,6 +262,16 @@ class AlgorithmJsonExporter {
               )
               .toList(),
 
+          'algorithmRepeatGrammars': algorithmRepeatGrammars
+              .map(
+                (grammar) => {
+                  'algorithmGuid': grammar.algorithmGuid,
+                  'grammarVersion': grammar.grammarVersion,
+                  'grammar': jsonDecode(grammar.grammarJson),
+                },
+              )
+              .toList(),
+
           // Metadata cache (no references)
           'metadataCache': metadataCache
               .map((c) => {'cacheKey': c.cacheKey, 'cacheValue': c.cacheValue})
@@ -273,6 +286,7 @@ class AlgorithmJsonExporter {
           'totalParameterPages': parameterPages.length,
           'totalParameterPageItems': parameterPageItems.length,
           'totalParameterOutputModeUsage': parameterOutputModeUsage.length,
+          'totalAlgorithmRepeatGrammars': algorithmRepeatGrammars.length,
           'totalCacheEntries': metadataCache.length,
         },
       };

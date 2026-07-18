@@ -333,6 +333,304 @@ class AlgorithmsCompanion extends UpdateCompanion<AlgorithmEntry> {
   }
 }
 
+class $AlgorithmRepeatGrammarsTable extends AlgorithmRepeatGrammars
+    with TableInfo<$AlgorithmRepeatGrammarsTable, AlgorithmRepeatGrammarEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AlgorithmRepeatGrammarsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _algorithmGuidMeta = const VerificationMeta(
+    'algorithmGuid',
+  );
+  @override
+  late final GeneratedColumn<String> algorithmGuid = GeneratedColumn<String>(
+    'algorithm_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES algorithms (guid) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _grammarVersionMeta = const VerificationMeta(
+    'grammarVersion',
+  );
+  @override
+  late final GeneratedColumn<int> grammarVersion = GeneratedColumn<int>(
+    'grammar_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _grammarJsonMeta = const VerificationMeta(
+    'grammarJson',
+  );
+  @override
+  late final GeneratedColumn<String> grammarJson = GeneratedColumn<String>(
+    'grammar_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    algorithmGuid,
+    grammarVersion,
+    grammarJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'algorithm_repeat_grammars';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AlgorithmRepeatGrammarEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('algorithm_guid')) {
+      context.handle(
+        _algorithmGuidMeta,
+        algorithmGuid.isAcceptableOrUnknown(
+          data['algorithm_guid']!,
+          _algorithmGuidMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_algorithmGuidMeta);
+    }
+    if (data.containsKey('grammar_version')) {
+      context.handle(
+        _grammarVersionMeta,
+        grammarVersion.isAcceptableOrUnknown(
+          data['grammar_version']!,
+          _grammarVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_grammarVersionMeta);
+    }
+    if (data.containsKey('grammar_json')) {
+      context.handle(
+        _grammarJsonMeta,
+        grammarJson.isAcceptableOrUnknown(
+          data['grammar_json']!,
+          _grammarJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_grammarJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {algorithmGuid};
+  @override
+  AlgorithmRepeatGrammarEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AlgorithmRepeatGrammarEntry(
+      algorithmGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_guid'],
+      )!,
+      grammarVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}grammar_version'],
+      )!,
+      grammarJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}grammar_json'],
+      )!,
+    );
+  }
+
+  @override
+  $AlgorithmRepeatGrammarsTable createAlias(String alias) {
+    return $AlgorithmRepeatGrammarsTable(attachedDatabase, alias);
+  }
+}
+
+class AlgorithmRepeatGrammarEntry extends DataClass
+    implements Insertable<AlgorithmRepeatGrammarEntry> {
+  final String algorithmGuid;
+  final int grammarVersion;
+  final String grammarJson;
+  const AlgorithmRepeatGrammarEntry({
+    required this.algorithmGuid,
+    required this.grammarVersion,
+    required this.grammarJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['algorithm_guid'] = Variable<String>(algorithmGuid);
+    map['grammar_version'] = Variable<int>(grammarVersion);
+    map['grammar_json'] = Variable<String>(grammarJson);
+    return map;
+  }
+
+  AlgorithmRepeatGrammarsCompanion toCompanion(bool nullToAbsent) {
+    return AlgorithmRepeatGrammarsCompanion(
+      algorithmGuid: Value(algorithmGuid),
+      grammarVersion: Value(grammarVersion),
+      grammarJson: Value(grammarJson),
+    );
+  }
+
+  factory AlgorithmRepeatGrammarEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AlgorithmRepeatGrammarEntry(
+      algorithmGuid: serializer.fromJson<String>(json['algorithmGuid']),
+      grammarVersion: serializer.fromJson<int>(json['grammarVersion']),
+      grammarJson: serializer.fromJson<String>(json['grammarJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'algorithmGuid': serializer.toJson<String>(algorithmGuid),
+      'grammarVersion': serializer.toJson<int>(grammarVersion),
+      'grammarJson': serializer.toJson<String>(grammarJson),
+    };
+  }
+
+  AlgorithmRepeatGrammarEntry copyWith({
+    String? algorithmGuid,
+    int? grammarVersion,
+    String? grammarJson,
+  }) => AlgorithmRepeatGrammarEntry(
+    algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+    grammarVersion: grammarVersion ?? this.grammarVersion,
+    grammarJson: grammarJson ?? this.grammarJson,
+  );
+  AlgorithmRepeatGrammarEntry copyWithCompanion(
+    AlgorithmRepeatGrammarsCompanion data,
+  ) {
+    return AlgorithmRepeatGrammarEntry(
+      algorithmGuid: data.algorithmGuid.present
+          ? data.algorithmGuid.value
+          : this.algorithmGuid,
+      grammarVersion: data.grammarVersion.present
+          ? data.grammarVersion.value
+          : this.grammarVersion,
+      grammarJson: data.grammarJson.present
+          ? data.grammarJson.value
+          : this.grammarJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlgorithmRepeatGrammarEntry(')
+          ..write('algorithmGuid: $algorithmGuid, ')
+          ..write('grammarVersion: $grammarVersion, ')
+          ..write('grammarJson: $grammarJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(algorithmGuid, grammarVersion, grammarJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AlgorithmRepeatGrammarEntry &&
+          other.algorithmGuid == this.algorithmGuid &&
+          other.grammarVersion == this.grammarVersion &&
+          other.grammarJson == this.grammarJson);
+}
+
+class AlgorithmRepeatGrammarsCompanion
+    extends UpdateCompanion<AlgorithmRepeatGrammarEntry> {
+  final Value<String> algorithmGuid;
+  final Value<int> grammarVersion;
+  final Value<String> grammarJson;
+  final Value<int> rowid;
+  const AlgorithmRepeatGrammarsCompanion({
+    this.algorithmGuid = const Value.absent(),
+    this.grammarVersion = const Value.absent(),
+    this.grammarJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AlgorithmRepeatGrammarsCompanion.insert({
+    required String algorithmGuid,
+    required int grammarVersion,
+    required String grammarJson,
+    this.rowid = const Value.absent(),
+  }) : algorithmGuid = Value(algorithmGuid),
+       grammarVersion = Value(grammarVersion),
+       grammarJson = Value(grammarJson);
+  static Insertable<AlgorithmRepeatGrammarEntry> custom({
+    Expression<String>? algorithmGuid,
+    Expression<int>? grammarVersion,
+    Expression<String>? grammarJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (algorithmGuid != null) 'algorithm_guid': algorithmGuid,
+      if (grammarVersion != null) 'grammar_version': grammarVersion,
+      if (grammarJson != null) 'grammar_json': grammarJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AlgorithmRepeatGrammarsCompanion copyWith({
+    Value<String>? algorithmGuid,
+    Value<int>? grammarVersion,
+    Value<String>? grammarJson,
+    Value<int>? rowid,
+  }) {
+    return AlgorithmRepeatGrammarsCompanion(
+      algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+      grammarVersion: grammarVersion ?? this.grammarVersion,
+      grammarJson: grammarJson ?? this.grammarJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (algorithmGuid.present) {
+      map['algorithm_guid'] = Variable<String>(algorithmGuid.value);
+    }
+    if (grammarVersion.present) {
+      map['grammar_version'] = Variable<int>(grammarVersion.value);
+    }
+    if (grammarJson.present) {
+      map['grammar_json'] = Variable<String>(grammarJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlgorithmRepeatGrammarsCompanion(')
+          ..write('algorithmGuid: $algorithmGuid, ')
+          ..write('grammarVersion: $grammarVersion, ')
+          ..write('grammarJson: $grammarJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SpecificationsTable extends Specifications
     with TableInfo<$SpecificationsTable, SpecificationEntry> {
   @override
@@ -6550,6 +6848,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $AlgorithmsTable algorithms = $AlgorithmsTable(this);
+  late final $AlgorithmRepeatGrammarsTable algorithmRepeatGrammars =
+      $AlgorithmRepeatGrammarsTable(this);
   late final $SpecificationsTable specifications = $SpecificationsTable(this);
   late final $UnitsTable units = $UnitsTable(this);
   late final $ParametersTable parameters = $ParametersTable(this);
@@ -6582,6 +6882,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     algorithms,
+    algorithmRepeatGrammars,
     specifications,
     units,
     parameters,
@@ -6601,6 +6902,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'algorithms',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('algorithm_repeat_grammars', kind: UpdateKind.delete),
+      ],
+    ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'preset_slots',
@@ -6649,6 +6959,35 @@ typedef $$AlgorithmsTableUpdateCompanionBuilder =
 final class $$AlgorithmsTableReferences
     extends BaseReferences<_$AppDatabase, $AlgorithmsTable, AlgorithmEntry> {
   $$AlgorithmsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<
+    $AlgorithmRepeatGrammarsTable,
+    List<AlgorithmRepeatGrammarEntry>
+  >
+  _algorithmRepeatGrammarsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.algorithmRepeatGrammars,
+        aliasName:
+            'algorithms__guid__algorithm_repeat_grammars__algorithm_guid',
+      );
+
+  $$AlgorithmRepeatGrammarsTableProcessedTableManager
+  get algorithmRepeatGrammarsRefs {
+    final manager =
+        $$AlgorithmRepeatGrammarsTableTableManager(
+          $_db,
+          $_db.algorithmRepeatGrammars,
+        ).filter(
+          (f) => f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _algorithmRepeatGrammarsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 
   static MultiTypedResultKey<$SpecificationsTable, List<SpecificationEntry>>
   _specificationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -6779,6 +7118,32 @@ class $$AlgorithmsTableFilterComposer
     column: $table.pluginFilePath,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> algorithmRepeatGrammarsRefs(
+    Expression<bool> Function($$AlgorithmRepeatGrammarsTableFilterComposer f) f,
+  ) {
+    final $$AlgorithmRepeatGrammarsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.guid,
+          referencedTable: $db.algorithmRepeatGrammars,
+          getReferencedColumn: (t) => t.algorithmGuid,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AlgorithmRepeatGrammarsTableFilterComposer(
+                $db: $db,
+                $table: $db.algorithmRepeatGrammars,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 
   Expression<bool> specificationsRefs(
     Expression<bool> Function($$SpecificationsTableFilterComposer f) f,
@@ -6963,6 +7328,33 @@ class $$AlgorithmsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  Expression<T> algorithmRepeatGrammarsRefs<T extends Object>(
+    Expression<T> Function($$AlgorithmRepeatGrammarsTableAnnotationComposer a)
+    f,
+  ) {
+    final $$AlgorithmRepeatGrammarsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.guid,
+          referencedTable: $db.algorithmRepeatGrammars,
+          getReferencedColumn: (t) => t.algorithmGuid,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AlgorithmRepeatGrammarsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.algorithmRepeatGrammars,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> specificationsRefs<T extends Object>(
     Expression<T> Function($$SpecificationsTableAnnotationComposer a) f,
   ) {
@@ -7105,6 +7497,7 @@ class $$AlgorithmsTableTableManager
           (AlgorithmEntry, $$AlgorithmsTableReferences),
           AlgorithmEntry,
           PrefetchHooks Function({
+            bool algorithmRepeatGrammarsRefs,
             bool specificationsRefs,
             bool parametersRefs,
             bool parameterPagesRefs,
@@ -7161,6 +7554,7 @@ class $$AlgorithmsTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
+                algorithmRepeatGrammarsRefs = false,
                 specificationsRefs = false,
                 parametersRefs = false,
                 parameterPagesRefs = false,
@@ -7170,6 +7564,7 @@ class $$AlgorithmsTableTableManager
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
+                    if (algorithmRepeatGrammarsRefs) db.algorithmRepeatGrammars,
                     if (specificationsRefs) db.specifications,
                     if (parametersRefs) db.parameters,
                     if (parameterPagesRefs) db.parameterPages,
@@ -7180,6 +7575,27 @@ class $$AlgorithmsTableTableManager
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
+                      if (algorithmRepeatGrammarsRefs)
+                        await $_getPrefetchedData<
+                          AlgorithmEntry,
+                          $AlgorithmsTable,
+                          AlgorithmRepeatGrammarEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AlgorithmsTableReferences
+                              ._algorithmRepeatGrammarsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AlgorithmsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).algorithmRepeatGrammarsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.algorithmGuid == item.guid,
+                              ),
+                          typedResults: items,
+                        ),
                       if (specificationsRefs)
                         await $_getPrefetchedData<
                           AlgorithmEntry,
@@ -7306,12 +7722,323 @@ typedef $$AlgorithmsTableProcessedTableManager =
       (AlgorithmEntry, $$AlgorithmsTableReferences),
       AlgorithmEntry,
       PrefetchHooks Function({
+        bool algorithmRepeatGrammarsRefs,
         bool specificationsRefs,
         bool parametersRefs,
         bool parameterPagesRefs,
         bool parameterOutputModeUsageRefs,
         bool presetSlotsRefs,
       })
+    >;
+typedef $$AlgorithmRepeatGrammarsTableCreateCompanionBuilder =
+    AlgorithmRepeatGrammarsCompanion Function({
+      required String algorithmGuid,
+      required int grammarVersion,
+      required String grammarJson,
+      Value<int> rowid,
+    });
+typedef $$AlgorithmRepeatGrammarsTableUpdateCompanionBuilder =
+    AlgorithmRepeatGrammarsCompanion Function({
+      Value<String> algorithmGuid,
+      Value<int> grammarVersion,
+      Value<String> grammarJson,
+      Value<int> rowid,
+    });
+
+final class $$AlgorithmRepeatGrammarsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $AlgorithmRepeatGrammarsTable,
+          AlgorithmRepeatGrammarEntry
+        > {
+  $$AlgorithmRepeatGrammarsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
+      db.algorithms.createAlias(
+        'algorithm_repeat_grammars__algorithm_guid__algorithms__guid',
+      );
+
+  $$AlgorithmsTableProcessedTableManager get algorithmGuid {
+    final $_column = $_itemColumn<String>('algorithm_guid')!;
+
+    final manager = $$AlgorithmsTableTableManager(
+      $_db,
+      $_db.algorithms,
+    ).filter((f) => f.guid.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_algorithmGuidTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AlgorithmRepeatGrammarsTableFilterComposer
+    extends Composer<_$AppDatabase, $AlgorithmRepeatGrammarsTable> {
+  $$AlgorithmRepeatGrammarsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get grammarVersion => $composableBuilder(
+    column: $table.grammarVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get grammarJson => $composableBuilder(
+    column: $table.grammarJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AlgorithmsTableFilterComposer get algorithmGuid {
+    final $$AlgorithmsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableFilterComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AlgorithmRepeatGrammarsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AlgorithmRepeatGrammarsTable> {
+  $$AlgorithmRepeatGrammarsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get grammarVersion => $composableBuilder(
+    column: $table.grammarVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get grammarJson => $composableBuilder(
+    column: $table.grammarJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AlgorithmsTableOrderingComposer get algorithmGuid {
+    final $$AlgorithmsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableOrderingComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AlgorithmRepeatGrammarsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AlgorithmRepeatGrammarsTable> {
+  $$AlgorithmRepeatGrammarsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get grammarVersion => $composableBuilder(
+    column: $table.grammarVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get grammarJson => $composableBuilder(
+    column: $table.grammarJson,
+    builder: (column) => column,
+  );
+
+  $$AlgorithmsTableAnnotationComposer get algorithmGuid {
+    final $$AlgorithmsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AlgorithmRepeatGrammarsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AlgorithmRepeatGrammarsTable,
+          AlgorithmRepeatGrammarEntry,
+          $$AlgorithmRepeatGrammarsTableFilterComposer,
+          $$AlgorithmRepeatGrammarsTableOrderingComposer,
+          $$AlgorithmRepeatGrammarsTableAnnotationComposer,
+          $$AlgorithmRepeatGrammarsTableCreateCompanionBuilder,
+          $$AlgorithmRepeatGrammarsTableUpdateCompanionBuilder,
+          (
+            AlgorithmRepeatGrammarEntry,
+            $$AlgorithmRepeatGrammarsTableReferences,
+          ),
+          AlgorithmRepeatGrammarEntry,
+          PrefetchHooks Function({bool algorithmGuid})
+        > {
+  $$AlgorithmRepeatGrammarsTableTableManager(
+    _$AppDatabase db,
+    $AlgorithmRepeatGrammarsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AlgorithmRepeatGrammarsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$AlgorithmRepeatGrammarsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$AlgorithmRepeatGrammarsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> algorithmGuid = const Value.absent(),
+                Value<int> grammarVersion = const Value.absent(),
+                Value<String> grammarJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AlgorithmRepeatGrammarsCompanion(
+                algorithmGuid: algorithmGuid,
+                grammarVersion: grammarVersion,
+                grammarJson: grammarJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String algorithmGuid,
+                required int grammarVersion,
+                required String grammarJson,
+                Value<int> rowid = const Value.absent(),
+              }) => AlgorithmRepeatGrammarsCompanion.insert(
+                algorithmGuid: algorithmGuid,
+                grammarVersion: grammarVersion,
+                grammarJson: grammarJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AlgorithmRepeatGrammarsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({algorithmGuid = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (algorithmGuid) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.algorithmGuid,
+                                referencedTable:
+                                    $$AlgorithmRepeatGrammarsTableReferences
+                                        ._algorithmGuidTable(db),
+                                referencedColumn:
+                                    $$AlgorithmRepeatGrammarsTableReferences
+                                        ._algorithmGuidTable(db)
+                                        .guid,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AlgorithmRepeatGrammarsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AlgorithmRepeatGrammarsTable,
+      AlgorithmRepeatGrammarEntry,
+      $$AlgorithmRepeatGrammarsTableFilterComposer,
+      $$AlgorithmRepeatGrammarsTableOrderingComposer,
+      $$AlgorithmRepeatGrammarsTableAnnotationComposer,
+      $$AlgorithmRepeatGrammarsTableCreateCompanionBuilder,
+      $$AlgorithmRepeatGrammarsTableUpdateCompanionBuilder,
+      (AlgorithmRepeatGrammarEntry, $$AlgorithmRepeatGrammarsTableReferences),
+      AlgorithmRepeatGrammarEntry,
+      PrefetchHooks Function({bool algorithmGuid})
     >;
 typedef $$SpecificationsTableCreateCompanionBuilder =
     SpecificationsCompanion Function({
@@ -12844,6 +13571,11 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$AlgorithmsTableTableManager get algorithms =>
       $$AlgorithmsTableTableManager(_db, _db.algorithms);
+  $$AlgorithmRepeatGrammarsTableTableManager get algorithmRepeatGrammars =>
+      $$AlgorithmRepeatGrammarsTableTableManager(
+        _db,
+        _db.algorithmRepeatGrammars,
+      );
   $$SpecificationsTableTableManager get specifications =>
       $$SpecificationsTableTableManager(_db, _db.specifications);
   $$UnitsTableTableManager get units =>

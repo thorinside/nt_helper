@@ -359,7 +359,7 @@ void main() {
         final exportJson = json.decode(await exportFile.readAsString());
 
         // Verify export structure
-        expect(exportJson['exportVersion'], 2);
+        expect(exportJson['exportVersion'], 3);
         expect(exportJson['exportType'], 'full_metadata');
 
         // Find the parameters in the export
