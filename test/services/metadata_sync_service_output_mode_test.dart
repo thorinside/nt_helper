@@ -12,6 +12,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
   final OutputModeUsage? outputModeUsage;
 
   int _numAlgorithmsInPreset = 0;
+  List<int> _instantiatedSpecifications = const [];
 
   MockDistingMidiManager({
     required this.algorithmInfo,
@@ -25,6 +26,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestNewPreset() async {
     _numAlgorithmsInPreset = 0;
+    _instantiatedSpecifications = const [];
   }
 
   @override
@@ -48,11 +50,24 @@ class MockDistingMidiManager implements IDistingMidiManager {
     List<int> specifications,
   ) async {
     _numAlgorithmsInPreset = 1;
+    _instantiatedSpecifications = List.unmodifiable(specifications);
+  }
+
+  @override
+  Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex) async {
+    if (algorithmIndex != 0 || _numAlgorithmsInPreset == 0) return null;
+    return Algorithm(
+      algorithmIndex: 0,
+      guid: algorithmInfo.guid,
+      name: algorithmInfo.name,
+      specifications: _instantiatedSpecifications,
+    );
   }
 
   @override
   Future<void> requestRemoveAlgorithm(int algorithmIndex) async {
     _numAlgorithmsInPreset = 0;
+    _instantiatedSpecifications = const [];
   }
 
   @override
@@ -126,7 +141,7 @@ void main() {
         const algoGuid = 'tag1';
         const paramNum =
             0; // Must be 0 because requestNumberOfParameters returns 1, so loop queries index 0
-        final affectedOutputs = [1, 2, 3];
+        final affectedOutputs = [0];
 
         final algoInfo = AlgorithmInfo(
           algorithmIndex: 0,

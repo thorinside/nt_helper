@@ -13,6 +13,7 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   final List<AlgorithmInfo> testAlgorithms;
   int _numAlgorithmsInPreset = 0;
   List<int>? lastSpecifications;
+  AlgorithmInfo? _instantiatedAlgorithm;
 
   // Auto-recovery tracking
   int rebootCallCount = 0;
@@ -119,11 +120,13 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestRemoveAlgorithm(int index) async {
     _numAlgorithmsInPreset = 0;
+    _instantiatedAlgorithm = null;
   }
 
   @override
   Future<void> requestNewPreset() async {
     _numAlgorithmsInPreset = 0;
+    _instantiatedAlgorithm = null;
   }
 
   @override
@@ -150,6 +153,19 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
     }
 
     _numAlgorithmsInPreset = 1;
+    _instantiatedAlgorithm = algorithm;
+  }
+
+  @override
+  Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex) async {
+    final algorithm = _instantiatedAlgorithm;
+    if (algorithmIndex != 0 || algorithm == null) return null;
+    return Algorithm(
+      algorithmIndex: 0,
+      guid: algorithm.guid,
+      name: algorithm.name,
+      specifications: List<int>.from(lastSpecifications ?? const []),
+    );
   }
 
   @override

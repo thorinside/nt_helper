@@ -1,15 +1,17 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart'; // Import drift for InsertMode
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart'; // Import the DAO type
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show AlgorithmInfo, ParameterInfo, Specification;
+    show AlgorithmInfo, Specification;
 
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/models/algorithm_repeat_grammar.dart';
+import 'package:nt_helper/models/algorithm_shape_snapshot.dart';
+import 'package:nt_helper/services/algorithm_repeat_inference_service.dart';
 import 'package:nt_helper/services/algorithm_guid_utils.dart';
 import 'package:nt_helper/services/elf_guid_extractor.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
@@ -31,14 +33,8 @@ class MetadataSyncService {
     }
   }
 
-  static final RegExp _usefulScanSpecNamePattern = RegExp(
-    r'\b(channels?|inputs?|outputs?|sends?|stereo|voices?)\b',
-    caseSensitive: false,
-  );
-
   bool _isUsefulOfflineCountSpec(Specification spec) {
-    if (spec.type != 0 && spec.type != 2) return false;
-    return _usefulScanSpecNamePattern.hasMatch(spec.name);
+    return AlgorithmRepeatInferenceService.isRepeatCandidate(spec);
   }
 
   int _scanSpecValue(Specification spec) {
@@ -157,6 +153,7 @@ class MetadataSyncService {
     required List<String> dbUnitStrings,
     required FirmwareVersion firmwareVersion,
     bool Function()? checkCancel,
+    void Function(String status)? onStatus,
   }) async {
     // Load plugin if needed
     if (algoInfo.isPlugin && !algoInfo.isLoaded) {
@@ -165,44 +162,167 @@ class MetadataSyncService {
       if (checkCancel?.call() ?? false) return;
     }
 
-    // Add algorithm with scan specs
-    final scanSpecs = _scanSpecValues(algoInfo);
-    await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
+    final inference = AlgorithmRepeatInferenceService();
+    final plan = inference.buildInitialPlan(algoInfo.specifications);
+    final hasCountAxes = plan.lowerWitnessByAxis.isNotEmpty;
+    AlgorithmShapeSnapshot? canonical;
+    AlgorithmRepeatGrammar? grammar;
+    var status = 'no repeats';
 
-    // Poll until added
-    final numInPreset = await _pollPresetCount(
-      expected: 1,
-      maxAttempts: algoInfo.isPlugin ? 15 : 10,
-      checkCancel: checkCancel,
-    );
-
-    if (checkCancel?.call() ?? false) return;
-
-    if (numInPreset != 1) {
-      throw Exception(
-        'Failed to add algorithm to preset (expected 1, found $numInPreset).',
-      );
+    if (hasCountAxes) {
+      try {
+        final snapshots = <SpecificationVector, AlgorithmShapeSnapshot>{};
+        canonical = await _probeAlgorithmShape(
+          algoInfo: algoInfo,
+          specificationValues: plan.canonical.values,
+          firmwareVersion: firmwareVersion,
+          checkCancel: checkCancel,
+        );
+        if (canonical.parameters.isEmpty) {
+          throw const _MetadataProbeException(
+            'Canonical witness returned incomplete metadata',
+          );
+        }
+        snapshots[plan.canonical] = canonical;
+        for (final witness in plan.lowerWitnessByAxis.values) {
+          final snapshot = await _probeAlgorithmShape(
+            algoInfo: algoInfo,
+            specificationValues: witness.values,
+            firmwareVersion: firmwareVersion,
+            checkCancel: checkCancel,
+          );
+          if (snapshot.parameters.isEmpty) {
+            throw const _MetadataProbeException(
+              'Lower witness returned incomplete metadata',
+            );
+          }
+          snapshots[witness] = snapshot;
+        }
+        final analysis = inference.analyzeInitial(
+          specifications: algoInfo.specifications,
+          plan: plan,
+          snapshots: snapshots,
+        );
+        for (final witness in inference.interactionWitnesses(analysis)) {
+          final snapshot = await _probeAlgorithmShape(
+            algoInfo: algoInfo,
+            specificationValues: witness.values,
+            firmwareVersion: firmwareVersion,
+            checkCancel: checkCancel,
+          );
+          if (snapshot.parameters.isEmpty) {
+            throw const _MetadataProbeException(
+              'Interaction witness returned incomplete metadata',
+            );
+          }
+          snapshots[witness] = snapshot;
+        }
+        switch (inference.compile(analysis: analysis, snapshots: snapshots)) {
+          case ProvenAlgorithmRepeatGrammar(grammar: final provenGrammar):
+            grammar = provenGrammar;
+            status = 'repeat grammar: proven';
+          case NoAlgorithmRepeats():
+            status = 'no repeats';
+          case UnprovenAlgorithmRepeats():
+            status = 'unproven';
+        }
+      } catch (_) {
+        status = 'unproven';
+        grammar = null;
+      }
     }
 
-    // Query instantiated parameters
-    final algorithmToQuery = await _resolveAlgorithmForQuery(algoInfo);
-    await _syncInstantiatedAlgorithmParams(
+    if (canonical == null || grammar == null) {
+      final fallbackValues = _scanSpecValues(algoInfo);
+      if (canonical == null ||
+          !_sameSpecificationVector(
+            canonical.specificationValues,
+            fallbackValues,
+          )) {
+        canonical = await _probeAlgorithmShape(
+          algoInfo: algoInfo,
+          specificationValues: fallbackValues,
+          firmwareVersion: firmwareVersion,
+          checkCancel: checkCancel,
+        );
+      }
+      grammar = null;
+    }
+
+    if (checkCancel?.call() ?? false) return;
+    await _persistCanonicalAlgorithmShape(
       metadataDao,
-      algorithmToQuery,
+      algoInfo,
+      canonical,
       unitIdMap,
       dbUnitStrings,
-      firmwareVersion,
+      grammar,
     );
+    onStatus?.call(status);
+  }
 
-    // Remove algorithm
-    await _distingManager.requestRemoveAlgorithm(0);
+  bool _sameSpecificationVector(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var index = 0; index < a.length; index++) {
+      if (a[index] != b[index]) return false;
+    }
+    return true;
+  }
 
-    // Poll until removed
-    await _pollPresetCount(
-      expected: 0,
-      maxAttempts: 8,
-      checkCancel: checkCancel,
-    );
+  Future<AlgorithmShapeSnapshot> _probeAlgorithmShape({
+    required AlgorithmInfo algoInfo,
+    required List<int> specificationValues,
+    required FirmwareVersion firmwareVersion,
+    bool Function()? checkCancel,
+  }) async {
+    var added = false;
+    try {
+      await _distingManager.requestAddAlgorithm(algoInfo, specificationValues);
+      added = true;
+      final numInPreset = await _pollPresetCount(
+        expected: 1,
+        maxAttempts: algoInfo.isPlugin ? 15 : 10,
+        checkCancel: checkCancel,
+      );
+      if (checkCancel?.call() ?? false) {
+        throw const _MetadataProbeException('Metadata scan cancelled');
+      }
+      if (numInPreset != 1) {
+        throw _MetadataProbeException(
+          'Failed to add algorithm to preset (expected 1, found $numInPreset)',
+        );
+      }
+      final instantiated = await _distingManager.requestAlgorithmGuid(0);
+      if (instantiated == null ||
+          instantiated.guid != algoInfo.guid ||
+          !_sameSpecificationVector(
+            instantiated.specifications,
+            specificationValues,
+          )) {
+        throw const _MetadataProbeException(
+          'Hardware did not instantiate the requested GUID/specification vector',
+        );
+      }
+      final algorithmToQuery = await _resolveAlgorithmForQuery(algoInfo);
+      return await _captureInstantiatedAlgorithmShape(
+        algorithmToQuery,
+        specificationValues,
+        firmwareVersion,
+      );
+    } finally {
+      if (added) {
+        try {
+          await _distingManager.requestRemoveAlgorithm(0);
+          await _pollPresetCount(
+            expected: 0,
+            maxAttempts: 8,
+            checkCancel: checkCancel,
+          );
+        } catch (_) {
+          // Preserve the original capture failure. Outer recovery clears preset.
+        }
+      }
+    }
   }
 
   /// Clean up a failed algorithm from DB and device.
@@ -484,6 +604,7 @@ class MetadataSyncService {
             dbUnitStrings: dbUnitStrings,
             firmwareVersion: firmwareVersion,
             checkCancel: checkCancel,
+            onStatus: (status) => reportProgress(mainProgressMsg, status),
           );
           reportProgress(mainProgressMsg, "Done.");
         } catch (instantiationError, stackTrace) {
@@ -510,6 +631,7 @@ class MetadataSyncService {
                 dbUnitStrings: dbUnitStrings,
                 firmwareVersion: firmwareVersion,
                 checkCancel: checkCancel,
+                onStatus: (status) => reportProgress(mainProgressMsg, status),
               );
               reportProgress(mainProgressMsg, "Retry succeeded.");
             } catch (retryError) {
@@ -567,6 +689,7 @@ class MetadataSyncService {
                 dbUnitStrings: dbUnitStrings,
                 firmwareVersion: firmwareVersion,
                 checkCancel: checkCancel,
+                onStatus: (status) => reportProgress(retryMsg, status),
               );
               reportProgress(retryMsg, "Final retry succeeded.");
             } catch (finalError) {
@@ -660,191 +783,203 @@ class MetadataSyncService {
     }
   }
 
-  // Helper to sync parameters, pages, enums for an algorithm *instantiated at slot 0*
-  Future<void> _syncInstantiatedAlgorithmParams(
-    MetadataDao metadataDao,
-    AlgorithmInfo algoInfo, // Contains the GUID
-    Map<String, int> unitIdMap, // Map of unit string -> db id
-    List<String> dbUnitStrings, // List of known unit strings
+  Future<AlgorithmShapeSnapshot> _captureInstantiatedAlgorithmShape(
+    AlgorithmInfo algoInfo,
+    List<int> requestedSpecifications,
     FirmwareVersion firmwareVersion,
   ) async {
-    // Queries use slot index 0
     final numParamsResult = await _distingManager.requestNumberOfParameters(0);
     final numParams = numParamsResult?.numParameters ?? 0;
     if (numParams == 0) {
-      return;
+      return AlgorithmShapeSnapshot(
+        specificationValues: requestedSpecifications,
+        parameters: const [],
+        pages: const [],
+        pageMemberships: const [],
+        outputUsage: const [],
+      );
     }
 
-    final parameterInfos = <ParameterInfo>[];
     final parameterPagesResult = await _distingManager.requestParameterPages(0);
-    final enumStringsMap = <int, List<String>>{};
-
-    // Fetch all parameter info using slot index 0
-    for (int pNum = 0; pNum < numParams; pNum++) {
-      final paramInfo = await _distingManager.requestParameterInfo(0, pNum);
-      if (paramInfo != null) {
-        // Use paramInfo.copyWith to ensure algorithmIndex is 0 if needed,
-        // though it might not matter for processing if we only use parameterNumber
-        parameterInfos.add(paramInfo);
-        if (paramInfo.unit == 1) {
-          // Skip enum strings for Macro Oscillator Model parameter (firmware bug)
-          if (firmwareVersion.isExactly('1.12.0') &&
+    final parameters = <ShapeParameterAtom>[];
+    final outputUsage = <ShapeOutputUsageAtom>[];
+    for (
+      var parameterNumber = 0;
+      parameterNumber < numParams;
+      parameterNumber++
+    ) {
+      final paramInfo = await _distingManager.requestParameterInfo(
+        0,
+        parameterNumber,
+      );
+      if (paramInfo == null || paramInfo.parameterNumber != parameterNumber) {
+        throw _MetadataProbeException(
+          'Missing parameter metadata at $parameterNumber',
+        );
+      }
+      var enumStrings = const <String>[];
+      if (paramInfo.unit == 1 &&
+          !(firmwareVersion.isExactly('1.12.0') &&
               algoInfo.guid == 'maco' &&
-              pNum == 1) {
-            continue;
-          }
-          final enumsResult = await _distingManager.requestParameterEnumStrings(
+              parameterNumber == 1)) {
+        enumStrings =
+            (await _distingManager.requestParameterEnumStrings(
+              0,
+              parameterNumber,
+            ))?.values ??
+            const [];
+      }
+      parameters.add(
+        ShapeParameterAtom(
+          name: paramInfo.name,
+          min: paramInfo.min,
+          max: paramInfo.max,
+          defaultValue: paramInfo.defaultValue,
+          rawUnitIndex: paramInfo.unit,
+          powerOfTen: paramInfo.powerOfTen,
+          ioFlags: paramInfo.ioFlags,
+          enumStrings: enumStrings,
+        ),
+      );
+      if (paramInfo.isOutputMode) {
+        try {
+          final usage = await _distingManager.requestOutputModeUsage(
             0,
-            pNum,
+            parameterNumber,
           );
-          if (enumsResult != null && enumsResult.values.isNotEmpty) {
-            enumStringsMap[pNum] = enumsResult.values;
+          for (final affected in usage?.affectedParameterNumbers ?? const []) {
+            if (affected < 0 || affected >= numParams) {
+              throw const _MetadataProbeException(
+                'Output usage contains a dangling parameter reference',
+              );
+            }
+            outputUsage.add(
+              ShapeOutputUsageAtom(
+                parameterNumber: parameterNumber,
+                affectedParameterNumber: affected,
+              ),
+            );
           }
+        } on _MetadataProbeException {
+          rethrow;
+        } catch (_) {
+          // Supplementary usage may be unavailable on older firmware.
         }
-      } else {}
+      }
     }
 
-    // Process and Store Parameter Definitions (using insertOrIgnore)
+    final pages = <ShapePageAtom>[];
+    final memberships = <ShapePageMembershipAtom>[];
+    for (final (pageIndex, page)
+        in (parameterPagesResult?.pages ?? const []).indexed) {
+      pages.add(ShapePageAtom(name: page.name));
+      for (final parameterNumber in page.parameters) {
+        if (parameterNumber < 0 || parameterNumber >= numParams) {
+          throw const _MetadataProbeException(
+            'Page contains a dangling parameter reference',
+          );
+        }
+        memberships.add(
+          ShapePageMembershipAtom(
+            pageIndex: pageIndex,
+            parameterNumber: parameterNumber,
+          ),
+        );
+      }
+    }
+
+    return AlgorithmShapeSnapshot(
+      specificationValues: requestedSpecifications,
+      parameters: parameters,
+      pages: pages,
+      pageMemberships: memberships,
+      outputUsage: outputUsage,
+    );
+  }
+
+  Future<void> _persistCanonicalAlgorithmShape(
+    MetadataDao metadataDao,
+    AlgorithmInfo algoInfo,
+    AlgorithmShapeSnapshot snapshot,
+    Map<String, int> unitIdMap,
+    List<String> dbUnitStrings,
+    AlgorithmRepeatGrammar? grammar,
+  ) async {
+    String? unitString(int rawUnitIndex) {
+      if (rawUnitIndex <= 0 || rawUnitIndex > dbUnitStrings.length) return null;
+      return dbUnitStrings[rawUnitIndex - 1];
+    }
+
     final paramEntries = <ParameterEntry>[];
-    final uniqueBaseParams =
-        <int>{}; // Track parameterNumber already processed for base definition
-
-    for (final paramInfo in parameterInfos) {
-      // Assume paramInfo.parameterNumber is the key, even if name is prefixed
-      final paramNumKey = paramInfo.parameterNumber;
-
-      // Only process the base definition once per parameterNumber
-      if (uniqueBaseParams.contains(paramNumKey)) continue;
-      uniqueBaseParams.add(paramNumKey);
-
-      // Preserve the full parameter name including channel prefixes
-      // This ensures multi-channel algorithms have distinguishable parameters
-      String baseName = paramInfo.name;
-
-      final unitStr = paramInfo.getUnitString(dbUnitStrings);
-      final unitId = (unitStr == null) ? null : unitIdMap[unitStr];
-
+    final enumEntries = <ParameterEnumEntry>[];
+    for (final (parameterNumber, parameter) in snapshot.parameters.indexed) {
+      final unit = unitString(parameter.rawUnitIndex);
       paramEntries.add(
         ParameterEntry(
           algorithmGuid: algoInfo.guid,
-          parameterNumber: paramNumKey,
-          name: baseName,
-          minValue: paramInfo.min,
-          maxValue: paramInfo.max,
-          defaultValue: paramInfo.defaultValue,
-          unitId: unitId,
-          powerOfTen: paramInfo.powerOfTen,
-          rawUnitIndex: paramInfo.unit,
-          ioFlags: paramInfo.ioFlags,
+          parameterNumber: parameterNumber,
+          name: parameter.name,
+          minValue: parameter.min,
+          maxValue: parameter.max,
+          defaultValue: parameter.defaultValue,
+          unitId: unit == null ? null : unitIdMap[unit],
+          powerOfTen: parameter.powerOfTen,
+          ioFlags: parameter.ioFlags,
+          rawUnitIndex: parameter.rawUnitIndex,
         ),
       );
-    }
-    // Use insertOrIgnore mode via metadataDao.batch
-    await metadataDao.batch((batch) {
-      batch.insertAll(
-        metadataDao.parameters,
-        paramEntries,
-        mode: InsertMode.insertOrIgnore,
-      );
-    });
-
-    // Collect output mode usage data for parameters with isOutputMode flag
-    final outputModeUsageEntries = <ParameterOutputModeUsageEntry>[];
-
-    for (final paramInfo in parameterInfos) {
-      // Check if this parameter is an output mode control (bit 3 of ioFlags)
-      if (paramInfo.isOutputMode) {
-        try {
-          // Query the hardware for which outputs are affected by this mode parameter
-          final outputModeUsage = await _distingManager.requestOutputModeUsage(
-            0, // Algorithm is always in slot 0 during sync
-            paramInfo.parameterNumber,
-          );
-
-          if (outputModeUsage != null &&
-              outputModeUsage.affectedParameterNumbers.isNotEmpty) {
-            // Store the relationship for database persistence
-            outputModeUsageEntries.add(
-              ParameterOutputModeUsageEntry(
-                algorithmGuid: algoInfo.guid,
-                parameterNumber: paramInfo.parameterNumber,
-                affectedOutputNumbers: outputModeUsage.affectedParameterNumbers,
-              ),
-            );
-          }
-        } catch (e) {
-          // Silently ignore output mode query failures
-          // This is supplementary metadata, not critical for basic functionality
-        }
-      }
-    }
-
-    // Persist output mode usage data to database
-    if (outputModeUsageEntries.isNotEmpty) {
-      await metadataDao.upsertOutputModeUsage(outputModeUsageEntries);
-    }
-
-    // Upsert Parameter Enums (link to the parameterNumber key)
-    final enumEntries = <ParameterEnumEntry>[];
-    enumStringsMap.forEach((paramNumKey, strings) {
-      // Only add enums if we actually stored this base parameterNumber
-      if (uniqueBaseParams.contains(paramNumKey)) {
-        strings.asMap().forEach((index, str) {
-          enumEntries.add(
-            ParameterEnumEntry(
-              algorithmGuid: algoInfo.guid,
-              parameterNumber: paramNumKey,
-              enumIndex: index,
-              enumString: str,
-            ),
-          );
-        });
-      }
-    });
-    if (enumEntries.isNotEmpty) {
-      // Use insertOrReplace via metadataDao.batch
-      await metadataDao.batch((batch) {
-        batch.insertAll(
-          metadataDao.parameterEnums,
-          enumEntries,
-          mode: InsertMode.insertOrReplace,
-        );
-      });
-    }
-
-    // Upsert Parameter Pages and Items (link to the parameterNumber key)
-    if (parameterPagesResult != null && parameterPagesResult.pages.isNotEmpty) {
-      final pageEntries = <ParameterPageEntry>[];
-      final pageItemEntries = <ParameterPageItemEntry>[];
-      final Set<int> storedParamNumbers = paramEntries
-          .map((p) => p.parameterNumber)
-          .toSet();
-
-      parameterPagesResult.pages.asMap().forEach((index, page) {
-        pageEntries.add(
-          ParameterPageEntry(
+      for (final (enumIndex, enumString) in parameter.enumStrings.indexed) {
+        enumEntries.add(
+          ParameterEnumEntry(
             algorithmGuid: algoInfo.guid,
-            pageIndex: index,
-            name: page.name,
+            parameterNumber: parameterNumber,
+            enumIndex: enumIndex,
+            enumString: enumString,
           ),
         );
-        for (final paramNumKey in page.parameters) {
-          // Only add page items for parameters we actually stored a definition for
-          if (storedParamNumbers.contains(paramNumKey)) {
-            pageItemEntries.add(
-              ParameterPageItemEntry(
-                algorithmGuid: algoInfo.guid,
-                pageIndex: index,
-                parameterNumber: paramNumKey,
-              ),
-            );
-          } else {}
-        }
-      });
-      // Use replace mode for pages/items within an algorithm, assuming pages are definitive per sync
-      await metadataDao.upsertParameterPages(pageEntries);
-      await metadataDao.upsertParameterPageItems(pageItemEntries);
-    } else {}
+      }
+    }
+
+    final pageEntries = [
+      for (final (pageIndex, page) in snapshot.pages.indexed)
+        ParameterPageEntry(
+          algorithmGuid: algoInfo.guid,
+          pageIndex: pageIndex,
+          name: page.name,
+        ),
+    ];
+    final pageItemEntries = [
+      for (final membership in snapshot.pageMemberships)
+        ParameterPageItemEntry(
+          algorithmGuid: algoInfo.guid,
+          pageIndex: membership.pageIndex,
+          parameterNumber: membership.parameterNumber,
+        ),
+    ];
+    final groupedUsage = <int, List<int>>{};
+    for (final usage in snapshot.outputUsage) {
+      (groupedUsage[usage.parameterNumber] ??= []).add(
+        usage.affectedParameterNumber,
+      );
+    }
+    final outputUsageEntries = [
+      for (final entry in groupedUsage.entries)
+        ParameterOutputModeUsageEntry(
+          algorithmGuid: algoInfo.guid,
+          parameterNumber: entry.key,
+          affectedOutputNumbers: [...entry.value]..sort(),
+        ),
+    ];
+
+    await metadataDao.replaceAlgorithmShapeAndGrammar(
+      guid: algoInfo.guid,
+      parameters: paramEntries,
+      enums: enumEntries,
+      pages: pageEntries,
+      pageItems: pageItemEntries,
+      outputUsage: outputUsageEntries,
+      grammar: grammar,
+    );
   }
 
   /// Rescan a single algorithm's parameters
@@ -857,9 +992,6 @@ class MetadataSyncService {
     for (final unit in dbUnits) {
       unitIdMap[unit.unitString] = unit.id;
     }
-
-    // Clear existing parameter data for this algorithm
-    await metadataDao.clearAlgorithmMetadata(algoInfo.guid);
 
     try {
       await _tryScanAlgorithm(
@@ -1295,4 +1427,13 @@ class MetadataSyncService {
       onError?.call(errorMsg);
     }
   }
+}
+
+final class _MetadataProbeException implements Exception {
+  const _MetadataProbeException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }
