@@ -647,13 +647,20 @@ class _PluginDelegate {
       // 1. Send load plugin command
       await disting.requestLoadPlugin(guid);
 
-      // Wait a bit
-      await Future.delayed(const Duration(milliseconds: 1000));
+      // Loading completes asynchronously on the hardware, so wait for the
+      // updated specifications instead of requiring a second button press.
+      AlgorithmInfo? updatedInfo;
+      for (var attempt = 0; attempt < 5; attempt++) {
+        await Future.delayed(const Duration(seconds: 1));
+        updatedInfo = await disting.requestAlgorithmInfo(
+          algorithm.algorithmIndex,
+        );
+        if (updatedInfo?.guid == guid && updatedInfo?.isLoaded == true) break;
+      }
 
-      // 2. Request updated info for just this algorithm
-      final updatedInfo = await disting.requestAlgorithmInfo(algorithmIndex);
-
-      if (updatedInfo != null && updatedInfo.isLoaded) {
+      if (updatedInfo != null &&
+          updatedInfo.guid == guid &&
+          updatedInfo.isLoaded) {
         // 3. Update only this algorithm in the state
         final updatedAlgorithms = List<AlgorithmInfo>.from(
           currentState.algorithms,

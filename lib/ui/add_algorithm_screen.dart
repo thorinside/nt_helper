@@ -351,6 +351,15 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         '$name selected',
         TextDirection.ltr,
       );
+
+      final algorithm = _currentAlgoInfo;
+      final state = context.read<DistingCubit>().state;
+      if (algorithm != null &&
+          _needsLoading(algorithm) &&
+          state is DistingStateSynchronized &&
+          !state.offline) {
+        _loadPlugin(algorithm.guid);
+      }
     }
   }
 
@@ -534,7 +543,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        '• Select a plugin to see a "Load Plugin" button if it needs loading',
+                        '• Selecting a plugin automatically loads it when needed',
                       ),
                       SizedBox(height: 8),
                       Text(

@@ -58,7 +58,7 @@ void main() {
     );
 
     loadedPlugin = AlgorithmInfo(
-      algorithmIndex: 1,
+      algorithmIndex: 0,
       guid: 'TestPlugin',
       name: 'Test Plugin',
       specifications: [
@@ -197,7 +197,7 @@ void main() {
         () => mockDisting.requestLoadPlugin('TestPlugin'),
       ).thenAnswer((_) async => {});
       when(
-        () => mockDisting.requestAlgorithmInfo(1),
+        () => mockDisting.requestAlgorithmInfo(0),
       ).thenAnswer((_) async => loadedPlugin);
 
       // Act
@@ -216,7 +216,7 @@ void main() {
 
       // Verify correct calls were made
       verify(() => mockDisting.requestLoadPlugin('TestPlugin')).called(1);
-      verify(() => mockDisting.requestAlgorithmInfo(1)).called(1);
+      verify(() => mockDisting.requestAlgorithmInfo(0)).called(1);
     });
 
     test('handles plugin loading failure gracefully', () async {
@@ -261,7 +261,7 @@ void main() {
       verifyNever(() => mockDisting.requestAlgorithmInfo(any()));
     });
 
-    test('handles algorithm info request failure gracefully', () async {
+    test('waits until plugin metadata reports loaded', () async {
       // Arrange
       cubit.emit(
         DistingState.synchronized(
@@ -282,27 +282,29 @@ void main() {
         ),
       );
 
-      // Mock successful load but failed info request
+      // The first response is for another loaded library entry.
       when(
         () => mockDisting.requestLoadPlugin('TestPlugin'),
       ).thenAnswer((_) async => {});
-      when(
-        () => mockDisting.requestAlgorithmInfo(0),
-      ).thenAnswer((_) async => null);
+      var infoRequests = 0;
+      when(() => mockDisting.requestAlgorithmInfo(0)).thenAnswer((_) async {
+        infoRequests++;
+        return infoRequests == 1 ? factoryAlgorithm : loadedPlugin;
+      });
 
       // Act
       final result = await cubit.loadPlugin('TestPlugin');
 
       // Assert
-      expect(result, isNull);
+      expect(result, loadedPlugin);
 
-      // State should remain unchanged
+      // State updates without a second load command or button press.
       final state = cubit.state as DistingStateSynchronized;
       expect(state.algorithms.length, equals(1));
-      expect(state.algorithms[0], equals(unloadedPlugin));
+      expect(state.algorithms[0], equals(loadedPlugin));
 
       verify(() => mockDisting.requestLoadPlugin('TestPlugin')).called(1);
-      verify(() => mockDisting.requestAlgorithmInfo(0)).called(1);
+      verify(() => mockDisting.requestAlgorithmInfo(0)).called(2);
     });
 
     test('preserves other algorithms when loading one plugin', () async {
@@ -340,7 +342,7 @@ void main() {
         () => mockDisting.requestLoadPlugin('TestPlugin'),
       ).thenAnswer((_) async => {});
       when(
-        () => mockDisting.requestAlgorithmInfo(1),
+        () => mockDisting.requestAlgorithmInfo(0),
       ).thenAnswer((_) async => loadedPlugin);
 
       // Act

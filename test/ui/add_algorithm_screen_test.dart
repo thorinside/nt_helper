@@ -248,6 +248,9 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockCubit.loadPlugin('TestPlugin'),
+      ).thenAnswer((_) async => null);
 
       // Act
       await tester.pumpWidget(createTestWidget());
@@ -269,6 +272,7 @@ void main() {
         find.widgetWithText(ElevatedButton, 'Load Plugin'),
       );
       expect(button.onPressed, isNotNull);
+      verify(() => mockCubit.loadPlugin('TestPlugin')).called(1);
     });
 
     testWidgets('displays Add Algorithm button for loaded plugin', (
@@ -665,9 +669,7 @@ void main() {
     });
 
     group('Plugin Loading Workflow', () {
-      testWidgets('button changes to Add Algorithm after successful plugin load', (
-        tester,
-      ) async {
+      testWidgets('selection automatically loads a plugin', (tester) async {
         // This is the key test for the bug fix
 
         // Initial state: unloaded plugin
@@ -695,9 +697,7 @@ void main() {
           () => mockCubit.loadPlugin('TestPlugin'),
         ).thenAnswer((_) async => mockLoadedPlugin);
 
-        // Stream to simulate state updates (broadcast to allow multiple listeners)
-        final stateController = StreamController<DistingState>.broadcast();
-        when(() => mockCubit.stream).thenAnswer((_) => stateController.stream);
+        when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
         // Act
         await tester.pumpWidget(createTestWidget());
@@ -707,56 +707,7 @@ void main() {
         await tester.tap(find.text('Test Plugin'));
         await tester.pumpAndSettle();
 
-        // Verify initial state shows Load Plugin button
-        expect(find.text('Load Plugin'), findsOneWidget);
-
-        // Tap Load Plugin button
-        await tester.tap(find.text('Load Plugin'));
-        await tester.pump(); // Start the async operation
-
-        // Simulate cubit state update after successful load
-        when(() => mockCubit.state).thenReturn(
-          DistingState.synchronized(
-            disting: mockDistingMidi,
-            distingVersion: '',
-            firmwareVersion: mockFirmwareVersion,
-            presetName: 'Test Preset',
-            algorithms: [mockLoadedPlugin], // Now loaded
-            slots: const [],
-            unitStrings: const [],
-            inputDevice: null,
-            outputDevice: null,
-            loading: false,
-            offline: false,
-            screenshot: null,
-            demo: false,
-            videoStream: null,
-          ),
-        );
-
-        // Emit the updated state
-        stateController.add(
-          DistingState.synchronized(
-            disting: mockDistingMidi,
-            distingVersion: '',
-            firmwareVersion: mockFirmwareVersion,
-            presetName: 'Test Preset',
-            algorithms: [mockLoadedPlugin],
-            slots: const [],
-            unitStrings: const [],
-            inputDevice: null,
-            outputDevice: null,
-            loading: false,
-            offline: false,
-            screenshot: null,
-            demo: false,
-            videoStream: null,
-          ),
-        );
-
-        await tester.pumpAndSettle(); // Process the state update
-
-        // Assert: Button should now show "Add Algorithm" without requiring another press
+        // Loading was triggered by selection; no separate button press is needed.
         expect(
           find.widgetWithText(ElevatedButton, 'Add Algorithm'),
           findsOneWidget,
@@ -765,8 +716,6 @@ void main() {
 
         // Verify loadPlugin was called
         verify(() => mockCubit.loadPlugin('TestPlugin')).called(1);
-
-        stateController.close();
       });
 
       testWidgets('handles plugin loading failure gracefully', (tester) async {
@@ -803,10 +752,6 @@ void main() {
 
         // Select the unloaded plugin
         await tester.tap(find.text('Test Plugin'));
-        await tester.pumpAndSettle();
-
-        // Tap Load Plugin button
-        await tester.tap(find.text('Load Plugin'));
         await tester.pumpAndSettle();
 
         // Assert: Button should still show "Load Plugin" since loading failed
@@ -858,11 +803,7 @@ void main() {
 
         // Select the unloaded plugin
         await tester.tap(find.text('Test Plugin'));
-        await tester.pumpAndSettle();
-
-        // Tap Load Plugin button
-        await tester.tap(find.text('Load Plugin'));
-        await tester.pump(); // Start the async operation
+        await tester.pump(); // Start the automatic async operation
 
         // Assert: Loading snackbar should be visible
         expect(find.text('Loading plugin Test Plugin...'), findsOneWidget);
@@ -902,6 +843,9 @@ void main() {
           ),
         );
         when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockCubit.loadPlugin('TestPlugin'),
+        ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
