@@ -70,6 +70,11 @@ the `graphify` skill for graph search, architecture discovery, relationship
 tracing, ownership/adjacency checks, or PR impact work. The skill is the source
 of truth for live service discovery and tool routing.
 
+Route every Graphify service lookup and tool call through `mcp__substrate`.
+Use the `graphify-mcp__*` tools mapped by Substrate, or
+`mcp__substrate.invoke_tool` when the compatibility wrapper is required. Never
+connect to or invoke a standalone Graphify MCP server directly.
+
 Use Graphify to find existing behavior before introducing a new helper,
 delegate, service, or parallel implementation.
 
