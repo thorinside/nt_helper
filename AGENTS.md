@@ -63,6 +63,31 @@ OO framework in `lib/core/routing/` for data-driven routing visualization.
 | Routing UI | `lib/ui/widgets/routing/routing_editor_widget.dart` |
 | Metadata | `lib/services/algorithm_metadata_service.dart` |
 
+## Graphify Codebase Graph
+
+`nt_helper` is indexed in Substrate's registered `graphify-mcp` graph. Use it
+for architecture discovery, relationship tracing, ownership/adjacency checks,
+and finding existing behavior before introducing a new helper, delegate,
+service, or parallel implementation.
+
+1. Confirm the live service and graph before relying on it; registration and
+   graph composition can change:
+   - `mcp__substrate.get_service({"name": "graphify-mcp"})`
+   - `mcp__substrate.search_tool({"query": "graphify-mcp__", "limit": 50})`
+   - `graphify-mcp__graph_stats({})`
+2. Start with the smallest useful query: `query_graph` for orientation,
+   `get_node`/`get_neighbors` for a specific symbol, and `shortest_path` for a
+   relationship between concepts.
+3. For architecture or impact work, inspect the relevant communities rather
+   than stopping at Community 0, which is only the largest cluster.
+4. Treat Graphify as a map, not source truth. Confirm important findings with
+   `rg` and the actual files in this checkout before editing.
+
+Use the Substrate-registered service rather than generic knowledge search,
+external Graphify installs, or a local graph rebuild. Prefer plain `rg` for a
+simple exact text/file lookup. Use `list_prs`, `get_pr_impact`, or `triage_prs`
+only for PR/merge work, and corroborate current GitHub status separately.
+
 ## Commands
 
 ```
