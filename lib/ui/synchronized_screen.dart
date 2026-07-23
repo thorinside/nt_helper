@@ -63,6 +63,7 @@ import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/widgets/algorithm_list_view.dart';
 import 'package:nt_helper/ui/widgets/disting_version.dart';
 import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
+import 'package:nt_helper/ui/widgets/slot_editor_mode.dart';
 import 'package:nt_helper/ui/widgets/mcp_status_indicator.dart';
 import 'package:nt_helper/ui/widgets/debug_panel.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
@@ -124,7 +125,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   double _splitDividerPosition = SettingsService.defaultSplitDividerPosition;
   bool _showDebugPanel = true;
   bool _showContextualHelp = true;
-  bool _showParameterSpreadsheet = false;
+  SlotEditorMode _parameterEditorMode = SlotEditorMode.standard;
   String? _contextualHelpText;
   AppRelease? _availableAppUpdate;
   AppUpdateService? _appUpdateService;
@@ -1057,10 +1058,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       units: widget.units,
                       firmwareVersion: widget.firmwareVersion,
                       sectionController: _sectionController,
-                      spreadsheetEditingMode: _showParameterSpreadsheet,
-                      onToggleSpreadsheetEditingMode:
-                          _toggleParameterSpreadsheet,
-                      spreadsheetToggleEnabled: !widget.loading,
+                      editorMode: _parameterEditorMode,
+                      onEditorModeChanged: _setParameterEditorMode,
+                      editorModeEnabled: !widget.loading,
                     );
                   }).toList(),
                 )
@@ -1931,9 +1931,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             units: widget.units,
             firmwareVersion: widget.firmwareVersion,
             sectionController: _sectionController,
-            spreadsheetEditingMode: _showParameterSpreadsheet,
-            onToggleSpreadsheetEditingMode: _toggleParameterSpreadsheet,
-            spreadsheetToggleEnabled: !widget.loading,
+            editorMode: _parameterEditorMode,
+            onEditorModeChanged: _setParameterEditorMode,
+            editorModeEnabled: !widget.loading,
           );
         }).toList(),
       );
@@ -2034,17 +2034,14 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
   }
 
-  void _toggleParameterSpreadsheet() {
-    setState(() {
-      _showParameterSpreadsheet = !_showParameterSpreadsheet;
-    });
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      _showParameterSpreadsheet
-          ? 'Spreadsheet parameter editor shown'
-          : 'Standard parameter editor shown',
-      Directionality.of(context),
-    );
+  void _setParameterEditorMode(SlotEditorMode mode) {
+    if (_parameterEditorMode == mode) return;
+    setState(() => _parameterEditorMode = mode);
+    SemanticsService.sendAnnouncement(View.of(context), switch (mode) {
+      SlotEditorMode.standard => 'Standard parameter editor shown',
+      SlotEditorMode.spreadsheet => 'Spreadsheet parameter editor shown',
+      SlotEditorMode.controller => 'Algorithm controller shown',
+    }, Directionality.of(context));
   }
 
   List<Widget> _buildParameterModeActions(DistingCubit cubit) {

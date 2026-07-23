@@ -14,6 +14,7 @@ import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/widgets/algorithm_controller/lua_algorithm_controller_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_spreadsheet_view.dart';
 import 'package:drift/native.dart';
 
@@ -42,6 +43,7 @@ void main() {
     cubit = MockDistingCubit();
     when(() => cubit.checkpoints).thenReturn([]);
     when(() => cubit.stream).thenAnswer((_) => const Stream.empty());
+    when(() => cubit.cpuUsageStream).thenAnswer((_) => const Stream.empty());
     when(
       () => cubit.updateParameterValue(
         algorithmIndex: any(named: 'algorithmIndex'),
@@ -563,6 +565,66 @@ void main() {
       expect(data.flagsCollection.isSelected == Tristate.isTrue, isTrue);
       semanticsHandle.dispose();
     });
+
+    testWidgets('editor choice survives the Parameters and Routing rebuild', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final platformService = MockPlatformInteractionService();
+      final slot = _euclideanSlot();
+      final state = _state(slot);
+      when(() => platformService.isMobilePlatform()).thenReturn(false);
+      when(() => cubit.state).thenReturn(state);
+      when(() => cubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<DistingCubit>.value(
+            value: cubit,
+            child: SynchronizedScreen(
+              slots: [slot],
+              algorithms: state.algorithms,
+              units: const ['Hz', 'BPM', '%'],
+              presetName: 'Test Preset',
+              distingVersion: '1.17.0',
+              firmwareVersion: FirmwareVersion('1.17.0'),
+              screenshot: Uint8List(0),
+              loading: false,
+              platformService: platformService,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('slot-editor-mode-controller')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Routing mode'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
+      expect(
+        tester
+            .widget<IconButton>(
+              find.byKey(const ValueKey('slot-editor-mode-controller')),
+            )
+            .isSelected,
+        isTrue,
+      );
+
+      await tester.tap(find.byTooltip('Routing mode'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
+    });
   });
 }
 
@@ -581,9 +643,9 @@ DistingStateSynchronized _state(Slot slot) {
     presetName: 'Test Preset',
     algorithms: [
       AlgorithmInfo(
-        algorithmIndex: 0,
-        name: 'Test Algorithm',
-        guid: 'test',
+        algorithmIndex: slot.algorithm.algorithmIndex,
+        name: slot.algorithm.name,
+        guid: slot.algorithm.guid,
         specifications: const [],
       ),
     ],
@@ -597,6 +659,31 @@ Slot _simpleSlot() {
     _parameter(0, 'Frequency', value: 10, unit: 1),
     _parameter(1, 'Level', value: 20),
   ]);
+}
+
+Slot _euclideanSlot() {
+  return _slot(
+    [
+      _parameter(
+        0,
+        '1:Enable',
+        value: 1,
+        min: 0,
+        max: 1,
+        defaultValue: 0,
+        enumValues: const ['Off', 'On'],
+      ),
+      _parameter(1, '1:Steps', value: 16, min: 1, max: 32, defaultValue: 16),
+      _parameter(2, '1:Pulses', value: 4, min: 1, max: 32, defaultValue: 4),
+      _parameter(3, '1:Rotation', value: 0, min: 0, max: 32),
+    ],
+    algorithm: Algorithm(
+      algorithmIndex: 0,
+      guid: 'eucp',
+      name: 'Euclidean Patterns',
+      specifications: const [1],
+    ),
+  );
 }
 
 Slot _signedSlot() {
@@ -624,9 +711,14 @@ Slot _manyNumericSlot() {
   ]);
 }
 
-Slot _slot(List<_ParameterFixture> fixtures, {List<ParameterPage>? pages}) {
+Slot _slot(
+  List<_ParameterFixture> fixtures, {
+  List<ParameterPage>? pages,
+  Algorithm? algorithm,
+}) {
   return Slot(
-    algorithm: Algorithm(algorithmIndex: 0, guid: 'test', name: 'Test'),
+    algorithm:
+        algorithm ?? Algorithm(algorithmIndex: 0, guid: 'test', name: 'Test'),
     routing: RoutingInfo.filler(),
     pages: ParameterPages(
       algorithmIndex: 0,

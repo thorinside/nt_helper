@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-enum SlotEditorMode { standard, spreadsheet, controller }
+import 'package:nt_helper/ui/widgets/slot_editor_mode.dart';
 
 class SlotEditorModeSelector extends StatelessWidget {
   const SlotEditorModeSelector({

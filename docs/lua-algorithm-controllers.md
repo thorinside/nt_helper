@@ -20,6 +20,9 @@ A controller is a pure function of the latest immutable `Slot` from
 5. A new slot snapshot causes Lua to run again and replace the UI document.
 
 Lua never sends MIDI or SysEx and never retains a mutable copy of slot state.
+The selected Standard, Spreadsheet, or Controller mode is owned by the
+parameter-editor state above `SlotDetailView`, so rebuilding the parameter
+workspace or toggling Routing does not reset the selection.
 
 ## Document interface
 
@@ -73,10 +76,14 @@ Layout and content:
 
 - `ui.column { children, gap, padding }`
 - `ui.row { children, gap }` — a wrapping horizontal flow
-- `ui.section { title, subtitle, children }`
+- `ui.section { title, subtitle, children }` — individually collapsible
 - `ui.text { text, style, align }`
 - `ui.divider {}`
 - `ui.spacer { size }`
+
+The slot editor's collapse-all control collapses or unfurls every `ui.section`
+while preserving the same action bar and overflow menu used by the standard
+parameter editor. Collapse state survives immutable `Slot` updates.
 
 Controls:
 

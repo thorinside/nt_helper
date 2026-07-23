@@ -3,10 +3,13 @@ import 'package:flutter/semantics.dart';
 import 'package:nt_helper/algorithm_controller/algorithm_controller.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/widgets/algorithm_controller/lua_algorithm_controller_view.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_list_view.dart';
+import 'package:nt_helper/ui/widgets/slot_editor_action_bar.dart';
+import 'package:nt_helper/ui/widgets/slot_editor_mode.dart';
 import 'package:nt_helper/ui/widgets/slot_editor_mode_selector.dart';
 
 class SlotDetailView extends StatefulWidget {
@@ -15,9 +18,9 @@ class SlotDetailView extends StatefulWidget {
   final List<String> units;
   final FirmwareVersion firmwareVersion;
   final SectionParameterController? sectionController;
-  final bool spreadsheetEditingMode;
-  final VoidCallback? onToggleSpreadsheetEditingMode;
-  final bool spreadsheetToggleEnabled;
+  final SlotEditorMode editorMode;
+  final ValueChanged<SlotEditorMode> onEditorModeChanged;
+  final bool editorModeEnabled;
 
   const SlotDetailView({
     super.key,
@@ -25,10 +28,10 @@ class SlotDetailView extends StatefulWidget {
     required this.slotIndex,
     required this.units,
     required this.firmwareVersion,
+    required this.editorMode,
+    required this.onEditorModeChanged,
     this.sectionController,
-    this.spreadsheetEditingMode = false,
-    this.onToggleSpreadsheetEditingMode,
-    this.spreadsheetToggleEnabled = true,
+    this.editorModeEnabled = true,
   });
 
   @override
@@ -37,17 +40,22 @@ class SlotDetailView extends StatefulWidget {
 
 class _SlotDetailViewState extends State<SlotDetailView>
     with AutomaticKeepAliveClientMixin {
-  bool _controllerEditingMode = false;
+  late bool _controllerSectionsCollapsed;
 
   @override
   bool get wantKeepAlive => true;
 
   @override
+  void initState() {
+    super.initState();
+    _controllerSectionsCollapsed = SettingsService().startPagesCollapsed;
+  }
+
+  @override
   void didUpdateWidget(covariant SlotDetailView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.slot.algorithm.guid != widget.slot.algorithm.guid ||
-        widget.spreadsheetEditingMode) {
-      _controllerEditingMode = false;
+    if (oldWidget.slot.algorithm.guid != widget.slot.algorithm.guid) {
+      _controllerSectionsCollapsed = SettingsService().startPagesCollapsed;
     }
   }
 
@@ -58,15 +66,14 @@ class _SlotDetailViewState extends State<SlotDetailView>
     final definition = AlgorithmControllerRegistry.bundled.findForGuid(
       widget.slot.algorithm.guid,
     );
-    final mode = widget.spreadsheetEditingMode
-        ? SlotEditorMode.spreadsheet
-        : _controllerEditingMode && definition != null
-        ? SlotEditorMode.controller
-        : SlotEditorMode.standard;
+    final mode =
+        widget.editorMode == SlotEditorMode.controller && definition == null
+        ? SlotEditorMode.standard
+        : widget.editorMode;
     final modeSelector = SlotEditorModeSelector(
       mode: mode,
       controllerName: definition?.name,
-      enabled: widget.spreadsheetToggleEnabled,
+      enabled: widget.editorModeEnabled,
       onSelected: (selectedMode) => _selectMode(selectedMode, definition),
     );
 
@@ -74,13 +81,19 @@ class _SlotDetailViewState extends State<SlotDetailView>
       return SafeArea(
         child: Column(
           children: [
-            _standaloneActionRow(modeSelector),
+            SlotEditorActionBar(
+              slot: widget.slot,
+              editorModeSelector: modeSelector,
+              sectionsCollapsed: _controllerSectionsCollapsed,
+              onToggleSections: _toggleControllerSections,
+            ),
             Expanded(
               child: LuaAlgorithmControllerView(
                 definition: definition,
                 slot: widget.slot,
                 slotIndex: widget.slotIndex,
                 units: widget.units,
+                sectionsCollapsed: _controllerSectionsCollapsed,
                 onError: _handleControllerError,
               ),
             ),
@@ -99,7 +112,11 @@ class _SlotDetailViewState extends State<SlotDetailView>
         return SafeArea(
           child: Column(
             children: [
-              _standaloneActionRow(modeSelector),
+              SlotEditorActionBar(
+                slot: widget.slot,
+                editorModeSelector: modeSelector,
+                sectionsCollapsed: false,
+              ),
               Expanded(child: view),
             ],
           ),
@@ -117,19 +134,22 @@ class _SlotDetailViewState extends State<SlotDetailView>
         units: widget.units,
         pages: widget.slot.pages,
         sectionController: widget.sectionController,
-        spreadsheetEditingMode: widget.spreadsheetEditingMode,
+        spreadsheetEditingMode: mode == SlotEditorMode.spreadsheet,
         editorModeSelector: modeSelector,
       ),
     );
   }
 
-  Widget _standaloneActionRow(Widget modeSelector) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [modeSelector],
-      ),
+  void _toggleControllerSections() {
+    setState(
+      () => _controllerSectionsCollapsed = !_controllerSectionsCollapsed,
+    );
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      _controllerSectionsCollapsed
+          ? 'All controller sections collapsed'
+          : 'All controller sections expanded',
+      TextDirection.ltr,
     );
   }
 
@@ -137,44 +157,17 @@ class _SlotDetailViewState extends State<SlotDetailView>
     SlotEditorMode mode,
     AlgorithmControllerDefinition? definition,
   ) {
-    if (!widget.spreadsheetToggleEnabled) return;
-    switch (mode) {
-      case SlotEditorMode.standard:
-        if (_controllerEditingMode) {
-          setState(() => _controllerEditingMode = false);
-        }
-        if (widget.spreadsheetEditingMode) {
-          widget.onToggleSpreadsheetEditingMode?.call();
-        }
-        return;
-      case SlotEditorMode.spreadsheet:
-        if (_controllerEditingMode) {
-          setState(() => _controllerEditingMode = false);
-        }
-        if (!widget.spreadsheetEditingMode) {
-          widget.onToggleSpreadsheetEditingMode?.call();
-        }
-        return;
-      case SlotEditorMode.controller:
-        if (definition == null) return;
-        if (widget.spreadsheetEditingMode) {
-          widget.onToggleSpreadsheetEditingMode?.call();
-        }
-        if (!_controllerEditingMode) {
-          setState(() => _controllerEditingMode = true);
-          SemanticsService.sendAnnouncement(
-            View.of(context),
-            '${definition.name} shown',
-            TextDirection.ltr,
-          );
-        }
-        return;
+    if (!widget.editorModeEnabled ||
+        mode == widget.editorMode ||
+        mode == SlotEditorMode.controller && definition == null) {
+      return;
     }
+    widget.onEditorModeChanged(mode);
   }
 
   void _handleControllerError(String message) {
-    if (!mounted || !_controllerEditingMode) return;
-    setState(() => _controllerEditingMode = false);
+    if (!mounted || widget.editorMode != SlotEditorMode.controller) return;
+    widget.onEditorModeChanged(SlotEditorMode.standard);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$message. Returned to the standard editor.')),
     );

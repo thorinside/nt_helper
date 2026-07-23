@@ -6,16 +6,14 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
-import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
-import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
-import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_spreadsheet_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
+import 'package:nt_helper/ui/widgets/slot_editor_action_bar.dart';
 
 class SectionParameterListView extends StatefulWidget {
   final Slot slot;
@@ -572,7 +570,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           ),
           child: Column(
             children: [
-              _buildActionRow(context),
+              _buildActionRow(),
               Expanded(
                 child: widget.spreadsheetEditingMode
                     ? ParameterSpreadsheetView(
@@ -590,84 +588,14 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     );
   }
 
-  Widget _buildActionRow(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          ?widget.editorModeSelector,
-          if (widget.editorModeSelector != null) const SizedBox(width: 8),
-          Tooltip(
-            message: _isCollapsed ? 'Expand all' : 'Collapse all',
-            child: IconButton.filledTonal(
-              onPressed: widget.spreadsheetEditingMode
-                  ? null
-                  : () {
-                      _collapseAllTiles();
-                    },
-              enableFeedback: true,
-              icon: _isCollapsed
-                  ? const Icon(
-                      Icons.keyboard_double_arrow_down_sharp,
-                      semanticLabel: 'Expand all',
-                    )
-                  : const Icon(
-                      Icons.keyboard_double_arrow_up_sharp,
-                      semanticLabel: 'Collapse all',
-                    ),
-            ),
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
-            itemBuilder: (context) {
-              final metadata = AlgorithmMetadataService().getAlgorithmByGuid(
-                widget.slot.algorithm.guid,
-              );
-              final bool isHelpAvailable = metadata != null;
-
-              return <PopupMenuEntry<String>>[
-                if (isHelpAvailable)
-                  PopupMenuItem(
-                    value: 'Show Help',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              AlgorithmDocumentationScreen(metadata: metadata),
-                        ),
-                      );
-                    },
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Show Help'),
-                        Icon(Icons.help_outline_rounded),
-                      ],
-                    ),
-                  ),
-                if (isHelpAvailable) const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'Reset Outputs',
-                  onTap: () {
-                    showResetOutputsDialog(
-                      context: context,
-                      initialCvInput: 0,
-                      onReset: (outputIndex) {
-                        context.read<DistingCubit>().resetOutputs(
-                          widget.slot,
-                          outputIndex,
-                        );
-                      },
-                    );
-                  },
-                  child: const Text('Reset Outputs'),
-                ),
-              ];
-            },
-          ),
-        ],
-      ),
+  Widget _buildActionRow() {
+    return SlotEditorActionBar(
+      slot: widget.slot,
+      editorModeSelector: widget.editorModeSelector,
+      sectionsCollapsed: _isCollapsed,
+      onToggleSections: widget.spreadsheetEditingMode
+          ? null
+          : _collapseAllTiles,
     );
   }
 

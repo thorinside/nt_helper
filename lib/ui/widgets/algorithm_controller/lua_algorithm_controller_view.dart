@@ -18,6 +18,7 @@ class LuaAlgorithmControllerView extends StatefulWidget {
     required this.slotIndex,
     required this.units,
     this.engine = const LuaAlgorithmControllerEngine(),
+    this.sectionsCollapsed = false,
     this.sourceLoader,
     this.onError,
   });
@@ -27,6 +28,7 @@ class LuaAlgorithmControllerView extends StatefulWidget {
   final int slotIndex;
   final List<String> units;
   final LuaAlgorithmControllerEngine engine;
+  final bool sectionsCollapsed;
   final AlgorithmControllerSourceLoader? sourceLoader;
   final ValueChanged<String>? onError;
 
@@ -162,6 +164,7 @@ class _LuaAlgorithmControllerViewState
       document: document,
       slot: widget.slot,
       slotIndex: widget.slotIndex,
+      sectionsCollapsed: widget.sectionsCollapsed,
     );
   }
 }
@@ -172,11 +175,13 @@ class AlgorithmControllerDocumentView extends StatelessWidget {
     required this.document,
     required this.slot,
     required this.slotIndex,
+    this.sectionsCollapsed = false,
   });
 
   final AlgorithmControllerDocument document;
   final Slot slot;
   final int slotIndex;
+  final bool sectionsCollapsed;
 
   @override
   Widget build(BuildContext context) {
@@ -195,20 +200,27 @@ class AlgorithmControllerDocumentView extends StatelessWidget {
               ),
             ),
           ),
-          _buildNode(context, document.root),
+          _buildNode(context, document.root, path: 'root'),
         ],
       ),
     );
   }
 
-  Widget _buildNode(BuildContext context, AlgorithmControllerNode node) {
+  Widget _buildNode(
+    BuildContext context,
+    AlgorithmControllerNode node, {
+    required String path,
+  }) {
     return switch (node) {
       AlgorithmControllerColumn node => Padding(
         padding: EdgeInsets.all(node.padding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: _withGaps(
-            node.children.map((child) => _buildNode(context, child)).toList(),
+            [
+              for (var index = 0; index < node.children.length; index++)
+                _buildNode(context, node.children[index], path: '$path/$index'),
+            ],
             node.gap,
             Axis.vertical,
           ),
@@ -219,10 +231,11 @@ class AlgorithmControllerDocumentView extends StatelessWidget {
         runSpacing: node.gap,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          for (final child in node.children) _buildNode(context, child),
+          for (var index = 0; index < node.children.length; index++)
+            _buildNode(context, node.children[index], path: '$path/$index'),
         ],
       ),
-      AlgorithmControllerSection node => _buildSection(context, node),
+      AlgorithmControllerSection node => _buildSection(context, node, path),
       AlgorithmControllerText node => _buildText(context, node),
       AlgorithmControllerSlider node => _buildSlider(context, node),
       AlgorithmControllerToggle node => _buildToggle(context, node),
@@ -233,37 +246,43 @@ class AlgorithmControllerDocumentView extends StatelessWidget {
     };
   }
 
-  Widget _buildSection(BuildContext context, AlgorithmControllerSection node) {
+  Widget _buildSection(
+    BuildContext context,
+    AlgorithmControllerSection node,
+    String path,
+  ) {
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Semantics(
-              header: true,
-              child: Text(
-                node.title,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+      child: ExpansionTile(
+        key: ValueKey('algorithm-controller-section:$path:$sectionsCollapsed'),
+        initiallyExpanded: !sectionsCollapsed,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: const RoundedRectangleBorder(side: BorderSide.none),
+        collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
+        title: Semantics(
+          header: true,
+          child: Text(
+            node.title,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+        subtitle: switch (node.subtitle) {
+          final subtitle? => Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            if (node.subtitle case final subtitle?) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            ..._withGaps(
-              node.children.map((child) => _buildNode(context, child)).toList(),
-              10,
-              Axis.vertical,
-            ),
+          ),
+          null => null,
+        },
+        children: _withGaps(
+          [
+            for (var index = 0; index < node.children.length; index++)
+              _buildNode(context, node.children[index], path: '$path/$index'),
           ],
+          10,
+          Axis.vertical,
         ),
       ),
     );

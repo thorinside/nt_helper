@@ -8,6 +8,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/widgets/algorithm_controller/lua_algorithm_controller_view.dart';
 import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
+import 'package:nt_helper/ui/widgets/slot_editor_mode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}
@@ -195,12 +196,11 @@ return {
         home: BlocProvider<DistingCubit>.value(
           value: cubit,
           child: Scaffold(
-            body: SlotDetailView(
+            body: _SlotDetailHarness(
               slot: slot,
               slotIndex: 2,
               units: const [],
               firmwareVersion: FirmwareVersion('1.17.0'),
-              onToggleSpreadsheetEditingMode: () {},
             ),
           ),
         ),
@@ -223,6 +223,21 @@ return {
     expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
     expect(controllerButton().isSelected, isTrue);
     expect(find.text('16 steps · 4 pulses · rotation 0'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('slot-editor-collapse-toggle')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('slot-editor-more-options')),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Collapse all'), findsOneWidget);
+    expect(find.text('Steps'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('slot-editor-collapse-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Expand all'), findsOneWidget);
+    expect(find.text('Steps'), findsNothing);
 
     await tester.pumpWidget(app(_slot(steps: 9, emptyPages: true)));
     await tester.pumpAndSettle();
@@ -230,11 +245,58 @@ return {
     expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
     expect(controllerButton().isSelected, isTrue);
     expect(find.text('9 steps · 4 pulses · rotation 0'), findsOneWidget);
+    expect(find.byTooltip('Expand all'), findsOneWidget);
+    expect(find.text('Steps'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('slot-editor-collapse-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Collapse all'), findsOneWidget);
+    expect(find.text('Steps'), findsOneWidget);
+
+    await tester.tap(find.text('Channel 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Steps'), findsNothing);
+    await tester.tap(find.text('Channel 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Steps'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('slot-editor-mode-standard')));
     await tester.pumpAndSettle();
     expect(find.byType(LuaAlgorithmControllerView), findsNothing);
   });
+}
+
+class _SlotDetailHarness extends StatefulWidget {
+  const _SlotDetailHarness({
+    required this.slot,
+    required this.slotIndex,
+    required this.units,
+    required this.firmwareVersion,
+  });
+
+  final Slot slot;
+  final int slotIndex;
+  final List<String> units;
+  final FirmwareVersion firmwareVersion;
+
+  @override
+  State<_SlotDetailHarness> createState() => _SlotDetailHarnessState();
+}
+
+class _SlotDetailHarnessState extends State<_SlotDetailHarness> {
+  SlotEditorMode _mode = SlotEditorMode.standard;
+
+  @override
+  Widget build(BuildContext context) {
+    return SlotDetailView(
+      slot: widget.slot,
+      slotIndex: widget.slotIndex,
+      units: widget.units,
+      firmwareVersion: widget.firmwareVersion,
+      editorMode: _mode,
+      onEditorModeChanged: (mode) => setState(() => _mode = mode),
+    );
+  }
 }
 
 Widget _host(
