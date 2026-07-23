@@ -61,6 +61,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/widgets/algorithm_list_view.dart';
+import 'package:nt_helper/ui/widgets/algorithm_controller/algorithm_controller_section_controller.dart';
 import 'package:nt_helper/ui/widgets/disting_version.dart';
 import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
 import 'package:nt_helper/ui/widgets/slot_editor_mode.dart';
@@ -77,6 +78,11 @@ import 'package:nt_helper/services/app_update_service.dart';
 import 'package:nt_helper/utils/build_config.dart';
 
 enum EditMode { parameters, routing, both }
+
+typedef _AlgorithmControllerSectionsEntry = ({
+  String guid,
+  AlgorithmControllerSectionController controller,
+});
 
 /// Help text for algorithm name interactions
 const String _algorithmNameHelpText =
@@ -148,6 +154,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   ChatCubit? _chatCubit;
   final SectionParameterController _sectionController =
       SectionParameterController();
+  final _algorithmControllerSections =
+      <int, _AlgorithmControllerSectionsEntry>{};
 
   /// Slot indices selected via shift-click for the algorithm clipboard (Mod+C).
   /// A [ValueNotifier] so individual tab indicators can rebuild without
@@ -283,6 +291,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     _routingEditorCubit?.close();
     _chatCubit?.close();
     _sectionController.dispose();
+    for (final entry in _algorithmControllerSections.values) {
+      entry.controller.dispose();
+    }
+    _algorithmControllerSections.clear();
     _clipboardSelection.dispose();
     super.dispose();
   }
@@ -316,6 +328,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   @override
   void didUpdateWidget(SynchronizedScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _discardStaleAlgorithmControllerSections();
     if (widget.slots.length != oldWidget.slots.length) {
       _tabController.dispose();
       _tabController = TabController(length: widget.slots.length, vsync: this);
@@ -341,6 +354,52 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       }
       _tabController.index = newIndex;
     }
+  }
+
+  AlgorithmControllerSectionController _algorithmControllerSectionsFor(
+    int slotIndex,
+    Slot slot,
+  ) {
+    final existing = _algorithmControllerSections[slotIndex];
+    if (existing != null && existing.guid == slot.algorithm.guid) {
+      return existing.controller;
+    }
+    if (existing != null) {
+      _algorithmControllerSections.remove(slotIndex);
+      _disposeAlgorithmControllerSectionsAfterFrame(existing.controller);
+    }
+
+    final controller = AlgorithmControllerSectionController(
+      initiallyCollapsed: SettingsService().startPagesCollapsed,
+    );
+    _algorithmControllerSections[slotIndex] = (
+      guid: slot.algorithm.guid,
+      controller: controller,
+    );
+    return controller;
+  }
+
+  void _discardStaleAlgorithmControllerSections() {
+    final staleIndices = _algorithmControllerSections.entries
+        .where(
+          (entry) =>
+              entry.key >= widget.slots.length ||
+              widget.slots[entry.key].algorithm.guid != entry.value.guid,
+        )
+        .map((entry) => entry.key)
+        .toList();
+    for (final slotIndex in staleIndices) {
+      final removed = _algorithmControllerSections.remove(slotIndex);
+      if (removed != null) {
+        _disposeAlgorithmControllerSectionsAfterFrame(removed.controller);
+      }
+    }
+  }
+
+  void _disposeAlgorithmControllerSectionsAfterFrame(
+    AlgorithmControllerSectionController controller,
+  ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
   }
 
   void _handleTabSelection() {
@@ -1058,6 +1117,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       units: widget.units,
                       firmwareVersion: widget.firmwareVersion,
                       sectionController: _sectionController,
+                      algorithmControllerSections:
+                          _algorithmControllerSectionsFor(index, slot),
                       editorMode: _parameterEditorMode,
                       onEditorModeChanged: _setParameterEditorMode,
                       editorModeEnabled: !widget.loading,
@@ -1931,6 +1992,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             units: widget.units,
             firmwareVersion: widget.firmwareVersion,
             sectionController: _sectionController,
+            algorithmControllerSections: _algorithmControllerSectionsFor(
+              index,
+              slot,
+            ),
             editorMode: _parameterEditorMode,
             onEditorModeChanged: _setParameterEditorMode,
             editorModeEnabled: !widget.loading,

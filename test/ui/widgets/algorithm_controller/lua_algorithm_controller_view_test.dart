@@ -6,6 +6,7 @@ import 'package:nt_helper/algorithm_controller/algorithm_controller.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/ui/widgets/algorithm_controller/algorithm_controller_section_controller.dart';
 import 'package:nt_helper/ui/widgets/algorithm_controller/lua_algorithm_controller_view.dart';
 import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
 import 'package:nt_helper/ui/widgets/slot_editor_mode.dart';
@@ -31,6 +32,39 @@ void main() {
         userIsChangingTheValue: any(named: 'userIsChangingTheValue'),
       ),
     ).thenAnswer((_) async {});
+  });
+
+  test('section state disposes its expansion controllers', () {
+    final sectionState = AlgorithmControllerSectionController(
+      initiallyCollapsed: false,
+    );
+    sectionState.synchronizeSections(const [
+      (path: 'root/0', title: 'First section'),
+    ]);
+    final expansionController = sectionState.controllerFor('root/0');
+
+    sectionState.dispose();
+
+    expect(() => expansionController.addListener(() {}), throwsFlutterError);
+  });
+
+  testWidgets('section state disposes controllers removed by a new document', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const SizedBox());
+    final sectionState = AlgorithmControllerSectionController(
+      initiallyCollapsed: false,
+    );
+    sectionState.synchronizeSections(const [
+      (path: 'root/0', title: 'Removed section'),
+    ]);
+    final expansionController = sectionState.controllerFor('root/0');
+
+    sectionState.synchronizeSections(const []);
+    await tester.pump();
+
+    expect(() => expansionController.addListener(() {}), throwsFlutterError);
+    sectionState.dispose();
   });
 
   testWidgets('re-evaluates Lua when a new immutable Slot arrives', (
@@ -285,6 +319,14 @@ class _SlotDetailHarness extends StatefulWidget {
 
 class _SlotDetailHarnessState extends State<_SlotDetailHarness> {
   SlotEditorMode _mode = SlotEditorMode.standard;
+  late final AlgorithmControllerSectionController _sectionController =
+      AlgorithmControllerSectionController(initiallyCollapsed: false);
+
+  @override
+  void dispose() {
+    _sectionController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -293,6 +335,7 @@ class _SlotDetailHarnessState extends State<_SlotDetailHarness> {
       slotIndex: widget.slotIndex,
       units: widget.units,
       firmwareVersion: widget.firmwareVersion,
+      algorithmControllerSections: _sectionController,
       editorMode: _mode,
       onEditorModeChanged: (mode) => setState(() => _mode = mode),
     );
@@ -305,25 +348,66 @@ Widget _host(
   String source, {
   AlgorithmControllerSourceLoader? sourceLoader,
 }) {
-  return MaterialApp(
-    home: BlocProvider<DistingCubit>.value(
-      value: cubit,
-      child: Scaffold(
-        body: LuaAlgorithmControllerView(
-          definition: const AlgorithmControllerDefinition(
-            id: 'test.controller',
-            algorithmGuid: 'eucp',
-            name: 'Test controller',
-            assetPath: 'memory.lua',
+  return _LuaAlgorithmControllerHarness(
+    cubit: cubit,
+    slot: slot,
+    source: source,
+    sourceLoader: sourceLoader,
+  );
+}
+
+class _LuaAlgorithmControllerHarness extends StatefulWidget {
+  const _LuaAlgorithmControllerHarness({
+    required this.cubit,
+    required this.slot,
+    required this.source,
+    this.sourceLoader,
+  });
+
+  final MockDistingCubit cubit;
+  final Slot slot;
+  final String source;
+  final AlgorithmControllerSourceLoader? sourceLoader;
+
+  @override
+  State<_LuaAlgorithmControllerHarness> createState() =>
+      _LuaAlgorithmControllerHarnessState();
+}
+
+class _LuaAlgorithmControllerHarnessState
+    extends State<_LuaAlgorithmControllerHarness> {
+  late final AlgorithmControllerSectionController _sectionController =
+      AlgorithmControllerSectionController(initiallyCollapsed: false);
+
+  @override
+  void dispose() {
+    _sectionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: BlocProvider<DistingCubit>.value(
+        value: widget.cubit,
+        child: Scaffold(
+          body: LuaAlgorithmControllerView(
+            definition: const AlgorithmControllerDefinition(
+              id: 'test.controller',
+              algorithmGuid: 'eucp',
+              name: 'Test controller',
+              assetPath: 'memory.lua',
+            ),
+            slot: widget.slot,
+            slotIndex: 2,
+            units: const [],
+            sectionController: _sectionController,
+            sourceLoader: widget.sourceLoader ?? (_) async => widget.source,
           ),
-          slot: slot,
-          slotIndex: 2,
-          units: const [],
-          sourceLoader: sourceLoader ?? (_) async => source,
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 Slot _slot({int steps = 16, bool emptyPages = false}) {

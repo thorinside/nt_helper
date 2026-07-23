@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:nt_helper/algorithm_controller/algorithm_controller.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
-import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
+import 'package:nt_helper/ui/widgets/algorithm_controller/algorithm_controller_section_controller.dart';
 import 'package:nt_helper/ui/widgets/algorithm_controller/lua_algorithm_controller_view.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_list_view.dart';
@@ -18,6 +20,7 @@ class SlotDetailView extends StatefulWidget {
   final List<String> units;
   final FirmwareVersion firmwareVersion;
   final SectionParameterController? sectionController;
+  final AlgorithmControllerSectionController algorithmControllerSections;
   final SlotEditorMode editorMode;
   final ValueChanged<SlotEditorMode> onEditorModeChanged;
   final bool editorModeEnabled;
@@ -28,6 +31,7 @@ class SlotDetailView extends StatefulWidget {
     required this.slotIndex,
     required this.units,
     required this.firmwareVersion,
+    required this.algorithmControllerSections,
     required this.editorMode,
     required this.onEditorModeChanged,
     this.sectionController,
@@ -40,7 +44,7 @@ class SlotDetailView extends StatefulWidget {
 
 class _SlotDetailViewState extends State<SlotDetailView>
     with AutomaticKeepAliveClientMixin {
-  late bool _controllerSectionsCollapsed;
+  StreamSubscription<({int slotIndex, int pageIndex})>? _sectionControllerSub;
 
   @override
   bool get wantKeepAlive => true;
@@ -48,15 +52,36 @@ class _SlotDetailViewState extends State<SlotDetailView>
   @override
   void initState() {
     super.initState();
-    _controllerSectionsCollapsed = SettingsService().startPagesCollapsed;
+    widget.algorithmControllerSections.addListener(
+      _handleControllerSectionsChanged,
+    );
+    _subscribeSectionController();
   }
 
   @override
   void didUpdateWidget(covariant SlotDetailView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.slot.algorithm.guid != widget.slot.algorithm.guid) {
-      _controllerSectionsCollapsed = SettingsService().startPagesCollapsed;
+    if (oldWidget.algorithmControllerSections !=
+        widget.algorithmControllerSections) {
+      oldWidget.algorithmControllerSections.removeListener(
+        _handleControllerSectionsChanged,
+      );
+      widget.algorithmControllerSections.addListener(
+        _handleControllerSectionsChanged,
+      );
     }
+    if (oldWidget.sectionController != widget.sectionController) {
+      _subscribeSectionController();
+    }
+  }
+
+  @override
+  void dispose() {
+    _sectionControllerSub?.cancel();
+    widget.algorithmControllerSections.removeListener(
+      _handleControllerSectionsChanged,
+    );
+    super.dispose();
   }
 
   @override
@@ -84,7 +109,8 @@ class _SlotDetailViewState extends State<SlotDetailView>
             SlotEditorActionBar(
               slot: widget.slot,
               editorModeSelector: modeSelector,
-              sectionsCollapsed: _controllerSectionsCollapsed,
+              sectionsCollapsed:
+                  widget.algorithmControllerSections.sectionsCollapsed,
               onToggleSections: _toggleControllerSections,
             ),
             Expanded(
@@ -93,7 +119,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
                 slot: widget.slot,
                 slotIndex: widget.slotIndex,
                 units: widget.units,
-                sectionsCollapsed: _controllerSectionsCollapsed,
+                sectionController: widget.algorithmControllerSections,
                 onError: _handleControllerError,
               ),
             ),
@@ -141,16 +167,43 @@ class _SlotDetailViewState extends State<SlotDetailView>
   }
 
   void _toggleControllerSections() {
-    setState(
-      () => _controllerSectionsCollapsed = !_controllerSectionsCollapsed,
-    );
+    widget.algorithmControllerSections.toggleAll();
     SemanticsService.sendAnnouncement(
       View.of(context),
-      _controllerSectionsCollapsed
+      widget.algorithmControllerSections.sectionsCollapsed
           ? 'All controller sections collapsed'
           : 'All controller sections expanded',
       TextDirection.ltr,
     );
+  }
+
+  void _subscribeSectionController() {
+    _sectionControllerSub?.cancel();
+    _sectionControllerSub = widget.sectionController?.stream.listen((event) {
+      if (!mounted ||
+          event.slotIndex != widget.slotIndex ||
+          widget.editorMode != SlotEditorMode.controller ||
+          AlgorithmControllerRegistry.bundled.findForGuid(
+                widget.slot.algorithm.guid,
+              ) ==
+              null) {
+        return;
+      }
+
+      final title = widget.algorithmControllerSections.showOnlySection(
+        event.pageIndex,
+      );
+      if (title == null) return;
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        '$title controller section expanded',
+        Directionality.of(context),
+      );
+    });
+  }
+
+  void _handleControllerSectionsChanged() {
+    if (mounted) setState(() {});
   }
 
   void _selectMode(

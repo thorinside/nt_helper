@@ -566,7 +566,7 @@ void main() {
       semanticsHandle.dispose();
     });
 
-    testWidgets('editor choice survives the Parameters and Routing rebuild', (
+    testWidgets('Lua section state and hotkeys survive Routing rebuild', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(1400, 900);
@@ -609,9 +609,44 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
 
+      List<ExpansionTile> controllerSections() {
+        return tester
+            .widgetList<ExpansionTile>(
+              find.descendant(
+                of: find.byType(LuaAlgorithmControllerView),
+                matching: find.byType(ExpansionTile),
+              ),
+            )
+            .toList();
+      }
+
+      expect(controllerSections(), hasLength(2));
+      expect(
+        controllerSections().map((section) => section.controller!.isExpanded),
+        everyElement(isTrue),
+      );
+
+      await tester.tap(find.byTooltip('Collapse all'));
+      await tester.pumpAndSettle();
+      expect(
+        controllerSections().map((section) => section.controller!.isExpanded),
+        everyElement(isFalse),
+      );
+
+      await tester.tap(find.text('Channel 2'));
+      await tester.pumpAndSettle();
+      expect(
+        controllerSections().map((section) => section.controller!.isExpanded),
+        [isFalse, isTrue],
+      );
+
       await tester.tap(find.byTooltip('Routing mode'));
       await tester.pumpAndSettle();
       expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
+      expect(
+        controllerSections().map((section) => section.controller!.isExpanded),
+        [isFalse, isTrue],
+      );
       expect(
         tester
             .widget<IconButton>(
@@ -624,6 +659,24 @@ void main() {
       await tester.tap(find.byTooltip('Routing mode'));
       await tester.pumpAndSettle();
       expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
+      expect(
+        controllerSections().map((section) => section.controller!.isExpanded),
+        [isFalse, isTrue],
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+      await tester.pumpAndSettle();
+      expect(
+        controllerSections().map((section) => section.controller!.isExpanded),
+        [isTrue, isFalse],
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit9);
+      await tester.pumpAndSettle();
+      expect(
+        controllerSections().map((section) => section.controller!.isExpanded),
+        [isTrue, isFalse],
+      );
     });
   });
 }
@@ -661,27 +714,49 @@ Slot _simpleSlot() {
   ]);
 }
 
-Slot _euclideanSlot() {
+Slot _euclideanSlot({int channelCount = 2}) {
   return _slot(
     [
-      _parameter(
-        0,
-        '1:Enable',
-        value: 1,
-        min: 0,
-        max: 1,
-        defaultValue: 0,
-        enumValues: const ['Off', 'On'],
-      ),
-      _parameter(1, '1:Steps', value: 16, min: 1, max: 32, defaultValue: 16),
-      _parameter(2, '1:Pulses', value: 4, min: 1, max: 32, defaultValue: 4),
-      _parameter(3, '1:Rotation', value: 0, min: 0, max: 32),
+      for (var channel = 1; channel <= channelCount; channel++) ...[
+        _parameter(
+          (channel - 1) * 4,
+          '$channel:Enable',
+          value: 1,
+          min: 0,
+          max: 1,
+          defaultValue: 0,
+          enumValues: const ['Off', 'On'],
+        ),
+        _parameter(
+          (channel - 1) * 4 + 1,
+          '$channel:Steps',
+          value: channel == 1 ? 16 : 12,
+          min: 1,
+          max: 32,
+          defaultValue: 16,
+        ),
+        _parameter(
+          (channel - 1) * 4 + 2,
+          '$channel:Pulses',
+          value: channel == 1 ? 4 : 5,
+          min: 1,
+          max: 32,
+          defaultValue: 4,
+        ),
+        _parameter(
+          (channel - 1) * 4 + 3,
+          '$channel:Rotation',
+          value: channel == 1 ? 0 : 2,
+          min: 0,
+          max: 32,
+        ),
+      ],
     ],
     algorithm: Algorithm(
       algorithmIndex: 0,
       guid: 'eucp',
       name: 'Euclidean Patterns',
-      specifications: const [1],
+      specifications: [channelCount],
     ),
   );
 }

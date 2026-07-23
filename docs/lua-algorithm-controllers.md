@@ -83,7 +83,11 @@ Layout and content:
 
 The slot editor's collapse-all control collapses or unfurls every `ui.section`
 while preserving the same action bar and overflow menu used by the standard
-parameter editor. Collapse state survives immutable `Slot` updates.
+parameter editor. Number keys use the standard parameter-editor behavior:
+`1` selects the first section through `9` for the ninth and `0` for the tenth,
+expanding that section while collapsing its peers. Individual and global
+section state survives immutable `Slot` updates and Parameters/Routing layout
+changes.
 
 Controls:
 

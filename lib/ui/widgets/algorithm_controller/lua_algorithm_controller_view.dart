@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/algorithm_controller/algorithm_controller.dart';
 import 'package:nt_helper/algorithm_controller/lua_algorithm_controller_engine.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/ui/widgets/algorithm_controller/algorithm_controller_section_controller.dart';
 
 typedef AlgorithmControllerSourceLoader = Future<String> Function(String path);
 
@@ -17,8 +18,8 @@ class LuaAlgorithmControllerView extends StatefulWidget {
     required this.slot,
     required this.slotIndex,
     required this.units,
+    required this.sectionController,
     this.engine = const LuaAlgorithmControllerEngine(),
-    this.sectionsCollapsed = false,
     this.sourceLoader,
     this.onError,
   });
@@ -27,8 +28,8 @@ class LuaAlgorithmControllerView extends StatefulWidget {
   final Slot slot;
   final int slotIndex;
   final List<String> units;
+  final AlgorithmControllerSectionController sectionController;
   final LuaAlgorithmControllerEngine engine;
-  final bool sectionsCollapsed;
   final AlgorithmControllerSourceLoader? sourceLoader;
   final ValueChanged<String>? onError;
 
@@ -164,24 +165,111 @@ class _LuaAlgorithmControllerViewState
       document: document,
       slot: widget.slot,
       slotIndex: widget.slotIndex,
-      sectionsCollapsed: widget.sectionsCollapsed,
+      sectionController: widget.sectionController,
     );
   }
 }
 
-class AlgorithmControllerDocumentView extends StatelessWidget {
+class AlgorithmControllerDocumentView extends StatefulWidget {
   const AlgorithmControllerDocumentView({
     super.key,
     required this.document,
     required this.slot,
     required this.slotIndex,
-    this.sectionsCollapsed = false,
+    required this.sectionController,
   });
 
   final AlgorithmControllerDocument document;
   final Slot slot;
   final int slotIndex;
-  final bool sectionsCollapsed;
+  final AlgorithmControllerSectionController sectionController;
+
+  @override
+  State<AlgorithmControllerDocumentView> createState() =>
+      _AlgorithmControllerDocumentViewState();
+}
+
+class _AlgorithmControllerDocumentViewState
+    extends State<AlgorithmControllerDocumentView> {
+  @override
+  void initState() {
+    super.initState();
+    _synchronizeSections();
+  }
+
+  @override
+  void didUpdateWidget(covariant AlgorithmControllerDocumentView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.document, widget.document) ||
+        oldWidget.sectionController != widget.sectionController) {
+      _synchronizeSections();
+    }
+  }
+
+  void _synchronizeSections() {
+    final sections = <AlgorithmControllerSectionReference>[];
+    _collectSections(widget.document.root, path: 'root', sections: sections);
+    widget.sectionController.synchronizeSections(sections);
+  }
+
+  void _collectSections(
+    AlgorithmControllerNode node, {
+    required String path,
+    required List<AlgorithmControllerSectionReference> sections,
+  }) {
+    switch (node) {
+      case AlgorithmControllerColumn(:final children):
+      case AlgorithmControllerRow(:final children):
+        for (var index = 0; index < children.length; index++) {
+          _collectSections(
+            children[index],
+            path: '$path/$index',
+            sections: sections,
+          );
+        }
+      case AlgorithmControllerSection(:final title, :final children):
+        sections.add((path: path, title: title));
+        for (var index = 0; index < children.length; index++) {
+          _collectSections(
+            children[index],
+            path: '$path/$index',
+            sections: sections,
+          );
+        }
+      case AlgorithmControllerText():
+      case AlgorithmControllerSlider():
+      case AlgorithmControllerToggle():
+      case AlgorithmControllerButton():
+      case AlgorithmControllerDivider():
+      case AlgorithmControllerSpacer():
+      case AlgorithmControllerCanvas():
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _AlgorithmControllerDocumentBody(
+      document: widget.document,
+      slot: widget.slot,
+      slotIndex: widget.slotIndex,
+      sectionController: widget.sectionController,
+    );
+  }
+}
+
+class _AlgorithmControllerDocumentBody extends StatelessWidget {
+  const _AlgorithmControllerDocumentBody({
+    required this.document,
+    required this.slot,
+    required this.slotIndex,
+    required this.sectionController,
+  });
+
+  final AlgorithmControllerDocument document;
+  final Slot slot;
+  final int slotIndex;
+  final AlgorithmControllerSectionController sectionController;
 
   @override
   Widget build(BuildContext context) {
@@ -251,11 +339,13 @@ class AlgorithmControllerDocumentView extends StatelessWidget {
     AlgorithmControllerSection node,
     String path,
   ) {
+    final expansionController = sectionController.controllerFor(path);
     return Card(
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
-        key: ValueKey('algorithm-controller-section:$path:$sectionsCollapsed'),
-        initiallyExpanded: !sectionsCollapsed,
+        key: ValueKey('algorithm-controller-section:$path'),
+        controller: expansionController,
+        initiallyExpanded: expansionController.isExpanded,
         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         shape: const RoundedRectangleBorder(side: BorderSide.none),
