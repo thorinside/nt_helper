@@ -20,6 +20,44 @@ local function display_value(parameter)
   return text
 end
 
+local function greatest_common_divisor(left, right)
+  left = math.abs(math.floor(left))
+  right = math.abs(math.floor(right))
+  while right ~= 0 do
+    local remainder = left % right
+    left = right
+    right = remainder
+  end
+  return math.max(1, left)
+end
+
+local function reduced_ratio(numerator, denominator)
+  local divisor = greatest_common_divisor(numerator, denominator)
+  return tostring(math.floor(numerator / divisor)) .. "/" ..
+    tostring(math.floor(denominator / divisor))
+end
+
+local function format_frequency(frequency)
+  if frequency == nil then return "Frequency unavailable" end
+  return string.format("%.2f Hz", frequency)
+end
+
+local fundamental = nt.parameter("Fundamental")
+local octave = nt.parameter("Octave")
+local transpose = nt.parameter("Transpose")
+local configured_fundamental = nil
+if fundamental ~= nil then
+  configured_fundamental =
+    fundamental.value * (10 ^ (fundamental.power_of_ten or 0))
+  if octave ~= nil then
+    configured_fundamental = configured_fundamental * (2 ^ octave.value)
+  end
+  if transpose ~= nil then
+    configured_fundamental =
+      configured_fundamental * (2 ^ (transpose.value / 12))
+  end
+end
+
 local denominator = nt.parameter("Denominator")
 local tones = {}
 for tone = 0, 4 do
@@ -28,106 +66,53 @@ for tone = 0, 4 do
   local gain = nt.parameter("Gain " .. tone)
   if gate ~= nil and gain ~= nil and
       (tone == 0 or numerator ~= nil) and denominator ~= nil then
+    local ratio = tone == 0 and 1 or numerator.value / denominator.value
+    local frequency = nil
+    if configured_fundamental ~= nil then
+      frequency = configured_fundamental * ratio
+    end
     table.insert(tones, {
       number = tone,
       numerator = numerator,
       gate = gate,
       gain = gain,
       pan = tone == 0 and nil or nt.parameter("Pan " .. tone),
-      ratio = tone == 0 and 1 or numerator.value / denominator.value
+      ratio_text = tone == 0 and "1/1" or
+        reduced_ratio(numerator.value, denominator.value),
+      frequency = frequency
     })
   end
 end
 
-local function ratio_shapes()
-  local shapes = {
-    ui.rect {
-      x = 0,
-      y = 0.04,
-      width = 1,
-      height = 0.92,
-      radius = 0.08,
-      fill = "surface_container_highest"
-    },
-    ui.line {
-      x1 = 0.06,
-      y1 = 0.86,
-      x2 = 0.94,
-      y2 = 0.86,
-      stroke = "outline"
-    }
-  }
-
-  local minimum_log = nil
-  local maximum_log = nil
-  for _, tone in ipairs(tones) do
-    local log_ratio = math.log(math.max(0.000001, tone.ratio))
-    tone.log_ratio = log_ratio
-    minimum_log = minimum_log == nil and log_ratio or
-      math.min(minimum_log, log_ratio)
-    maximum_log = maximum_log == nil and log_ratio or
-      math.max(maximum_log, log_ratio)
-  end
-  local span = math.max(0.000001, maximum_log - minimum_log)
-
-  for index, tone in ipairs(tones) do
-    local x = #tones == 1 and 0.5 or
-      0.08 + ((index - 1) / (#tones - 1)) * 0.84
-    local ratio_position = (tone.log_ratio - minimum_log) / span
-    if maximum_log == minimum_log then ratio_position = 0.5 end
-    local y = 0.76 - ratio_position * 0.56
-    local gain_range = math.max(1, tone.gain.maximum - tone.gain.minimum)
-    local gain_position = math.max(
-      0,
-      math.min(1, (tone.gain.value - tone.gain.minimum) / gain_range)
-    )
-    local active = tone.gate.value ~= 0
-
-    table.insert(shapes, ui.line {
-      x1 = x,
-      y1 = 0.86,
-      x2 = x,
-      y2 = y,
-      stroke = active and "primary" or "outline",
-      stroke_width = active and 3 or 1
-    })
-    table.insert(shapes, ui.circle {
-      x = x,
-      y = y,
-      radius = 0.025 + gain_position * 0.026,
-      fill = active and "primary" or "surface",
-      stroke = active and "primary" or "outline",
-      stroke_width = active and 2 or 1
-    })
-  end
-  return shapes
+local function tone_name(tone)
+  return tone.number == 0 and "Fundamental" or "Tone " .. tone.number
 end
 
-local function ratio_semantics()
-  local descriptions = {}
-  for _, tone in ipairs(tones) do
-    local ratio = tone.number == 0 and "1 to 1" or
-      display_value(tone.numerator) .. " to " .. display_value(denominator)
-    table.insert(
-      descriptions,
-      (tone.number == 0 and "fundamental" or "tone " .. tone.number) ..
-        " ratio " .. ratio .. ", gain " .. display_value(tone.gain) ..
-        ", gate " .. display_value(tone.gate)
-    )
-  end
-  return "Illustrative configured frequency-ratio map: " ..
-    table.concat(descriptions, "; ") ..
-    ". Vertical position represents relative pitch, circle size represents " ..
-    "configured gain, and filled circles have their gate enabled; this is " ..
-    "not live phase or audio."
+local function gate_state(tone)
+  return tone.gate.value == 0 and "Off" or "On"
+end
+
+local function tone_summary(tone)
+  return format_frequency(tone.frequency) .. " · " .. tone.ratio_text ..
+    " · Gate " .. gate_state(tone)
 end
 
 local root_children = {}
 if #tones > 0 then
-  table.insert(root_children, ui.canvas {
-    semantics_label = ratio_semantics(),
-    aspect_ratio = 5.5,
-    shapes = ratio_shapes()
+  local voice_readouts = {}
+  for _, tone in ipairs(tones) do
+    table.insert(voice_readouts, ui.text {
+      text = tone_name(tone) .. "\n" ..
+        format_frequency(tone.frequency) .. "\n" ..
+        tone.ratio_text .. "\n" ..
+        "Gate " .. gate_state(tone),
+      style = "caption",
+      align = "center"
+    })
+  end
+  table.insert(root_children, ui.row {
+    gap = 20,
+    children = voice_readouts
   })
 end
 
@@ -181,13 +166,10 @@ for prime = 1, 4 do
   end
 end
 if #tuning_children > 0 then
-  local fundamental = nt.parameter("Fundamental")
-  local octave = nt.parameter("Octave")
   table.insert(root_children, ui.section {
     title = "Tuning",
-    subtitle = fundamental ~= nil and
-      (display_value(fundamental) ..
-        (octave ~= nil and " · octave " .. display_value(octave) or "")) or nil,
+    subtitle = configured_fundamental ~= nil and
+      format_frequency(configured_fundamental) or nil,
     children = tuning_children
   })
 end
@@ -215,12 +197,9 @@ for _, tone in ipairs(tones) do
     })
   end
 
-  local ratio = tone.number == 0 and "1/1" or
-    display_value(tone.numerator) .. "/" .. display_value(denominator)
-  local state = "gate " .. display_value(tone.gate)
   table.insert(root_children, ui.section {
-    title = tone.number == 0 and "Fundamental" or "Tone " .. tone.number,
-    subtitle = ratio .. " · " .. display_value(tone.gain) .. " · " .. state,
+    title = tone_name(tone),
+    subtitle = tone_summary(tone),
     children = children
   })
 end

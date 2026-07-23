@@ -47,11 +47,6 @@ void main() {
           asset: 'assets/algorithm_controllers/mixer_stereo.lua',
         ),
         (
-          guid: 'drea',
-          name: 'Dream Machine',
-          asset: 'assets/algorithm_controllers/dream_machine.lua',
-        ),
-        (
           guid: 'fbnk',
           name: 'Filter bank',
           asset: 'assets/algorithm_controllers/filter_bank.lua',
@@ -147,11 +142,6 @@ void main() {
           asset: 'assets/algorithm_controllers/mixer_stereo.lua',
         ),
         (
-          guid: 'drea',
-          name: 'Dream Machine',
-          asset: 'assets/algorithm_controllers/dream_machine.lua',
-        ),
-        (
           guid: 'fbnk',
           name: 'Filter bank',
           asset: 'assets/algorithm_controllers/filter_bank.lua',
@@ -184,12 +174,13 @@ void main() {
         'Quantizer',
         'assets/algorithm_controllers/quantizer.lua',
       );
-      expect(
-        quantizer.whereType<AlgorithmControllerButton>().where(
-          (node) => node.label.endsWith(' on'),
-        ),
-        hasLength(128),
-      );
+      expect(quantizer.whereType<AlgorithmControllerNoteMask>(), hasLength(1));
+      final noteMask = quantizer
+          .whereType<AlgorithmControllerNoteMask>()
+          .single;
+      expect(noteMask.layout, AlgorithmControllerNoteMaskLayout.piano);
+      expect(noteMask.notes, hasLength(12));
+      expect(quantizer.whereType<AlgorithmControllerButton>(), isEmpty);
 
       final envelopeSequencer = await nodesFor(
         'ensq',
@@ -224,6 +215,176 @@ void main() {
         ),
         containsAll(['12 notes down', '12 notes up']),
       );
+    },
+  );
+
+  test('Dream Machine shows truthful configured voice readouts', () async {
+    Future<List<AlgorithmControllerText>> readouts({
+      Map<String, int> values = const {},
+    }) async {
+      final document = engine.evaluate(
+        source: await File(
+          'assets/algorithm_controllers/dream_machine.lua',
+        ).readAsString(),
+        slot: _slotFromMetadata(
+          tables,
+          guid: 'drea',
+          name: 'Dream Machine',
+          values: values,
+        ),
+        slotIndex: 7,
+        units: const [],
+      );
+      final nodes = _flatten(document.root);
+      expect(nodes.whereType<AlgorithmControllerCanvas>(), isEmpty);
+      return nodes.whereType<AlgorithmControllerText>().toList();
+    }
+
+    expect((await readouts()).map((node) => node.text), [
+      'Fundamental\n58.27 Hz\n1/1\nGate Off',
+      'Tone 1\n76.48 Hz\n21/16\nGate Off',
+      'Tone 2\n101.97 Hz\n7/4\nGate Off',
+      'Tone 3\n112.90 Hz\n31/16\nGate Off',
+      'Tone 4\n114.72 Hz\n63/32\nGate Off',
+    ]);
+    expect(
+      (await readouts(
+        values: const {'Numerator 1': 48},
+      )).map((node) => node.text),
+      contains('Tone 1\n87.41 Hz\n3/2\nGate Off'),
+    );
+    expect(
+      (await readouts(
+        values: const {'Transpose': 12, 'Gate 1': 1, 'Gain 1': 6},
+      )).map((node) => node.text),
+      [
+        'Fundamental\n116.54 Hz\n1/1\nGate Off',
+        'Tone 1\n152.96 Hz\n21/16\nGate On',
+        'Tone 2\n203.95 Hz\n7/4\nGate Off',
+        'Tone 3\n225.80 Hz\n31/16\nGate Off',
+        'Tone 4\n229.44 Hz\n63/32\nGate Off',
+      ],
+    );
+  });
+
+  test(
+    'Filter Bank chart maps frequency and engineering gain honestly',
+    () async {
+      Future<AlgorithmControllerCanvas> chart({
+        Map<String, int> values = const {},
+      }) async {
+        final document = engine.evaluate(
+          source: await File(
+            'assets/algorithm_controllers/filter_bank.lua',
+          ).readAsString(),
+          slot: _slotFromMetadata(
+            tables,
+            guid: 'fbnk',
+            name: 'Filter bank',
+            values: values,
+          ),
+          slotIndex: 7,
+          units: const [],
+        );
+        return _flatten(
+          document.root,
+        ).whereType<AlgorithmControllerCanvas>().single;
+      }
+
+      final configured = await chart(
+        values: const {
+          '1:Pitch': 0,
+          '1:Gain': -400,
+          '2:Pitch': 69,
+          '2:Gain': 0,
+          '3:Pitch': 127,
+          '3:Gain': 240,
+        },
+      );
+      final markers = configured.shapes
+          .whereType<AlgorithmControllerCircle>()
+          .toList();
+      expect(markers[0].x, closeTo(0.06, 1e-9));
+      expect(markers[0].y, closeTo(0.90, 1e-9));
+      expect(markers[1].x, closeTo(0.5381102362, 1e-9));
+      expect(markers[1].y, closeTo(0.40, 1e-9));
+      expect(markers[2].x, closeTo(0.94, 1e-9));
+      expect(markers[2].y, closeTo(0.10, 1e-9));
+      expect(markers.map((marker) => marker.radius).toSet(), {0.026});
+      expect(configured.semanticsLabel, contains('independent'));
+      expect(configured.semanticsLabel, contains('not a summed response'));
+      expect(configured.semanticsLabel, contains('live envelope'));
+      expect(configured.semanticsLabel, contains('bandwidth is not available'));
+      expect(
+        configured.shapes.whereType<AlgorithmControllerLine>().where(
+          (line) => line.x1 != line.x2 && line.y1 != line.y2,
+        ),
+        isEmpty,
+      );
+
+      final multiband = await chart(values: const {'Mode': 2});
+      expect(multiband.semanticsLabel, contains('crossover'));
+
+      final scala = await chart(values: const {'Microtuning': 1});
+      expect(scala.semanticsLabel, contains('reference axis'));
+      expect(
+        scala.semanticsLabel,
+        contains('actual frequencies are unavailable'),
+      );
+    },
+  );
+
+  test(
+    'Quantizer maps scale degrees and excludes all routing controls',
+    () async {
+      final document = engine.evaluate(
+        source: await File(
+          'assets/algorithm_controllers/quantizer.lua',
+        ).readAsString(),
+        slot: _slotFromMetadata(
+          tables,
+          guid: 'quan',
+          name: 'Quantizer',
+          values: const {'Key': 2, 'Mode': 1, 'Scale': 3},
+          disabledParameters: const {29, 30, 31, 32, 33},
+        ),
+        slotIndex: 7,
+        units: const [],
+      );
+      final nodes = _flatten(document.root);
+      final noteMask = nodes.whereType<AlgorithmControllerNoteMask>().single;
+
+      expect(noteMask.layout, AlgorithmControllerNoteMaskLayout.piano);
+      expect(
+        [
+          for (final note in noteMask.notes)
+            (note.parameterNumber, note.pitchClass, note.label),
+        ],
+        [
+          (22, 2, 'D'),
+          (23, 4, 'E'),
+          (24, 6, 'F sharp'),
+          (25, 7, 'G'),
+          (26, 9, 'A'),
+          (27, 11, 'B'),
+          (28, 1, 'C sharp'),
+        ],
+      );
+      expect(
+        nodes.whereType<AlgorithmControllerSection>().map(
+          (section) => section.title,
+        ),
+        isNot(contains('Channels')),
+      );
+
+      final bindings = _boundParameterNumbers(nodes);
+      expect(bindings, containsAll([150, 151]));
+      for (var parameter = 16; parameter <= 20; parameter++) {
+        expect(bindings, isNot(contains(parameter)));
+      }
+      for (var parameter = 152; parameter <= 163; parameter++) {
+        expect(bindings, isNot(contains(parameter)));
+      }
     },
   );
 
@@ -314,6 +475,7 @@ Slot _slotFromMetadata(
   required String name,
   Map<String, int> values = const {},
   Map<String, String> displayValues = const {},
+  Set<int> disabledParameters = const {},
 }) {
   const algorithmIndex = 7;
   final parameterRows =
@@ -409,6 +571,7 @@ Slot _slotFromMetadata(
           parameterNumber: _int(row['parameterNumber']),
           value:
               values[row['name'] as String? ?? ''] ?? _int(row['defaultValue']),
+          isDisabled: disabledParameters.contains(_int(row['parameterNumber'])),
         ),
     ],
     enums: [
@@ -456,6 +619,7 @@ List<AlgorithmControllerNode> _flatten(AlgorithmControllerNode root) {
       case AlgorithmControllerSpacer():
       case AlgorithmControllerCanvas():
       case AlgorithmControllerXYPad():
+      case AlgorithmControllerNoteMask():
         break;
     }
   }
@@ -463,6 +627,25 @@ List<AlgorithmControllerNode> _flatten(AlgorithmControllerNode root) {
   visit(root);
   return nodes;
 }
+
+Set<int> _boundParameterNumbers(Iterable<AlgorithmControllerNode> nodes) => {
+  for (final node in nodes)
+    ...switch (node) {
+      AlgorithmControllerSlider(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerChoice(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerToggle(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerButton(:final action) => [action.parameterNumber],
+      AlgorithmControllerXYPad(
+        :final xParameterNumber,
+        :final yParameterNumber,
+      ) =>
+        [xParameterNumber, yParameterNumber],
+      AlgorithmControllerNoteMask(:final notes) => [
+        for (final note in notes) note.parameterNumber,
+      ],
+      _ => const <int>[],
+    },
+};
 
 void _expectNoControllerBypass(
   List<AlgorithmControllerNode> nodes, {
@@ -479,6 +662,9 @@ void _expectNoControllerBypass(
         :final yParameterNumber,
       ) =>
         [xParameterNumber, yParameterNumber],
+      AlgorithmControllerNoteMask(:final notes) => [
+        for (final note in notes) note.parameterNumber,
+      ],
       _ => const <int>[],
     };
     expect(parameterNumbers, isNot(contains(0)), reason: reason);

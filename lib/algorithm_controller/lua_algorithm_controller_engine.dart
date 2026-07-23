@@ -42,6 +42,7 @@ function ui.divider(props) return element("divider", props) end
 function ui.spacer(props) return element("spacer", props) end
 function ui.canvas(props) return element("canvas", props) end
 function ui.xy_pad(props) return element("xy_pad", props) end
+function ui.note_mask(props) return element("note_mask", props) end
 function ui.circle(props) return element("circle", props) end
 function ui.line(props) return element("line", props) end
 function ui.rect(props) return element("rect", props) end
@@ -53,6 +54,25 @@ function nt.parameter(name, occurrence)
     if parameter.name == name then
       seen = seen + 1
       if seen == occurrence then return parameter end
+    end
+  end
+  return nil
+end
+
+function nt.parameter_by_number(number)
+  for _, parameter in ipairs(algorithm.parameters) do
+    if parameter.number == number then return parameter end
+  end
+  return nil
+end
+
+function nt.page(name, occurrence)
+  occurrence = occurrence or 1
+  local seen = 0
+  for _, page in ipairs(algorithm.pages) do
+    if page.name == name then
+      seen = seen + 1
+      if seen == occurrence then return page end
     end
   end
   return nil
@@ -107,7 +127,9 @@ end
 
     final result = _readValue(state, -1);
     state.pop(1);
-    return _AlgorithmControllerDocumentParser().parse(result);
+    final document = _AlgorithmControllerDocumentParser().parse(result);
+    _validateNoIoBindings(document.root, slot);
+    return document;
   }
 
   void _removeUnsafeGlobals(LuaState state) {
@@ -154,6 +176,7 @@ end
             enumValue.trim(),
         ],
         'display_value': valueString?.value.trim() ?? '',
+        'io_flags': info.ioFlags,
         'is_input': info.isInput,
         'is_output': info.isOutput,
       });
@@ -171,6 +194,43 @@ end
       ],
       'routing': slot.routing.routingInfo,
     };
+  }
+
+  void _validateNoIoBindings(AlgorithmControllerNode node, Slot slot) {
+    final parameterNumbers = switch (node) {
+      AlgorithmControllerSlider(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerChoice(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerToggle(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerButton(:final action) => [action.parameterNumber],
+      AlgorithmControllerXYPad(
+        :final xParameterNumber,
+        :final yParameterNumber,
+      ) =>
+        [xParameterNumber, yParameterNumber],
+      AlgorithmControllerNoteMask(:final notes) => [
+        for (final note in notes) note.parameterNumber,
+      ],
+      _ => const <int>[],
+    };
+    for (final parameterNumber in parameterNumbers) {
+      final info = slot.parameters.byParameterNumber(parameterNumber);
+      if (info != null && info.ioFlags != 0) {
+        throw LuaAlgorithmControllerException(
+          'Controller controls cannot bind I/O parameter '
+          '$parameterNumber (${info.name})',
+        );
+      }
+    }
+
+    final children = switch (node) {
+      AlgorithmControllerColumn(:final children) => children,
+      AlgorithmControllerRow(:final children) => children,
+      AlgorithmControllerSection(:final children) => children,
+      _ => const <AlgorithmControllerNode>[],
+    };
+    for (final child in children) {
+      _validateNoIoBindings(child, slot);
+    }
   }
 
   void _pushValue(LuaState state, Object? value) {
@@ -365,6 +425,7 @@ final class _AlgorithmControllerDocumentParser {
         invertY: _optionalBoolean(node['invert_y'], '$path.invert_y') ?? true,
         enabled: _optionalBoolean(node['enabled'], '$path.enabled') ?? true,
       ),
+      'note_mask' => _noteMask(node, path),
       _ => throw LuaAlgorithmControllerException(
         '$path has unknown UI node type "$type"',
       ),
@@ -381,6 +442,79 @@ final class _AlgorithmControllerDocumentParser {
       for (var index = 0; index < children.length; index++)
         _node(children[index], '$path[$index]', depth + 1),
     ];
+  }
+
+  AlgorithmControllerNoteMask _noteMask(
+    Map<Object, Object?> node,
+    String path,
+  ) {
+    final layoutName = _string(node['layout'], '$path.layout');
+    final layout = switch (layoutName) {
+      'piano' => AlgorithmControllerNoteMaskLayout.piano,
+      'degrees' => AlgorithmControllerNoteMaskLayout.degrees,
+      _ => throw LuaAlgorithmControllerException(
+        '$path.layout must be "piano" or "degrees"',
+      ),
+    };
+    final rawNotes = _list(node['notes'], '$path.notes');
+    if (rawNotes.length > 128) {
+      throw LuaAlgorithmControllerException(
+        '$path.notes must contain at most 128 notes',
+      );
+    }
+
+    final pitchClasses = <int>{};
+    final parameterNumbers = <int>{};
+    final notes = <AlgorithmControllerNoteMaskEntry>[];
+    for (var index = 0; index < rawNotes.length; index++) {
+      final notePath = '$path.notes[$index]';
+      final note = _map(rawNotes[index], notePath);
+      final label = _string(note['label'], '$notePath.label');
+      final parameterNumber = _integer(
+        note['parameter'],
+        '$notePath.parameter',
+      );
+      if (!parameterNumbers.add(parameterNumber)) {
+        throw LuaAlgorithmControllerException(
+          '$notePath.parameter duplicates parameter $parameterNumber',
+        );
+      }
+      int? pitchClass;
+      switch (layout) {
+        case AlgorithmControllerNoteMaskLayout.piano:
+          pitchClass = _integer(note['pitch_class'], '$notePath.pitch_class');
+          if (pitchClass < 0 || pitchClass > 11) {
+            throw LuaAlgorithmControllerException(
+              '$notePath.pitch_class must be between 0 and 11',
+            );
+          }
+          if (!pitchClasses.add(pitchClass)) {
+            throw LuaAlgorithmControllerException(
+              '$notePath.pitch_class duplicates pitch class $pitchClass',
+            );
+          }
+        case AlgorithmControllerNoteMaskLayout.degrees:
+          if (note.containsKey('pitch_class')) {
+            throw LuaAlgorithmControllerException(
+              '$notePath.pitch_class must be omitted for degrees layout',
+            );
+          }
+      }
+      notes.add(
+        AlgorithmControllerNoteMaskEntry(
+          label: label,
+          parameterNumber: parameterNumber,
+          pitchClass: pitchClass,
+        ),
+      );
+    }
+
+    return AlgorithmControllerNoteMask(
+      label: _string(node['label'], '$path.label'),
+      layout: layout,
+      notes: List.unmodifiable(notes),
+      enabled: _optionalBoolean(node['enabled'], '$path.enabled') ?? true,
+    );
   }
 
   AlgorithmControllerAction _action(Object? value, String path) {

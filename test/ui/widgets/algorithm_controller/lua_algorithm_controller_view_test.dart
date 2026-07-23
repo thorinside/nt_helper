@@ -130,6 +130,199 @@ return {
     expect(find.text('X 32 · Y 4'), findsOneWidget);
   });
 
+  testWidgets('XY pad stays a fixed desktop width in a wide editor', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const source = r'''
+return {
+  version = 1,
+  title = "XY controller",
+  root = ui.xy_pad {
+    label = "Position",
+    x_parameter = nt.parameter("1:Steps").number,
+    y_parameter = nt.parameter("1:Pulses").number,
+    aspect_ratio = 1
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    final pad = find.byKey(
+      const ValueKey('algorithm-controller-xy-pad:Position'),
+    );
+    expect(tester.getSize(pad), const Size.square(480));
+  });
+
+  testWidgets('XY pad shrinks without overflow in a narrow editor', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const source = r'''
+return {
+  version = 1,
+  title = "XY controller",
+  root = ui.xy_pad {
+    label = "Position",
+    x_parameter = nt.parameter("1:Steps").number,
+    y_parameter = nt.parameter("1:Pulses").number,
+    aspect_ratio = 1
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    final pad = find.byKey(
+      const ValueKey('algorithm-controller-xy-pad:Position'),
+    );
+    expect(tester.getSize(pad), const Size.square(320));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'piano note mask is text-free and toggles exact pitch parameters',
+    (tester) async {
+      final semanticsHandle = tester.ensureSemantics();
+      const source = r'''
+return {
+  version = 1,
+  title = "Note mask",
+  root = ui.note_mask {
+    label = "Allowed notes",
+    layout = "piano",
+    notes = {
+      { label = "C", parameter = 5, pitch_class = 0 },
+      { label = "C sharp", parameter = 6, pitch_class = 1 },
+      { label = "F sharp", parameter = 7, pitch_class = 6 }
+    }
+  }
+}
+''';
+
+      await tester.pumpWidget(
+        _host(cubit, _noteMaskSlot(c: 1, cSharp: 0, fSharp: 1), source),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('C'), findsNothing);
+      expect(find.text('C sharp'), findsNothing);
+      expect(find.text('F sharp'), findsNothing);
+
+      final c = find.byKey(
+        const ValueKey('algorithm-controller-note-mask:Allowed notes:pitch-0'),
+      );
+      final cSharp = find.byKey(
+        const ValueKey('algorithm-controller-note-mask:Allowed notes:pitch-1'),
+      );
+      final d = find.byKey(
+        const ValueKey('algorithm-controller-note-mask:Allowed notes:pitch-2'),
+      );
+      final fSharp = find.byKey(
+        const ValueKey('algorithm-controller-note-mask:Allowed notes:pitch-6'),
+      );
+      expect(c, findsOneWidget);
+      expect(cSharp, findsOneWidget);
+      expect(d, findsOneWidget);
+      expect(fSharp, findsOneWidget);
+      expect(tester.getCenter(cSharp).dy, lessThan(tester.getCenter(c).dy));
+      expect(
+        tester.getCenter(cSharp).dx,
+        inInclusiveRange(tester.getCenter(c).dx, tester.getCenter(d).dx),
+      );
+
+      final cSemantics = tester
+          .getSemantics(
+            find.byWidgetPredicate(
+              (widget) => widget is Semantics && widget.properties.label == 'C',
+            ),
+          )
+          .getSemanticsData();
+      expect(cSemantics.flagsCollection.isToggled, Tristate.isTrue);
+      expect(cSemantics.value, 'Included');
+
+      await tester.tap(cSharp);
+      await tester.pump();
+
+      verify(
+        () => cubit.updateParameterValue(
+          algorithmIndex: 2,
+          parameterNumber: 6,
+          value: 1,
+          userIsChangingTheValue: false,
+        ),
+      ).called(1);
+
+      clearInteractions(cubit);
+      await tester.tap(d);
+      await tester.pump();
+      verifyNever(
+        () => cubit.updateParameterValue(
+          algorithmIndex: any(named: 'algorithmIndex'),
+          parameterNumber: any(named: 'parameterNumber'),
+          value: any(named: 'value'),
+          userIsChangingTheValue: any(named: 'userIsChangingTheValue'),
+        ),
+      );
+
+      semanticsHandle.dispose();
+    },
+  );
+
+  testWidgets('note mask follows a new immutable Slot snapshot', (
+    tester,
+  ) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "Note mask",
+  root = ui.note_mask {
+    label = "Allowed notes",
+    layout = "piano",
+    notes = {
+      { label = "C", parameter = 5, pitch_class = 0 }
+    }
+  }
+}
+''';
+    Future<String> sourceLoader(String _) async => source;
+    final semanticsHandle = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      _host(cubit, _noteMaskSlot(c: 0), source, sourceLoader: sourceLoader),
+    );
+    await tester.pumpAndSettle();
+    ({Tristate toggled, String value}) cState() {
+      final data = tester
+          .getSemantics(
+            find.byWidgetPredicate(
+              (widget) => widget is Semantics && widget.properties.label == 'C',
+            ),
+          )
+          .getSemanticsData();
+      return (toggled: data.flagsCollection.isToggled, value: data.value);
+    }
+
+    expect(cState().toggled, Tristate.isFalse);
+    expect(cState().value, 'Excluded');
+
+    await tester.pumpWidget(
+      _host(cubit, _noteMaskSlot(c: 1), source, sourceLoader: sourceLoader),
+    );
+    await tester.pumpAndSettle();
+    expect(cState().toggled, Tristate.isTrue);
+    expect(cState().value, 'Included');
+
+    semanticsHandle.dispose();
+  });
+
   testWidgets('slider and button actions write through DistingCubit', (
     tester,
   ) async {
@@ -1204,6 +1397,56 @@ Slot _slot({
             2 => stepsDisplay,
             _ => '',
           },
+        ),
+    ],
+  );
+}
+
+Slot _noteMaskSlot({int c = 0, int cSharp = 0, int fSharp = 0}) {
+  final slot = _slot();
+  const names = ['C mask', 'C sharp mask', 'F sharp mask'];
+  final values = [c, cSharp, fSharp];
+  return slot.copyWith(
+    parameters: [
+      ...slot.parameters,
+      for (var index = 0; index < names.length; index++)
+        ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 5 + index,
+          min: 0,
+          max: 1,
+          defaultValue: 1,
+          unit: 0,
+          name: names[index],
+          powerOfTen: 0,
+        ),
+    ],
+    values: [
+      ...slot.values,
+      for (var index = 0; index < values.length; index++)
+        ParameterValue(
+          algorithmIndex: 2,
+          parameterNumber: 5 + index,
+          value: values[index],
+        ),
+    ],
+    enums: [
+      ...slot.enums,
+      for (var index = 0; index < names.length; index++)
+        ParameterEnumStrings(
+          algorithmIndex: 2,
+          parameterNumber: 5 + index,
+          values: const ['Off', 'On'],
+        ),
+    ],
+    mappings: [...slot.mappings, for (final _ in names) Mapping.filler()],
+    valueStrings: [
+      ...slot.valueStrings,
+      for (var index = 0; index < names.length; index++)
+        ParameterValueString(
+          algorithmIndex: 2,
+          parameterNumber: 5 + index,
+          value: values[index] == 1 ? 'On' : 'Off',
         ),
     ],
   );

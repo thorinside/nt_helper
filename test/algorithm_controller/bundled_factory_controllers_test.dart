@@ -213,6 +213,7 @@ List<AlgorithmControllerNode> _flatten(AlgorithmControllerNode root) {
       case AlgorithmControllerSpacer():
       case AlgorithmControllerCanvas():
       case AlgorithmControllerXYPad():
+      case AlgorithmControllerNoteMask():
         break;
     }
   }
@@ -223,14 +224,22 @@ List<AlgorithmControllerNode> _flatten(AlgorithmControllerNode root) {
 
 void _expectNoControllerBypass(List<AlgorithmControllerNode> nodes) {
   for (final node in nodes) {
-    final parameterNumber = switch (node) {
-      AlgorithmControllerSlider(:final parameterNumber) => parameterNumber,
-      AlgorithmControllerChoice(:final parameterNumber) => parameterNumber,
-      AlgorithmControllerToggle(:final parameterNumber) => parameterNumber,
-      AlgorithmControllerButton(:final action) => action.parameterNumber,
-      _ => null,
+    final parameterNumbers = switch (node) {
+      AlgorithmControllerSlider(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerChoice(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerToggle(:final parameterNumber) => [parameterNumber],
+      AlgorithmControllerButton(:final action) => [action.parameterNumber],
+      AlgorithmControllerXYPad(
+        :final xParameterNumber,
+        :final yParameterNumber,
+      ) =>
+        [xParameterNumber, yParameterNumber],
+      AlgorithmControllerNoteMask(:final notes) => [
+        for (final note in notes) note.parameterNumber,
+      ],
+      _ => const <int>[],
     };
-    expect(parameterNumber, isNot(0));
+    expect(parameterNumbers, isNot(contains(0)));
   }
 }
 

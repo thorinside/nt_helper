@@ -67,17 +67,42 @@ Each parameter contains:
 - `number`, `name`, `minimum`, `maximum`, and `default`
 - `value`, `disabled`, `display_value`, and `enum_values`
 - `unit`, `unit_index`, and `power_of_ten`
-- `is_input` and `is_output`
+- `io_flags`, `is_input`, and `is_output`
 
 Helpers are available for common lookups:
 
 ```lua
 local cutoff = nt.parameter("Cutoff")
+local parameter = nt.parameter_by_number(42)
+local mask_page = nt.page("Mask")
 local steps = nt.channel_parameter(1, "Steps")
 local channel_numbers = nt.channels()
 ```
 
 `nt.parameter` accepts an optional occurrence number for duplicate names.
+`nt.page` likewise accepts an optional occurrence number. Snapshot lookup
+results are immutable for the lifetime of one evaluation.
+
+## Authoring rules
+
+Lua controllers edit algorithm behavior, never I/O routing. Do not bind any
+slider, choice, toggle, button action, XY-pad axis, or note-mask entry to a
+parameter with non-zero `ioFlags` (input, output, audio, or output-mode), or to
+an unflagged endpoint selector such as a bus, ES-5 expander/output, MIDI or i2c
+channel, breakout, Select Bus, USB, or internal destination. Leave those
+parameters to the standard parameter and Routing editors.
+
+Channel sections are appropriate only for DSP, performance, or sequencing
+controls. Omit them when their parameters are routing-only. A controller may
+read routing parameters to explain an honest preview, but must not expose them
+as editable controls.
+
+Drawings must describe configuration available in the current immutable
+snapshot. Do not present a configured gate as a live envelope, invent audio
+telemetry, or imply a summed frequency response when the host has only
+per-filter settings. State limitations in visible copy and accessibility
+semantics when a diagram could otherwise be mistaken for measured or live
+data.
 
 ## UI primitives
 
@@ -106,6 +131,7 @@ Controls:
 - `ui.button { label, style, enabled, action }`
 - `ui.xy_pad { label, x_parameter, y_parameter, x_label, y_label,
   aspect_ratio, invert_y, enabled }`
+- `ui.note_mask { label, layout, notes, enabled }`
 
 Buttons currently support these declarative actions:
 
@@ -142,6 +168,29 @@ movement, and double-click to reset both axes. `invert_y` defaults to `true`, so
 larger Y values appear higher on the pad; set it to `false` when the algorithm's
 coordinate system increases downward. The host exposes each axis and reset as
 screen-reader actions.
+
+A note mask renders text-free, 48-pixel circular targets while retaining note
+names and inclusion state for screen readers. Use `layout = "piano"` for one
+octave of 12-tone pitch classes and provide a unique `pitch_class` from 0
+through 11 for every bound note:
+
+```lua
+ui.note_mask {
+  label = "Allowed notes",
+  layout = "piano",
+  notes = {
+    { label = "C", parameter = 22, pitch_class = 0 },
+    { label = "F sharp", parameter = 25, pitch_class = 6 }
+  }
+}
+```
+
+Naturals form the lower row and accidentals the raised row; pitch classes
+without a corresponding live parameter remain visible but inert. For Scala,
+MTS, or another tuning whose degrees cannot be represented truthfully as 12
+pitch classes, use `layout = "degrees"` and omit `pitch_class`. Each entry must
+bind its exact live parameter number. The host reads inclusion from every new
+`Slot` snapshot and writes `0` or `1` without keeping separate selection state.
 
 ## Drawing primitives
 

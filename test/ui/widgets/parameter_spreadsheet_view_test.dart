@@ -691,6 +691,72 @@ void main() {
         [isTrue, isFalse],
       );
     });
+
+    testWidgets('digit 6 opens Quad Mixer Channel 4 in controller mode', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final platformService = MockPlatformInteractionService();
+      final slot = _quadMixerSlot();
+      final state = _state(slot);
+      when(() => platformService.isMobilePlatform()).thenReturn(false);
+      when(() => cubit.state).thenReturn(state);
+      when(() => cubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<DistingCubit>.value(
+            value: cubit,
+            child: SynchronizedScreen(
+              slots: [slot],
+              algorithms: state.algorithms,
+              units: const ['Hz', 'BPM', '%'],
+              presetName: 'Test Preset',
+              distingVersion: '1.17.0',
+              firmwareVersion: FirmwareVersion('1.17.0'),
+              screenshot: Uint8List(0),
+              loading: false,
+              platformService: platformService,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('slot-editor-mode-controller')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Collapse all'));
+      await tester.pumpAndSettle();
+
+      List<ExpansionTile> controllerSections() {
+        return tester
+            .widgetList<ExpansionTile>(
+              find.descendant(
+                of: find.byType(LuaAlgorithmControllerView),
+                matching: find.byType(ExpansionTile),
+              ),
+            )
+            .toList();
+      }
+
+      expect(
+        controllerSections().map((section) => section.title),
+        hasLength(6),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit6);
+      await tester.pumpAndSettle();
+
+      expect(
+        controllerSections().map((section) => section.controller!.isExpanded),
+        [isFalse, isFalse, isFalse, isFalse, isFalse, isTrue],
+      );
+    });
   });
 }
 
@@ -787,6 +853,76 @@ Slot _euclideanSlot({int channelCount = 2}) {
           for (var number = 1; number <= channelCount * 4; number++) number,
         ],
       ),
+      ParameterPage(name: 'Algorithm', parameters: const [0]),
+    ],
+  );
+}
+
+Slot _quadMixerSlot() {
+  final fixtures = <_ParameterFixture>[
+    _parameter(
+      0,
+      'Bypass',
+      value: 0,
+      min: 0,
+      max: 1,
+      defaultValue: 0,
+      enumValues: const ['Off', 'On'],
+    ),
+    _parameter(1, 'Overall gain', value: 100, min: 0, max: 200),
+  ];
+  final channelPages = <ParameterPage>[];
+  for (var channel = 1; channel <= 4; channel++) {
+    final firstNumber = 2 + (channel - 1) * 4;
+    fixtures.addAll([
+      _parameter(firstNumber, '$channel:Gain', value: 100, min: 0, max: 200),
+      _parameter(
+        firstNumber + 1,
+        '$channel:Coordinates',
+        value: 0,
+        min: 0,
+        max: 1,
+        enumValues: const ['Cartesian', 'Polar'],
+      ),
+      _parameter(
+        firstNumber + 2,
+        '$channel:X',
+        value: 0,
+        min: -100,
+        max: 100,
+      ),
+      _parameter(
+        firstNumber + 3,
+        '$channel:Y',
+        value: 0,
+        min: -100,
+        max: 100,
+      ),
+    ]);
+    channelPages.add(
+      ParameterPage(
+        name: 'Channel $channel',
+        parameters: [
+          firstNumber,
+          firstNumber + 1,
+          firstNumber + 2,
+          firstNumber + 3,
+        ],
+      ),
+    );
+  }
+
+  return _slot(
+    fixtures,
+    algorithm: Algorithm(
+      algorithmIndex: 0,
+      guid: 'quad',
+      name: 'Quadraphonic Mixer',
+      specifications: const [4],
+    ),
+    pages: [
+      ParameterPage(name: 'Output mix', parameters: const [1]),
+      ...channelPages,
       ParameterPage(name: 'Algorithm', parameters: const [0]),
     ],
   );

@@ -15,6 +15,10 @@ import 'package:nt_helper/util/ui_helpers.dart';
 
 typedef AlgorithmControllerSourceLoader = Future<String> Function(String path);
 
+const double _algorithmControllerXYPadWidth = 480;
+const double _algorithmControllerNoteMaskWidth = 480;
+const double _algorithmControllerNoteTargetSize = 48;
+
 typedef _AlgorithmControllerParameterBinding = ({
   int minimum,
   int maximum,
@@ -265,6 +269,7 @@ class _AlgorithmControllerDocumentViewState
       case AlgorithmControllerSpacer():
       case AlgorithmControllerCanvas():
       case AlgorithmControllerXYPad():
+      case AlgorithmControllerNoteMask():
         break;
     }
   }
@@ -358,6 +363,7 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
       AlgorithmControllerSpacer node => SizedBox(height: node.size),
       AlgorithmControllerCanvas node => _buildCanvas(context, node),
       AlgorithmControllerXYPad node => _buildXYPad(context, node),
+      AlgorithmControllerNoteMask node => _buildNoteMask(context, node),
     };
   }
 
@@ -660,6 +666,214 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
     );
   }
 
+  Widget _buildNoteMask(
+    BuildContext context,
+    AlgorithmControllerNoteMask node,
+  ) {
+    final entriesByPitchClass = <int, AlgorithmControllerNoteMaskEntry>{};
+    for (final entry in node.notes) {
+      final pitchClass = entry.pitchClass;
+      if (pitchClass != null) entriesByPitchClass[pitchClass] = entry;
+    }
+    final content = switch (node.layout) {
+      AlgorithmControllerNoteMaskLayout.piano => SizedBox(
+        width: _algorithmControllerNoteMaskWidth,
+        height: 120,
+        child: Stack(
+          children: [
+            for (var pitchClass = 0; pitchClass < 12; pitchClass++)
+              _buildPianoNote(
+                context,
+                node,
+                pitchClass,
+                entriesByPitchClass[pitchClass],
+              ),
+          ],
+        ),
+      ),
+      AlgorithmControllerNoteMaskLayout.degrees => SizedBox(
+        width: _algorithmControllerNoteMaskWidth,
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final entry in node.notes)
+              _buildNoteButton(
+                context,
+                node,
+                entry,
+                accidental: false,
+                key: ValueKey(
+                  'algorithm-controller-note-mask:${node.label}:'
+                  'parameter-${entry.parameterNumber}',
+                ),
+              ),
+          ],
+        ),
+      ),
+    };
+
+    return Semantics(
+      container: true,
+      label: node.label,
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: _algorithmControllerNoteMaskWidth,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: content,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPianoNote(
+    BuildContext context,
+    AlgorithmControllerNoteMask node,
+    int pitchClass,
+    AlgorithmControllerNoteMaskEntry? entry,
+  ) {
+    const naturalPitchClasses = [0, 2, 4, 5, 7, 9, 11];
+    const accidentalPitchClasses = [1, 3, 6, 8, 10];
+    final naturalIndex = naturalPitchClasses.indexOf(pitchClass);
+    final accidentalIndex = accidentalPitchClasses.indexOf(pitchClass);
+    final accidental = accidentalIndex >= 0;
+    final center = accidental
+        ? const [
+            Offset(60, 28),
+            Offset(132, 28),
+            Offset(276, 28),
+            Offset(348, 28),
+            Offset(420, 28),
+          ][accidentalIndex]
+        : Offset(24 + naturalIndex * 72, 88);
+    final key = ValueKey(
+      'algorithm-controller-note-mask:${node.label}:pitch-$pitchClass',
+    );
+
+    return Positioned(
+      left: center.dx - _algorithmControllerNoteTargetSize / 2,
+      top: center.dy - _algorithmControllerNoteTargetSize / 2,
+      width: _algorithmControllerNoteTargetSize,
+      height: _algorithmControllerNoteTargetSize,
+      child: entry == null
+          ? ExcludeSemantics(
+              child: _noteCircle(
+                context,
+                key: key,
+                included: false,
+                accidental: accidental,
+                available: false,
+              ),
+            )
+          : _buildNoteButton(
+              context,
+              node,
+              entry,
+              accidental: accidental,
+              key: key,
+            ),
+    );
+  }
+
+  Widget _buildNoteButton(
+    BuildContext context,
+    AlgorithmControllerNoteMask node,
+    AlgorithmControllerNoteMaskEntry entry, {
+    required bool accidental,
+    required Key key,
+  }) {
+    final binding = _binding(entry.parameterNumber);
+    final included = binding?.value == 1;
+    final enabled =
+        node.enabled &&
+        binding != null &&
+        !binding.disabled &&
+        binding.minimum <= 0 &&
+        binding.maximum >= 1;
+    final newValue = included ? 0 : 1;
+
+    return Semantics(
+      button: true,
+      toggled: included,
+      enabled: enabled,
+      label: entry.label,
+      value: included ? 'Included' : 'Excluded',
+      onTap: enabled
+          ? () => _toggleNote(context, entry, newValue: newValue)
+          : null,
+      child: ExcludeSemantics(
+        child: _noteCircle(
+          context,
+          key: key,
+          included: included,
+          accidental: accidental,
+          available: true,
+          onPressed: enabled
+              ? () => _toggleNote(context, entry, newValue: newValue)
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _noteCircle(
+    BuildContext context, {
+    required Key key,
+    required bool included,
+    required bool accidental,
+    required bool available,
+    VoidCallback? onPressed,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    final unselectedColor = accidental
+        ? colors.inverseSurface.withValues(alpha: 0.78)
+        : colors.surfaceContainerHighest;
+    final outlineColor = accidental ? colors.outlineVariant : colors.outline;
+    final opacity = available ? 1.0 : 0.28;
+    return Opacity(
+      opacity: opacity,
+      child: IconButton(
+        key: key,
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          fixedSize: const Size.square(_algorithmControllerNoteTargetSize),
+          padding: EdgeInsets.zero,
+          shape: CircleBorder(
+            side: BorderSide(
+              color: included ? colors.primary : outlineColor,
+              width: included ? 2 : 1,
+            ),
+          ),
+          backgroundColor: included ? colors.primary : unselectedColor,
+          disabledBackgroundColor: included ? colors.primary : unselectedColor,
+          foregroundColor: included ? colors.onPrimary : colors.onSurface,
+          disabledForegroundColor: included
+              ? colors.onPrimary
+              : colors.onSurface,
+        ),
+        icon: const SizedBox.shrink(),
+      ),
+    );
+  }
+
+  void _toggleNote(
+    BuildContext context,
+    AlgorithmControllerNoteMaskEntry entry, {
+    required int newValue,
+  }) {
+    _writeParameter(context, entry.parameterNumber, newValue, changing: false);
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      '${entry.label} ${newValue == 1 ? 'included' : 'excluded'}',
+      Directionality.of(context),
+    );
+  }
+
   Widget _buildXYPad(BuildContext context, AlgorithmControllerXYPad node) {
     final xBinding = _binding(node.xParameterNumber);
     final yBinding = _binding(node.yParameterNumber);
@@ -676,34 +890,40 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
         !yBinding.disabled &&
         xBinding.minimum < xBinding.maximum &&
         yBinding.minimum < yBinding.maximum;
-    return _AlgorithmControllerXYPadView(
-      label: node.label,
-      xLabel: node.xLabel,
-      yLabel: node.yLabel,
-      xValue: xBinding.value,
-      yValue: yBinding.value,
-      xDefault: xBinding.defaultValue,
-      yDefault: yBinding.defaultValue,
-      xMinimum: xBinding.minimum,
-      xMaximum: xBinding.maximum,
-      yMinimum: yBinding.minimum,
-      yMaximum: yBinding.maximum,
-      aspectRatio: node.aspectRatio.clamp(0.25, 20).toDouble(),
-      invertY: node.invertY,
-      enabled: enabled,
-      formatX: (value) => _formattedValue(xBinding, value),
-      formatY: (value) => _formattedValue(yBinding, value),
-      onXChanged: (value, changing) => _writeParameter(
-        context,
-        node.xParameterNumber,
-        value,
-        changing: changing,
-      ),
-      onYChanged: (value, changing) => _writeParameter(
-        context,
-        node.yParameterNumber,
-        value,
-        changing: changing,
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: SizedBox(
+        width: _algorithmControllerXYPadWidth,
+        child: _AlgorithmControllerXYPadView(
+          label: node.label,
+          xLabel: node.xLabel,
+          yLabel: node.yLabel,
+          xValue: xBinding.value,
+          yValue: yBinding.value,
+          xDefault: xBinding.defaultValue,
+          yDefault: yBinding.defaultValue,
+          xMinimum: xBinding.minimum,
+          xMaximum: xBinding.maximum,
+          yMinimum: yBinding.minimum,
+          yMaximum: yBinding.maximum,
+          aspectRatio: node.aspectRatio.clamp(0.25, 20).toDouble(),
+          invertY: node.invertY,
+          enabled: enabled,
+          formatX: (value) => _formattedValue(xBinding, value),
+          formatY: (value) => _formattedValue(yBinding, value),
+          onXChanged: (value, changing) => _writeParameter(
+            context,
+            node.xParameterNumber,
+            value,
+            changing: changing,
+          ),
+          onYChanged: (value, changing) => _writeParameter(
+            context,
+            node.yParameterNumber,
+            value,
+            changing: changing,
+          ),
+        ),
       ),
     );
   }

@@ -253,6 +253,34 @@ final class AlgorithmControllerXYPad extends AlgorithmControllerNode {
   final bool enabled;
 }
 
+enum AlgorithmControllerNoteMaskLayout { piano, degrees }
+
+final class AlgorithmControllerNoteMaskEntry {
+  const AlgorithmControllerNoteMaskEntry({
+    required this.label,
+    required this.parameterNumber,
+    this.pitchClass,
+  });
+
+  final String label;
+  final int parameterNumber;
+  final int? pitchClass;
+}
+
+final class AlgorithmControllerNoteMask extends AlgorithmControllerNode {
+  const AlgorithmControllerNoteMask({
+    required this.label,
+    required this.layout,
+    required this.notes,
+    this.enabled = true,
+  });
+
+  final String label;
+  final AlgorithmControllerNoteMaskLayout layout;
+  final List<AlgorithmControllerNoteMaskEntry> notes;
+  final bool enabled;
+}
+
 final class AlgorithmControllerDocument {
   const AlgorithmControllerDocument({
     required this.version,

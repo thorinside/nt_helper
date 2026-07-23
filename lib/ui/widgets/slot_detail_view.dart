@@ -191,6 +191,23 @@ class _SlotDetailViewState extends State<SlotDetailView>
       if (!mounted || event.slotIndex != widget.slotIndex) {
         return;
       }
+      if (widget.editorMode == SlotEditorMode.controller &&
+          AlgorithmControllerRegistry.bundled.findForGuid(
+                widget.slot.algorithm.guid,
+              ) !=
+              null) {
+        final title = widget.algorithmControllerSections.showOnlySection(
+          event.pageIndex,
+        );
+        if (title == null) return;
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          '$title controller section expanded',
+          Directionality.of(context),
+        );
+        return;
+      }
+
       if (isBypassOnlyPage(widget.slot, event.pageIndex)) {
         _bypassFocusNode.requestFocus();
         SemanticsService.sendAnnouncement(
@@ -200,23 +217,6 @@ class _SlotDetailViewState extends State<SlotDetailView>
         );
         return;
       }
-      if (widget.editorMode != SlotEditorMode.controller ||
-          AlgorithmControllerRegistry.bundled.findForGuid(
-                widget.slot.algorithm.guid,
-              ) ==
-              null) {
-        return;
-      }
-
-      final title = widget.algorithmControllerSections.showOnlySection(
-        event.pageIndex,
-      );
-      if (title == null) return;
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        '$title controller section expanded',
-        Directionality.of(context),
-      );
     });
   }
 

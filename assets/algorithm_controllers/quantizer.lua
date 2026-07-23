@@ -59,83 +59,95 @@ add_slider(pitch_children, "Output transpose", output_transpose)
 add_choice(pitch_children, "Output gate mode", output_gate_mode)
 add_slider(pitch_children, "Gate offset", gate_offset)
 
+local microtuning = nt.parameter("Microtuning")
 local apply_mask = nt.parameter("Apply")
-local mask_groups = {}
-local included_count = 0
-local available_count = 0
+local scale_intervals = {
+  [2] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 },
+  [3] = { 0, 2, 4, 5, 7, 9, 11 },
+  [4] = { 0, 2, 3, 5, 7, 8, 10 },
+  [5] = { 0, 2, 3, 5, 7, 8, 11 },
+  [6] = { 0, 2, 4, 5, 7, 9, 10 },
+  [7] = { 0, 2, 3, 5, 6, 8, 9, 11 },
+  [8] = { 0, 1, 3, 4, 6, 7, 9, 10 },
+  [9] = { 0, 3, 4, 7, 8, 11 },
+  [10] = { 0, 2, 4, 6, 8, 10 }
+}
 
-for group = 0, 10 do
-  local buttons = {}
-  local first_note = group * 12
-  local last_note = math.min(127, first_note + 11)
+local function modulo(value, divisor)
+  return ((value % divisor) + divisor) % divisor
+end
 
-  for midi_note = first_note, last_note do
-    local parameter_index = midi_note + 1
-    local parameter = nt.parameter("Note " .. parameter_index)
-    if parameter ~= nil then
-      available_count = available_count + 1
-      if parameter.value == 1 then included_count = included_count + 1 end
+local function mask_parameters()
+  local page = nt.page("Mask")
+  local parameters = {}
+  if page == nil then return parameters end
 
-      local pitch_name = note_names[(midi_note % 12) + 1] ..
-        tostring(math.floor(midi_note / 12) - 1)
-      table.insert(buttons, ui.button {
-        label = pitch_name .. (parameter.value == 1 and " on" or " off"),
-        style = parameter.value == 1 and "filled" or "outlined",
-        action = {
-          type = "set_parameter",
-          parameter = parameter.number,
-          value = parameter.value == 1 and 0 or 1
-        }
+  for _, parameter_number in ipairs(page.parameters) do
+    local parameter = nt.parameter_by_number(parameter_number)
+    if parameter ~= nil and not parameter.disabled and
+        string.sub(parameter.name, 1, 5) == "Note " then
+      table.insert(parameters, {
+        degree = tonumber(string.sub(parameter.name, 6)) or 0,
+        parameter = parameter
       })
     end
   end
+  table.sort(parameters, function(left, right)
+    return left.degree < right.degree
+  end)
+  return parameters
+end
 
-  if #buttons > 0 then
-    table.insert(mask_groups, ui.section {
-      title = "Mask " .. (first_note + 1) .. "–" .. (last_note + 1),
-      subtitle = note_names[(first_note % 12) + 1] ..
-        tostring(math.floor(first_note / 12) - 1) .. " through " ..
-        note_names[(last_note % 12) + 1] ..
-        tostring(math.floor(last_note / 12) - 1) .. " in 12-degree tuning",
-      children = {
-        ui.row {
-          gap = 8,
-          children = buttons
-        }
-      }
+local mask_entries = mask_parameters()
+local mask_notes = {}
+local mask_layout = "degrees"
+local intervals = scale ~= nil and scale_intervals[scale.value] or nil
+local uses_builtin_twelve_degree_tuning =
+  (microtuning == nil or microtuning.value == 0) and
+  intervals ~= nil and
+  #mask_entries == #intervals
+
+if uses_builtin_twelve_degree_tuning then
+  mask_layout = "piano"
+  local mode_index = modulo((mode ~= nil and mode.value or 1) - 1, #intervals) + 1
+  local mode_root = intervals[mode_index]
+  local key_offset = key ~= nil and key.value or 0
+  for index, entry in ipairs(mask_entries) do
+    local interval_index = modulo(mode_index + index - 2, #intervals) + 1
+    local pitch_class = modulo(
+      key_offset + intervals[interval_index] - mode_root,
+      12
+    )
+    table.insert(mask_notes, {
+      label = note_names[pitch_class + 1],
+      parameter = entry.parameter.number,
+      pitch_class = pitch_class
+    })
+  end
+else
+  for _, entry in ipairs(mask_entries) do
+    table.insert(mask_notes, {
+      label = "Degree " .. entry.degree,
+      parameter = entry.parameter.number
     })
   end
 end
 
-local mask_children = {
-  ui.text {
-    text = "Pitch names are a 12-degree reference. With other tunings, these controls address tuning degrees directly.",
-    style = "caption"
-  }
-}
+local mask_children = {}
 if apply_mask ~= nil then
   table.insert(mask_children, ui.toggle {
     label = "Apply note mask",
     parameter = apply_mask.number
   })
 end
-if available_count > 0 then
-  table.insert(mask_children, ui.text {
-    text = included_count .. " of " .. available_count ..
-      " available mask entries are included.",
-    style = "caption"
-  })
-  for _, group in ipairs(mask_groups) do
-    table.insert(mask_children, group)
-  end
-else
-  table.insert(mask_children, ui.text {
-    text = "No note-mask parameters were found in this slot.",
-    style = "body"
+if #mask_notes > 0 then
+  table.insert(mask_children, ui.note_mask {
+    label = "Quantizer note mask",
+    layout = mask_layout,
+    notes = mask_notes
   })
 end
 
-local microtuning = nt.parameter("Microtuning")
 local microtuning_children = {}
 add_choice(microtuning_children, "Microtuning", microtuning)
 if microtuning ~= nil and microtuning.value == 1 then
@@ -163,74 +175,15 @@ elseif microtuning ~= nil and microtuning.value == 2 then
   add_slider(microtuning_children, "MTS tuning", nt.parameter("MTS .syx"))
 end
 
-local midi_children = {}
-add_slider(midi_children, "MIDI channel in", nt.parameter("MIDI channel (in)"))
-add_toggle(
-  midi_children,
-  "Output to breakout",
-  nt.parameter("Output to breakout")
-)
-add_toggle(
-  midi_children,
-  "Output to Select Bus",
-  nt.parameter("Output to Select Bus")
-)
-add_toggle(midi_children, "Output to USB", nt.parameter("Output to USB"))
-add_toggle(
-  midi_children,
-  "Output to internal algorithms",
-  nt.parameter("Output to internal")
-)
+local pitch_bend_children = {}
 local send_pitch_bend = nt.parameter("Send pitch bend")
-add_toggle(midi_children, "Send pitch bend", send_pitch_bend)
+add_toggle(pitch_bend_children, "Send pitch bend", send_pitch_bend)
 add_slider(
-  midi_children,
+  pitch_bend_children,
   "Pitch bend range",
   nt.parameter("Pitch bend range"),
   send_pitch_bend == nil or send_pitch_bend.value == 1
 )
-
-local channel_sections = {}
-for _, channel in ipairs(nt.channels()) do
-  local children = {}
-  add_choice(
-    children,
-    "CV input",
-    nt.channel_parameter(channel, "CV input")
-  )
-  add_choice(
-    children,
-    "Gate input",
-    nt.channel_parameter(channel, "Gate input")
-  )
-  add_choice(
-    children,
-    "CV output",
-    nt.channel_parameter(channel, "CV output")
-  )
-  add_choice(
-    children,
-    "Gate output",
-    nt.channel_parameter(channel, "Gate output")
-  )
-  add_choice(
-    children,
-    "Change output",
-    nt.channel_parameter(channel, "Change output")
-  )
-  add_slider(
-    children,
-    "MIDI channel out",
-    nt.channel_parameter(channel, "MIDI channel (out)")
-  )
-
-  if #children > 0 then
-    table.insert(channel_sections, ui.section {
-      title = "Channel " .. channel,
-      children = children
-    })
-  end
-end
 
 local root_children = {}
 if #pitch_children > 0 then
@@ -242,8 +195,6 @@ if #pitch_children > 0 then
 end
 table.insert(root_children, ui.section {
   title = "Note mask",
-  subtitle = available_count > 0 and
-    (included_count .. " of " .. available_count .. " included") or nil,
   children = mask_children
 })
 if #microtuning_children > 0 then
@@ -253,17 +204,10 @@ if #microtuning_children > 0 then
     children = microtuning_children
   })
 end
-if #midi_children > 0 then
+if #pitch_bend_children > 0 then
   table.insert(root_children, ui.section {
-    title = "MIDI",
-    children = midi_children
-  })
-end
-if #channel_sections > 0 then
-  table.insert(root_children, ui.section {
-    title = "Channels",
-    subtitle = #channel_sections .. " configured",
-    children = channel_sections
+    title = "MIDI pitch bend",
+    children = pitch_bend_children
   })
 end
 
