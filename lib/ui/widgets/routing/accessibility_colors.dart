@@ -146,6 +146,12 @@ class AccessibilityColors {
         minRatio: wcagAANormal,
       ),
 
+      tertiaryConnection: ensureContrast(
+        colorScheme.tertiary,
+        colorScheme.surface,
+        minRatio: wcagAANormal,
+      ),
+
       errorConnection: ensureContrast(
         colorScheme.error,
         colorScheme.surface,
@@ -203,6 +209,7 @@ class AccessibilityColors {
 class AccessibleRoutingColors {
   final Color primaryConnection;
   final Color secondaryConnection;
+  final Color tertiaryConnection;
   final Color errorConnection;
 
   final Color audioPortColor;
@@ -217,6 +224,7 @@ class AccessibleRoutingColors {
   const AccessibleRoutingColors({
     required this.primaryConnection,
     required this.secondaryConnection,
+    required this.tertiaryConnection,
     required this.errorConnection,
     required this.audioPortColor,
     required this.cvPortColor,

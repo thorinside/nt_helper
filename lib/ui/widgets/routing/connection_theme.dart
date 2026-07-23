@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
 
 /// Visual styling configuration for different connection types
 class ConnectionVisualTheme {
   /// Theme for regular (direct) connections
   final ConnectionStyle directConnection;
+
+  /// Theme for connections whose output is in add mode.
+  final ConnectionStyle addModeConnection;
+
+  /// Theme for connections whose output is in replace mode.
+  final ConnectionStyle replaceModeConnection;
 
   /// Theme for ghost connections
   final ConnectionStyle ghostConnection;
@@ -21,6 +28,8 @@ class ConnectionVisualTheme {
 
   const ConnectionVisualTheme({
     required this.directConnection,
+    required this.addModeConnection,
+    required this.replaceModeConnection,
     required this.ghostConnection,
     required this.selectedConnection,
     required this.highlightedConnection,
@@ -38,6 +47,22 @@ class ConnectionVisualTheme {
         dashPattern: null, // Solid line
         animationEnabled: false,
         endpointRadius: 3.0,
+        glowEffect: false,
+      ),
+      addModeConnection: ConnectionStyle(
+        strokeWidth: 2.5,
+        color: accessibleColors.primaryConnection,
+        dashPattern: null,
+        animationEnabled: false,
+        endpointRadius: 3.0,
+        glowEffect: false,
+      ),
+      replaceModeConnection: ConnectionStyle(
+        strokeWidth: 3.5,
+        color: accessibleColors.tertiaryConnection,
+        dashPattern: null,
+        animationEnabled: false,
+        endpointRadius: 3.5,
         glowEffect: false,
       ),
       ghostConnection: ConnectionStyle(
@@ -78,6 +103,7 @@ class ConnectionVisualTheme {
   /// Get the appropriate style for a connection based on its state
   ConnectionStyle getStyleForConnection({
     required Connection connection,
+    OutputMode? outputMode,
     required bool isSelected,
     required bool isHighlighted,
     required bool hasError,
@@ -102,7 +128,14 @@ class ConnectionVisualTheme {
       return ghostConnection;
     }
 
-    return directConnection;
+    switch (outputMode ?? connection.outputMode) {
+      case OutputMode.add:
+        return addModeConnection;
+      case OutputMode.replace:
+        return replaceModeConnection;
+      case null:
+        return directConnection;
+    }
   }
 }
 
@@ -181,9 +214,13 @@ class ConnectionStateManager {
        errorConnectionIds = errorConnectionIds ?? {};
 
   /// Get the visual style for a specific connection
-  ConnectionStyle getConnectionStyle(Connection connection) {
+  ConnectionStyle getConnectionStyle(
+    Connection connection, {
+    OutputMode? outputMode,
+  }) {
     return theme.getStyleForConnection(
       connection: connection,
+      outputMode: outputMode,
       isSelected: selectedConnectionIds.contains(connection.id),
       isHighlighted: highlightedConnectionIds.contains(connection.id),
       hasError: errorConnectionIds.contains(connection.id),

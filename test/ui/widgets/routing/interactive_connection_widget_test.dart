@@ -4,13 +4,19 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
+import 'package:nt_helper/cubit/routing_editor_state.dart';
+import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
+    as painter;
 import 'package:nt_helper/ui/widgets/routing/interactive_connection_widget.dart';
 
 @GenerateMocks([RoutingEditorCubit, PlatformInteractionService])
 import 'interactive_connection_widget_test.mocks.dart';
 
 void main() {
+  provideDummy<RoutingEditorState>(const RoutingEditorState.initial());
+
   group('InteractiveConnectionWidget', () {
     late MockRoutingEditorCubit mockCubit;
     late MockPlatformInteractionService mockPlatformService;
@@ -156,6 +162,52 @@ void main() {
 
         // Widget should build successfully
         expect(find.text('Connection'), findsOneWidget);
+      });
+    });
+
+    group('Accessibility', () {
+      testWidgets('announces add and replace connection modes', (tester) async {
+        when(mockPlatformService.supportsHoverInteractions()).thenReturn(false);
+        when(mockCubit.state).thenReturn(const RoutingEditorState.initial());
+
+        Future<void> pumpMode(OutputMode mode) async {
+          final connection = testConnection.copyWith(busLabel: 'A1');
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: InteractiveConnectionWidget(
+                  connection: connection,
+                  routingEditorCubit: mockCubit,
+                  platformService: mockPlatformService,
+                  size: const Size(200, 100),
+                  connectionData: painter.ConnectionData(
+                    connection: connection,
+                    sourcePosition: Offset.zero,
+                    destinationPosition: const Offset(100, 0),
+                    busLabel: 'A1',
+                    outputMode: mode,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        await pumpMode(OutputMode.add);
+        expect(
+          find.bySemanticsLabel(
+            'Connection from source-port to dest-port, on bus A1, Add mode',
+          ),
+          findsOneWidget,
+        );
+
+        await pumpMode(OutputMode.replace);
+        expect(
+          find.bySemanticsLabel(
+            'Connection from source-port to dest-port, on bus A1, Replace mode',
+          ),
+          findsOneWidget,
+        );
       });
     });
   });

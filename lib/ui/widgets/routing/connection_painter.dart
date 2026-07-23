@@ -443,7 +443,10 @@ class ConnectionPainter extends CustomPainter {
     ConnectionStyle style;
 
     if (connectionStateManager != null) {
-      style = connectionStateManager!.getConnectionStyle(conn.connection);
+      style = connectionStateManager!.getConnectionStyle(
+        conn.connection,
+        outputMode: conn.outputMode,
+      );
     } else {
       // Fallback to default theme
       final fallbackTheme = ConnectionVisualTheme.fromColorScheme(
@@ -451,13 +454,15 @@ class ConnectionPainter extends CustomPainter {
       );
       style = fallbackTheme.getStyleForConnection(
         connection: conn.connection,
+        outputMode: conn.outputMode,
         isSelected: conn.isSelected,
         isHighlighted: conn.isHighlighted,
         hasError: conn.isInvalidOrder,
       );
     }
 
-    // Use port type color as base, modified by connection style
+    // Mode-aware styles own the line colour for regular routed connections.
+    // Connections without a mode retain the port-type colour blend.
     final baseColor = _getPortColor(conn.connection.sourcePortId);
     Color finalColor;
 
@@ -465,11 +470,11 @@ class ConnectionPainter extends CustomPainter {
     // Hover/delete highlighting must always win.
     if (conn.isHighlighted) {
       finalColor = theme.colorScheme.error;
+    } else if (type == ConnectionVisualType.regular &&
+        (conn.outputMode ?? conn.connection.outputMode) != null) {
+      finalColor = style.color;
     } else {
       finalColor = Color.lerp(baseColor, style.color, 0.7) ?? style.color;
-      if (conn.outputMode == OutputMode.replace) {
-        finalColor = theme.colorScheme.primary.withValues(alpha: finalColor.a);
-      }
     }
 
     // Apply focus mode dimming (unless highlighted)
@@ -1047,6 +1052,15 @@ class ConnectionPainter extends CustomPainter {
     final paint = Paint();
     _applyConnectionStyle(paint, conn, classifyVisualType(conn));
     return paint.color;
+  }
+
+  /// Resolve the stroke width a connection would receive when painted.
+  /// Exposes the result of `_applyConnectionStyle()` for unit tests.
+  @visibleForTesting
+  double debugResolveStyleStrokeWidth(ConnectionData conn) {
+    final paint = Paint();
+    _applyConnectionStyle(paint, conn, classifyVisualType(conn));
+    return paint.strokeWidth;
   }
 
   /// Get current label bounds for testing purposes

@@ -3,6 +3,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
@@ -359,9 +360,20 @@ class _InteractiveConnectionWidgetState
     final conn = widget.connection;
     final parts = <String>[
       'Connection from ${conn.sourcePortId} to ${conn.destinationPortId}',
-      'on bus ${conn.busLabel}',
     ];
-    return parts.join(' ');
+    final busLabel = widget.connectionData?.busLabel ?? conn.busLabel;
+    if (busLabel != null && busLabel.isNotEmpty) {
+      parts.add('on bus $busLabel');
+    }
+    switch (widget.connectionData?.outputMode ?? conn.outputMode) {
+      case OutputMode.add:
+        parts.add('Add mode');
+      case OutputMode.replace:
+        parts.add('Replace mode');
+      case null:
+        break;
+    }
+    return parts.join(', ');
   }
 
   @override
