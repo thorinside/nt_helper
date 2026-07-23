@@ -10,7 +10,23 @@ void main() {
   const engine = LuaAlgorithmControllerEngine();
 
   test('registry exposes the complete bundled controller set', () {
-    for (final guid in ['eucp', 'clck', 'clkd', 'attn', 'xfad']) {
+    for (final guid in [
+      'eucp',
+      'clck',
+      'clkd',
+      'attn',
+      'xfad',
+      'lfo ',
+      'envq',
+      'eqpa',
+      'mix2',
+      'drea',
+      'fbnk',
+      'xaoc',
+      'quan',
+      'ensq',
+      'quad',
+    ]) {
       expect(
         AlgorithmControllerRegistry.bundled.findForGuid(guid),
         isNotNull,
@@ -196,6 +212,7 @@ List<AlgorithmControllerNode> _flatten(AlgorithmControllerNode root) {
       case AlgorithmControllerDivider():
       case AlgorithmControllerSpacer():
       case AlgorithmControllerCanvas():
+      case AlgorithmControllerXYPad():
         break;
     }
   }

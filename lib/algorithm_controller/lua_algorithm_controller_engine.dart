@@ -41,6 +41,7 @@ function ui.button(props) return element("button", props) end
 function ui.divider(props) return element("divider", props) end
 function ui.spacer(props) return element("spacer", props) end
 function ui.canvas(props) return element("canvas", props) end
+function ui.xy_pad(props) return element("xy_pad", props) end
 function ui.circle(props) return element("circle", props) end
 function ui.line(props) return element("line", props) end
 function ui.rect(props) return element("rect", props) end
@@ -353,6 +354,17 @@ final class _AlgorithmControllerDocumentParser {
             _optionalNumber(node['aspect_ratio'], '$path.aspect_ratio') ?? 4,
         shapes: _shapes(node['shapes'], '$path.shapes'),
       ),
+      'xy_pad' => AlgorithmControllerXYPad(
+        label: _string(node['label'], '$path.label'),
+        xParameterNumber: _integer(node['x_parameter'], '$path.x_parameter'),
+        yParameterNumber: _integer(node['y_parameter'], '$path.y_parameter'),
+        xLabel: _optionalString(node['x_label'], '$path.x_label') ?? 'X',
+        yLabel: _optionalString(node['y_label'], '$path.y_label') ?? 'Y',
+        aspectRatio:
+            _optionalNumber(node['aspect_ratio'], '$path.aspect_ratio') ?? 1,
+        invertY: _optionalBoolean(node['invert_y'], '$path.invert_y') ?? true,
+        enabled: _optionalBoolean(node['enabled'], '$path.enabled') ?? true,
+      ),
       _ => throw LuaAlgorithmControllerException(
         '$path has unknown UI node type "$type"',
       ),
@@ -383,6 +395,15 @@ final class _AlgorithmControllerDocumentParser {
       'adjust_parameter' => AlgorithmControllerAction.adjustParameter(
         parameterNumber: parameter,
         delta: _integer(action['delta'], '$path.delta'),
+      ),
+      'pulse_parameter' => AlgorithmControllerAction.pulseParameter(
+        parameterNumber: parameter,
+        offValue: _optionalInteger(action['off_value'], '$path.off_value') ?? 0,
+        onValue: _optionalInteger(action['on_value'], '$path.on_value') ?? 1,
+        durationMs:
+            (_optionalInteger(action['duration_ms'], '$path.duration_ms') ??
+                    100)
+                .clamp(0, 1000),
       ),
       _ => throw LuaAlgorithmControllerException(
         '$path has unknown action type "$type"',

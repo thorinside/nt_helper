@@ -1,6 +1,7 @@
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -104,6 +105,31 @@ return {
     expect(sourceLoads, 1);
   });
 
+  testWidgets('XY pad follows values from a new immutable Slot', (
+    tester,
+  ) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "XY controller",
+  root = ui.xy_pad {
+    label = "Position",
+    x_parameter = nt.parameter("1:Steps").number,
+    y_parameter = nt.parameter("1:Pulses").number
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(steps: 16), source));
+    await tester.pumpAndSettle();
+    expect(find.text('X 16 · Y 4'), findsOneWidget);
+
+    await tester.pumpWidget(_host(cubit, _slot(steps: 99), source));
+    await tester.pumpAndSettle();
+    expect(find.text('X 16 · Y 4'), findsNothing);
+    expect(find.text('X 32 · Y 4'), findsOneWidget);
+  });
+
   testWidgets('slider and button actions write through DistingCubit', (
     tester,
   ) async {
@@ -160,6 +186,56 @@ return {
         parameterNumber: 2,
         value: 12,
         userIsChangingTheValue: false,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('pulse button writes high then clears in order', (tester) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "Pulse",
+  root = ui.button {
+    label = "Trigger",
+    action = {
+      type = "pulse_parameter",
+      parameter = nt.parameter("1:Enable").number
+    }
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Trigger'));
+    await tester.pump();
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 1,
+        value: 1,
+        userIsChangingTheValue: true,
+      ),
+    ).called(1);
+    verifyNever(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 1,
+        value: 0,
+        userIsChangingTheValue: true,
+      ),
+    );
+
+    await tester.pump(const Duration(milliseconds: 100));
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 1,
+        value: 0,
+        userIsChangingTheValue: true,
       ),
     ).called(1);
   });
@@ -223,6 +299,240 @@ return {
       findsOneWidget,
     );
     semantics.dispose();
+  });
+
+  testWidgets('XY pad supports pointer and keyboard parameter writes', (
+    tester,
+  ) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "XY controller",
+  root = ui.xy_pad {
+    label = "Position",
+    x_parameter = nt.parameter("1:Steps").number,
+    y_parameter = nt.parameter("1:Pulses").number,
+    aspect_ratio = 2
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    final pad = find.byKey(
+      const ValueKey('algorithm-controller-xy-pad:Position'),
+    );
+    final rect = tester.getRect(pad);
+    final gesture = await tester.startGesture(rect.center);
+    await gesture.moveTo(
+      Offset(rect.left + rect.width * 0.75, rect.top + rect.height * 0.25),
+    );
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 2,
+        value: 24,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 3,
+        value: 24,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+    expect(find.text('X 24 · Y 24'), findsOneWidget);
+
+    clearInteractions(cubit);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 2,
+        value: 25,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 3,
+        value: 25,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('XY pad exposes accessible axes and resets on double tap', (
+    tester,
+  ) async {
+    final semanticsHandle = tester.ensureSemantics();
+    const source = r'''
+return {
+  version = 1,
+  title = "XY controller",
+  root = ui.xy_pad {
+    label = "Position",
+    x_parameter = nt.parameter("1:Steps").number,
+    y_parameter = nt.parameter("1:Pulses").number,
+    aspect_ratio = 2
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    final xySemantics = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          widget.properties.label == 'Position' &&
+          widget.properties.customSemanticsActions?.keys.any(
+                (action) => action.label == 'Increase X',
+              ) ==
+              true &&
+          widget.properties.customSemanticsActions?.keys.any(
+                (action) => action.label == 'Increase Y',
+              ) ==
+              true &&
+          widget.properties.customSemanticsActions?.keys.any(
+                (action) => action.label == 'Reset Position to default',
+              ) ==
+              true,
+    );
+    expect(xySemantics, findsOneWidget);
+    expect(find.bySemanticsLabel('Position'), findsOneWidget);
+    expect(
+      tester.getSemantics(xySemantics).getSemanticsData().value,
+      'X 16, Y 4',
+    );
+
+    final pad = find.byKey(
+      const ValueKey('algorithm-controller-xy-pad:Position'),
+    );
+    final rect = tester.getRect(pad);
+    final gesture = await tester.startGesture(rect.center);
+    await gesture.moveTo(
+      Offset(rect.left + rect.width * 0.75, rect.top + rect.height * 0.25),
+    );
+    await gesture.up();
+    await tester.pumpAndSettle();
+    clearInteractions(cubit);
+
+    await tester.tapAt(rect.center);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(rect.center);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 2,
+        value: 16,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 3,
+        value: 4,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+
+    semanticsHandle.dispose();
+  });
+
+  testWidgets('XY pad keyboard follows visual Y direction', (tester) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "XY controller",
+  root = ui.xy_pad {
+    label = "Position",
+    x_parameter = nt.parameter("1:Steps").number,
+    y_parameter = nt.parameter("1:Pulses").number,
+    aspect_ratio = 2,
+    invert_y = false
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    final pad = find.byKey(
+      const ValueKey('algorithm-controller-xy-pad:Position'),
+    );
+    final rect = tester.getRect(pad);
+    final gesture = await tester.startGesture(rect.center);
+    await gesture.moveTo(
+      Offset(rect.left + rect.width * 0.75, rect.top + rect.height * 0.75),
+    );
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(find.text('X 24 · Y 24'), findsOneWidget);
+    clearInteractions(cubit);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 3,
+        value: 23,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('XY pad safely paints a constant parameter range', (
+    tester,
+  ) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "XY controller",
+  root = ui.xy_pad {
+    label = "Position",
+    x_parameter = nt.parameter("1:Steps").number,
+    y_parameter = nt.parameter("1:Pulses").number
+  }
+}
+''';
+
+    await tester.pumpWidget(
+      _host(cubit, _slot(pulsesMinimum: 4, pulsesMaximum: 4), source),
+    );
+    await tester.pumpAndSettle();
+
+    final pad = find.byKey(
+      const ValueKey('algorithm-controller-xy-pad:Position'),
+    );
+    expect(pad, findsOneWidget);
+    expect(
+      tester
+          .widget<FocusableActionDetector>(
+            find.ancestor(
+              of: pad,
+              matching: find.byType(FocusableActionDetector),
+            ),
+          )
+          .enabled,
+      isFalse,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('choice renders NT strings and writes their raw value', (
@@ -810,6 +1120,8 @@ class _LuaAlgorithmControllerHarnessState
 
 Slot _slot({
   int steps = 16,
+  int pulsesMinimum = 1,
+  int pulsesMaximum = 32,
   bool emptyPages = false,
   bool bypassed = false,
   List<String> bypassEnums = const ['Off', 'On'],
@@ -818,11 +1130,11 @@ Slot _slot({
   int stepsPowerOfTen = 0,
   int stepsUnit = 0,
 }) {
-  const fixtures = [
+  final fixtures = [
     (name: 'Bypass', min: 0, max: 1, defaultValue: 0),
     (name: '1:Enable', min: 0, max: 1, defaultValue: 0),
     (name: '1:Steps', min: 1, max: 32, defaultValue: 16),
-    (name: '1:Pulses', min: 1, max: 32, defaultValue: 4),
+    (name: '1:Pulses', min: pulsesMinimum, max: pulsesMaximum, defaultValue: 4),
     (name: '1:Rotation', min: 0, max: 32, defaultValue: 0),
   ];
   final values = [bypassed ? 1 : 0, 1, steps, 4, 0];

@@ -5,8 +5,11 @@ They run inside nt_helper, not on the disting NT. The standard parameter editor
 remains the default and fallback.
 
 The app currently bundles controllers for Euclidean Patterns (`eucp`), Clock
-(`clck`), Clock Divider (`clkd`), Attenuverter (`attn`), and Crossfader
-(`xfad`). Installation and Gallery distribution are intentionally not enabled
+(`clck`), Clock Divider (`clkd`), Attenuverter (`attn`), Crossfader (`xfad`),
+LFO (`lfo `), Envelope (DAHDSR) (`envq`), EQ Parametric (`eqpa`), Mixer Stereo
+(`mix2`), Dream Machine (`drea`), Filter Bank (`fbnk`), Chaos (`xaoc`),
+Quantizer (`quan`), Envelope Sequencer (`ensq`), and Quadraphonic Mixer
+(`quad`). Installation and Gallery distribution are intentionally not enabled
 yet.
 
 ## Lifecycle
@@ -101,13 +104,27 @@ Controls:
 - `ui.choice { label, parameter, enabled }`
 - `ui.toggle { label, parameter, on_value, off_value, enabled }`
 - `ui.button { label, style, enabled, action }`
+- `ui.xy_pad { label, x_parameter, y_parameter, x_label, y_label,
+  aspect_ratio, invert_y, enabled }`
 
 Buttons currently support these declarative actions:
 
 ```lua
 action = { type = "set_parameter", parameter = 4, value = 0 }
 action = { type = "adjust_parameter", parameter = 4, delta = 1 }
+action = {
+  type = "pulse_parameter",
+  parameter = 4,
+  on_value = 1,
+  off_value = 0,
+  duration_ms = 100
+}
 ```
+
+`pulse_parameter` sends the high write, waits, and then clears the parameter.
+Its `on_value`, `off_value`, and `duration_ms` default to `1`, `0`, and `100`;
+the host bounds the delay to one second. Use it for repeatable edge-triggered
+algorithm commands.
 
 The host intersects controller slider ranges with the live parameter range and
 clamps every control result before writing. Sliders prefer the current
@@ -117,6 +134,14 @@ and units. Double-clicking a slider resets it to the parameter's live default
 value. Choices require a complete enum range and otherwise fall back to a
 slider. Flutter owns input semantics, keyboard behavior, disabled state, and
 the actual parameter write.
+
+An XY pad binds both axes directly to live parameters. Its range, value,
+disabled state, formatted text, and reset values come from the latest slot
+snapshot. Tap or drag to position the point, use the arrow keys for fine
+movement, and double-click to reset both axes. `invert_y` defaults to `true`, so
+larger Y values appear higher on the pad; set it to `false` when the algorithm's
+coordinate system increases downward. The host exposes each axis and reset as
+screen-reader actions.
 
 ## Drawing primitives
 

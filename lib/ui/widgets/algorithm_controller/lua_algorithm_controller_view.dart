@@ -264,6 +264,7 @@ class _AlgorithmControllerDocumentViewState
       case AlgorithmControllerDivider():
       case AlgorithmControllerSpacer():
       case AlgorithmControllerCanvas():
+      case AlgorithmControllerXYPad():
         break;
     }
   }
@@ -356,6 +357,7 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
       AlgorithmControllerDivider() => const Divider(),
       AlgorithmControllerSpacer node => SizedBox(height: node.size),
       AlgorithmControllerCanvas node => _buildCanvas(context, node),
+      AlgorithmControllerXYPad node => _buildXYPad(context, node),
     };
   }
 
@@ -627,7 +629,7 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
     final binding = _binding(node.action.parameterNumber);
     final enabled = node.enabled && binding != null && !binding.disabled;
     final onPressed = enabled
-        ? () => _performAction(context, node.action)
+        ? () => unawaited(_performAction(context, node.action))
         : null;
     return switch (node.style) {
       'text' => TextButton(onPressed: onPressed, child: Text(node.label)),
@@ -654,6 +656,54 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildXYPad(BuildContext context, AlgorithmControllerXYPad node) {
+    final xBinding = _binding(node.xParameterNumber);
+    final yBinding = _binding(node.yParameterNumber);
+    if (xBinding == null) {
+      return _missingParameter(context, node.xLabel, node.xParameterNumber);
+    }
+    if (yBinding == null) {
+      return _missingParameter(context, node.yLabel, node.yParameterNumber);
+    }
+
+    final enabled =
+        node.enabled &&
+        !xBinding.disabled &&
+        !yBinding.disabled &&
+        xBinding.minimum < xBinding.maximum &&
+        yBinding.minimum < yBinding.maximum;
+    return _AlgorithmControllerXYPadView(
+      label: node.label,
+      xLabel: node.xLabel,
+      yLabel: node.yLabel,
+      xValue: xBinding.value,
+      yValue: yBinding.value,
+      xDefault: xBinding.defaultValue,
+      yDefault: yBinding.defaultValue,
+      xMinimum: xBinding.minimum,
+      xMaximum: xBinding.maximum,
+      yMinimum: yBinding.minimum,
+      yMaximum: yBinding.maximum,
+      aspectRatio: node.aspectRatio.clamp(0.25, 20).toDouble(),
+      invertY: node.invertY,
+      enabled: enabled,
+      formatX: (value) => _formattedValue(xBinding, value),
+      formatY: (value) => _formattedValue(yBinding, value),
+      onXChanged: (value, changing) => _writeParameter(
+        context,
+        node.xParameterNumber,
+        value,
+        changing: changing,
+      ),
+      onYChanged: (value, changing) => _writeParameter(
+        context,
+        node.yParameterNumber,
+        value,
+        changing: changing,
       ),
     );
   }
@@ -715,20 +765,44 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
     );
   }
 
-  void _performAction(BuildContext context, AlgorithmControllerAction action) {
+  Future<void> _performAction(
+    BuildContext context,
+    AlgorithmControllerAction action,
+  ) async {
     final binding = _binding(action.parameterNumber);
     if (binding == null) return;
-    final value = switch (action.type) {
-      AlgorithmControllerActionType.setParameter => action.value!,
-      AlgorithmControllerActionType.adjustParameter =>
-        binding.value + action.delta!,
-    };
-    _writeParameter(
-      context,
-      action.parameterNumber,
-      value.clamp(binding.minimum, binding.maximum),
-      changing: false,
-    );
+    switch (action.type) {
+      case AlgorithmControllerActionType.setParameter:
+        await _writeParameterFuture(
+          context,
+          action.parameterNumber,
+          action.value!,
+          changing: false,
+        );
+      case AlgorithmControllerActionType.adjustParameter:
+        await _writeParameterFuture(
+          context,
+          action.parameterNumber,
+          binding.value + action.delta!,
+          changing: false,
+        );
+      case AlgorithmControllerActionType.pulseParameter:
+        await _writeParameterFuture(
+          context,
+          action.parameterNumber,
+          action.onValue!,
+          changing: true,
+        );
+        if (!context.mounted) return;
+        await Future<void>.delayed(Duration(milliseconds: action.durationMs!));
+        if (!context.mounted) return;
+        await _writeParameterFuture(
+          context,
+          action.parameterNumber,
+          action.offValue!,
+          changing: true,
+        );
+    }
   }
 
   void _writeParameter(
@@ -737,15 +811,29 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
     int value, {
     required bool changing,
   }) {
+    unawaited(
+      _writeParameterFuture(
+        context,
+        parameterNumber,
+        value,
+        changing: changing,
+      ),
+    );
+  }
+
+  Future<void> _writeParameterFuture(
+    BuildContext context,
+    int parameterNumber,
+    int value, {
+    required bool changing,
+  }) async {
     final binding = _binding(parameterNumber);
     if (binding == null) return;
-    unawaited(
-      context.read<DistingCubit>().updateParameterValue(
-        algorithmIndex: slotIndex,
-        parameterNumber: parameterNumber,
-        value: value.clamp(binding.minimum, binding.maximum),
-        userIsChangingTheValue: changing,
-      ),
+    await context.read<DistingCubit>().updateParameterValue(
+      algorithmIndex: slotIndex,
+      parameterNumber: parameterNumber,
+      value: value.clamp(binding.minimum, binding.maximum),
+      userIsChangingTheValue: changing,
     );
   }
 
@@ -761,6 +849,463 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
       result.add(children[index]);
     }
     return result;
+  }
+}
+
+typedef _AlgorithmControllerXYValueChanged =
+    void Function(int value, bool changing);
+
+final class _AlgorithmControllerXYPadView extends StatefulWidget {
+  const _AlgorithmControllerXYPadView({
+    required this.label,
+    required this.xLabel,
+    required this.yLabel,
+    required this.xValue,
+    required this.yValue,
+    required this.xDefault,
+    required this.yDefault,
+    required this.xMinimum,
+    required this.xMaximum,
+    required this.yMinimum,
+    required this.yMaximum,
+    required this.aspectRatio,
+    required this.invertY,
+    required this.enabled,
+    required this.formatX,
+    required this.formatY,
+    required this.onXChanged,
+    required this.onYChanged,
+  });
+
+  final String label;
+  final String xLabel;
+  final String yLabel;
+  final int xValue;
+  final int yValue;
+  final int xDefault;
+  final int yDefault;
+  final int xMinimum;
+  final int xMaximum;
+  final int yMinimum;
+  final int yMaximum;
+  final double aspectRatio;
+  final bool invertY;
+  final bool enabled;
+  final String Function(int value) formatX;
+  final String Function(int value) formatY;
+  final _AlgorithmControllerXYValueChanged onXChanged;
+  final _AlgorithmControllerXYValueChanged onYChanged;
+
+  @override
+  State<_AlgorithmControllerXYPadView> createState() =>
+      _AlgorithmControllerXYPadViewState();
+}
+
+final class _AlgorithmControllerXYPadViewState
+    extends State<_AlgorithmControllerXYPadView> {
+  late int _xValue = widget.xValue
+      .clamp(widget.xMinimum, widget.xMaximum)
+      .toInt();
+  late int _yValue = widget.yValue
+      .clamp(widget.yMinimum, widget.yMaximum)
+      .toInt();
+  bool _dragging = false;
+  bool _showFocusHighlight = false;
+
+  int get _xStep =>
+      math.max(1, ((widget.xMaximum - widget.xMinimum) / 100).round());
+  int get _yStep =>
+      math.max(1, ((widget.yMaximum - widget.yMinimum) / 100).round());
+
+  @override
+  void didUpdateWidget(covariant _AlgorithmControllerXYPadView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_dragging) {
+      _xValue = widget.xValue.clamp(widget.xMinimum, widget.xMaximum).toInt();
+      _yValue = widget.yValue.clamp(widget.yMinimum, widget.yMaximum).toInt();
+    }
+  }
+
+  void _setFromPosition(Offset position, Size size, {required bool changing}) {
+    if (!widget.enabled || size.width <= 0 || size.height <= 0) return;
+    final xFraction = (position.dx / size.width).clamp(0.0, 1.0);
+    final rawYFraction = (position.dy / size.height).clamp(0.0, 1.0);
+    final yFraction = widget.invertY ? 1 - rawYFraction : rawYFraction;
+    final xValue =
+        widget.xMinimum +
+        (xFraction * (widget.xMaximum - widget.xMinimum)).round();
+    final yValue =
+        widget.yMinimum +
+        (yFraction * (widget.yMaximum - widget.yMinimum)).round();
+    _setValues(xValue, yValue, changing: changing);
+  }
+
+  void _setValues(int xValue, int yValue, {required bool changing}) {
+    final clampedX = xValue.clamp(widget.xMinimum, widget.xMaximum).toInt();
+    final clampedY = yValue.clamp(widget.yMinimum, widget.yMaximum).toInt();
+    final xChanged = clampedX != _xValue;
+    final yChanged = clampedY != _yValue;
+    if (!xChanged && !yChanged) return;
+    setState(() {
+      _xValue = clampedX;
+      _yValue = clampedY;
+    });
+    if (xChanged) widget.onXChanged(clampedX, changing);
+    if (yChanged) widget.onYChanged(clampedY, changing);
+  }
+
+  void _finishDrag() {
+    if (!_dragging) return;
+    setState(() => _dragging = false);
+    widget.onXChanged(_xValue, false);
+    widget.onYChanged(_yValue, false);
+  }
+
+  void _nudgeX(int delta) {
+    if (!widget.enabled) return;
+    final next = (_xValue + delta)
+        .clamp(widget.xMinimum, widget.xMaximum)
+        .toInt();
+    if (next == _xValue) return;
+    setState(() => _xValue = next);
+    widget.onXChanged(next, false);
+  }
+
+  void _nudgeY(int delta) {
+    if (!widget.enabled) return;
+    final next = (_yValue + delta)
+        .clamp(widget.yMinimum, widget.yMaximum)
+        .toInt();
+    if (next == _yValue) return;
+    setState(() => _yValue = next);
+    widget.onYChanged(next, false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final xText = widget.formatX(_xValue);
+    final yText = widget.formatY(_yValue);
+    final nextX = (_xValue + _xStep)
+        .clamp(widget.xMinimum, widget.xMaximum)
+        .toInt();
+    final previousX = (_xValue - _xStep)
+        .clamp(widget.xMinimum, widget.xMaximum)
+        .toInt();
+    void resetToDefault() {
+      _setValues(widget.xDefault, widget.yDefault, changing: false);
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        '${widget.label} reset to default',
+        Directionality.of(context),
+      );
+    }
+
+    final customActions = widget.enabled
+        ? <CustomSemanticsAction, VoidCallback>{
+            CustomSemanticsAction(label: 'Decrease ${widget.xLabel}'): () =>
+                _nudgeX(-_xStep),
+            CustomSemanticsAction(label: 'Increase ${widget.xLabel}'): () =>
+                _nudgeX(_xStep),
+            CustomSemanticsAction(label: 'Decrease ${widget.yLabel}'): () =>
+                _nudgeY(-_yStep),
+            CustomSemanticsAction(label: 'Increase ${widget.yLabel}'): () =>
+                _nudgeY(_yStep),
+            CustomSemanticsAction(label: 'Reset ${widget.label} to default'):
+                resetToDefault,
+          }
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ExcludeSemantics(
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              Text(
+                '${widget.xLabel} $xText · ${widget.yLabel} $yText',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        FocusableActionDetector(
+          enabled: widget.enabled,
+          shortcuts: const {
+            SingleActivator(LogicalKeyboardKey.arrowLeft): _MoveXYLeftIntent(),
+            SingleActivator(LogicalKeyboardKey.arrowRight):
+                _MoveXYRightIntent(),
+            SingleActivator(LogicalKeyboardKey.arrowUp): _MoveXYUpIntent(),
+            SingleActivator(LogicalKeyboardKey.arrowDown): _MoveXYDownIntent(),
+          },
+          actions: {
+            _MoveXYLeftIntent: CallbackAction<_MoveXYLeftIntent>(
+              onInvoke: (_) {
+                _nudgeX(-_xStep);
+                return null;
+              },
+            ),
+            _MoveXYRightIntent: CallbackAction<_MoveXYRightIntent>(
+              onInvoke: (_) {
+                _nudgeX(_xStep);
+                return null;
+              },
+            ),
+            _MoveXYUpIntent: CallbackAction<_MoveXYUpIntent>(
+              onInvoke: (_) {
+                _nudgeY(widget.invertY ? _yStep : -_yStep);
+                return null;
+              },
+            ),
+            _MoveXYDownIntent: CallbackAction<_MoveXYDownIntent>(
+              onInvoke: (_) {
+                _nudgeY(widget.invertY ? -_yStep : _yStep);
+                return null;
+              },
+            ),
+          },
+          onShowFocusHighlight: (value) {
+            if (_showFocusHighlight == value) return;
+            setState(() => _showFocusHighlight = value);
+          },
+          child: Semantics(
+            container: true,
+            enabled: widget.enabled,
+            label: widget.label,
+            value: '${widget.xLabel} $xText, ${widget.yLabel} $yText',
+            hint: widget.enabled
+                ? 'Drag to position. Arrow keys change the two axes.'
+                : null,
+            increasedValue:
+                '${widget.xLabel} ${widget.formatX(nextX)}, '
+                '${widget.yLabel} $yText',
+            decreasedValue:
+                '${widget.xLabel} ${widget.formatX(previousX)}, '
+                '${widget.yLabel} $yText',
+            onIncrease: widget.enabled ? () => _nudgeX(_xStep) : null,
+            onDecrease: widget.enabled ? () => _nudgeX(-_xStep) : null,
+            customSemanticsActions: customActions,
+            child: ExcludeSemantics(
+              child: AspectRatio(
+                aspectRatio: widget.aspectRatio,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final size = Size(
+                      constraints.maxWidth,
+                      constraints.maxHeight,
+                    );
+                    return MouseRegion(
+                      cursor: widget.enabled
+                          ? SystemMouseCursors.precise
+                          : SystemMouseCursors.basic,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: widget.enabled
+                            ? (_) => Focus.of(context).requestFocus()
+                            : null,
+                        onTapUp: widget.enabled
+                            ? (details) => _setFromPosition(
+                                details.localPosition,
+                                size,
+                                changing: false,
+                              )
+                            : null,
+                        onDoubleTap: widget.enabled ? resetToDefault : null,
+                        onPanStart: widget.enabled
+                            ? (details) {
+                                Focus.of(context).requestFocus();
+                                setState(() => _dragging = true);
+                                _setFromPosition(
+                                  details.localPosition,
+                                  size,
+                                  changing: true,
+                                );
+                              }
+                            : null,
+                        onPanUpdate: widget.enabled
+                            ? (details) => _setFromPosition(
+                                details.localPosition,
+                                size,
+                                changing: true,
+                              )
+                            : null,
+                        onPanEnd: widget.enabled ? (_) => _finishDrag() : null,
+                        onPanCancel: widget.enabled ? _finishDrag : null,
+                        child: DecoratedBox(
+                          key: ValueKey(
+                            'algorithm-controller-xy-pad:${widget.label}',
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _showFocusHighlight
+                                  ? colorScheme.primary
+                                  : colorScheme.outlineVariant,
+                              width: _showFocusHighlight ? 3 : 1,
+                            ),
+                          ),
+                          child: CustomPaint(
+                            painter: _AlgorithmControllerXYPadPainter(
+                              xValue: _xValue,
+                              yValue: _yValue,
+                              xMinimum: widget.xMinimum,
+                              xMaximum: widget.xMaximum,
+                              yMinimum: widget.yMinimum,
+                              yMaximum: widget.yMaximum,
+                              invertY: widget.invertY,
+                              enabled: widget.enabled,
+                              colorScheme: colorScheme,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _MoveXYLeftIntent extends Intent {
+  const _MoveXYLeftIntent();
+}
+
+final class _MoveXYRightIntent extends Intent {
+  const _MoveXYRightIntent();
+}
+
+final class _MoveXYUpIntent extends Intent {
+  const _MoveXYUpIntent();
+}
+
+final class _MoveXYDownIntent extends Intent {
+  const _MoveXYDownIntent();
+}
+
+final class _AlgorithmControllerXYPadPainter extends CustomPainter {
+  const _AlgorithmControllerXYPadPainter({
+    required this.xValue,
+    required this.yValue,
+    required this.xMinimum,
+    required this.xMaximum,
+    required this.yMinimum,
+    required this.yMaximum,
+    required this.invertY,
+    required this.enabled,
+    required this.colorScheme,
+  });
+
+  final int xValue;
+  final int yValue;
+  final int xMinimum;
+  final int xMaximum;
+  final int yMinimum;
+  final int yMaximum;
+  final bool invertY;
+  final bool enabled;
+  final ColorScheme colorScheme;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final roundedRect = RRect.fromRectAndRadius(
+      rect.deflate(1),
+      const Radius.circular(11),
+    );
+    canvas
+      ..clipRRect(roundedRect)
+      ..drawRRect(
+        roundedRect,
+        Paint()
+          ..color = colorScheme.surfaceContainerHighest
+          ..style = PaintingStyle.fill,
+      );
+
+    final gridPaint = Paint()
+      ..color = colorScheme.outlineVariant
+      ..strokeWidth = 1;
+    for (var index = 1; index < 4; index++) {
+      final fraction = index / 4;
+      canvas
+        ..drawLine(
+          Offset(size.width * fraction, 0),
+          Offset(size.width * fraction, size.height),
+          gridPaint,
+        )
+        ..drawLine(
+          Offset(0, size.height * fraction),
+          Offset(size.width, size.height * fraction),
+          gridPaint,
+        );
+    }
+
+    final axisPaint = Paint()
+      ..color = colorScheme.outline
+      ..strokeWidth = 1.5;
+    canvas
+      ..drawLine(
+        Offset(size.width / 2, 0),
+        Offset(size.width / 2, size.height),
+        axisPaint,
+      )
+      ..drawLine(
+        Offset(0, size.height / 2),
+        Offset(size.width, size.height / 2),
+        axisPaint,
+      );
+
+    final xFraction = xMaximum == xMinimum
+        ? 0.5
+        : (xValue - xMinimum) / (xMaximum - xMinimum);
+    final rawYFraction = yMaximum == yMinimum
+        ? 0.5
+        : (yValue - yMinimum) / (yMaximum - yMinimum);
+    final yFraction = invertY ? 1 - rawYFraction : rawYFraction;
+    final center = Offset(
+      xFraction.clamp(0.0, 1.0) * size.width,
+      yFraction.clamp(0.0, 1.0) * size.height,
+    );
+    final radius = math.min(size.width, size.height) * 0.045;
+    canvas
+      ..drawCircle(
+        center,
+        radius + 4,
+        Paint()
+          ..color = colorScheme.surface
+          ..style = PaintingStyle.fill,
+      )
+      ..drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = enabled ? colorScheme.primary : colorScheme.onSurfaceVariant
+          ..style = PaintingStyle.fill,
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _AlgorithmControllerXYPadPainter oldDelegate) {
+    return oldDelegate.xValue != xValue ||
+        oldDelegate.yValue != yValue ||
+        oldDelegate.xMinimum != xMinimum ||
+        oldDelegate.xMaximum != xMaximum ||
+        oldDelegate.yMinimum != yMinimum ||
+        oldDelegate.yMaximum != yMaximum ||
+        oldDelegate.invertY != invertY ||
+        oldDelegate.enabled != enabled ||
+        oldDelegate.colorScheme != colorScheme;
   }
 }
 

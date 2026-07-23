@@ -81,6 +81,75 @@ return {
     expect(choice.parameterNumber, 1);
   });
 
+  test('parses a parameter-bound XY pad', () {
+    const source = r'''
+return {
+  version = 1,
+  title = "XY",
+  root = ui.xy_pad {
+    label = "Position",
+    x_label = "Horizontal",
+    y_label = "Vertical",
+    x_parameter = nt.parameter("1:Steps").number,
+    y_parameter = nt.parameter("1:Pulses").number,
+    aspect_ratio = 1.5,
+    invert_y = false,
+    enabled = false
+  }
+}
+''';
+
+    final document = engine.evaluate(
+      source: source,
+      slot: _euclideanSlot(),
+      slotIndex: 2,
+      units: const [],
+    );
+
+    final pad = document.root as AlgorithmControllerXYPad;
+    expect(pad.label, 'Position');
+    expect(pad.xLabel, 'Horizontal');
+    expect(pad.yLabel, 'Vertical');
+    expect(pad.xParameterNumber, 2);
+    expect(pad.yParameterNumber, 3);
+    expect(pad.aspectRatio, 1.5);
+    expect(pad.invertY, isFalse);
+    expect(pad.enabled, isFalse);
+  });
+
+  test('parses a repeatable parameter pulse action', () {
+    const source = r'''
+return {
+  version = 1,
+  title = "Pulse",
+  root = ui.button {
+    label = "Trigger",
+    action = {
+      type = "pulse_parameter",
+      parameter = nt.parameter("1:Enable").number,
+      off_value = 2,
+      on_value = 7,
+      duration_ms = 75
+    }
+  }
+}
+''';
+
+    final document = engine.evaluate(
+      source: source,
+      slot: _euclideanSlot(),
+      slotIndex: 2,
+      units: const [],
+    );
+
+    final action = (document.root as AlgorithmControllerButton).action;
+    expect(action.type, AlgorithmControllerActionType.pulseParameter);
+    expect(action.parameterNumber, 1);
+    expect(action.offValue, 2);
+    expect(action.onValue, 7);
+    expect(action.durationMs, 75);
+  });
+
   test('matches snapshot values and strings by hardware parameter number', () {
     const source = r'''
 local steps = nt.parameter("1:Steps")

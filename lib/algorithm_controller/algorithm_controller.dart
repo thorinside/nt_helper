@@ -89,25 +89,47 @@ final class AlgorithmControllerToggle extends AlgorithmControllerNode {
   final bool enabled;
 }
 
-enum AlgorithmControllerActionType { setParameter, adjustParameter }
+enum AlgorithmControllerActionType {
+  setParameter,
+  adjustParameter,
+  pulseParameter,
+}
 
 final class AlgorithmControllerAction {
   const AlgorithmControllerAction.setParameter({
     required this.parameterNumber,
     required int this.value,
   }) : type = AlgorithmControllerActionType.setParameter,
-       delta = null;
+       delta = null,
+       offValue = null,
+       onValue = null,
+       durationMs = null;
 
   const AlgorithmControllerAction.adjustParameter({
     required this.parameterNumber,
     required int this.delta,
   }) : type = AlgorithmControllerActionType.adjustParameter,
-       value = null;
+       value = null,
+       offValue = null,
+       onValue = null,
+       durationMs = null;
+
+  const AlgorithmControllerAction.pulseParameter({
+    required this.parameterNumber,
+    this.offValue = 0,
+    this.onValue = 1,
+    this.durationMs = 100,
+  }) : type = AlgorithmControllerActionType.pulseParameter,
+       value = null,
+       delta = null;
 
   final AlgorithmControllerActionType type;
   final int parameterNumber;
   final int? value;
   final int? delta;
+  final int? offValue;
+  final int? onValue;
+  final int? durationMs;
 }
 
 final class AlgorithmControllerButton extends AlgorithmControllerNode {
@@ -209,6 +231,28 @@ final class AlgorithmControllerCanvas extends AlgorithmControllerNode {
   final List<AlgorithmControllerCanvasShape> shapes;
 }
 
+final class AlgorithmControllerXYPad extends AlgorithmControllerNode {
+  const AlgorithmControllerXYPad({
+    required this.label,
+    required this.xParameterNumber,
+    required this.yParameterNumber,
+    this.xLabel = 'X',
+    this.yLabel = 'Y',
+    this.aspectRatio = 1,
+    this.invertY = true,
+    this.enabled = true,
+  });
+
+  final String label;
+  final int xParameterNumber;
+  final int yParameterNumber;
+  final String xLabel;
+  final String yLabel;
+  final double aspectRatio;
+  final bool invertY;
+  final bool enabled;
+}
+
 final class AlgorithmControllerDocument {
   const AlgorithmControllerDocument({
     required this.version,
@@ -268,6 +312,66 @@ final class AlgorithmControllerRegistry {
       algorithmGuid: 'xfad',
       name: 'Crossfader controller',
       assetPath: 'assets/algorithm_controllers/crossfader.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.lfo',
+      algorithmGuid: 'lfo ',
+      name: 'LFO controller',
+      assetPath: 'assets/algorithm_controllers/lfo.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.envelope-dahdsr',
+      algorithmGuid: 'envq',
+      name: 'Envelope DAHDSR controller',
+      assetPath: 'assets/algorithm_controllers/envelope_dahdsr.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.parametric-eq',
+      algorithmGuid: 'eqpa',
+      name: 'Parametric EQ controller',
+      assetPath: 'assets/algorithm_controllers/parametric_eq.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.mixer-stereo',
+      algorithmGuid: 'mix2',
+      name: 'Stereo mixer controller',
+      assetPath: 'assets/algorithm_controllers/mixer_stereo.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.dream-machine',
+      algorithmGuid: 'drea',
+      name: 'Dream Machine controller',
+      assetPath: 'assets/algorithm_controllers/dream_machine.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.filter-bank',
+      algorithmGuid: 'fbnk',
+      name: 'Filter bank controller',
+      assetPath: 'assets/algorithm_controllers/filter_bank.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.chaos',
+      algorithmGuid: 'xaoc',
+      name: 'Chaos controller',
+      assetPath: 'assets/algorithm_controllers/chaos.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.quantizer',
+      algorithmGuid: 'quan',
+      name: 'Quantizer controller',
+      assetPath: 'assets/algorithm_controllers/quantizer.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.envelope-sequencer',
+      algorithmGuid: 'ensq',
+      name: 'Envelope sequencer controller',
+      assetPath: 'assets/algorithm_controllers/envelope_sequencer.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.quadraphonic-mixer',
+      algorithmGuid: 'quad',
+      name: 'Quadraphonic mixer controller',
+      assetPath: 'assets/algorithm_controllers/quadraphonic_mixer.lua',
     ),
   ]);
 
