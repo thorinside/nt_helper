@@ -69,13 +69,39 @@ class _SlotBypassControlState extends State<SlotBypassControl> {
         child: FilterChip(
           key: const ValueKey('slot-bypass-toggle'),
           focusNode: widget.focusNode,
-          avatar: const Icon(Icons.power_settings_new_rounded, size: 18),
-          label: Text('$name: $displayValue'),
+          avatar: Icon(
+            selected
+                ? Icons.power_off_rounded
+                : Icons.power_settings_new_rounded,
+            size: 18,
+          ),
+          label: _fixedWidthLabel(binding, name, displayValue),
           selected: selected,
+          showCheckmark: false,
           onSelected: enabled ? (_) => _toggle(binding) : null,
         ),
       ),
     );
+  }
+
+  Widget _fixedWidthLabel(
+    _BypassBinding? binding,
+    String name,
+    String displayValue,
+  ) {
+    final currentLabel = '$name: $displayValue';
+    final labels = <String>{currentLabel};
+    if (binding != null) {
+      for (
+        var value = binding.parameter.min;
+        value <= binding.parameter.max;
+        value++
+      ) {
+        labels.add('$name: ${_displayValue(binding, value)}');
+      }
+    }
+
+    return _FixedWidthBypassLabel(currentLabel: currentLabel, labels: labels);
   }
 
   _BypassBinding? _binding() {
@@ -146,6 +172,39 @@ class _SlotBypassControlState extends State<SlotBypassControl> {
     } finally {
       if (mounted) setState(() => _updating = false);
     }
+  }
+}
+
+class _FixedWidthBypassLabel extends StatelessWidget {
+  const _FixedWidthBypassLabel({
+    required this.currentLabel,
+    required this.labels,
+  });
+
+  final String currentLabel;
+  final Set<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = DefaultTextStyle.of(context).style;
+    final textDirection = Directionality.of(context);
+    final textScaler = MediaQuery.textScalerOf(context);
+    var widestLabel = 0.0;
+
+    for (final label in labels) {
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: style),
+        textDirection: textDirection,
+        textScaler: textScaler,
+        maxLines: 1,
+      )..layout();
+      if (painter.width > widestLabel) widestLabel = painter.width;
+    }
+
+    return SizedBox(
+      width: widestLabel,
+      child: Text(currentLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
+    );
   }
 }
 

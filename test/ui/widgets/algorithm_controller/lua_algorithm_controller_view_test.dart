@@ -311,6 +311,88 @@ return {
     expect(find.text('sixteen steps'), findsOneWidget);
   });
 
+  testWidgets('slider formats raw values like the parameter editor', (
+    tester,
+  ) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "Scaled",
+  root = ui.slider {
+    label = "Steps",
+    parameter = nt.parameter("1:Steps").number
+  }
+}
+''';
+
+    await tester.pumpWidget(
+      _host(
+        cubit,
+        _slot(steps: 16, stepsPowerOfTen: -1, stepsUnit: 1),
+        source,
+        units: const ['V'],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('1.6 V'), findsOneWidget);
+    final slider = tester.widget<Slider>(find.byType(Slider));
+    expect(slider.semanticFormatterCallback!(16), 'Steps 1.6 V');
+  });
+
+  testWidgets('double-tapping a slider resets its parameter to default', (
+    tester,
+  ) async {
+    final semanticsHandle = tester.ensureSemantics();
+    const source = r'''
+return {
+  version = 1,
+  title = "Resettable",
+  root = ui.slider {
+    label = "Steps",
+    parameter = nt.parameter("1:Steps").number
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(steps: 9), source));
+    await tester.pumpAndSettle();
+
+    final sliderFinder = find.byType(Slider);
+    final resetSemanticsFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          widget.properties.customSemanticsActions?.keys.any(
+                (action) => action.label == 'Reset Steps to default',
+              ) ==
+              true,
+    );
+    expect(resetSemanticsFinder, findsOneWidget);
+    final semantics = tester
+        .getSemantics(resetSemanticsFinder)
+        .getSemanticsData();
+    expect(semantics.customSemanticsActionIds, isNotEmpty);
+    clearInteractions(cubit);
+
+    final sliderRect = tester.getRect(sliderFinder);
+    final doubleTapPoint = Offset(sliderRect.right - 12, sliderRect.center.dy);
+    await tester.tapAt(doubleTapPoint);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(doubleTapPoint);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 2,
+        value: 16,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+
+    semanticsHandle.dispose();
+  });
+
   testWidgets('pinned Bypass uses NT strings and parameter zero', (
     tester,
   ) async {
@@ -351,6 +433,16 @@ return {
     expect(bypassSemantics.label, 'Bypass');
     expect(bypassSemantics.value, 'Processing');
     expect(bypassSemantics.flagsCollection.isToggled, Tristate.isFalse);
+    final bypassSize = tester.getSize(
+      find.byKey(const ValueKey('slot-bypass-toggle')),
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('slot-bypass-toggle')),
+        matching: find.byIcon(Icons.power_settings_new_rounded),
+      ),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('slot-bypass-toggle')));
     await tester.pump();
@@ -375,8 +467,54 @@ return {
     );
     await tester.pumpAndSettle();
     expect(find.text('Bypass: Skipped'), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('slot-bypass-toggle'))),
+      bypassSize,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('slot-bypass-toggle')),
+        matching: find.byIcon(Icons.power_off_rounded),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilterChip>(find.byKey(const ValueKey('slot-bypass-toggle')))
+          .showCheckmark,
+      isFalse,
+    );
 
     semanticsHandle.dispose();
+  });
+
+  testWidgets('slot action bar is right aligned', (tester) async {
+    tester.view.physicalSize = const Size(800, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<DistingCubit>.value(
+          value: cubit,
+          child: Scaffold(
+            body: _SlotDetailHarness(
+              slot: _slot(),
+              slotIndex: 2,
+              units: const [],
+              firmwareVersion: FirmwareVersion('1.17.0'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final screenRight = tester.getRect(find.byType(Scaffold)).right;
+    final moreOptionsRight = tester
+        .getRect(find.byKey(const ValueKey('slot-editor-more-options')))
+        .right;
+    expect(moreOptionsRight, closeTo(screenRight - 24, 0.1));
   });
 
   testWidgets('pinned Bypass remains usable on a narrow layout', (
@@ -603,12 +741,14 @@ Widget _host(
   Slot slot,
   String source, {
   AlgorithmControllerSourceLoader? sourceLoader,
+  List<String> units = const [],
 }) {
   return _LuaAlgorithmControllerHarness(
     cubit: cubit,
     slot: slot,
     source: source,
     sourceLoader: sourceLoader,
+    units: units,
   );
 }
 
@@ -618,12 +758,14 @@ class _LuaAlgorithmControllerHarness extends StatefulWidget {
     required this.slot,
     required this.source,
     this.sourceLoader,
+    this.units = const [],
   });
 
   final MockDistingCubit cubit;
   final Slot slot;
   final String source;
   final AlgorithmControllerSourceLoader? sourceLoader;
+  final List<String> units;
 
   @override
   State<_LuaAlgorithmControllerHarness> createState() =>
@@ -656,7 +798,7 @@ class _LuaAlgorithmControllerHarnessState
             ),
             slot: widget.slot,
             slotIndex: 2,
-            units: const [],
+            units: widget.units,
             sectionController: _sectionController,
             sourceLoader: widget.sourceLoader ?? (_) async => widget.source,
           ),
@@ -673,6 +815,8 @@ Slot _slot({
   List<String> bypassEnums = const ['Off', 'On'],
   String bypassDisplay = 'Off',
   String stepsDisplay = '',
+  int stepsPowerOfTen = 0,
+  int stepsUnit = 0,
 }) {
   const fixtures = [
     (name: 'Bypass', min: 0, max: 1, defaultValue: 0),
@@ -712,9 +856,9 @@ Slot _slot({
           min: fixtures[index].min,
           max: fixtures[index].max,
           defaultValue: fixtures[index].defaultValue,
-          unit: 0,
+          unit: index == 2 ? stepsUnit : 0,
           name: fixtures[index].name,
-          powerOfTen: 0,
+          powerOfTen: index == 2 ? stepsPowerOfTen : 0,
         ),
     ],
     values: [

@@ -100,9 +100,11 @@ class SlotEditorActionBar extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      child: LayoutBuilder(
-        builder: (context, constraints) => Wrap(
-          alignment: WrapAlignment.spaceBetween,
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          runAlignment: WrapAlignment.end,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 12,
           runSpacing: 4,

@@ -10,8 +10,23 @@ import 'package:nt_helper/algorithm_controller/lua_algorithm_controller_engine.d
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/parameter_number_lookup.dart';
 import 'package:nt_helper/ui/widgets/algorithm_controller/algorithm_controller_section_controller.dart';
+import 'package:nt_helper/ui/widgets/parameter_numeric_editing.dart';
+import 'package:nt_helper/util/ui_helpers.dart';
 
 typedef AlgorithmControllerSourceLoader = Future<String> Function(String path);
+
+typedef _AlgorithmControllerParameterBinding = ({
+  int minimum,
+  int maximum,
+  int defaultValue,
+  int value,
+  bool disabled,
+  List<String> enumValues,
+  String displayValue,
+  String name,
+  int powerOfTen,
+  String? unit,
+});
 
 class LuaAlgorithmControllerView extends StatefulWidget {
   const LuaAlgorithmControllerView({
@@ -167,6 +182,7 @@ class _LuaAlgorithmControllerViewState
       document: document,
       slot: widget.slot,
       slotIndex: widget.slotIndex,
+      units: widget.units,
       sectionController: widget.sectionController,
     );
   }
@@ -178,12 +194,14 @@ class AlgorithmControllerDocumentView extends StatefulWidget {
     required this.document,
     required this.slot,
     required this.slotIndex,
+    required this.units,
     required this.sectionController,
   });
 
   final AlgorithmControllerDocument document;
   final Slot slot;
   final int slotIndex;
+  final List<String> units;
   final AlgorithmControllerSectionController sectionController;
 
   @override
@@ -256,6 +274,7 @@ class _AlgorithmControllerDocumentViewState
       document: widget.document,
       slot: widget.slot,
       slotIndex: widget.slotIndex,
+      units: widget.units,
       sectionController: widget.sectionController,
     );
   }
@@ -266,12 +285,14 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
     required this.document,
     required this.slot,
     required this.slotIndex,
+    required this.units,
     required this.sectionController,
   });
 
   final AlgorithmControllerDocument document;
   final Slot slot;
   final int slotIndex;
+  final List<String> units;
   final AlgorithmControllerSectionController sectionController;
 
   @override
@@ -421,54 +442,86 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
         ? maximum - minimum
         : null;
     final displayValue = _formattedValue(binding, value);
+    final defaultValue = binding.defaultValue.clamp(
+      binding.minimum,
+      binding.maximum,
+    );
+    final resetToDefault = enabled
+        ? () {
+            _writeParameter(
+              context,
+              node.parameterNumber,
+              defaultValue,
+              changing: false,
+            );
+            SemanticsService.sendAnnouncement(
+              View.of(context),
+              '${node.label} reset to '
+              '${_formattedValue(binding, defaultValue)}',
+              Directionality.of(context),
+            );
+          }
+        : null;
 
-    return MergeSemantics(
-      child: Row(
-        children: [
-          SizedBox(
-            width: 88,
-            child: Text(
-              node.label,
-              style: Theme.of(context).textTheme.bodyLarge,
+    return Semantics(
+      customSemanticsActions: resetToDefault == null
+          ? null
+          : {
+              CustomSemanticsAction(label: 'Reset ${node.label} to default'):
+                  resetToDefault,
+            },
+      child: MergeSemantics(
+        child: Row(
+          children: [
+            SizedBox(
+              width: 88,
+              child: Text(
+                node.label,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ),
-          ),
-          Expanded(
-            child: Slider(
-              value: value.toDouble(),
-              min: minimum.toDouble(),
-              max: validRange ? maximum.toDouble() : minimum.toDouble() + 1,
-              divisions: divisions,
-              label: displayValue,
-              semanticFormatterCallback: (newValue) =>
-                  '${node.label} '
-                  '${_formattedValue(binding, newValue.round())}',
-              onChanged: enabled
-                  ? (newValue) => _writeParameter(
-                      context,
-                      node.parameterNumber,
-                      newValue.round(),
-                      changing: true,
-                    )
-                  : null,
-              onChangeEnd: enabled
-                  ? (newValue) => _writeParameter(
-                      context,
-                      node.parameterNumber,
-                      newValue.round(),
-                      changing: false,
-                    )
-                  : null,
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onDoubleTap: resetToDefault,
+                child: Slider(
+                  value: value.toDouble(),
+                  min: minimum.toDouble(),
+                  max: validRange ? maximum.toDouble() : minimum.toDouble() + 1,
+                  divisions: divisions,
+                  label: displayValue,
+                  semanticFormatterCallback: (newValue) =>
+                      '${node.label} '
+                      '${_formattedValue(binding, newValue.round())}',
+                  onChanged: enabled
+                      ? (newValue) => _writeParameter(
+                          context,
+                          node.parameterNumber,
+                          newValue.round(),
+                          changing: true,
+                        )
+                      : null,
+                  onChangeEnd: enabled
+                      ? (newValue) => _writeParameter(
+                          context,
+                          node.parameterNumber,
+                          newValue.round(),
+                          changing: false,
+                        )
+                      : null,
+                ),
+              ),
             ),
-          ),
-          SizedBox(
-            width: 96,
-            child: Text(
-              displayValue,
-              textAlign: TextAlign.end,
-              style: Theme.of(context).textTheme.titleMedium,
+            SizedBox(
+              width: 96,
+              child: Text(
+                displayValue,
+                textAlign: TextAlign.end,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -612,23 +665,17 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
     );
   }
 
-  ({
-    int minimum,
-    int maximum,
-    int value,
-    bool disabled,
-    List<String> enumValues,
-    String displayValue,
-  })?
-  _binding(int parameterNumber) {
+  _AlgorithmControllerParameterBinding? _binding(int parameterNumber) {
     final info = slot.parameters.byParameterNumber(parameterNumber);
     if (info == null) return null;
     final value = slot.values.byParameterNumber(parameterNumber);
     final enums = slot.enums.byParameterNumber(parameterNumber);
     final valueString = slot.valueStrings.byParameterNumber(parameterNumber);
+    final rawUnit = info.getUnitString(units)?.trim();
     return (
       minimum: info.min,
       maximum: info.max,
+      defaultValue: info.defaultValue,
       value: value?.value ?? info.defaultValue,
       disabled: value?.isDisabled ?? false,
       enumValues: [
@@ -636,19 +683,14 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
           enumValue.trim(),
       ],
       displayValue: valueString?.value.trim() ?? '',
+      name: info.name,
+      powerOfTen: info.powerOfTen,
+      unit: rawUnit == null || rawUnit.isEmpty ? null : rawUnit,
     );
   }
 
   String _formattedValue(
-    ({
-      int minimum,
-      int maximum,
-      int value,
-      bool disabled,
-      List<String> enumValues,
-      String displayValue,
-    })
-    binding,
+    _AlgorithmControllerParameterBinding binding,
     int value,
   ) {
     if (value == binding.value && binding.displayValue.isNotEmpty) {
@@ -659,7 +701,18 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
         binding.enumValues[value].isNotEmpty) {
       return binding.enumValues[value];
     }
-    return value.toString();
+    final unit = binding.unit;
+    if (unit == null) {
+      return formatEditableNumericValue(value, binding.powerOfTen);
+    }
+    return formatWithUnit(
+      value,
+      name: binding.name,
+      min: binding.minimum,
+      max: binding.maximum,
+      unit: unit,
+      powerOfTen: binding.powerOfTen,
+    );
   }
 
   void _performAction(BuildContext context, AlgorithmControllerAction action) {

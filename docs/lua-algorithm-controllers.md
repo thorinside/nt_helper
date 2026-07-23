@@ -111,10 +111,12 @@ action = { type = "adjust_parameter", parameter = 4, delta = 1 }
 
 The host intersects controller slider ranges with the live parameter range and
 clamps every control result before writing. Sliders prefer the current
-device-formatted value, then the matching enum string, then the raw integer.
-Choices require a complete enum range and otherwise fall back to a slider.
-Flutter owns input semantics, keyboard behavior, disabled state, and the actual
-parameter write.
+device-formatted value, then the matching enum string, then the standard
+parameter-editor formatting for the raw value, including `powerOfTen` scaling
+and units. Double-clicking a slider resets it to the parameter's live default
+value. Choices require a complete enum range and otherwise fall back to a
+slider. Flutter owns input semantics, keyboard behavior, disabled state, and
+the actual parameter write.
 
 ## Drawing primitives
 
