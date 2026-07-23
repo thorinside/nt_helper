@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/algorithm_controller/algorithm_controller.dart';
 import 'package:nt_helper/algorithm_controller/lua_algorithm_controller_engine.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/parameter_number_lookup.dart';
 import 'package:nt_helper/ui/widgets/algorithm_controller/algorithm_controller_section_controller.dart';
 
 typedef AlgorithmControllerSourceLoader = Future<String> Function(String path);
@@ -238,6 +240,7 @@ class _AlgorithmControllerDocumentViewState
         }
       case AlgorithmControllerText():
       case AlgorithmControllerSlider():
+      case AlgorithmControllerChoice():
       case AlgorithmControllerToggle():
       case AlgorithmControllerButton():
       case AlgorithmControllerDivider():
@@ -326,6 +329,7 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
       AlgorithmControllerSection node => _buildSection(context, node, path),
       AlgorithmControllerText node => _buildText(context, node),
       AlgorithmControllerSlider node => _buildSlider(context, node),
+      AlgorithmControllerChoice node => _buildChoice(context, node),
       AlgorithmControllerToggle node => _buildToggle(context, node),
       AlgorithmControllerButton node => _buildButton(context, node),
       AlgorithmControllerDivider() => const Divider(),
@@ -416,6 +420,7 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
     final divisions = validRange && maximum - minimum <= 256
         ? maximum - minimum
         : null;
+    final displayValue = _formattedValue(binding, value);
 
     return MergeSemantics(
       child: Row(
@@ -433,9 +438,10 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
               min: minimum.toDouble(),
               max: validRange ? maximum.toDouble() : minimum.toDouble() + 1,
               divisions: divisions,
-              label: value.toString(),
+              label: displayValue,
               semanticFormatterCallback: (newValue) =>
-                  '${node.label} ${newValue.round()}',
+                  '${node.label} '
+                  '${_formattedValue(binding, newValue.round())}',
               onChanged: enabled
                   ? (newValue) => _writeParameter(
                       context,
@@ -455,12 +461,88 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 44,
+            width: 96,
             child: Text(
-              value.toString(),
+              displayValue,
               textAlign: TextAlign.end,
               style: Theme.of(context).textTheme.titleMedium,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChoice(BuildContext context, AlgorithmControllerChoice node) {
+    final binding = _binding(node.parameterNumber);
+    if (binding == null) {
+      return _missingParameter(context, node.label, node.parameterNumber);
+    }
+    final enumValues = binding.enumValues;
+    final complete =
+        binding.minimum >= 0 &&
+        binding.maximum < enumValues.length &&
+        [
+          for (var value = binding.minimum; value <= binding.maximum; value++)
+            enumValues[value],
+        ].every((label) => label.isNotEmpty);
+    if (!complete) {
+      return _buildSlider(
+        context,
+        AlgorithmControllerSlider(
+          label: node.label,
+          parameterNumber: node.parameterNumber,
+          enabled: node.enabled,
+        ),
+      );
+    }
+
+    final enabled = node.enabled && !binding.disabled;
+    return Semantics(
+      container: true,
+      label: '${node.label} choices',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(node.label, style: Theme.of(context).textTheme.bodyLarge),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (
+                var value = binding.minimum;
+                value <= binding.maximum;
+                value++
+              )
+                Semantics(
+                  button: true,
+                  selected: binding.value == value,
+                  label: '${node.label}: ${enumValues[value]}',
+                  child: ExcludeSemantics(
+                    child: ChoiceChip(
+                      label: Text(enumValues[value]),
+                      selected: binding.value == value,
+                      onSelected: enabled
+                          ? (selected) {
+                              if (!selected || binding.value == value) return;
+                              _writeParameter(
+                                context,
+                                node.parameterNumber,
+                                value,
+                                changing: false,
+                              );
+                              SemanticsService.sendAnnouncement(
+                                View.of(context),
+                                '${node.label} ${enumValues[value]} selected',
+                                Directionality.of(context),
+                              );
+                            }
+                          : null,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -530,24 +612,54 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
     );
   }
 
-  ({int minimum, int maximum, int value, bool disabled})? _binding(
-    int parameterNumber,
-  ) {
-    final infoIndex = slot.parameters.indexWhere(
-      (parameter) => parameter.parameterNumber == parameterNumber,
-    );
-    if (infoIndex < 0) return null;
-    final info = slot.parameters[infoIndex];
-    final valueIndex = slot.values.indexWhere(
-      (value) => value.parameterNumber == parameterNumber,
-    );
-    final value = valueIndex >= 0 ? slot.values[valueIndex] : null;
+  ({
+    int minimum,
+    int maximum,
+    int value,
+    bool disabled,
+    List<String> enumValues,
+    String displayValue,
+  })?
+  _binding(int parameterNumber) {
+    final info = slot.parameters.byParameterNumber(parameterNumber);
+    if (info == null) return null;
+    final value = slot.values.byParameterNumber(parameterNumber);
+    final enums = slot.enums.byParameterNumber(parameterNumber);
+    final valueString = slot.valueStrings.byParameterNumber(parameterNumber);
     return (
       minimum: info.min,
       maximum: info.max,
       value: value?.value ?? info.defaultValue,
       disabled: value?.isDisabled ?? false,
+      enumValues: [
+        for (final enumValue in enums?.values ?? const <String>[])
+          enumValue.trim(),
+      ],
+      displayValue: valueString?.value.trim() ?? '',
     );
+  }
+
+  String _formattedValue(
+    ({
+      int minimum,
+      int maximum,
+      int value,
+      bool disabled,
+      List<String> enumValues,
+      String displayValue,
+    })
+    binding,
+    int value,
+  ) {
+    if (value == binding.value && binding.displayValue.isNotEmpty) {
+      return binding.displayValue;
+    }
+    if (value >= 0 &&
+        value < binding.enumValues.length &&
+        binding.enumValues[value].isNotEmpty) {
+      return binding.enumValues[value];
+    }
+    return value.toString();
   }
 
   void _performAction(BuildContext context, AlgorithmControllerAction action) {

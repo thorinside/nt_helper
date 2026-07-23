@@ -53,8 +53,69 @@ return {
     );
     expect(
       (firstRoot.children.last as AlgorithmControllerSlider).parameterNumber,
-      1,
+      2,
     );
+  });
+
+  test('parses an enum-backed choice control', () {
+    const source = r'''
+return {
+  version = 1,
+  title = "Choice",
+  root = ui.choice {
+    label = "Mode",
+    parameter = nt.parameter("1:Enable").number
+  }
+}
+''';
+
+    final document = engine.evaluate(
+      source: source,
+      slot: _euclideanSlot(),
+      slotIndex: 2,
+      units: const [],
+    );
+
+    final choice = document.root as AlgorithmControllerChoice;
+    expect(choice.label, 'Mode');
+    expect(choice.parameterNumber, 1);
+  });
+
+  test('matches snapshot values and strings by hardware parameter number', () {
+    const source = r'''
+local steps = nt.parameter("1:Steps")
+return {
+  version = 1,
+  title = "Numbered snapshot",
+  root = ui.text {
+    text = steps.value .. "|" .. steps.display_value
+  }
+}
+''';
+    final slot = _euclideanSlot(steps: 11);
+    final shuffled = slot.copyWith(
+      values: slot.values.reversed.toList(),
+      enums: slot.enums.reversed.toList(),
+      valueStrings: [
+        for (final valueString in slot.valueStrings.reversed)
+          valueString.parameterNumber == 2
+              ? ParameterValueString(
+                  algorithmIndex: 2,
+                  parameterNumber: 2,
+                  value: 'eleven steps',
+                )
+              : valueString,
+      ],
+    );
+
+    final document = engine.evaluate(
+      source: source,
+      slot: shuffled,
+      slotIndex: 2,
+      units: const [],
+    );
+
+    expect((document.root as AlgorithmControllerText).text, '11|eleven steps');
   });
 
   test('does not expose filesystem and process libraries to controllers', () {
@@ -139,7 +200,9 @@ return {
 }
 
 Slot _euclideanSlot({int steps = 16, int channelCount = 1}) {
-  final fixtures = <({String name, int value, int min, int max})>[];
+  final fixtures = <({String name, int value, int min, int max})>[
+    (name: 'Bypass', value: 0, min: 0, max: 1),
+  ];
   for (var channel = 1; channel <= channelCount; channel++) {
     fixtures.addAll([
       (name: '$channel:Enable', value: channel == 1 ? 1 : 0, min: 0, max: 1),
@@ -163,9 +226,10 @@ Slot _euclideanSlot({int steps = 16, int channelCount = 1}) {
         ParameterPage(
           name: 'Patterns',
           parameters: [
-            for (var index = 0; index < fixtures.length; index++) index,
+            for (var index = 1; index < fixtures.length; index++) index,
           ],
         ),
+        ParameterPage(name: 'Algorithm', parameters: const [0]),
       ],
     ),
     parameters: [
@@ -194,12 +258,21 @@ Slot _euclideanSlot({int steps = 16, int channelCount = 1}) {
         ParameterEnumStrings(
           algorithmIndex: 2,
           parameterNumber: index,
-          values: fixtures[index].name.endsWith(':Enable')
+          values:
+              fixtures[index].name.endsWith(':Enable') ||
+                  fixtures[index].name == 'Bypass'
               ? const ['Off', 'On']
               : const [],
         ),
     ],
     mappings: [for (final _ in fixtures) Mapping.filler()],
-    valueStrings: [for (final _ in fixtures) ParameterValueString.filler()],
+    valueStrings: [
+      for (var index = 0; index < fixtures.length; index++)
+        ParameterValueString(
+          algorithmIndex: 2,
+          parameterNumber: index,
+          value: '',
+        ),
+    ],
   );
 }

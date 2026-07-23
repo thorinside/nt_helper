@@ -1,6 +1,7 @@
 import 'package:lua_dardo_plus/lua.dart';
 import 'package:nt_helper/algorithm_controller/algorithm_controller.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/parameter_number_lookup.dart';
 
 final class LuaAlgorithmControllerException implements Exception {
   const LuaAlgorithmControllerException(this.message);
@@ -34,6 +35,7 @@ function ui.row(props) return element("row", props) end
 function ui.section(props) return element("section", props) end
 function ui.text(props) return element("text", props) end
 function ui.slider(props) return element("slider", props) end
+function ui.choice(props) return element("choice", props) end
 function ui.toggle(props) return element("toggle", props) end
 function ui.button(props) return element("button", props) end
 function ui.divider(props) return element("divider", props) end
@@ -130,15 +132,13 @@ end
     List<String> units,
   ) {
     final parameters = <Map<String, Object?>>[];
-    for (var index = 0; index < slot.parameters.length; index++) {
-      final info = slot.parameters[index];
-      final value = index < slot.values.length ? slot.values[index] : null;
-      final enums = index < slot.enums.length ? slot.enums[index] : null;
-      final valueString = index < slot.valueStrings.length
-          ? slot.valueStrings[index]
-          : null;
+    for (final info in slot.parameters) {
+      final parameterNumber = info.parameterNumber;
+      final value = slot.values.byParameterNumber(parameterNumber);
+      final enums = slot.enums.byParameterNumber(parameterNumber);
+      final valueString = slot.valueStrings.byParameterNumber(parameterNumber);
       parameters.add({
-        'number': info.parameterNumber,
+        'number': parameterNumber,
         'name': info.name,
         'minimum': info.min,
         'maximum': info.max,
@@ -148,7 +148,10 @@ end
         'power_of_ten': info.powerOfTen,
         'value': value?.value ?? info.defaultValue,
         'disabled': value?.isDisabled ?? false,
-        'enum_values': enums?.values ?? const <String>[],
+        'enum_values': [
+          for (final enumValue in enums?.values ?? const <String>[])
+            enumValue.trim(),
+        ],
         'display_value': valueString?.value.trim() ?? '',
         'is_input': info.isInput,
         'is_output': info.isOutput,
@@ -317,6 +320,11 @@ final class _AlgorithmControllerDocumentParser {
         parameterNumber: _integer(node['parameter'], '$path.parameter'),
         minimum: _optionalInteger(node['minimum'], '$path.minimum'),
         maximum: _optionalInteger(node['maximum'], '$path.maximum'),
+        enabled: _optionalBoolean(node['enabled'], '$path.enabled') ?? true,
+      ),
+      'choice' => AlgorithmControllerChoice(
+        label: _string(node['label'], '$path.label'),
+        parameterNumber: _integer(node['parameter'], '$path.parameter'),
         enabled: _optionalBoolean(node['enabled'], '$path.enabled') ?? true,
       ),
       'toggle' => AlgorithmControllerToggle(

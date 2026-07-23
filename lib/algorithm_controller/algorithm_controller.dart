@@ -61,6 +61,18 @@ final class AlgorithmControllerSlider extends AlgorithmControllerNode {
   final bool enabled;
 }
 
+final class AlgorithmControllerChoice extends AlgorithmControllerNode {
+  const AlgorithmControllerChoice({
+    required this.label,
+    required this.parameterNumber,
+    this.enabled = true,
+  });
+
+  final String label;
+  final int parameterNumber;
+  final bool enabled;
+}
+
 final class AlgorithmControllerToggle extends AlgorithmControllerNode {
   const AlgorithmControllerToggle({
     required this.label,
@@ -232,6 +244,30 @@ final class AlgorithmControllerRegistry {
       algorithmGuid: 'eucp',
       name: 'Euclidean controller',
       assetPath: 'assets/algorithm_controllers/euclidean_patterns.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.clock',
+      algorithmGuid: 'clck',
+      name: 'Clock controller',
+      assetPath: 'assets/algorithm_controllers/clock.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.clock-divider',
+      algorithmGuid: 'clkd',
+      name: 'Clock divider controller',
+      assetPath: 'assets/algorithm_controllers/clock_divider.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.attenuverter',
+      algorithmGuid: 'attn',
+      name: 'Attenuverter controller',
+      assetPath: 'assets/algorithm_controllers/attenuverter.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.crossfader',
+      algorithmGuid: 'xfad',
+      name: 'Crossfader controller',
+      assetPath: 'assets/algorithm_controllers/crossfader.lua',
     ),
   ]);
 

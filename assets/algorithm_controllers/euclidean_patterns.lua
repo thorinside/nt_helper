@@ -47,9 +47,11 @@ for _, channel in ipairs(channel_numbers) do
     end
 
     table.insert(children, ui.canvas {
-      semantics_label = "Channel " .. channel .. " pattern, " ..
+      semantics_label = "Illustrative channel " .. channel ..
+        " pattern preview, " ..
         pulses.value .. " pulses across " .. steps.value ..
-        " steps, rotation " .. rotation.value,
+        " steps, rotation " .. rotation.value ..
+        "; this is not live phase.",
       aspect_ratio = 5.5,
       shapes = pattern_shapes(steps.value, pulses.value, rotation.value)
     })

@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +10,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/widgets/algorithm_controller/algorithm_controller_section_controller.dart';
 import 'package:nt_helper/ui/widgets/algorithm_controller/lua_algorithm_controller_view.dart';
+import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
 import 'package:nt_helper/ui/widgets/slot_editor_mode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -138,7 +141,7 @@ return {
     verify(
       () => cubit.updateParameterValue(
         algorithmIndex: 2,
-        parameterNumber: 1,
+        parameterNumber: 2,
         value: 18,
         userIsChangingTheValue: true,
       ),
@@ -146,7 +149,7 @@ return {
     verify(
       () => cubit.updateParameterValue(
         algorithmIndex: 2,
-        parameterNumber: 1,
+        parameterNumber: 2,
         value: 18,
         userIsChangingTheValue: false,
       ),
@@ -154,7 +157,7 @@ return {
     verify(
       () => cubit.updateParameterValue(
         algorithmIndex: 2,
-        parameterNumber: 1,
+        parameterNumber: 2,
         value: 12,
         userIsChangingTheValue: false,
       ),
@@ -189,7 +192,7 @@ return {
       verify(
         () => cubit.updateParameterValue(
           algorithmIndex: 2,
-          parameterNumber: 1,
+          parameterNumber: 2,
           value: 32,
           userIsChangingTheValue: true,
         ),
@@ -222,6 +225,254 @@ return {
     semantics.dispose();
   });
 
+  testWidgets('choice renders NT strings and writes their raw value', (
+    tester,
+  ) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "Choice",
+  root = ui.choice {
+    label = "Channel state",
+    parameter = nt.parameter("1:Enable").number
+  }
+}
+''';
+
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ChoiceChip, 'Off'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'On'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Off'));
+    await tester.pump();
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 1,
+        value: 0,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('choice falls back to a slider for incomplete NT strings', (
+    tester,
+  ) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "Choice fallback",
+  root = ui.choice {
+    label = "Channel state",
+    parameter = nt.parameter("1:Enable").number
+  }
+}
+''';
+    final slot = _slot();
+    final incompleteEnums = [
+      for (final enumStrings in slot.enums)
+        enumStrings.parameterNumber == 1
+            ? ParameterEnumStrings(
+                algorithmIndex: 2,
+                parameterNumber: 1,
+                values: const ['Off', ''],
+              )
+            : enumStrings,
+    ];
+
+    await tester.pumpWidget(
+      _host(cubit, slot.copyWith(enums: incompleteEnums), source),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ChoiceChip), findsNothing);
+    expect(find.byType(Slider), findsOneWidget);
+  });
+
+  testWidgets('slider shows the NT-formatted current value', (tester) async {
+    const source = r'''
+return {
+  version = 1,
+  title = "Formatted",
+  root = ui.slider {
+    label = "Steps",
+    parameter = nt.parameter("1:Steps").number
+  }
+}
+''';
+
+    await tester.pumpWidget(
+      _host(cubit, _slot(stepsDisplay: 'sixteen steps'), source),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('sixteen steps'), findsOneWidget);
+  });
+
+  testWidgets('pinned Bypass uses NT strings and parameter zero', (
+    tester,
+  ) async {
+    final semanticsHandle = tester.ensureSemantics();
+
+    Widget app(Slot slot) {
+      return MaterialApp(
+        home: BlocProvider<DistingCubit>.value(
+          value: cubit,
+          child: Scaffold(
+            body: _SlotDetailHarness(
+              slot: slot,
+              slotIndex: 2,
+              units: const [],
+              firmwareVersion: FirmwareVersion('1.17.0'),
+            ),
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(
+      app(
+        _slot(
+          bypassEnums: const ['Processing', 'Skipped'],
+          bypassDisplay: 'Processing',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bypass: Processing'), findsOneWidget);
+    expect(find.text('Algorithm'), findsNothing);
+    expect(find.text('Patterns'), findsOneWidget);
+    final bypassSemantics = tester
+        .getSemantics(find.byKey(const ValueKey('slot-bypass-toggle')))
+        .getSemanticsData();
+    expect(bypassSemantics.label, 'Bypass');
+    expect(bypassSemantics.value, 'Processing');
+    expect(bypassSemantics.flagsCollection.isToggled, Tristate.isFalse);
+
+    await tester.tap(find.byKey(const ValueKey('slot-bypass-toggle')));
+    await tester.pump();
+
+    verify(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 0,
+        value: 1,
+        userIsChangingTheValue: false,
+      ),
+    ).called(1);
+
+    await tester.pumpWidget(
+      app(
+        _slot(
+          bypassed: true,
+          bypassEnums: const ['Processing', 'Skipped'],
+          bypassDisplay: 'Skipped',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Bypass: Skipped'), findsOneWidget);
+
+    semanticsHandle.dispose();
+  });
+
+  testWidgets('pinned Bypass remains usable on a narrow layout', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<DistingCubit>.value(
+          value: cubit,
+          child: Scaffold(
+            body: _SlotDetailHarness(
+              slot: _slot(),
+              slotIndex: 2,
+              units: const [],
+              firmwareVersion: FirmwareVersion('1.17.0'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('slot-bypass-toggle')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('pinned Bypass reports write failures', (tester) async {
+    when(
+      () => cubit.updateParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 0,
+        value: 1,
+        userIsChangingTheValue: false,
+      ),
+    ).thenThrow(StateError('offline'));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<DistingCubit>.value(
+          value: cubit,
+          child: Scaffold(
+            body: _SlotDetailHarness(
+              slot: _slot(),
+              slotIndex: 2,
+              units: const [],
+              firmwareVersion: FirmwareVersion('1.17.0'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('slot-bypass-toggle')));
+    await tester.pump();
+
+    expect(find.textContaining('Could not change Bypass'), findsOneWidget);
+  });
+
+  testWidgets('Algorithm page navigation focuses the pinned Bypass control', (
+    tester,
+  ) async {
+    final pageController = SectionParameterController();
+    addTearDown(pageController.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<DistingCubit>.value(
+          value: cubit,
+          child: Scaffold(
+            body: _SlotDetailHarness(
+              slot: _slot(),
+              slotIndex: 2,
+              units: const [],
+              firmwareVersion: FirmwareVersion('1.17.0'),
+              pageController: pageController,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    pageController.goToPage(2, 1);
+    await tester.pump();
+
+    expect(
+      FocusManager.instance.primaryFocus?.debugLabel,
+      'SlotDetailView.bypass',
+    );
+  });
+
   testWidgets('Euclidean controller is default-off and survives Slot updates', (
     tester,
   ) async {
@@ -250,12 +501,14 @@ return {
 
     expect(find.byType(LuaAlgorithmControllerView), findsNothing);
     expect(controllerButton().isSelected, isFalse);
+    expect(find.text('Bypass: Off'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('slot-editor-mode-controller')));
     await tester.pumpAndSettle();
 
     expect(find.byType(LuaAlgorithmControllerView), findsOneWidget);
     expect(controllerButton().isSelected, isTrue);
+    expect(find.text('Bypass: Off'), findsOneWidget);
     expect(find.text('16 steps · 4 pulses · rotation 0'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('slot-editor-collapse-toggle')),
@@ -306,12 +559,14 @@ class _SlotDetailHarness extends StatefulWidget {
     required this.slotIndex,
     required this.units,
     required this.firmwareVersion,
+    this.pageController,
   });
 
   final Slot slot;
   final int slotIndex;
   final List<String> units;
   final FirmwareVersion firmwareVersion;
+  final SectionParameterController? pageController;
 
   @override
   State<_SlotDetailHarness> createState() => _SlotDetailHarnessState();
@@ -335,6 +590,7 @@ class _SlotDetailHarnessState extends State<_SlotDetailHarness> {
       slotIndex: widget.slotIndex,
       units: widget.units,
       firmwareVersion: widget.firmwareVersion,
+      sectionController: widget.pageController,
       algorithmControllerSections: _sectionController,
       editorMode: _mode,
       onEditorModeChanged: (mode) => setState(() => _mode = mode),
@@ -410,14 +666,22 @@ class _LuaAlgorithmControllerHarnessState
   }
 }
 
-Slot _slot({int steps = 16, bool emptyPages = false}) {
+Slot _slot({
+  int steps = 16,
+  bool emptyPages = false,
+  bool bypassed = false,
+  List<String> bypassEnums = const ['Off', 'On'],
+  String bypassDisplay = 'Off',
+  String stepsDisplay = '',
+}) {
   const fixtures = [
+    (name: 'Bypass', min: 0, max: 1, defaultValue: 0),
     (name: '1:Enable', min: 0, max: 1, defaultValue: 0),
     (name: '1:Steps', min: 1, max: 32, defaultValue: 16),
     (name: '1:Pulses', min: 1, max: 32, defaultValue: 4),
     (name: '1:Rotation', min: 0, max: 32, defaultValue: 0),
   ];
-  final values = [1, steps, 4, 0];
+  final values = [bypassed ? 1 : 0, 1, steps, 4, 0];
   return Slot(
     algorithm: Algorithm(
       algorithmIndex: 2,
@@ -434,9 +698,10 @@ Slot _slot({int steps = 16, bool emptyPages = false}) {
               ParameterPage(
                 name: 'Patterns',
                 parameters: [
-                  for (var index = 0; index < fixtures.length; index++) index,
+                  for (var index = 1; index < fixtures.length; index++) index,
                 ],
               ),
+              ParameterPage(name: 'Algorithm', parameters: const [0]),
             ],
     ),
     parameters: [
@@ -465,10 +730,25 @@ Slot _slot({int steps = 16, bool emptyPages = false}) {
         ParameterEnumStrings(
           algorithmIndex: 2,
           parameterNumber: index,
-          values: index == 0 ? const ['Off', 'On'] : const [],
+          values: switch (index) {
+            0 => bypassEnums,
+            1 => const ['Off', 'On'],
+            _ => const [],
+          },
         ),
     ],
     mappings: [for (final _ in fixtures) Mapping.filler()],
-    valueStrings: [for (final _ in fixtures) ParameterValueString.filler()],
+    valueStrings: [
+      for (var index = 0; index < fixtures.length; index++)
+        ParameterValueString(
+          algorithmIndex: 2,
+          parameterNumber: index,
+          value: switch (index) {
+            0 => bypassDisplay,
+            2 => stepsDisplay,
+            _ => '',
+          },
+        ),
+    ],
   );
 }

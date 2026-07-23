@@ -13,6 +13,7 @@ import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_spreadsheet_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
+import 'package:nt_helper/ui/widgets/slot_bypass_control.dart';
 import 'package:nt_helper/ui/widgets/slot_editor_action_bar.dart';
 
 class SectionParameterListView extends StatefulWidget {
@@ -23,6 +24,7 @@ class SectionParameterListView extends StatefulWidget {
   final SectionParameterController? sectionController;
   final bool spreadsheetEditingMode;
   final Widget? editorModeSelector;
+  final FocusNode? bypassFocusNode;
 
   const SectionParameterListView({
     super.key,
@@ -33,6 +35,7 @@ class SectionParameterListView extends StatefulWidget {
     this.sectionController,
     this.spreadsheetEditingMode = false,
     this.editorModeSelector,
+    this.bypassFocusNode,
   });
 
   @override
@@ -63,6 +66,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     _sectionControllerSub = widget.sectionController?.stream.listen((event) {
       if (event.slotIndex != widget.slotIndex) return;
       final pageIndex = event.pageIndex;
+      if (isBypassOnlyPage(widget.slot, pageIndex)) return;
       if (pageIndex >= 0 && pageIndex < _tileControllers.length) {
         for (int i = 0; i < _tileControllers.length; i++) {
           if (i == pageIndex) {
@@ -596,6 +600,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
       onToggleSections: widget.spreadsheetEditingMode
           ? null
           : _collapseAllTiles,
+      bypassFocusNode: widget.bypassFocusNode,
     );
   }
 
@@ -608,68 +613,72 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           child: _buildPerformanceParametersSection(),
         ),
         // Regular parameter pages
-        ...widget.pages.pages.map((page) {
-          final index = widget.pages.pages.indexOf(page);
-          return Padding(
-            padding: const EdgeInsets.only(left: 8, right: 8),
-            child: ExpansionTile(
-              initiallyExpanded: !_isCollapsed,
-              controller: _tileControllers.elementAt(index),
-              title: Text(page.name),
-              children: page.parameters.map((parameterNumber) {
-                // Use safe access with bounds checking
-                final value = widget.slot.values.elementAtOrNull(
-                  parameterNumber,
-                );
-                final enumStrings = widget.slot.enums.elementAtOrNull(
-                  parameterNumber,
-                );
-                final mapping = widget.slot.mappings.elementAtOrNull(
-                  parameterNumber,
-                );
-                final valueString = widget.slot.valueStrings.elementAtOrNull(
-                  parameterNumber,
-                );
-                var parameterInfo = widget.slot.parameters.elementAtOrNull(
-                  parameterNumber,
-                );
-
-                // Skip this parameter if we don't have essential data
-                // Note: valueString and enumStrings can be empty/filler for many parameters
-                if (value == null || parameterInfo == null) {
-                  return const SizedBox.shrink();
-                }
-
-                // Use filler/empty data if not available
-                final safeEnumStrings =
-                    enumStrings ?? ParameterEnumStrings.filler();
-                final safeValueString =
-                    valueString ?? ParameterValueString.filler();
-
-                // For string-type parameters, don't show unit
-                final shouldShowUnit =
-                    !ParameterEditorRegistry.isStringTypeUnit(
-                      parameterInfo.unit,
-                    );
-                final unit = shouldShowUnit
-                    ? parameterInfo.getUnitString(widget.units)
-                    : null;
-
-                return _buildParameterRowWithPageSelector(
-                  parameterNumber: parameterNumber,
-                  parameterInfo: parameterInfo,
-                  value: value,
-                  enumStrings: safeEnumStrings,
-                  mapping: mapping,
-                  valueString: safeValueString,
-                  unit: unit,
-                );
-              }).toList(),
-            ),
-          );
-        }),
+        ...widget.pages.pages.indexed
+            .map((entry) => _buildRegularParameterPage(entry.$1, entry.$2))
+            .whereType<Widget>(),
         const SizedBox(height: 24), // Bottom padding
       ],
+    );
+  }
+
+  Widget? _buildRegularParameterPage(int index, ParameterPage page) {
+    final parameterNumbers = page.parameters
+        .where(
+          (parameterNumber) =>
+              !isUniversalBypassParameter(widget.slot, parameterNumber),
+        )
+        .toList();
+    if (parameterNumbers.isEmpty) return null;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, right: 8),
+      child: ExpansionTile(
+        initiallyExpanded: !_isCollapsed,
+        controller: _tileControllers.elementAt(index),
+        title: Text(page.name),
+        children: parameterNumbers.map((parameterNumber) {
+          // Use safe access with bounds checking
+          final value = widget.slot.values.elementAtOrNull(parameterNumber);
+          final enumStrings = widget.slot.enums.elementAtOrNull(
+            parameterNumber,
+          );
+          final mapping = widget.slot.mappings.elementAtOrNull(parameterNumber);
+          final valueString = widget.slot.valueStrings.elementAtOrNull(
+            parameterNumber,
+          );
+          var parameterInfo = widget.slot.parameters.elementAtOrNull(
+            parameterNumber,
+          );
+
+          // Skip this parameter if we don't have essential data
+          // Note: valueString and enumStrings can be empty/filler for many parameters
+          if (value == null || parameterInfo == null) {
+            return const SizedBox.shrink();
+          }
+
+          // Use filler/empty data if not available
+          final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
+          final safeValueString = valueString ?? ParameterValueString.filler();
+
+          // For string-type parameters, don't show unit
+          final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
+            parameterInfo.unit,
+          );
+          final unit = shouldShowUnit
+              ? parameterInfo.getUnitString(widget.units)
+              : null;
+
+          return _buildParameterRowWithPageSelector(
+            parameterNumber: parameterNumber,
+            parameterInfo: parameterInfo,
+            value: value,
+            enumStrings: safeEnumStrings,
+            mapping: mapping,
+            valueString: safeValueString,
+            unit: unit,
+          );
+        }).toList(),
+      ),
     );
   }
 }

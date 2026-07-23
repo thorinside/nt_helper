@@ -4,9 +4,10 @@ Lua algorithm controllers are optional, algorithm-specific property editors.
 They run inside nt_helper, not on the disting NT. The standard parameter editor
 remains the default and fallback.
 
-The initial implementation bundles one controller for Euclidean Patterns
-(`eucp`). Installation and Gallery distribution are intentionally not enabled
-yet; the bundled controller is the first adapter used to validate the interface.
+The app currently bundles controllers for Euclidean Patterns (`eucp`), Clock
+(`clck`), Clock Divider (`clkd`), Attenuverter (`attn`), and Crossfader
+(`xfad`). Installation and Gallery distribution are intentionally not enabled
+yet.
 
 ## Lifecycle
 
@@ -23,6 +24,11 @@ Lua never sends MIDI or SysEx and never retains a mutable copy of slot state.
 The selected Standard, Spreadsheet, or Controller mode is owned by the
 parameter-editor state above `SlotDetailView`, so rebuilding the parameter
 workspace or toggling Routing does not reset the selection.
+
+Bypass is also owned by the host. Every slot editor keeps a pinned Bypass
+affordance above its scrollable content and displays the current strings
+reported by the NT. Controller scripts receive Bypass in the immutable snapshot
+for compatibility, but bundled scripts do not render a duplicate control.
 
 ## Document interface
 
@@ -92,6 +98,7 @@ changes.
 Controls:
 
 - `ui.slider { label, parameter, minimum, maximum, enabled }`
+- `ui.choice { label, parameter, enabled }`
 - `ui.toggle { label, parameter, on_value, off_value, enabled }`
 - `ui.button { label, style, enabled, action }`
 
@@ -103,8 +110,11 @@ action = { type = "adjust_parameter", parameter = 4, delta = 1 }
 ```
 
 The host intersects controller slider ranges with the live parameter range and
-clamps every control result before writing. Flutter owns input semantics,
-keyboard behavior, disabled state, and the actual parameter write.
+clamps every control result before writing. Sliders prefer the current
+device-formatted value, then the matching enum string, then the raw integer.
+Choices require a complete enum range and otherwise fall back to a slider.
+Flutter owns input semantics, keyboard behavior, disabled state, and the actual
+parameter write.
 
 ## Drawing primitives
 

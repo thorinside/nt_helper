@@ -10,6 +10,7 @@ import 'package:nt_helper/ui/widgets/algorithm_controller/algorithm_controller_s
 import 'package:nt_helper/ui/widgets/algorithm_controller/lua_algorithm_controller_view.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_list_view.dart';
+import 'package:nt_helper/ui/widgets/slot_bypass_control.dart';
 import 'package:nt_helper/ui/widgets/slot_editor_action_bar.dart';
 import 'package:nt_helper/ui/widgets/slot_editor_mode.dart';
 import 'package:nt_helper/ui/widgets/slot_editor_mode_selector.dart';
@@ -45,6 +46,9 @@ class SlotDetailView extends StatefulWidget {
 class _SlotDetailViewState extends State<SlotDetailView>
     with AutomaticKeepAliveClientMixin {
   StreamSubscription<({int slotIndex, int pageIndex})>? _sectionControllerSub;
+  late final FocusNode _bypassFocusNode = FocusNode(
+    debugLabel: 'SlotDetailView.bypass',
+  );
 
   @override
   bool get wantKeepAlive => true;
@@ -78,6 +82,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
   @override
   void dispose() {
     _sectionControllerSub?.cancel();
+    _bypassFocusNode.dispose();
     widget.algorithmControllerSections.removeListener(
       _handleControllerSectionsChanged,
     );
@@ -112,6 +117,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
               sectionsCollapsed:
                   widget.algorithmControllerSections.sectionsCollapsed,
               onToggleSections: _toggleControllerSections,
+              bypassFocusNode: _bypassFocusNode,
             ),
             Expanded(
               child: LuaAlgorithmControllerView(
@@ -142,6 +148,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
                 slot: widget.slot,
                 editorModeSelector: modeSelector,
                 sectionsCollapsed: false,
+                bypassFocusNode: _bypassFocusNode,
               ),
               Expanded(child: view),
             ],
@@ -162,6 +169,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
         sectionController: widget.sectionController,
         spreadsheetEditingMode: mode == SlotEditorMode.spreadsheet,
         editorModeSelector: modeSelector,
+        bypassFocusNode: _bypassFocusNode,
       ),
     );
   }
@@ -180,9 +188,19 @@ class _SlotDetailViewState extends State<SlotDetailView>
   void _subscribeSectionController() {
     _sectionControllerSub?.cancel();
     _sectionControllerSub = widget.sectionController?.stream.listen((event) {
-      if (!mounted ||
-          event.slotIndex != widget.slotIndex ||
-          widget.editorMode != SlotEditorMode.controller ||
+      if (!mounted || event.slotIndex != widget.slotIndex) {
+        return;
+      }
+      if (isBypassOnlyPage(widget.slot, event.pageIndex)) {
+        _bypassFocusNode.requestFocus();
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          'Bypass control focused',
+          Directionality.of(context),
+        );
+        return;
+      }
+      if (widget.editorMode != SlotEditorMode.controller ||
           AlgorithmControllerRegistry.bundled.findForGuid(
                 widget.slot.algorithm.guid,
               ) ==

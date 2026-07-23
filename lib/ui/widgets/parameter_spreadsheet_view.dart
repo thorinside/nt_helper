@@ -7,6 +7,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/widgets/parameter_numeric_editing.dart';
+import 'package:nt_helper/ui/widgets/slot_bypass_control.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
 
 class ParameterSpreadsheetView extends StatefulWidget {
@@ -67,6 +68,7 @@ class _ParameterSpreadsheetViewState extends State<ParameterSpreadsheetView> {
 
     for (final parameterNumber in _regularParameterNumbers()) {
       if (rowsByParameter.containsKey(parameterNumber)) continue;
+      if (isUniversalBypassParameter(widget.slot, parameterNumber)) continue;
       final row = _rowForParameter(parameterNumber);
       if (row != null) rowsByParameter[parameterNumber] = row;
     }

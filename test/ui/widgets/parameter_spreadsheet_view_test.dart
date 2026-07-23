@@ -95,6 +95,19 @@ void main() {
       expect(find.text('Disabled Gain'), findsNothing);
     });
 
+    testWidgets('omits the host-owned Bypass row', (tester) async {
+      final slot = _slot([
+        _parameter(0, 'Bypass', value: 0, min: 0, max: 1),
+        _parameter(1, 'Level', value: 20),
+      ]);
+
+      await tester.pumpWidget(wrapSheet(slot));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bypass'), findsNothing);
+      expect(find.text('Level'), findsOneWidget);
+    });
+
     testWidgets('typing a number starts editing and replaces the cell text', (
       tester,
     ) async {
@@ -717,9 +730,18 @@ Slot _simpleSlot() {
 Slot _euclideanSlot({int channelCount = 2}) {
   return _slot(
     [
+      _parameter(
+        0,
+        'Bypass',
+        value: 0,
+        min: 0,
+        max: 1,
+        defaultValue: 0,
+        enumValues: const ['Off', 'On'],
+      ),
       for (var channel = 1; channel <= channelCount; channel++) ...[
         _parameter(
-          (channel - 1) * 4,
+          (channel - 1) * 4 + 1,
           '$channel:Enable',
           value: 1,
           min: 0,
@@ -728,7 +750,7 @@ Slot _euclideanSlot({int channelCount = 2}) {
           enumValues: const ['Off', 'On'],
         ),
         _parameter(
-          (channel - 1) * 4 + 1,
+          (channel - 1) * 4 + 2,
           '$channel:Steps',
           value: channel == 1 ? 16 : 12,
           min: 1,
@@ -736,7 +758,7 @@ Slot _euclideanSlot({int channelCount = 2}) {
           defaultValue: 16,
         ),
         _parameter(
-          (channel - 1) * 4 + 2,
+          (channel - 1) * 4 + 3,
           '$channel:Pulses',
           value: channel == 1 ? 4 : 5,
           min: 1,
@@ -744,7 +766,7 @@ Slot _euclideanSlot({int channelCount = 2}) {
           defaultValue: 4,
         ),
         _parameter(
-          (channel - 1) * 4 + 3,
+          (channel - 1) * 4 + 4,
           '$channel:Rotation',
           value: channel == 1 ? 0 : 2,
           min: 0,
@@ -758,6 +780,15 @@ Slot _euclideanSlot({int channelCount = 2}) {
       name: 'Euclidean Patterns',
       specifications: [channelCount],
     ),
+    pages: [
+      ParameterPage(
+        name: 'Patterns',
+        parameters: [
+          for (var number = 1; number <= channelCount * 4; number++) number,
+        ],
+      ),
+      ParameterPage(name: 'Algorithm', parameters: const [0]),
+    ],
   );
 }
 
