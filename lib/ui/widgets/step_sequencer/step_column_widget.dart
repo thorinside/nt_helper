@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/scale_quantizer.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/bit_pattern_editor.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/pitch_bar_painter.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
@@ -72,11 +73,11 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Teal color scheme
-    const primaryTeal = Color(0xFF14b8a6);
-    final borderColor = widget.isActive ? primaryTeal : _getBorderColor(isDark);
+    final scheme = Theme.of(context).colorScheme;
+    final activeStepColor = context.appColors.sequencerAt(0).color;
+    final borderColor = widget.isActive
+        ? activeStepColor
+        : scheme.outlineVariant;
     final borderWidth = widget.isActive ? 2.0 : 1.0;
 
     final currentValue = _getCurrentParameterValue();
@@ -103,8 +104,8 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
         padding: const EdgeInsets.all(8.0),
         decoration: BoxDecoration(
           color: widget.isActive
-              ? primaryTeal.withValues(alpha: 0.2)
-              : _getBackgroundColor(isDark),
+              ? activeStepColor.withValues(alpha: 0.2)
+              : scheme.surfaceContainerLow,
           border: Border.all(color: borderColor, width: borderWidth),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -118,7 +119,7 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: _getTextColor(isDark),
+                color: scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -209,7 +210,7 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
                         child: Icon(
                           Icons.warning_amber,
                           size: 10,
-                          color: Colors.orange.shade700,
+                          color: context.appColors.warning.color,
                         ),
                       ),
                     ),
@@ -454,40 +455,7 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
 
   /// Get the color of the currently selected parameter
   Color _getActiveParameterColor() {
-    switch (widget.activeParameter) {
-      case StepParameter.pitch:
-        return const Color(0xFF14b8a6);
-      case StepParameter.velocity:
-        return const Color(0xFF10b981);
-      case StepParameter.mod:
-        return const Color(0xFF8b5cf6);
-      case StepParameter.division:
-        return const Color(0xFFf97316);
-      case StepParameter.pattern:
-        return const Color(0xFF3b82f6);
-      case StepParameter.ties:
-        return const Color(0xFFeab308);
-      case StepParameter.mute:
-        return const Color(0xFFef4444);
-      case StepParameter.skip:
-        return const Color(0xFFec4899);
-      case StepParameter.reset:
-        return const Color(0xFFf59e0b);
-      case StepParameter.repeat:
-        return const Color(0xFF06b6d4);
-    }
-  }
-
-  Color _getBackgroundColor(bool isDark) {
-    return isDark ? Colors.grey.shade900 : Colors.grey.shade50;
-  }
-
-  Color _getBorderColor(bool isDark) {
-    return isDark ? Colors.grey.shade700 : Colors.grey.shade300;
-  }
-
-  Color _getTextColor(bool isDark) {
-    return isDark ? Colors.grey.shade400 : Colors.grey.shade700;
+    return context.appColors.sequencerAt(widget.activeParameter.index).color;
   }
 
   /// Convert firmware value to percentage (0-100)

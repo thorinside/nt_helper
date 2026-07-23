@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 /// Dialog that displays RTT (Round-Trip Time) statistics for SysEx messages.
 ///
@@ -66,18 +67,19 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
   }
 
   Widget _buildBody() {
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
     if (widget.midiManager == null) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ExcludeSemantics(
-              child: Icon(Icons.wifi_off, size: 64, color: Colors.grey),
+              child: Icon(Icons.wifi_off, size: 64, color: mutedColor),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'No MIDI connection available.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: mutedColor),
             ),
           ],
         ),
@@ -85,22 +87,22 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
     }
 
     if (_rttStats == null || _rttStats!.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ExcludeSemantics(
-              child: Icon(Icons.hourglass_empty, size: 64, color: Colors.grey),
+              child: Icon(Icons.hourglass_empty, size: 64, color: mutedColor),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'No RTT data collected yet.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: mutedColor),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'RTT stats are collected as requests are made.',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14, color: mutedColor),
             ),
           ],
         ),
@@ -187,6 +189,8 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
 
   Widget _buildSummaryCard() {
     final diag = _schedulerDiagnostics!;
+    final scheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -206,51 +210,51 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
                   'Requests',
                   '${diag['rttRequestsCompleted'] ?? 0}',
                   Icons.check_circle,
-                  Colors.green,
+                  appColors.success.color,
                 ),
                 _buildStatItem(
                   'Timeouts',
                   '${diag['rttRequestsTimedOut'] ?? 0}',
                   Icons.error,
-                  Colors.red,
+                  scheme.error,
                 ),
                 _buildStatItem(
                   'Avg RTT',
                   '${diag['rttAvgMs'] ?? 'N/A'} ms',
                   Icons.timer,
-                  Colors.blue,
+                  appColors.info.color,
                 ),
                 _buildStatItem(
                   'Min RTT',
                   '${diag['rttMinMs'] ?? 'N/A'} ms',
                   Icons.arrow_downward,
-                  Colors.teal,
+                  scheme.secondary,
                 ),
                 _buildStatItem(
                   'Max RTT',
                   '${diag['rttMaxMs'] ?? 'N/A'} ms',
                   Icons.arrow_upward,
-                  Colors.orange,
+                  appColors.warning.color,
                 ),
                 _buildStatItem(
                   'Last RTT',
                   '${diag['rttLastMs'] ?? 'N/A'} ms',
                   Icons.schedule,
-                  Colors.purple,
+                  appColors.categoricalAt(3).color,
                 ),
                 _buildStatItem(
                   'CC Dispatched',
                   '${diag['ccMessagesDispatched'] ?? 0}',
                   Icons.music_note,
-                  Colors.indigo,
+                  scheme.primary,
                 ),
                 _buildStatItem(
                   'CC Callback',
                   diag['ccCallbackRegistered'] == true ? 'Yes' : 'No',
                   Icons.link,
                   diag['ccCallbackRegistered'] == true
-                      ? Colors.green
-                      : Colors.red,
+                      ? appColors.success.color
+                      : scheme.error,
                 ),
                 if (widget.ccNotificationDiagnostics != null) ...[
                   _buildStatItem(
@@ -258,8 +262,8 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
                     '${widget.ccNotificationDiagnostics!['lookupSize'] ?? 0}',
                     Icons.table_chart,
                     (widget.ccNotificationDiagnostics!['lookupSize'] ?? 0) > 0
-                        ? Colors.green
-                        : Colors.red,
+                        ? appColors.success.color
+                        : scheme.error,
                   ),
                 ],
               ],
@@ -340,7 +344,7 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
                   Text(
                     '$timeouts',
                     style: timeouts > 0
-                        ? TextStyle(color: Colors.red.shade700)
+                        ? TextStyle(color: Theme.of(context).colorScheme.error)
                         : null,
                   ),
                 ),

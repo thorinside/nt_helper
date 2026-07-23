@@ -109,10 +109,12 @@ class _DebugPanelState extends State<DebugPanel> {
                 final messages = _debugService.debugMessages;
 
                 if (messages.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'No debug messages yet',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   );
                 }

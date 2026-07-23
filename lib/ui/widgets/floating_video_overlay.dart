@@ -328,9 +328,9 @@ class FloatingVideoContent extends StatelessWidget {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.error_outline,
-                                    color: Colors.red,
+                                    color: Theme.of(context).colorScheme.error,
                                     size: 18,
                                   ),
                                   const SizedBox(width: 8),
@@ -345,9 +345,9 @@ class FloatingVideoContent extends StatelessWidget {
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.error_outline,
-                                color: Colors.red,
+                                color: Theme.of(context).colorScheme.error,
                               ),
                               const SizedBox(height: 8),
                               message,

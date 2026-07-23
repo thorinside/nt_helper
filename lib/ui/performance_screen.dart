@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/performance/hardware_preview_widget.dart';
 
@@ -81,26 +82,12 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   }
 
   Color _getPageColor(int pageIndex) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-    ];
-    return colors[(pageIndex - 1) % colors.length];
+    return context.appColors.categoricalAt(pageIndex - 1).color;
   }
 
   Color _getPerfItemColor(int itemIndex) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-    ];
     final pageNum = (itemIndex ~/ 3);
-    return colors[pageNum % colors.length];
+    return context.appColors.categoricalAt(pageNum).color;
   }
 
   Widget _buildEmptyState() {
@@ -108,7 +95,11 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.music_note_outlined, size: 64, color: Colors.grey),
+          Icon(
+            Icons.music_note_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No performance parameters assigned',
@@ -117,9 +108,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           const SizedBox(height: 8),
           Text(
             'Assign parameters in the property editor',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -491,8 +482,10 @@ class _ParameterListItem extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 indexLabel,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).appColors.categoricalOnColor(pageColor),
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -776,8 +769,10 @@ class _PerfPageItemListTileState extends State<_PerfPageItemListTile> {
               alignment: Alignment.center,
               child: Text(
                 '${widget.item.itemIndex + 1}',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).appColors.categoricalOnColor(widget.pageColor),
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),

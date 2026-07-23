@@ -11,6 +11,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/routing/bus_lanes_painter.dart';
 import 'package:nt_helper/ui/widgets/routing/bus_picker_dialog.dart';
 
@@ -435,7 +436,12 @@ class _BusLanesViewState extends State<BusLanesView> {
     final surface = theme.colorScheme.surface;
     final selected = _selected?.portId == bead.ref.portId;
 
-    Widget visual = _beadVisual(bead.color, surface, filled: bead.connected);
+    Widget visual = _beadVisual(
+      bead.color,
+      surface,
+      theme.colorScheme.shadow,
+      filled: bead.connected,
+    );
     if (bead.unprovided) {
       visual = Container(
         padding: const EdgeInsets.all(2),
@@ -465,13 +471,19 @@ class _BusLanesViewState extends State<BusLanesView> {
             feedback: _beadVisual(
               bead.color,
               surface,
+              theme.colorScheme.shadow,
               filled: true,
               dragging: true,
             ),
             childWhenDragging: Center(
               child: Opacity(
                 opacity: 0.3,
-                child: _beadVisual(bead.color, surface, filled: bead.connected),
+                child: _beadVisual(
+                  bead.color,
+                  surface,
+                  theme.colorScheme.shadow,
+                  filled: bead.connected,
+                ),
               ),
             ),
             onDragEnd: (d) => _onBeadDrop(context, bead.ref, d.offset),
@@ -504,7 +516,8 @@ class _BusLanesViewState extends State<BusLanesView> {
 
   Widget _beadVisual(
     Color color,
-    Color surface, {
+    Color surface,
+    Color shadow, {
     required bool filled,
     bool dragging = false,
   }) {
@@ -519,7 +532,7 @@ class _BusLanesViewState extends State<BusLanesView> {
         border: Border.all(color: filled ? surface : color, width: 2.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: shadow.withValues(alpha: 0.3),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),
@@ -878,8 +891,12 @@ class _BusLanesViewState extends State<BusLanesView> {
     // first writer (no signal); from the first writer down it carries the
     // session color. Physical inputs are driven (hardware) from the top.
     const capGap = 5.0;
-    final grey = BusColorPalette.empty(0, isDark: isDark);
-    final laneLabel = Theme.of(context).colorScheme.onSurfaceVariant;
+    final theme = Theme.of(context);
+    final grey = BusColorPalette.empty(
+      0,
+      neutralColor: theme.appColors.emptyBus,
+    );
+    final laneLabel = theme.colorScheme.onSurfaceVariant;
     final changesByBus =
         <int, List<({double y, Color color, bool driven, bool cap})>>{};
     final rails = <BusRailRender>[];
@@ -1015,7 +1032,10 @@ class _BusLanesViewState extends State<BusLanesView> {
             color = incoming;
           } else {
             unprovided = true;
-            color = BusColorPalette.empty(bus, isDark: isDark);
+            color = BusColorPalette.empty(
+              bus,
+              neutralColor: theme.appColors.emptyBus,
+            );
           }
         }
 

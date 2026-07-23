@@ -20,10 +20,6 @@ class RoutingTableView extends StatefulWidget {
 }
 
 class _RoutingTableViewState extends State<RoutingTableView> {
-  // Signal flow colors
-  static const Color _color1 = Color(0xFFb3fff0); // Cyan/mint
-  static const Color _color2 = Color(0xFFFFD9A3); // Gold/warm
-
   static const double _cellWidth = 32;
   static const double _cellHeight = 28;
 
@@ -107,16 +103,14 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     );
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final color1 = isDark ? const Color(0xFF1A6B5C) : _color1;
-    final color2 = isDark ? const Color(0xFF8B4A3A) : _color2;
+    final scheme = theme.colorScheme;
     final colours = [
-      isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFFFFF),
-      color1,
-      color2,
-      isDark ? const Color(0xFF252525) : const Color(0xFFFCFCFC),
-      _darken(color1, isDark ? 0.8 : 0.9),
-      _darken(color2, isDark ? 0.8 : 0.9),
+      scheme.surface,
+      scheme.secondaryContainer,
+      scheme.tertiaryContainer,
+      scheme.surfaceContainerLow,
+      scheme.primaryContainer,
+      scheme.tertiaryFixedDim,
     ];
 
     // Pre-compute text styles once instead of per-cell
@@ -128,10 +122,10 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     );
     final cellStyle = theme.textTheme.labelSmall;
     final symbolStyle = theme.textTheme.labelSmall?.copyWith(fontSize: 13);
-    final pinnedBg = isDark ? const Color(0xFF333333) : const Color(0xFFF0F0F0);
-    final slotBg = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0);
-    final usedBg = isDark ? const Color(0xFF505050) : const Color(0xFFD0D0D0);
-    final unusedBg = isDark ? const Color(0xFF303030) : const Color(0xFFF0F0F0);
+    final pinnedBg = scheme.surfaceContainerHighest;
+    final slotBg = scheme.surfaceContainer;
+    final usedBg = scheme.secondaryContainer;
+    final unusedBg = scheme.surfaceContainerLow;
 
     final pinnedRows = <TableRow>[];
     final mainRows = <TableRow>[];
@@ -159,7 +153,7 @@ class _RoutingTableViewState extends State<RoutingTableView> {
               width: _cellWidth,
               height: _cellHeight,
               alignment: Alignment.center,
-              color: _headerBg(ch, isDark),
+              color: _headerBg(ch, scheme),
               child: Text(_columnLabel(ch), style: headerStyle),
             ),
         ],
@@ -182,7 +176,7 @@ class _RoutingTableViewState extends State<RoutingTableView> {
         TableRow(
           children: [
             for (int ch = 1; ch <= numBuses; ch++)
-              _signalAboveCell(ch, rowBefore, inMask, colours, isDark),
+              _signalAboveCell(ch, rowBefore, inMask, colours, scheme.error),
           ],
         ),
       );
@@ -266,7 +260,7 @@ class _RoutingTableViewState extends State<RoutingTableView> {
               width: _cellWidth,
               height: _cellHeight,
               alignment: Alignment.center,
-              color: _headerBg(ch, isDark),
+              color: _headerBg(ch, scheme),
               child: Text(_columnLabel(ch), style: headerStyle),
             ),
         ],
@@ -327,7 +321,7 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     List<int> rowBefore,
     int inMask,
     List<Color> colours,
-    bool isDark,
+    Color errorColor,
   ) {
     final usesChannel = (inMask & (1 << ch)) != 0;
     final signalLevel = ch < rowBefore.length ? rowBefore[ch] : 0;
@@ -346,7 +340,7 @@ class _RoutingTableViewState extends State<RoutingTableView> {
         '\u2193',
         style: TextStyle(
           fontSize: 13,
-          color: unprovided ? Colors.red.shade800 : null,
+          color: unprovided ? errorColor : null,
           fontWeight: unprovided ? FontWeight.bold : FontWeight.normal,
         ),
       ),
@@ -438,14 +432,14 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     return highestUsed;
   }
 
-  Color _headerBg(int ch, bool isDark) {
+  Color _headerBg(int ch, ColorScheme colorScheme) {
     if (ch <= BusSpec.inputMax) {
-      return isDark ? const Color(0xFF2E2E2E) : const Color(0xFFB8B8B8);
+      return colorScheme.surfaceContainerHighest;
     }
     if (ch <= BusSpec.outputMax) {
-      return isDark ? const Color(0xFF484848) : const Color(0xFFDCDCDC);
+      return colorScheme.secondaryContainer;
     }
-    return isDark ? const Color(0xFF383838) : const Color(0xFFC8C8C8);
+    return colorScheme.tertiaryContainer;
   }
 
   String _columnLabel(int ch) {
@@ -463,14 +457,5 @@ class _RoutingTableViewState extends State<RoutingTableView> {
       }
     }
     return '$c';
-  }
-
-  Color _darken(Color c, [double factor = 0.9]) {
-    return Color.fromRGBO(
-      ((c.r * 255.0).round() * factor).round().clamp(0, 255),
-      ((c.g * 255.0).round() * factor).round().clamp(0, 255),
-      ((c.b * 255.0).round() * factor).round().clamp(0, 255),
-      1.0,
-    );
   }
 }

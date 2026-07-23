@@ -5,6 +5,7 @@ import '../../models/package_file.dart';
 import '../../services/file_conflict_detector.dart';
 import '../../services/preset_package_analyzer.dart';
 import '../../cubit/disting_cubit.dart';
+import '../theme/app_theme.dart';
 
 /// Dialog for reviewing and resolving file conflicts when installing a preset package
 class PackageInstallDialog extends StatefulWidget {
@@ -264,7 +265,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
             child: Icon(
               _getFileStatusIcon(file),
               size: 16,
-              color: Colors.white,
+              color: _getFileStatusForeground(file),
             ),
           ),
         ),
@@ -349,7 +350,19 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
           ? Theme.of(context).colorScheme.primary
           : Theme.of(context).colorScheme.error;
     }
-    return file.shouldInstall ? Colors.green : Theme.of(context).disabledColor;
+    return file.shouldInstall
+        ? context.appColors.success.color
+        : Theme.of(context).disabledColor;
+  }
+
+  Color _getFileStatusForeground(PackageFile file) {
+    final scheme = Theme.of(context).colorScheme;
+    if (file.hasConflict) {
+      return file.shouldInstall ? scheme.onPrimary : scheme.onError;
+    }
+    return file.shouldInstall
+        ? context.appColors.success.onColor
+        : scheme.onSurfaceVariant;
   }
 
   IconData _getFileStatusIcon(PackageFile file) {

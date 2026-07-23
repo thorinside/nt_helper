@@ -15,13 +15,19 @@ void main() {
 
     test('empty wire is paler than the driven base (light mode)', () {
       final base = HSLColor.fromColor(BusColorPalette.baseColor(21));
-      final empty = HSLColor.fromColor(BusColorPalette.empty(21));
+      final neutral = ThemeData.light().colorScheme.outlineVariant;
+      final empty = HSLColor.fromColor(
+        BusColorPalette.empty(21, neutralColor: neutral),
+      );
       expect(empty.lightness, greaterThan(base.lightness));
       expect(empty.saturation, lessThan(base.saturation));
     });
 
     test('session 0 equals the base color; later sessions differ', () {
-      expect(BusColorPalette.sessionColor(21, 0), BusColorPalette.baseColor(21));
+      expect(
+        BusColorPalette.sessionColor(21, 0),
+        BusColorPalette.baseColor(21),
+      );
       expect(
         BusColorPalette.sessionColor(21, 1) ==
             BusColorPalette.sessionColor(21, 0),

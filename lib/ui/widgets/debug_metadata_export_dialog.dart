@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:nt_helper/services/algorithm_json_exporter.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 /// DEBUG ONLY: Dialog to export ALL metadata for bundling as an asset
 class DebugMetadataExportDialog extends StatefulWidget {
@@ -119,11 +120,12 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
       return const SizedBox.shrink();
     }
 
+    final warning = context.appColors.warning;
     return AlertDialog(
       title: Row(
         children: [
-          const ExcludeSemantics(
-            child: Icon(Icons.bug_report, size: 24, color: Colors.orange),
+          ExcludeSemantics(
+            child: Icon(Icons.bug_report, size: 24, color: warning.color),
           ),
           const SizedBox(width: 8),
           Column(
@@ -147,19 +149,19 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
+                color: warning.container,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                border: Border.all(color: warning.color),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning, color: Colors.orange, size: 20),
+                  Icon(Icons.warning, color: warning.color, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'DEBUG ONLY: Exports ALL metadata tables for pre-population',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.orange.shade700,
+                        color: warning.onContainer,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -375,8 +377,8 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
               : const Icon(Icons.download, size: 18),
           label: Text(_isExporting ? 'Exporting...' : 'Export Full Metadata'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
+            backgroundColor: warning.color,
+            foregroundColor: warning.onColor,
           ),
         ),
       ],

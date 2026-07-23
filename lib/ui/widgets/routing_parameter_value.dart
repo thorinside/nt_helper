@@ -80,9 +80,7 @@ class RoutingParameterValue extends StatelessWidget {
       final base = BusColorPalette.baseColor(currentBus, isDark: isDark);
       borderColor = base;
       fillColor = base.withValues(alpha: isDark ? 0.42 : 0.22);
-      foreground = isDark
-          ? const Color(0xFFFFFFFF)
-          : theme.colorScheme.onSurface;
+      foreground = theme.colorScheme.onSurface;
     } else {
       borderColor = theme.colorScheme.outline;
       fillColor = theme.colorScheme.surfaceContainerHighest;

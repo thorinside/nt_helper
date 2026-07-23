@@ -40,10 +40,12 @@ class HardwarePreviewWidget extends StatelessWidget {
     }
 
     if (pages.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No parameters assigned',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }

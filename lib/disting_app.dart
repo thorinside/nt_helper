@@ -18,6 +18,7 @@ import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/contextual_help_tooltip_scope.dart';
 import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 import 'package:nt_helper/utils/build_config.dart';
@@ -117,118 +118,63 @@ class _DistingAppState extends State<DistingApp> {
     super.dispose();
   }
 
-  ThemeData buildThemeData(ColorScheme baseColorScheme) {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: baseColorScheme,
-      appBarTheme: AppBarTheme(
-        elevation: 4.0,
-        shadowColor: baseColorScheme.shadow,
-        backgroundColor: baseColorScheme.surface,
-        foregroundColor: baseColorScheme.onSurface,
-      ),
-      tabBarTheme: TabBarThemeData(
-        indicator: UnderlineTabIndicator(
-          borderSide: BorderSide(color: baseColorScheme.secondary, width: 2.0),
-        ),
-        labelColor: baseColorScheme.secondary,
-        unselectedLabelColor: baseColorScheme.secondary.withAlpha(170),
-        labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-        ),
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: baseColorScheme.inverseSurface,
-        contentTextStyle: TextStyle(color: baseColorScheme.onInverseSurface),
-        actionTextColor: baseColorScheme.inversePrimary,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final lightTheme = buildThemeData(
-      ColorScheme.fromSeed(
-        seedColor: Colors.tealAccent.shade700,
-        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-        brightness: Brightness.light,
-      ).copyWith(
-        surfaceTint: Colors.transparent,
-        tertiary: Colors.orange.shade800,
-      ),
-    );
-
-    final darkTheme = buildThemeData(
-      ColorScheme.fromSeed(
-        seedColor: Colors.tealAccent.shade100,
-        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-        brightness: Brightness.dark,
-      ).copyWith(surfaceTint: Colors.transparent, tertiary: Colors.orange),
-    );
-
-    final highContrastLightTheme = buildThemeData(
-      ColorScheme.fromSeed(
-        seedColor: Colors.tealAccent.shade700,
-        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-        brightness: Brightness.light,
-        contrastLevel: 1.0,
-      ).copyWith(
-        surfaceTint: Colors.transparent,
-        tertiary: Colors.orange.shade800,
-      ),
-    );
-
-    final highContrastDarkTheme = buildThemeData(
-      ColorScheme.fromSeed(
-        seedColor: Colors.tealAccent.shade100,
-        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-        brightness: Brightness.dark,
-        contrastLevel: 1.0,
-      ).copyWith(surfaceTint: Colors.transparent, tertiary: Colors.orange),
-    );
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      highContrastTheme: highContrastLightTheme,
-      highContrastDarkTheme: highContrastDarkTheme,
-      themeMode: ThemeMode.system,
-      // Follow system settings
-      builder: (context, child) {
-        return ValueListenableBuilder<double>(
-          valueListenable: SettingsService().uiScaleNotifier,
-          builder: (context, scale, _) {
-            final mediaQuery = MediaQuery.of(context);
-            return ContextualHelpTooltipScope(
-              child: MediaQuery(
-                data: mediaQuery.copyWith(textScaler: TextScaler.linear(scale)),
-                child: Shortcuts(
-                  shortcuts: _keyBindingService.desktopZoomShortcuts,
-                  child: Actions(
-                    actions: _keyBindingService.buildZoomActions(
-                      onZoomIn: () {
-                        SettingsService().zoomInUi();
-                      },
-                      onZoomOut: () {
-                        SettingsService().zoomOutUi();
-                      },
-                      onResetZoom: () {
-                        SettingsService().resetUiScale();
-                      },
+    final settings = SettingsService();
+    return ValueListenableBuilder<Color>(
+      valueListenable: settings.themeSeedColorNotifier,
+      builder: (context, seedColor, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.build(
+            seedColor: seedColor,
+            brightness: Brightness.light,
+          ),
+          darkTheme: AppTheme.build(
+            seedColor: seedColor,
+            brightness: Brightness.dark,
+          ),
+          highContrastTheme: AppTheme.build(
+            seedColor: seedColor,
+            brightness: Brightness.light,
+            contrastLevel: 1,
+          ),
+          highContrastDarkTheme: AppTheme.build(
+            seedColor: seedColor,
+            brightness: Brightness.dark,
+            contrastLevel: 1,
+          ),
+          themeMode: ThemeMode.system,
+          builder: (context, child) {
+            return ValueListenableBuilder<double>(
+              valueListenable: settings.uiScaleNotifier,
+              builder: (context, scale, _) {
+                final mediaQuery = MediaQuery.of(context);
+                return ContextualHelpTooltipScope(
+                  child: MediaQuery(
+                    data: mediaQuery.copyWith(
+                      textScaler: TextScaler.linear(scale),
                     ),
-                    child: child ?? const SizedBox.shrink(),
+                    child: Shortcuts(
+                      shortcuts: _keyBindingService.desktopZoomShortcuts,
+                      child: Actions(
+                        actions: _keyBindingService.buildZoomActions(
+                          onZoomIn: settings.zoomInUi,
+                          onZoomOut: settings.zoomOutUi,
+                          onResetZoom: settings.resetUiScale,
+                        ),
+                        child: child ?? const SizedBox.shrink(),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             );
           },
+          initialRoute: '/',
+          routes: DistingApp.buildRoutes(),
         );
       },
-      initialRoute: '/',
-      routes: DistingApp.buildRoutes(),
     );
   }
 }

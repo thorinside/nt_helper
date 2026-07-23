@@ -11,6 +11,7 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_spreadsheet_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
@@ -208,22 +209,15 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   }
 
   Widget _buildPageBadge(int pageIndex) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-    ];
-    final color = colors[(pageIndex - 1) % colors.length];
+    final colors = context.appColors.categoricalAt(pageIndex - 1);
 
     return Semantics(
       label: 'Performance page $pageIndex',
       child: Chip(
         label: Text('P$pageIndex'),
-        backgroundColor: color,
-        labelStyle: const TextStyle(
-          color: Colors.white,
+        backgroundColor: colors.color,
+        labelStyle: TextStyle(
+          color: colors.onColor,
           fontSize: 12,
           fontWeight: FontWeight.bold,
         ),
@@ -529,9 +523,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   'No parameters assigned to performance pages',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ]

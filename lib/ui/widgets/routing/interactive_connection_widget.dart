@@ -198,6 +198,7 @@ class _InteractiveConnectionWidgetState
               offsetX: -left,
               offsetY: -top,
               isHovering: _isHovering,
+              hoverColor: Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
@@ -292,7 +293,9 @@ class _InteractiveConnectionWidgetState
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -331,7 +334,9 @@ class _InteractiveConnectionWidgetState
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.shadow.withValues(alpha: 0.2),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -470,12 +475,14 @@ class _ConnectionHoverPainter extends CustomPainter {
   final double offsetX;
   final double offsetY;
   final bool isHovering;
+  final Color hoverColor;
 
   const _ConnectionHoverPainter({
     required this.connectionData,
     required this.offsetX,
     required this.offsetY,
     required this.isHovering,
+    required this.hoverColor,
   });
 
   @override
@@ -483,7 +490,7 @@ class _ConnectionHoverPainter extends CustomPainter {
     if (isHovering) {
       // Optional debug visualization
       final debugPaint = Paint()
-        ..color = Colors.green.withValues(alpha: 0.2)
+        ..color = hoverColor.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8.0;
 

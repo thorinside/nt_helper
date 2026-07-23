@@ -53,9 +53,8 @@ class BusColorPalette {
     ).toColor();
   }
 
-  /// A neutral grey tube for a bus carrying no signal at this point.
-  static Color empty(int bus, {bool isDark = false}) =>
-      isDark ? const Color(0xFF565656) : const Color(0xFFBBBBBB);
+  /// The theme-provided neutral tube colour for a bus carrying no signal.
+  static Color empty(int bus, {required Color neutralColor}) => neutralColor;
 
   /// Color for a contiguous driven segment ("session"). Each Replace increments
   /// [sessionIndex], shifting the tone noticeably so the cap + restart is
@@ -78,9 +77,6 @@ class BusColorPalette {
     final h = HSLColor.fromColor(color);
     final l = (h.lightness - 0.09 * addCount).clamp(isDark ? 0.18 : 0.12, 1.0);
     final s = (h.saturation + 0.08 * addCount).clamp(0.0, 1.0);
-    return h
-        .withLightness(l.toDouble())
-        .withSaturation(s.toDouble())
-        .toColor();
+    return h.withLightness(l.toDouble()).withSaturation(s.toDouble()).toColor();
   }
 }

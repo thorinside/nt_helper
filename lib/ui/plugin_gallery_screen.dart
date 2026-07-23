@@ -15,6 +15,7 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/collection_expansion_panel.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/linkified_text.dart';
@@ -703,8 +704,8 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             icon: const Icon(Icons.system_update, size: 18),
             label: const Text('Update All'),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+              backgroundColor: context.appColors.warning.color,
+              foregroundColor: context.appColors.warning.onColor,
             ),
           ),
       ],
@@ -973,7 +974,7 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         icon: const Icon(Icons.update, semanticLabel: 'Update'),
         onPressed: () => _doInstallPlugin(plugin),
         tooltip: 'Update',
-        color: Colors.orange,
+        color: context.appColors.warning.color,
       );
     }
 
@@ -1083,7 +1084,7 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         : 'Installed ${GalleryService.extractSemver(info.installedVersion)}';
 
     final color = info.hasUpdate
-        ? Colors.orange
+        ? context.appColors.warning.color
         : Theme.of(context).colorScheme.secondary;
 
     return Container(
@@ -1692,9 +1693,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
 
     if (validFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please drop valid plugin files (.lua, .3pot, or .o)'),
-          backgroundColor: Colors.orange,
+          backgroundColor: context.appColors.warning.color,
         ),
       );
       return;
@@ -1702,9 +1703,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
 
     if (validFiles.length > 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please drop only one file at a time'),
-          backgroundColor: Colors.orange,
+          backgroundColor: context.appColors.warning.color,
         ),
       );
       return;

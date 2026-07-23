@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_value_edit_traversal_scope.dart';
 import 'package:nt_helper/util/parameter_page_assigner.dart';
@@ -178,10 +179,10 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle_outline,
                 size: 64,
-                color: Colors.green,
+                color: context.appColors.success.color,
               ),
               const SizedBox(height: 16),
               const Text(
@@ -190,10 +191,12 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'All Step Sequencer parameters are accessible through the custom interface.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 24),
               ElevatedButton(

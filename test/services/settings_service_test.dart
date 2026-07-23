@@ -51,6 +51,7 @@ const Map<String, Object> _nonDefaultSeeds = {
   'allowed_file_roots':
       '[{"id":"seed","label":"Seed","path":"/tmp/seed","acl":{"chat":["read"],"mcp":["search"]}}]',
   'ui_scale': 1.4,
+  'theme_seed_argb': 0xFF6750A4,
   'auto_center_on_selection': false,
   'show_backward_connections': false,
 };
@@ -222,6 +223,7 @@ void main() {
         expect(settings.dismissedUpdateVersion, isNull);
         expect(settings.lastUpdateCheckTimestamp, isNull);
         expect(settings.uiScale, SettingsService.defaultUiScale);
+        expect(settings.themeSeedColor, SettingsService.defaultThemeSeedColor);
         expect(
           settings.autoCenterOnSelection,
           SettingsService.defaultAutoCenterOnSelection,
@@ -250,11 +252,13 @@ void main() {
         SharedPreferences.setMockInitialValues({
           'cpu_monitor_enabled': false,
           'ui_scale': 1.4,
+          'theme_seed_argb': 0xFF6750A4,
           'video_toolbar_always_visible': true,
         });
         await settings.init();
         expect(settings.cpuMonitorEnabledNotifier.value, isFalse);
         expect(settings.uiScaleNotifier.value, closeTo(1.4, 1e-9));
+        expect(settings.themeSeedColorNotifier.value, const Color(0xFF6750A4));
         expect(settings.videoToolbarAlwaysVisibleNotifier.value, isTrue);
 
         await settings.resetToDefaults();
@@ -265,11 +269,92 @@ void main() {
         );
         expect(settings.uiScaleNotifier.value, SettingsService.defaultUiScale);
         expect(
+          settings.themeSeedColorNotifier.value,
+          SettingsService.defaultThemeSeedColor,
+        );
+        expect(
           settings.videoToolbarAlwaysVisibleNotifier.value,
           SettingsService.defaultVideoToolbarAlwaysVisible,
         );
       },
     );
+  });
+
+  group('SettingsService theme seed', () {
+    late SettingsService settings;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      settings = SettingsService();
+      await settings.init();
+    });
+
+    test('persists an opaque seed and updates its notifier', () async {
+      const translucentPurple = Color(0x336750A4);
+
+      expect(settings.themeSeedColor, SettingsService.defaultThemeSeedColor);
+      expect(await settings.setThemeSeedColor(translucentPurple), isTrue);
+      expect(settings.themeSeedColor, const Color(0xFF6750A4));
+      expect(settings.themeSeedColorNotifier.value, const Color(0xFF6750A4));
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('theme_seed_argb'), 0xFF6750A4);
+    });
+
+    testWidgets('Settings stages the seed until Save is pressed', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: SettingsDialog())),
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.text('Theme Colour'));
+      await tester.tap(find.byTooltip('Choose theme colour'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Purple'));
+      await tester.pump();
+      await tester.tap(find.text('Select'));
+      await tester.pumpAndSettle();
+
+      expect(settings.themeSeedColor, SettingsService.defaultThemeSeedColor);
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(settings.themeSeedColor, Colors.purple.shade500);
+      expect(settings.themeSeedColorNotifier.value, Colors.purple.shade500);
+    });
+
+    testWidgets('Settings reset restores the default seed when saved', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        'theme_seed_argb': Colors.purple.shade500.toARGB32(),
+      });
+      await settings.init();
+      await tester.binding.setSurfaceSize(const Size(1200, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: SettingsDialog())),
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.text('Theme Colour'));
+      await tester.tap(find.byKey(const ValueKey('reset-theme-seed')));
+      await tester.pump();
+
+      expect(settings.themeSeedColor, Colors.purple.shade500);
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(settings.themeSeedColor, SettingsService.defaultThemeSeedColor);
+      expect(
+        settings.themeSeedColorNotifier.value,
+        SettingsService.defaultThemeSeedColor,
+      );
+    });
   });
 
   group('SettingsService.allowedFileRoots', () {

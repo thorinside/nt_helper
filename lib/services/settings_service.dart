@@ -8,17 +8,11 @@ import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/database_integrity_service.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/rtt_stats_dialog.dart';
+import 'package:nt_helper/ui/widgets/theme_seed_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-/// Application theme with Material 3 enabled
-ThemeData appTheme() {
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-  );
-}
 
 /// A service to manage application settings
 class SettingsService {
@@ -37,6 +31,9 @@ class SettingsService {
 
   /// Notifier for UI scale changes; listeners rebuild when scale updates.
   final uiScaleNotifier = ValueNotifier<double>(defaultUiScale);
+
+  /// Notifier for Material theme seed changes; listeners rebuild app themes.
+  final themeSeedColorNotifier = ValueNotifier<Color>(defaultThemeSeedColor);
 
   /// Notifier for video toolbar visibility changes.
   final videoToolbarAlwaysVisibleNotifier = ValueNotifier<bool>(
@@ -92,6 +89,7 @@ class SettingsService {
   static const String _chatLocalDirectoryKey = 'chat_local_directory';
   static const String _allowedFileRootsKey = 'allowed_file_roots';
   static const String _uiScaleKey = 'ui_scale';
+  static const String _themeSeedColorKey = 'theme_seed_argb';
   static const String _autoCenterOnSelectionKey = 'auto_center_on_selection';
   static const String _showBackwardConnectionsKey = 'show_backward_connections';
 
@@ -141,6 +139,7 @@ class SettingsService {
     _chatLocalDirectoryKey,
     _allowedFileRootsKey,
     _uiScaleKey,
+    _themeSeedColorKey,
     _autoCenterOnSelectionKey,
     _showBackwardConnectionsKey,
   ];
@@ -189,6 +188,7 @@ class SettingsService {
   static const double minUiScale = 0.7;
   static const double maxUiScale = 1.5;
   static const double uiScaleStep = 0.1;
+  static const Color defaultThemeSeedColor = AppTheme.defaultSeedColor;
   static const bool defaultAutoCenterOnSelection = true;
   static const bool defaultShowBackwardConnections = true;
 
@@ -203,6 +203,7 @@ class SettingsService {
     // Initialize notifier with stored value
     cpuMonitorEnabledNotifier.value = cpuMonitorEnabled;
     uiScaleNotifier.value = uiScale;
+    themeSeedColorNotifier.value = themeSeedColor;
     videoToolbarAlwaysVisibleNotifier.value = videoToolbarAlwaysVisible;
     contextualHelpEnabledNotifier.value = showContextualHelp;
     showBackwardConnectionsNotifier.value = showBackwardConnections;
@@ -243,6 +244,28 @@ class SettingsService {
   Future<double> resetUiScale() async {
     await setUiScale(defaultUiScale);
     return defaultUiScale;
+  }
+
+  /// The opaque Material 3 seed shared by every application theme variant.
+  Color get themeSeedColor {
+    final stored = _prefs?.getInt(_themeSeedColorKey);
+    return _opaqueColor(stored ?? defaultThemeSeedColor.toARGB32());
+  }
+
+  /// Persist an opaque Material 3 seed and rebuild listening application roots.
+  Future<bool> setThemeSeedColor(Color value) async {
+    final opaque = _opaqueColor(value.toARGB32());
+    final result =
+        await _prefs?.setInt(_themeSeedColorKey, opaque.toARGB32()) ?? false;
+    if (result) {
+      themeSeedColorNotifier.value = opaque;
+    }
+    return result;
+  }
+
+  Color _opaqueColor(int argb) {
+    final opaqueArgb = 0xFF000000 | (argb & 0x00FFFFFF);
+    return Color(opaqueArgb);
   }
 
   /// Clamp and round a scale value to one decimal place.
@@ -742,6 +765,7 @@ class SettingsService {
     }
     cpuMonitorEnabledNotifier.value = defaultCpuMonitorEnabled;
     uiScaleNotifier.value = defaultUiScale;
+    themeSeedColorNotifier.value = defaultThemeSeedColor;
     videoToolbarAlwaysVisibleNotifier.value = defaultVideoToolbarAlwaysVisible;
     contextualHelpEnabledNotifier.value = defaultShowContextualHelp;
     showBackwardConnectionsNotifier.value = defaultShowBackwardConnections;
@@ -783,6 +807,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _videoPopupNativeWindowEnabled;
   late bool _videoToolbarAlwaysVisible;
   late double _uiScale;
+  late Color _themeSeedColor;
 
   @override
   void initState() {
@@ -809,6 +834,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _videoPopupNativeWindowEnabled = settings.videoPopupNativeWindowEnabled;
       _videoToolbarAlwaysVisible = settings.videoToolbarAlwaysVisible;
       _uiScale = settings.uiScale;
+      _themeSeedColor = settings.themeSeedColor;
     });
   }
 
@@ -839,6 +865,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       );
       await settings.setVideoToolbarAlwaysVisible(_videoToolbarAlwaysVisible);
       await settings.setUiScale(_uiScale);
+      await settings.setThemeSeedColor(_themeSeedColor);
 
       if (mounted) {
         Navigator.of(
@@ -1057,6 +1084,16 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           ),
                         ],
                       ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    ThemeSeedPicker(
+                      value: _themeSeedColor,
+                      defaultValue: SettingsService.defaultThemeSeedColor,
+                      onChanged: (value) {
+                        setState(() => _themeSeedColor = value);
+                      },
                     ),
 
                     const SizedBox(height: 24),

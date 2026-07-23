@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 /// Desktop-specific feedback service that provides visual and audio alternatives
 /// to haptic feedback for platforms where physical feedback is not available.
@@ -69,7 +70,7 @@ class DesktopFeedbackService {
       // Create a brief overlay effect
       _showFeedbackOverlay(
         context,
-        Colors.blue.withValues(alpha: 0.1),
+        Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         const Duration(milliseconds: 100),
         target: target,
       );
@@ -92,7 +93,7 @@ class DesktopFeedbackService {
       // Create a more prominent pulse effect
       _showFeedbackOverlay(
         context,
-        Colors.green.withValues(alpha: 0.2),
+        context.appColors.success.color.withValues(alpha: 0.2),
         const Duration(milliseconds: 200),
         target: target,
       );
@@ -115,7 +116,7 @@ class DesktopFeedbackService {
       // Create a strong pulsing effect
       _showFeedbackOverlay(
         context,
-        Colors.orange.withValues(alpha: 0.3),
+        context.appColors.warning.color.withValues(alpha: 0.3),
         const Duration(milliseconds: 300),
         target: target,
       );
@@ -138,7 +139,7 @@ class DesktopFeedbackService {
       // Create a brief red flash effect
       _showFeedbackOverlay(
         context,
-        Colors.red.withValues(alpha: 0.25),
+        Theme.of(context).colorScheme.error.withValues(alpha: 0.25),
         const Duration(milliseconds: 150),
         target: target,
       );

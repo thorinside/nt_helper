@@ -40,6 +40,7 @@ import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/video_popup_window_service.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
@@ -2875,11 +2876,14 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.restart_alt, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Reboot Device'),
+            Icon(
+              Icons.restart_alt,
+              color: dialogContext.appColors.warning.color,
+            ),
+            const SizedBox(width: 8),
+            const Text('Reboot Device'),
           ],
         ),
         content: const Text(
@@ -2891,7 +2895,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
             onPressed: () {
               Navigator.of(dialogContext).pop();
               cubit.reboot();

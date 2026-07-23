@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/poly_multisample/poly_audio_preview_service.dart';
@@ -478,6 +479,8 @@ class _PolyWaveformEditorState extends State<PolyWaveformEditor>
                                       fadeInStrength: widget.fadeInStrength,
                                       fadeOutStrength: widget.fadeOutStrength,
                                       colorScheme: colorScheme,
+                                      markerColor:
+                                          context.appColors.warning.color,
                                     ),
                                   ),
                                 ),
@@ -511,6 +514,7 @@ class _PolyWaveformFadePainter extends CustomPainter {
     required this.fadeInStrength,
     required this.fadeOutStrength,
     required this.colorScheme,
+    required this.markerColor,
   });
 
   final WavOverview overview;
@@ -523,6 +527,7 @@ class _PolyWaveformFadePainter extends CustomPainter {
   final double fadeInStrength;
   final double fadeOutStrength;
   final ColorScheme colorScheme;
+  final Color markerColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -558,7 +563,7 @@ class _PolyWaveformFadePainter extends CustomPainter {
     }
 
     final fadeLinePaint = Paint()
-      ..color = Colors.amber.withValues(alpha: 0.8)
+      ..color = markerColor.withValues(alpha: 0.8)
       ..strokeWidth = 2;
     if (fadeInFrames > 0 && startX > 0) {
       canvas.drawLine(

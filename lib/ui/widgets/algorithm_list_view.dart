@@ -58,17 +58,17 @@ class AlgorithmListView extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: _AlgorithmListTile(
-                slot: slots[index],
-                index: index,
-                isSelected: index == selectedIndex,
-                onSelectionChanged: onSelectionChanged,
-                onHelpTextChanged: onHelpTextChanged,
-                onMoveUp: onMoveUp,
-                onMoveDown: onMoveDown,
-                onDelete: onDelete,
-                clipboardSelection: clipboardSelection,
-                onToggleClipboardSelection: onToggleClipboardSelection,
-              ),
+                  slot: slots[index],
+                  index: index,
+                  isSelected: index == selectedIndex,
+                  onSelectionChanged: onSelectionChanged,
+                  onHelpTextChanged: onHelpTextChanged,
+                  onMoveUp: onMoveUp,
+                  onMoveDown: onMoveDown,
+                  onDelete: onDelete,
+                  clipboardSelection: clipboardSelection,
+                  onToggleClipboardSelection: onToggleClipboardSelection,
+                ),
               );
             },
           ),
@@ -257,9 +257,7 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
                       >(
                         () => ShiftClickGestureRecognizer(
                           onShiftTap: () {
-                            widget.onToggleClipboardSelection!(
-                              widget.index,
-                            );
+                            widget.onToggleClipboardSelection!(widget.index);
                             if (SettingsService().hapticsEnabled) {
                               Haptics.vibrate(HapticsType.light);
                             }
@@ -279,98 +277,105 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
                 Haptics.vibrate(HapticsType.medium);
               }
             },
-          child: ClipboardSelectableTab(
-            key: ValueKey('clipboard-tile-${widget.index}'),
-            selection: widget.clipboardSelection ?? _emptySelection,
-            slotIndex: widget.index,
-            horizontalPadding: 4,
-            child: Stack(
-            children: [
-              ListTile(
-                title: ExcludeSemantics(
-                  child: Text(displayName, overflow: TextOverflow.ellipsis),
-                ),
-                subtitle: _buildOriginalNameSubtitle(context),
-                selected: widget.isSelected,
-                selectedTileColor: Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer,
-                selectedColor: Theme.of(
-                  context,
-                ).colorScheme.onSecondaryContainer,
-                onTap: () {
-                  widget.onSelectionChanged(widget.index);
-                  SemanticsService.sendAnnouncement(
-                    WidgetsBinding.instance.platformDispatcher.views.first,
-                    'Slot ${widget.index + 1}: $displayName selected',
-                    TextDirection.ltr,
-                  );
-                },
-                onLongPress: () async {
-                  var cubit = context.read<DistingCubit>();
-                  final newName = await showDialog<String>(
-                    context: context,
-                    builder: (dialogCtx) =>
-                        RenameSlotDialog(initialName: displayName),
-                  );
-                  if (newName != null && newName != displayName) {
-                    cubit.renameSlot(widget.index, newName);
-                  }
-                },
-              ),
-              if (hasActions)
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: AnimatedBuilder(
-                    animation: _fadeController,
-                    builder: (context, child) {
-                      final t = _fadeController.value;
-                      final tileColor = widget.isSelected
-                          ? Theme.of(context).colorScheme.secondaryContainer
-                          : Theme.of(context).colorScheme.surface;
-                      return ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: [
-                            Colors.white.withValues(alpha: t),
-                            Colors.white,
-                          ],
-                          stops: const [0.0, 0.5],
-                        ).createShader(bounds),
-                        blendMode: BlendMode.dstIn,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                tileColor.withValues(alpha: 0),
-                                tileColor.withValues(alpha: t),
-                              ],
-                              stops: const [0.0, 0.3],
-                            ),
-                          ),
-                          padding: const EdgeInsets.only(left: 24, right: 8),
-                          child: Opacity(
-                            opacity: widget.isSelected ? 0.3 + 0.7 * t : t,
-                            child: child,
-                          ),
-                        ),
+            child: ClipboardSelectableTab(
+              key: ValueKey('clipboard-tile-${widget.index}'),
+              selection: widget.clipboardSelection ?? _emptySelection,
+              slotIndex: widget.index,
+              horizontalPadding: 4,
+              child: Stack(
+                children: [
+                  ListTile(
+                    title: ExcludeSemantics(
+                      child: Text(displayName, overflow: TextOverflow.ellipsis),
+                    ),
+                    subtitle: _buildOriginalNameSubtitle(context),
+                    selected: widget.isSelected,
+                    selectedTileColor: Theme.of(
+                      context,
+                    ).colorScheme.secondaryContainer,
+                    selectedColor: Theme.of(
+                      context,
+                    ).colorScheme.onSecondaryContainer,
+                    onTap: () {
+                      widget.onSelectionChanged(widget.index);
+                      SemanticsService.sendAnnouncement(
+                        WidgetsBinding.instance.platformDispatcher.views.first,
+                        'Slot ${widget.index + 1}: $displayName selected',
+                        TextDirection.ltr,
                       );
                     },
-            child: _buildActionRow(),
+                    onLongPress: () async {
+                      var cubit = context.read<DistingCubit>();
+                      final newName = await showDialog<String>(
+                        context: context,
+                        builder: (dialogCtx) =>
+                            RenameSlotDialog(initialName: displayName),
+                      );
+                      if (newName != null && newName != displayName) {
+                        cubit.renameSlot(widget.index, newName);
+                      }
+                    },
                   ),
-                ),
-            ],
-          ),
+                  if (hasActions)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: AnimatedBuilder(
+                        animation: _fadeController,
+                        builder: (context, child) {
+                          final t = _fadeController.value;
+                          final tileColor = widget.isSelected
+                              ? Theme.of(context).colorScheme.secondaryContainer
+                              : Theme.of(context).colorScheme.surface;
+                          final maskColor = Theme.of(
+                            context,
+                          ).colorScheme.onSurface;
+                          return ShaderMask(
+                            shaderCallback: (bounds) => LinearGradient(
+                              colors: [
+                                maskColor.withValues(alpha: t),
+                                maskColor,
+                              ],
+                              stops: const [0.0, 0.5],
+                            ).createShader(bounds),
+                            blendMode: BlendMode.dstIn,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    tileColor.withValues(alpha: 0),
+                                    tileColor.withValues(alpha: t),
+                                  ],
+                                  stops: const [0.0, 0.3],
+                                ),
+                              ),
+                              padding: const EdgeInsets.only(
+                                left: 24,
+                                right: 8,
+                              ),
+                              child: Opacity(
+                                opacity: widget.isSelected ? 0.3 + 0.7 * t : t,
+                                child: child,
+                              ),
+                            ),
+                          );
+                        },
+                        child: _buildActionRow(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }
 
 // A stable, never-mutated notifier used when no clipboard selection is wired
 // up, so tiles can always hand a [ValueNotifier] to [ClipboardSelectableTab].
-final ValueNotifier<Set<int>> _emptySelection =
-    ValueNotifier<Set<int>>(<int>{});
+final ValueNotifier<Set<int>> _emptySelection = ValueNotifier<Set<int>>(
+  <int>{},
+);

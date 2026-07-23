@@ -416,7 +416,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           SnackBar(
             content: Text('Failed to load ${algorithm.name}'),
             duration: const Duration(seconds: 2),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -427,7 +427,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           SnackBar(
             content: Text('Error loading ${algorithm.name}: $e'),
             duration: const Duration(seconds: 2),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -1178,7 +1178,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                         IconButton(
                           icon: Icon(
                             isFavorite ? Icons.star : Icons.star_border,
-                            color: isFavorite ? Colors.amber : null,
+                            color: isFavorite
+                                ? Theme.of(context).colorScheme.tertiary
+                                : null,
                             size: 20,
                             semanticLabel: isFavorite
                                 ? 'Remove from favorites'

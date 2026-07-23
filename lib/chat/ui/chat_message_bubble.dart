@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:nt_helper/chat/models/chat_message.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 class ChatMessageBubble extends StatelessWidget {
   final ChatMessage message;
@@ -403,7 +404,11 @@ class _ToolChipState extends State<_ToolChip> {
       );
     }
     if (pair.isSuccess) {
-      return Icon(Icons.check_circle, size: 16, color: Colors.green.shade400);
+      return Icon(
+        Icons.check_circle,
+        size: 16,
+        color: theme.appColors.success.color,
+      );
     }
     return Icon(Icons.cancel, size: 16, color: theme.colorScheme.error);
   }

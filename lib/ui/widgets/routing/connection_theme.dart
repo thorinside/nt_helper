@@ -158,30 +158,6 @@ class ConnectionStyle {
   bool get isDashed => dashPattern != null && dashPattern!.isNotEmpty;
 }
 
-/// Port type color mapping for consistent visual language.
-///
-/// Only two signal types: audio (blue) and CV (orange).
-/// The isAudio IO flag determines the type; non-audio signals default to CV.
-class PortTypeColors {
-  /// Audio signal color (blue family)
-  static const Color audio = Color(0xFF2196F3);
-
-  /// CV signal color (orange family)
-  static const Color cv = Color(0xFFFF9800);
-
-  /// Get color for a port type string
-  static Color getColorForPortType(String portType) {
-    if (portType.toLowerCase().contains('audio')) return audio;
-    return cv;
-  }
-
-  /// Get color for a port ID
-  static Color getColorForPortId(String portId) {
-    if (portId.toLowerCase().contains('audio')) return audio;
-    return cv;
-  }
-}
-
 /// Connection state management for visual consistency
 class ConnectionStateManager {
   final ConnectionVisualTheme theme;

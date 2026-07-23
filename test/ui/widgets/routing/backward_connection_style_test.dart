@@ -4,6 +4,7 @@ import 'dart:ui' as dart_ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart';
 
 ConnectionData _connData({
@@ -32,10 +33,6 @@ ConnectionData _connData({
 
 void main() {
   group('Backward connection styling', () {
-    test('kBackwardEdgeColor is the agreed bright orange (#FF8800)', () {
-      expect(kBackwardEdgeColor, const Color(0xFFFF8800));
-    });
-
     group('classifyVisualType precedence', () {
       test('backward edge classifies as invalid', () {
         expect(
@@ -86,21 +83,29 @@ void main() {
         );
       }
 
-      test('backward edge uses kBackwardEdgeColor in light theme', () {
+      test('backward edge uses the light theme warning role', () {
         final conn = _connData(isBackwardEdge: true);
-        final painter = painterFor(conn);
+        final theme = AppTheme.build(
+          seedColor: AppTheme.defaultSeedColor,
+          brightness: Brightness.light,
+        );
+        final painter = painterFor(conn, theme: theme);
         expect(
           painter.debugResolveStyleColor(conn).toARGB32(),
-          kBackwardEdgeColor.toARGB32(),
+          theme.appColors.backwardConnection.toARGB32(),
         );
       });
 
-      test('backward edge uses kBackwardEdgeColor in dark theme', () {
+      test('backward edge uses the dark theme warning role', () {
         final conn = _connData(isBackwardEdge: true);
-        final painter = painterFor(conn, theme: ThemeData.dark());
+        final theme = AppTheme.build(
+          seedColor: AppTheme.defaultSeedColor,
+          brightness: Brightness.dark,
+        );
+        final painter = painterFor(conn, theme: theme);
         expect(
           painter.debugResolveStyleColor(conn).toARGB32(),
-          kBackwardEdgeColor.toARGB32(),
+          theme.appColors.backwardConnection.toARGB32(),
         );
       });
     });
@@ -110,21 +115,28 @@ void main() {
       const h = 100;
       const yScan = 50.0;
 
-      bool isOrangeIsh(int r, int g, int b, int a) {
-        // Tolerance band for kBackwardEdgeColor (#FF8800), accounting for
-        // anti-aliased / partially-covered pixels at the edges of round dots
-        // and dashed segments. Output buffer is premultiplied, so partial-
-        // coverage pixels show R≈191/G≈102/A≈191 instead of full intensity;
-        // we therefore unpremultiply against alpha to recover the source
-        // color and assert that against #FF8800 with a generous tolerance.
+      final theme = AppTheme.build(
+        seedColor: AppTheme.defaultSeedColor,
+        brightness: Brightness.light,
+      );
+      final warningColor = theme.appColors.backwardConnection;
+
+      bool isWarningColor(int r, int g, int b, int a) {
+        // The output buffer is premultiplied, so recover the source colour
+        // before comparing it with the current theme's warning role.
         if (a < 0x40) return false;
         final rNorm = (r * 255) ~/ a;
         final gNorm = (g * 255) ~/ a;
         final bNorm = (b * 255) ~/ a;
-        return rNorm >= 0xE0 && gNorm >= 0x60 && gNorm <= 0xA8 && bNorm <= 0x20;
+        final targetR = (warningColor.r * 255).round();
+        final targetG = (warningColor.g * 255).round();
+        final targetB = (warningColor.b * 255).round();
+        return (rNorm - targetR).abs() <= 28 &&
+            (gNorm - targetG).abs() <= 28 &&
+            (bNorm - targetB).abs() <= 28;
       }
 
-      Future<int> maxOrangeRunOnScanlineFor(
+      Future<int> maxWarningRunOnScanlineFor(
         ConnectionData conn,
         WidgetTester tester,
       ) async {
@@ -132,7 +144,7 @@ void main() {
         await tester.runAsync(() async {
           final painter = ConnectionPainter(
             connections: [conn],
-            theme: ThemeData.light(),
+            theme: theme,
             showLabels: false,
             enableAntiOverlap: false,
           );
@@ -154,7 +166,7 @@ void main() {
           int currentRun = 0;
           for (int x = 0; x < w; x++) {
             final i = (y * w + x) * 4;
-            if (isOrangeIsh(
+            if (isWarningColor(
               bytes[i],
               bytes[i + 1],
               bytes[i + 2],
@@ -186,18 +198,18 @@ void main() {
         'backward edge renders as round dots (max horizontal run ≤ 4 px)',
         (tester) async {
           final conn = horizontalBackwardEdge();
-          final maxRun = await maxOrangeRunOnScanlineFor(conn, tester);
+          final maxRun = await maxWarningRunOnScanlineFor(conn, tester);
           expect(
             maxRun,
             greaterThan(0),
             reason:
-                'expected to find orange pixels on the rendered backward edge',
+                'expected to find warning-colour pixels on the rendered backward edge',
           );
           expect(
             maxRun,
             lessThanOrEqualTo(4),
             reason:
-                'a dotted stroke should yield short orange runs (~2-3 px), '
+                'a dotted stroke should yield short warning-colour runs (~2-3 px), '
                 'not 8 px dashes',
           );
         },
@@ -211,7 +223,7 @@ void main() {
         await tester.runAsync(() async {
           final painter = ConnectionPainter(
             connections: [conn],
-            theme: ThemeData.light(),
+            theme: theme,
             showLabels: false,
             enableAntiOverlap: false,
           );
@@ -227,7 +239,7 @@ void main() {
         return byteData.buffer.asUint8List();
       }
 
-      bool hasOpaqueNonOrange(
+      bool hasOpaqueNonWarningColor(
         Uint8List bytes,
         Offset position, {
         int radius = 3,
@@ -246,7 +258,7 @@ void main() {
             final a = bytes[i + 3];
             // Pixel is opaque enough that we'd notice it as a drawn shape.
             if (a < 0x80) continue;
-            if (isOrangeIsh(r, g, b, a)) continue;
+            if (isWarningColor(r, g, b, a)) continue;
             return true;
           }
         }
@@ -257,7 +269,7 @@ void main() {
         tester,
       ) async {
         // Use a port id that maps to the audio accessible port color
-        // (a blue, non-orange color); a 3px-radius endpoint circle in
+        // (a non-warning color); a 3px-radius endpoint circle in
         // that color would be the only thing visible at the source/dest
         // endpoint area when endpoints are drawn.
         final conn = ConnectionData(
@@ -274,18 +286,18 @@ void main() {
 
         final bytes = await renderToBytes(conn, tester);
         expect(
-          hasOpaqueNonOrange(bytes, const Offset(20, yScan)),
+          hasOpaqueNonWarningColor(bytes, const Offset(20, yScan)),
           isFalse,
           reason:
-              'an opaque non-orange pixel near the source endpoint means '
+              'an opaque non-warning pixel near the source endpoint means '
               'the port-color endpoint circle was drawn — backward edges '
               'must not draw endpoint circles',
         );
         expect(
-          hasOpaqueNonOrange(bytes, const Offset(180, yScan)),
+          hasOpaqueNonWarningColor(bytes, const Offset(180, yScan)),
           isFalse,
           reason:
-              'an opaque non-orange pixel near the destination endpoint '
+              'an opaque non-warning pixel near the destination endpoint '
               'means the port-color endpoint circle was drawn',
         );
       });

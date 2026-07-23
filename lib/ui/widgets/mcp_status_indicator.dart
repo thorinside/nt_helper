@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 /// Small round LED indicator for MCP server status with tooltip
 class McpStatusIndicator extends StatelessWidget {
@@ -20,23 +21,27 @@ class McpStatusIndicator extends StatelessWidget {
     final hasError = mcpService.hasError;
     final lastError = mcpService.lastError;
 
-    // Determine color based on state: green=running, red=error, grey=disabled
+    final scheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
+
+    // Determine color based on state: success=running, error=failed,
+    // neutral=disabled.
     final Color baseColor;
     final Color highlightColor;
     final Color shadowColor;
 
     if (isRunning) {
-      baseColor = Colors.green.shade600;
-      highlightColor = Colors.green.shade300;
-      shadowColor = Colors.green.shade800;
+      baseColor = appColors.success.color;
+      highlightColor = appColors.success.container;
+      shadowColor = Color.lerp(baseColor, scheme.shadow, 0.45)!;
     } else if (hasError) {
-      baseColor = Colors.red.shade600;
-      highlightColor = Colors.red.shade300;
-      shadowColor = Colors.red.shade800;
+      baseColor = scheme.error;
+      highlightColor = scheme.errorContainer;
+      shadowColor = Color.lerp(baseColor, scheme.shadow, 0.45)!;
     } else {
-      baseColor = Colors.grey.shade600;
-      highlightColor = Colors.grey.shade400;
-      shadowColor = Colors.grey.shade800;
+      baseColor = scheme.outline;
+      highlightColor = scheme.outlineVariant;
+      shadowColor = Color.lerp(baseColor, scheme.shadow, 0.45)!;
     }
 
     // Build tooltip message based on state
@@ -114,7 +119,7 @@ class McpStatusIndicator extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(77),
+                  color: scheme.shadow.withAlpha(77),
                   blurRadius: 2,
                   offset: const Offset(1, 1),
                 ),
@@ -126,7 +131,7 @@ class McpStatusIndicator extends StatelessWidget {
                 height: 5,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withAlpha(179),
+                  color: scheme.surface.withAlpha(179),
                 ),
                 margin: const EdgeInsets.only(right: 3, bottom: 3),
               ),

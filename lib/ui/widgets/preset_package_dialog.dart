@@ -10,6 +10,7 @@ import 'package:nt_helper/services/package_estimator.dart';
 import 'package:nt_helper/services/preset_analyzer.dart';
 import 'package:nt_helper/services/package_creator.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 /// Dialog for creating preset packages
 class PresetPackageDialog extends StatefulWidget {
@@ -313,7 +314,10 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               Text(
                 '${est.warnings.length} item(s) could not be sized — '
                 'estimate is a lower bound.',
-                style: const TextStyle(fontSize: 11, color: Colors.orange),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.appColors.warning.color,
+                ),
               ),
             ],
             if (est.folders.isNotEmpty) ...[
@@ -381,14 +385,20 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
                 'Community plugins: ${dependencies!.communityPlugins.length}',
               ),
               if (config.includeCommunityPlugins)
-                const Text(
+                Text(
                   '✓ Will be included in package',
-                  style: TextStyle(color: Colors.green, fontSize: 12),
+                  style: TextStyle(
+                    color: context.appColors.success.color,
+                    fontSize: 12,
+                  ),
                 )
               else
-                const Text(
+                Text(
                   '⚠️ Requires manual installation',
-                  style: TextStyle(color: Colors.orange, fontSize: 12),
+                  style: TextStyle(
+                    color: context.appColors.warning.color,
+                    fontSize: 12,
+                  ),
                 ),
             ],
             if (dependencies!.isEmpty) const Text('No dependencies found'),

@@ -124,9 +124,7 @@ class QuantizeControls extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey.shade800
-            : Colors.grey.shade50,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       items: ScaleQuantizer.scaleNames.map((scale) {
         return DropdownMenuItem<String>(value: scale, child: Text(scale));
@@ -148,9 +146,7 @@ class QuantizeControls extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey.shade800
-            : Colors.grey.shade50,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       items: _rootNoteNames.entries.map((entry) {
         return DropdownMenuItem<int>(
@@ -167,12 +163,13 @@ class QuantizeControls extends StatelessWidget {
   }
 
   Widget _buildQuantizeAllButton(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ElevatedButton.icon(
       icon: const Icon(Icons.auto_fix_high),
       label: const Text('Quantize All'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF0f766e), // darkTeal
-        foregroundColor: Colors.white,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       onPressed: onQuantizeAll,
@@ -180,8 +177,7 @@ class QuantizeControls extends StatelessWidget {
   }
 
   Widget _buildUndoButton(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
 
     return IconButton(
       icon: const Icon(Icons.undo, semanticLabel: 'Undo last quantize'),
@@ -189,15 +185,11 @@ class QuantizeControls extends StatelessWidget {
       onPressed: canUndo ? onUndo : null,
       style: IconButton.styleFrom(
         backgroundColor: canUndo
-            ? const Color(0xFF14b8a6) // primaryTeal
-            : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-        foregroundColor: Colors.white,
-        disabledBackgroundColor: isDark
-            ? Colors.grey.shade800
-            : Colors.grey.shade300,
-        disabledForegroundColor: isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade400,
+            ? scheme.primary
+            : scheme.surfaceContainerHighest,
+        foregroundColor: scheme.onPrimary,
+        disabledBackgroundColor: scheme.surfaceContainerHighest,
+        disabledForegroundColor: scheme.onSurfaceVariant.withValues(alpha: 0.6),
       ),
     );
   }

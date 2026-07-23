@@ -175,7 +175,9 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
             borderRadius: BorderRadius.circular(12.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: _isDragging ? 0.3 : 0.1),
+                color: colorScheme.shadow.withValues(
+                  alpha: _isDragging ? 0.3 : 0.1,
+                ),
                 blurRadius: _isDragging ? 8 : 4,
                 offset: Offset(0, _isDragging ? 4 : 2),
               ),

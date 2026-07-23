@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}
@@ -885,6 +886,10 @@ void main() {
   });
 
   group('PackedMappingDataEditor - Dirty State Indicator', () {
+    final testTheme = AppTheme.build(
+      seedColor: AppTheme.defaultSeedColor,
+      brightness: Brightness.light,
+    );
     late PackedMappingData testData;
     late List<Slot> mockSlots;
 
@@ -898,6 +903,7 @@ void main() {
       PackedMappingData? initialData,
     }) {
       return MaterialApp(
+        theme: testTheme,
         home: BlocProvider<DistingCubit>.value(
           value: mockCubit,
           child: Scaffold(
@@ -928,7 +934,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.amber,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.warning.color,
         ),
         findsNothing,
       );
@@ -944,7 +951,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.amber,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.warning.color,
         ),
         findsOneWidget,
       );
@@ -971,7 +979,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.amber,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.warning.color,
         ),
         findsOneWidget,
       );
@@ -999,7 +1008,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.amber,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.warning.color,
         ),
         findsOneWidget,
       );
@@ -1033,7 +1043,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.amber,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.warning.color,
         ),
         findsOneWidget,
       );
@@ -1051,7 +1062,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.blue,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.info.color,
         ),
         findsOneWidget,
       );
@@ -1083,8 +1095,10 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              ((widget.decoration as BoxDecoration).color == Colors.amber ||
-                  (widget.decoration as BoxDecoration).color == Colors.blue),
+              ((widget.decoration as BoxDecoration).color ==
+                      testTheme.appColors.warning.color ||
+                  (widget.decoration as BoxDecoration).color ==
+                      testTheme.appColors.info.color),
         ),
         findsNothing,
       );
@@ -1113,7 +1127,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.amber,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.warning.color,
         ),
         findsOneWidget,
       );
@@ -1128,8 +1143,10 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              ((widget.decoration as BoxDecoration).color == Colors.amber ||
-                  (widget.decoration as BoxDecoration).color == Colors.blue),
+              ((widget.decoration as BoxDecoration).color ==
+                      testTheme.appColors.warning.color ||
+                  (widget.decoration as BoxDecoration).color ==
+                      testTheme.appColors.info.color),
         ),
         findsNothing,
       );
@@ -1155,7 +1172,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.amber,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.warning.color,
         ),
         findsOneWidget,
       );
@@ -1166,7 +1184,8 @@ void main() {
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.amber,
+              (widget.decoration as BoxDecoration).color ==
+                  testTheme.appColors.warning.color,
         ),
         matching: find.byType(Tooltip),
       );

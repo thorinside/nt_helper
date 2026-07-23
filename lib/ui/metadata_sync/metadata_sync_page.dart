@@ -10,6 +10,7 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/debug_metadata_export_dialog.dart';
@@ -376,13 +377,15 @@ class MetadataSyncPage extends StatelessWidget {
                                         Icon(
                                           Icons.bug_report,
                                           size: 20,
-                                          color: Colors.orange.shade600,
+                                          color:
+                                              context.appColors.warning.color,
                                         ),
                                         const SizedBox(width: 12),
                                         Text(
                                           'DEBUG: Export Full Metadata',
                                           style: TextStyle(
-                                            color: Colors.orange.shade700,
+                                            color:
+                                                context.appColors.warning.color,
                                           ),
                                         ),
                                       ],
@@ -505,10 +508,10 @@ class MetadataSyncPage extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.warning,
                                   size: 48,
-                                  color: Colors.orange,
+                                  color: metaCtx.appColors.warning.color,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -701,7 +704,7 @@ class MetadataSyncPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.restore, size: 48, color: Colors.blue),
+            Icon(Icons.restore, size: 48, color: context.appColors.info.color),
             const SizedBox(height: 16),
             const Text(
               'Resume Metadata Sync?',
@@ -937,13 +940,16 @@ class _PresetListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (presets.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20.0),
           child: Text(
             "No presets found.",
             textAlign: TextAlign.center,
-            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       );
@@ -985,7 +991,7 @@ class _PresetListView extends StatelessWidget {
                   preset.isTemplate ? Icons.star : Icons.star_outline,
                   color: preset.isTemplate
                       ? Theme.of(context).colorScheme.tertiary
-                      : Colors.grey,
+                      : Theme.of(context).disabledColor,
                   semanticLabel: preset.isTemplate
                       ? 'Unmark as Template'
                       : 'Mark as Template',
@@ -1008,7 +1014,7 @@ class _PresetListView extends StatelessWidget {
                   isOffline ? Icons.edit_note : Icons.upload_file_outlined,
                   color: canLoad
                       ? Theme.of(context).colorScheme.primary
-                      : Colors.grey,
+                      : Theme.of(context).disabledColor,
                   semanticLabel: isOffline
                       ? 'Load Preset Offline'
                       : 'Send to NT',
@@ -1031,7 +1037,7 @@ class _PresetListView extends StatelessWidget {
                   Icons.delete_outline,
                   color: canDelete
                       ? Theme.of(context).colorScheme.error
-                      : Colors.grey,
+                      : Theme.of(context).disabledColor,
                   semanticLabel: 'Delete Saved Preset',
                 ),
                 tooltip: 'Delete Saved Preset',
@@ -1348,7 +1354,7 @@ class _TemplateListView extends StatelessWidget {
                             Icons.add_circle_outline,
                             color: canLoad
                                 ? Theme.of(context).colorScheme.secondary
-                                : Colors.grey,
+                                : Theme.of(context).disabledColor,
                             semanticLabel: isOffline
                                 ? 'Inject Template (Offline)'
                                 : 'Inject Template',
@@ -1373,7 +1379,7 @@ class _TemplateListView extends StatelessWidget {
                                 : Icons.upload_file_outlined,
                             color: canLoad
                                 ? Theme.of(context).colorScheme.primary
-                                : Colors.grey,
+                                : Theme.of(context).disabledColor,
                             semanticLabel: isOffline
                                 ? 'Load Preset Offline'
                                 : 'Send to NT',
@@ -1397,7 +1403,7 @@ class _TemplateListView extends StatelessWidget {
                             Icons.delete_outline,
                             color: canDelete
                                 ? Theme.of(context).colorScheme.error
-                                : Colors.grey,
+                                : Theme.of(context).disabledColor,
                             semanticLabel: 'Delete Template',
                           ),
                           tooltip: 'Delete Template',
@@ -1518,9 +1524,9 @@ class _TemplateListView extends StatelessWidget {
     if (template.slots.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Cannot inject empty template'),
-            backgroundColor: Colors.orange,
+            backgroundColor: context.appColors.warning.color,
           ),
         );
       }
@@ -1531,9 +1537,9 @@ class _TemplateListView extends StatelessWidget {
     if (manager == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Device not connected'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -1799,9 +1805,9 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
 
     if (manager == null) {
       scaffoldMessenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text("Device not connected"),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
       return;
@@ -1977,7 +1983,11 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
                               Text(
                                 "Range: ${param.minValue ?? '-'} to ${param.maxValue ?? '-'} (Def: ${param.defaultValue ?? '-'}), Unit: ${paramWithUnit.unitString ?? '-'}",
                                 style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: Colors.grey[600]),
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),

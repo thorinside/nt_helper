@@ -38,6 +38,7 @@ import 'package:nt_helper/ui/widgets/routing/es5_node.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_table_view.dart';
 import 'package:nt_helper/ui/widgets/routing/bus_lanes_view.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 enum RoutingEditorViewMode {
   canvas,
@@ -4686,6 +4687,7 @@ class _FadingLabelOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 1.0, end: 0.0),
       duration: const Duration(milliseconds: 200),
@@ -4695,18 +4697,18 @@ class _FadingLabelOverlay extends StatelessWidget {
       },
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.95),
+          color: scheme.surface.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(width: 2.0, color: Colors.black),
+          border: Border.all(width: 2.0, color: scheme.outline),
         ),
         child: Center(
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: scheme.onSurface,
             ),
           ),
         ),
@@ -4874,13 +4876,13 @@ class _TemporaryConnectionPainter extends CustomPainter {
   /// Get color for a port based on its type (simplified version from ConnectionPainter)
   Color _getPortColor(String portId) {
     // Parse port type from ID (simplified - should use actual port data)
-    if (portId.contains('audio')) return theme.colorScheme.primary;
-    if (portId.contains('cv')) return Colors.orange;
-    if (portId.contains('gate')) return Colors.red;
+    if (portId.contains('audio')) return theme.appColors.audioPort.color;
+    if (portId.contains('cv')) return theme.appColors.cvPort.color;
+    if (portId.contains('gate')) return theme.appColors.gatePort.color;
     if (portId.contains('clock') || portId.contains('trigger')) {
-      return Colors.purple;
+      return theme.appColors.clockPort.color;
     }
-    return theme.colorScheme.onSurface;
+    return theme.appColors.unknownPort.color;
   }
 
   @override

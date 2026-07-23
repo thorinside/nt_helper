@@ -13,6 +13,7 @@ import 'package:nt_helper/domain/video/usb_video_manager.dart';
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/video_popup_window_service.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/contextual_help_tooltip_scope.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:window_manager/window_manager.dart';
@@ -32,12 +33,34 @@ class VideoPopupApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: appTheme(),
-      builder: (context, child) =>
-          ContextualHelpTooltipScope(child: child ?? const SizedBox.shrink()),
-      home: const VideoPopupWindow(),
+    final settings = SettingsService();
+    return ValueListenableBuilder<Color>(
+      valueListenable: settings.themeSeedColorNotifier,
+      builder: (context, seedColor, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.build(
+          seedColor: seedColor,
+          brightness: Brightness.light,
+        ),
+        darkTheme: AppTheme.build(
+          seedColor: seedColor,
+          brightness: Brightness.dark,
+        ),
+        highContrastTheme: AppTheme.build(
+          seedColor: seedColor,
+          brightness: Brightness.light,
+          contrastLevel: 1,
+        ),
+        highContrastDarkTheme: AppTheme.build(
+          seedColor: seedColor,
+          brightness: Brightness.dark,
+          contrastLevel: 1,
+        ),
+        themeMode: ThemeMode.system,
+        builder: (context, child) =>
+            ContextualHelpTooltipScope(child: child ?? const SizedBox.shrink()),
+        home: const VideoPopupWindow(),
+      ),
     );
   }
 }
@@ -515,7 +538,10 @@ class VideoPopupContent extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red),
+                    Icon(
+                      Icons.error_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       errorMessage,

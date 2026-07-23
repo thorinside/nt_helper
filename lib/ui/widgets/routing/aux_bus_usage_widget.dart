@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/routing/bus_label_formatter.dart';
 
 class AuxBusUsageWidget extends StatelessWidget {
@@ -22,7 +23,6 @@ class AuxBusUsageWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final brightness = Theme.of(context).brightness;
     final auxCeiling = BusSpec.auxMaxForFirmware(
       hasExtendedAuxBuses: hasExtendedAuxBuses,
     );
@@ -75,7 +75,6 @@ class AuxBusUsageWidget extends StatelessWidget {
                         isFocused:
                             focusedBusNumber == busList[row * columns + col],
                         colorScheme: colorScheme,
-                        brightness: brightness,
                         onTap: onBusTapped,
                         onBusMoved: onBusMoved,
                       ),
@@ -95,7 +94,6 @@ class _BusSquare extends StatelessWidget {
   final AuxBusUsageInfo? info;
   final bool isFocused;
   final ColorScheme colorScheme;
-  final Brightness brightness;
   final ValueChanged<int> onTap;
   final Future<void> Function(int sourceBus, int destinationBus)? onBusMoved;
 
@@ -106,7 +104,6 @@ class _BusSquare extends StatelessWidget {
     required this.info,
     required this.isFocused,
     required this.colorScheme,
-    required this.brightness,
     required this.onTap,
     this.onBusMoved,
   });
@@ -120,13 +117,9 @@ class _BusSquare extends StatelessWidget {
     if (isEmpty) {
       fillColor = Colors.transparent;
     } else if (sessions == 1) {
-      fillColor = brightness == Brightness.dark
-          ? Colors.green[400]!
-          : Colors.green[600]!;
+      fillColor = context.appColors.success.color;
     } else if (sessions == 2) {
-      fillColor = brightness == Brightness.dark
-          ? Colors.amber[400]!
-          : Colors.amber[600]!;
+      fillColor = context.appColors.warning.color;
     } else {
       fillColor = colorScheme.error;
     }

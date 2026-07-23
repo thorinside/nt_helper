@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 class ConsolidateBusesDialog extends StatefulWidget {
   final AuxBusConsolidationPlan plan;
@@ -86,6 +87,7 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final successColor = context.appColors.success.color;
     final merges = widget.plan.merges;
 
     return PopScope(
@@ -121,16 +123,12 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 18,
-                    ),
+                    Icon(Icons.check_circle, color: successColor, size: 18),
                     const SizedBox(width: 8),
                     Text(
                       'Optimization complete',
                       style: textTheme.bodyMedium?.copyWith(
-                        color: Colors.green,
+                        color: successColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -243,7 +241,11 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
       child: Row(
         children: [
           done
-              ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+              ? Icon(
+                  Icons.check_circle,
+                  color: context.appColors.success.color,
+                  size: 20,
+                )
               : Icon(
                   Icons.circle_outlined,
                   color: colorScheme.onSurfaceVariant,

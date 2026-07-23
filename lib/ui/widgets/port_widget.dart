@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/models/algorithm_port.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 enum PortType { input, output }
 
@@ -61,6 +62,8 @@ class _PortWidgetState extends State<PortWidget> {
   Widget build(BuildContext context) {
     final typeLabel = widget.type == PortType.input ? 'Input' : 'Output';
     final connectionLabel = widget.isConnected ? 'Connected' : 'Not connected';
+    final portColors = _getPortTypeColors(context);
+    final portColor = _getPortColor(portColors.color);
 
     return Semantics(
       label:
@@ -150,15 +153,15 @@ class _PortWidgetState extends State<PortWidget> {
           margin: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _getPortColor(),
+            color: portColor,
             border: Border.all(
-              color: _getBorderColor(),
+              color: _getBorderColor(portColors.onColor),
               width: _getBorderWidth(),
             ),
             boxShadow: widget.isHovered || _isPressed
                 ? [
                     BoxShadow(
-                      color: _getPortColor().withValues(alpha: 0.5),
+                      color: portColor.withValues(alpha: 0.5),
                       blurRadius: 4,
                       spreadRadius: 1,
                     ),
@@ -173,8 +176,8 @@ class _PortWidgetState extends State<PortWidget> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: widget.isConnected
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.7),
+                    ? portColors.onColor
+                    : portColors.onColor.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -183,9 +186,7 @@ class _PortWidgetState extends State<PortWidget> {
     );
   }
 
-  Color _getPortColor() {
-    final baseColor = _getPortTypeColor();
-
+  Color _getPortColor(Color baseColor) {
     if (_isPressed) {
       return baseColor.withValues(alpha: 0.8);
     } else if (widget.isHovered) {
@@ -197,30 +198,30 @@ class _PortWidgetState extends State<PortWidget> {
     }
   }
 
-  Color _getPortTypeColor() {
+  AppColorPair _getPortTypeColors(BuildContext context) {
     // Color code by signal type based on port name
     final portName = widget.port.name.toLowerCase();
 
     if (portName.contains('audio') || portName.contains('signal')) {
-      return Colors.blue;
+      return context.appColors.audioPort;
     } else if (portName.contains('cv') || portName.contains('control')) {
-      return Colors.orange;
+      return context.appColors.cvPort;
     } else if (portName.contains('gate') || portName.contains('trigger')) {
-      return Colors.green;
+      return context.appColors.gatePort;
     } else if (portName.contains('clock') || portName.contains('sync')) {
-      return Colors.purple;
+      return context.appColors.clockPort;
     } else {
-      return Colors.grey;
+      return context.appColors.unknownPort;
     }
   }
 
-  Color _getBorderColor() {
+  Color _getBorderColor(Color foregroundColor) {
     if (widget.isHovered || _isPressed) {
-      return Colors.white;
+      return foregroundColor;
     } else if (widget.isConnected) {
-      return Colors.white.withValues(alpha: 0.8);
+      return foregroundColor.withValues(alpha: 0.8);
     } else {
-      return Colors.white.withValues(alpha: 0.5);
+      return foregroundColor.withValues(alpha: 0.5);
     }
   }
 

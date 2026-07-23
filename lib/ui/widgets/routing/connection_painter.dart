@@ -5,15 +5,11 @@ import 'package:nt_helper/core/routing/models/connection.dart'
     show Connection, ConnectionType;
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:collection/collection.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'accessibility_colors.dart';
 import 'ghost_connection_tooltip.dart';
 import 'connection_theme.dart';
 import 'bus_label_formatter.dart';
-
-/// Bright orange used to flag backward-edge ("uphill") connections.
-/// Theme-independent so the warning meaning is uniform in light and dark mode.
-@visibleForTesting
-const Color kBackwardEdgeColor = Color(0xFFFF8800);
 
 /// Represents connection data with bus and output mode information
 class ConnectionData {
@@ -405,13 +401,12 @@ class ConnectionPainter extends CustomPainter {
     ConnectionVisualType type,
   ) {
     // Handle backward edges (source slot index higher than destination)
-    // with a theme-independent bright orange so the warning reads the same
-    // in light and dark mode and is visually distinct from the muted-grey
-    // dashed style used for partial/disconnected connections.
+    // with the theme's warning role so it remains visually distinct from the
+    // muted dashed style used for partial/disconnected connections.
     if (type == ConnectionVisualType.invalid) {
       paint
         ..strokeWidth = 2.0
-        ..color = kBackwardEdgeColor;
+        ..color = theme.appColors.backwardConnection;
       return;
     }
 
@@ -463,19 +458,17 @@ class ConnectionPainter extends CustomPainter {
     }
 
     // Use port type color as base, modified by connection style
-    Color baseColor = PortTypeColors.getColorForPortId(
-      conn.connection.sourcePortId,
-    );
+    final baseColor = _getPortColor(conn.connection.sourcePortId);
     Color finalColor;
 
     // Replace mode only affects the "normal" (non-highlighted) appearance.
     // Hover/delete highlighting must always win.
     if (conn.isHighlighted) {
-      finalColor = Colors.red;
+      finalColor = theme.colorScheme.error;
     } else {
       finalColor = Color.lerp(baseColor, style.color, 0.7) ?? style.color;
       if (conn.outputMode == OutputMode.replace) {
-        finalColor = Colors.blue.withValues(alpha: finalColor.a);
+        finalColor = theme.colorScheme.primary.withValues(alpha: finalColor.a);
       }
     }
 
@@ -504,20 +497,28 @@ class ConnectionPainter extends CustomPainter {
     final dp = deleteProgress.clamp(0.0, 1.0);
     final fp = fadeOutProgress.clamp(0.0, 1.0);
 
-    // Phase 2: If we're fading out, just fade white to transparent
+    // Phase 2: Fade the theme foreground to transparent.
     if (fp > 0.0) {
-      return Colors.white.withValues(alpha: 1.0 - fp);
+      return theme.colorScheme.onSurface.withValues(alpha: 1.0 - fp);
     }
 
-    // Phase 1: Red → orange → white
+    // Phase 1: Error → warning → theme foreground.
     if (dp < 0.5) {
-      // Red to orange (0.0 - 0.5)
+      // Error to warning (0.0 - 0.5).
       final t = dp / 0.5;
-      return Color.lerp(Colors.red, Colors.orange, t)!;
+      return Color.lerp(
+        theme.colorScheme.error,
+        theme.appColors.warning.color,
+        t,
+      )!;
     } else {
-      // Orange to white (0.5 - 1.0)
+      // Warning to foreground (0.5 - 1.0).
       final t = (dp - 0.5) / 0.5;
-      return Color.lerp(Colors.orange, Colors.white, t)!;
+      return Color.lerp(
+        theme.appColors.warning.color,
+        theme.colorScheme.onSurface,
+        t,
+      )!;
     }
   }
 
@@ -743,9 +744,7 @@ class ConnectionPainter extends CustomPainter {
     final textStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.bold,
-      color: Colors.black.withValues(
-        alpha: labelAlpha,
-      ), // Explicit black for visibility
+      color: theme.colorScheme.onSurface.withValues(alpha: labelAlpha),
     );
 
     final textPainter = createLabelTextPainter(label, textStyle);
@@ -818,18 +817,16 @@ class ConnectionPainter extends CustomPainter {
     // Draw label background with high contrast
     final backgroundPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.white.withValues(
-        alpha: 0.95 * labelAlpha,
-      ); // High contrast white background
+      ..color = theme.colorScheme.surface.withValues(alpha: 0.95 * labelAlpha);
 
     // Check hover state and apply styling
     final isHovered = hoveredConnectionId == conn.connection.id;
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = isHovered ? 3.0 : 2.0
-      ..color = (isHovered ? Colors.teal : Colors.black).withValues(
-        alpha: labelAlpha,
-      );
+      ..color =
+          (isHovered ? theme.colorScheme.primary : theme.colorScheme.outline)
+              .withValues(alpha: labelAlpha);
 
     // Save canvas state
     canvas.save();

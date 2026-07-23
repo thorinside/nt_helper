@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/sysex_diagnostics_service.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/utils/app_directory.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -150,15 +151,22 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
     if (isOffline || _diagnosticsService == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Debug Diagnostics')),
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_off, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
+              Icon(
+                Icons.wifi_off,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
               Text(
                 'Device must be connected to run diagnostics.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -253,8 +261,12 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
                             icon: const Icon(Icons.stop),
                             label: const Text('Cancel'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onError,
                             ),
                           ),
                       ],
@@ -330,6 +342,8 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
   }
 
   Widget _buildSummarySection(DiagnosticsReport report) {
+    final scheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -339,12 +353,20 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildSummaryItem('Total Tests', '${report.totalTests}', Colors.blue),
-          _buildSummaryItem('Passed', '${report.passedTests}', Colors.green),
+          _buildSummaryItem(
+            'Total Tests',
+            '${report.totalTests}',
+            appColors.info.color,
+          ),
+          _buildSummaryItem(
+            'Passed',
+            '${report.passedTests}',
+            appColors.success.color,
+          ),
           _buildSummaryItem(
             'Failed',
             '${report.failedTests}',
-            report.failedTests > 0 ? Colors.red : Colors.grey,
+            report.failedTests > 0 ? scheme.error : scheme.onSurfaceVariant,
           ),
         ],
       ),
@@ -375,15 +397,19 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
     final problematicTests = report.worstPerformingTests;
 
     if (problematicTests.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ExcludeSemantics(
-              child: Icon(Icons.check_circle, size: 64, color: Colors.green),
+              child: Icon(
+                Icons.check_circle,
+                size: 64,
+                color: context.appColors.success.color,
+              ),
             ),
-            SizedBox(height: 16),
-            Text('No issues detected! All tests passed successfully.'),
+            const SizedBox(height: 16),
+            const Text('No issues detected! All tests passed successfully.'),
           ],
         ),
       );
@@ -400,7 +426,9 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
               label: test.successRate < 0.5 ? 'Critical issue' : 'Warning',
               child: Icon(
                 Icons.warning,
-                color: test.successRate < 0.5 ? Colors.red : Colors.orange,
+                color: test.successRate < 0.5
+                    ? Theme.of(context).colorScheme.error
+                    : context.appColors.warning.color,
               ),
             ),
             title: Text(test.testName),
@@ -449,7 +477,9 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
               child: Text(
                 '${(test.successRate * 100).toStringAsFixed(0)}%',
                 style: TextStyle(
-                  color: test.successRate == 1.0 ? Colors.green : Colors.red,
+                  color: test.successRate == 1.0
+                      ? context.appColors.success.color
+                      : Theme.of(context).colorScheme.error,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -475,7 +505,9 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
                 trailing: Text(
                   '${(test.successRate * 100).toStringAsFixed(0)}%',
                   style: TextStyle(
-                    color: test.successRate == 1.0 ? Colors.green : Colors.red,
+                    color: test.successRate == 1.0
+                        ? context.appColors.success.color
+                        : Theme.of(context).colorScheme.error,
                   ),
                 ),
               );
@@ -487,8 +519,8 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
   }
 
   Color _getPerformanceColor(double avgDuration) {
-    if (avgDuration < 100) return Colors.green;
-    if (avgDuration < 500) return Colors.orange;
-    return Colors.red;
+    if (avgDuration < 100) return context.appColors.success.color;
+    if (avgDuration < 500) return context.appColors.warning.color;
+    return Theme.of(context).colorScheme.error;
   }
 }

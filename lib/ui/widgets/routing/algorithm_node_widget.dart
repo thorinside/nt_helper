@@ -239,7 +239,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(_isDragging ? 77 : 26),
+                  color: theme.colorScheme.shadow.withAlpha(
+                    _isDragging ? 77 : 26,
+                  ),
                   blurRadius: _isDragging ? 8 : 4,
                   offset: Offset(0, _isDragging ? 4 : 2),
                 ),

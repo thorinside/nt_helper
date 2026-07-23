@@ -7,6 +7,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/scale_quantizer.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/parameter_pages_view.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/playback_controls.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/quantize_controls.dart';
@@ -260,11 +261,9 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                           ? Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color:
-                                    Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? const Color(0xFF2a2a2a)
-                                    : Colors.grey.shade100,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerLow,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: QuantizeControls(
@@ -319,7 +318,11 @@ class _StepSequencerViewState extends State<StepSequencerView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Failed to load Step Sequencer widget',
@@ -730,26 +733,30 @@ class _StepSequencerViewState extends State<StepSequencerView> {
 
   Widget _buildGlobalParameterModeSelector() {
     const modeDefinitions = [
-      (StepParameter.pitch, 'Pitch', Color(0xFF14b8a6)),
-      (StepParameter.velocity, 'Velocity', Color(0xFF10b981)),
-      (StepParameter.mod, 'Mod', Color(0xFF8b5cf6)),
-      (StepParameter.division, 'Division', Color(0xFFf97316)),
-      (StepParameter.pattern, 'Pattern', Color(0xFF3b82f6)),
-      (StepParameter.ties, 'Ties', Color(0xFFeab308)),
-      (StepParameter.mute, 'Mute', Color(0xFFef4444)),
-      (StepParameter.skip, 'Skip', Color(0xFFec4899)),
-      (StepParameter.reset, 'Reset', Color(0xFFf59e0b)),
-      (StepParameter.repeat, 'Repeat', Color(0xFF06b6d4)),
+      (StepParameter.pitch, 'Pitch'),
+      (StepParameter.velocity, 'Velocity'),
+      (StepParameter.mod, 'Mod'),
+      (StepParameter.division, 'Division'),
+      (StepParameter.pattern, 'Pattern'),
+      (StepParameter.ties, 'Ties'),
+      (StepParameter.mute, 'Mute'),
+      (StepParameter.skip, 'Skip'),
+      (StepParameter.reset, 'Reset'),
+      (StepParameter.repeat, 'Repeat'),
     ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          for (final (mode, label, color) in modeDefinitions)
+          for (final (mode, label) in modeDefinitions)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: _buildModeButton(mode, label, color),
+              child: _buildModeButton(
+                mode,
+                label,
+                context.appColors.sequencerAt(mode.index).color,
+              ),
             ),
         ],
       ),
@@ -782,33 +789,24 @@ class _StepSequencerViewState extends State<StepSequencerView> {
 
   /// Build offline banner widget
   Widget _buildOfflineBanner(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final warning = context.appColors.warning;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.orange.shade900.withValues(alpha: 0.3)
-            : Colors.orange.shade100,
+        color: warning.container,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? Colors.orange.shade700 : Colors.orange.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: warning.color, width: 1),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(
-            Icons.cloud_off,
-            color: isDark ? Colors.orange.shade400 : Colors.orange.shade900,
-            size: 20,
-          ),
+          Icon(Icons.cloud_off, color: warning.onContainer, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Offline - editing locally',
               style: TextStyle(
-                color: isDark ? Colors.orange.shade400 : Colors.orange.shade900,
+                color: warning.onContainer,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

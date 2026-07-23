@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 /// Sync status states for parameter synchronization
 enum SyncStatus {
@@ -61,7 +62,7 @@ class SyncStatusIndicator extends StatelessWidget {
               width: isMobile ? 8 : 12,
               height: isMobile ? 8 : 12,
               decoration: BoxDecoration(
-                color: _getStatusColor(status),
+                color: _getStatusColor(context, status),
                 shape: BoxShape.circle,
               ),
             ),
@@ -97,18 +98,18 @@ class SyncStatusIndicator extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(SyncStatus status) {
+  Color _getStatusColor(BuildContext context, SyncStatus status) {
     switch (status) {
       case SyncStatus.synced:
-        return const Color(0xFF10b981); // green
+        return context.appColors.success.color;
       case SyncStatus.editing:
-        return const Color(0xFFf59e0b); // orange
+        return context.appColors.warning.color;
       case SyncStatus.syncing:
-        return const Color(0xFF3b82f6); // blue
+        return context.appColors.info.color;
       case SyncStatus.error:
-        return const Color(0xFFef4444); // red
+        return Theme.of(context).colorScheme.error;
       case SyncStatus.offline:
-        return const Color(0xFFf59e0b); // orange
+        return context.appColors.warning.color;
     }
   }
 

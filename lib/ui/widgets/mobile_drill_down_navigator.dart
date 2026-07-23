@@ -115,13 +115,15 @@ class MobileDrillDownNavigator extends StatelessWidget {
               onRefresh: () async => onRefresh(),
               child: items.isEmpty
                   ? ListView(
-                      children: const [
-                        SizedBox(height: 100),
+                      children: [
+                        const SizedBox(height: 100),
                         Center(
                           child: Text(
                             'Empty directory',
                             style: TextStyle(
-                              color: Colors.grey,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontStyle: FontStyle.italic,
                             ),
                           ),

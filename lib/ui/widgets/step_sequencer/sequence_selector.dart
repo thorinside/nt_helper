@@ -66,9 +66,7 @@ class SequenceSelector extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey.shade800
-            : Colors.grey.shade50,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       items: List.generate(count, (index) {
         final value = min + index;

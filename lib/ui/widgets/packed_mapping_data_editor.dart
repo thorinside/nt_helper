@@ -10,6 +10,7 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/mapping_range_slider.dart';
 
@@ -335,7 +336,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                           height: 10,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _isSaving ? Colors.blue : Colors.amber,
+                            color: _isSaving
+                                ? context.appColors.info.color
+                                : context.appColors.warning.color,
                           ),
                         ),
                       ),
@@ -1044,9 +1047,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
         children: [
           Text(
             'Assign this parameter to a performance page for quick access.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 16),
           DropdownMenu<int>(
@@ -1065,13 +1068,13 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getPageColor(i),
+                      color: _getPageColors(i).color,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       'P$i',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: _getPageColors(i).onColor,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1094,7 +1097,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 ? 'Not assigned to any performance page'
                 : 'Assigned to Performance Page $currentPerfPageIndex',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -1120,9 +1123,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
         children: [
           Text(
             'Assign this parameter to a performance index for quick access.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 16),
           DropdownMenu<int>(
@@ -1141,13 +1144,13 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getPageColor(i),
+                      color: _getPageColors(i).color,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       '$i',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: _getPageColors(i).onColor,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1201,7 +1204,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 ? 'Not assigned to any performance index'
                 : 'Assigned to Performance Index $currentDisplayIndex',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -1211,15 +1214,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   }
 
   // Helper method to get color for page badges (matches section_parameter_list_view.dart and performance_screen.dart)
-  Color _getPageColor(int pageIndex) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-    ];
-    return colors[(pageIndex - 1) % colors.length];
+  AppColorPair _getPageColors(int pageIndex) {
+    return context.appColors.categoricalAt(pageIndex - 1);
   }
 
   /// ---------------------

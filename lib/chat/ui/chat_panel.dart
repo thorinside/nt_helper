@@ -8,6 +8,7 @@ import 'package:nt_helper/chat/ui/chat_input_bar.dart';
 import 'package:nt_helper/chat/ui/chat_message_bubble.dart';
 import 'package:nt_helper/chat/ui/chat_settings_dialog.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 
 class ChatPanel extends StatefulWidget {
   final bool requestInputFocus;
@@ -407,7 +408,7 @@ class _ContextStatusButton extends StatelessWidget {
           size: const Size.square(22),
           painter: _ContextArcPainter(
             progress: progress,
-            color: _contextColor(theme.colorScheme, progress),
+            color: _contextColor(theme, progress),
             trackColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
           ),
         ),
@@ -487,7 +488,7 @@ class _ContextDetails extends StatelessWidget {
               size: const Size.square(32),
               painter: _ContextArcPainter(
                 progress: progress,
-                color: _contextColor(theme.colorScheme, progress),
+                color: _contextColor(theme, progress),
                 trackColor: theme.colorScheme.outlineVariant,
               ),
             ),
@@ -628,12 +629,12 @@ double _contextProgress(ChatReady state) {
   return (state.contextInputTokens / state.contextWindowTokens).clamp(0.0, 1.0);
 }
 
-Color _contextColor(ColorScheme colors, double progress) {
+Color _contextColor(ThemeData theme, double progress) {
   const compactionThreshold = 0.85;
   final thresholdProgress = progress / compactionThreshold;
-  if (thresholdProgress >= 0.9) return colors.error;
-  if (thresholdProgress >= 0.7) return Colors.orange.shade700;
-  return Colors.green.shade700;
+  if (thresholdProgress >= 0.9) return theme.colorScheme.error;
+  if (thresholdProgress >= 0.7) return theme.appColors.warning.color;
+  return theme.appColors.success.color;
 }
 
 String _formatNumber(int n) {

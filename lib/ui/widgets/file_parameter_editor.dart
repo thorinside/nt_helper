@@ -9,6 +9,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart' show ParameterInfo;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:path/path.dart' as path;
 
@@ -893,7 +894,11 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               child: Icon(
                 Icons.navigate_before,
                 size: 24,
-                color: canGoPrev ? null : Colors.grey.shade400,
+                color: canGoPrev
+                    ? null
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.38),
               ),
             ),
           ),
@@ -911,7 +916,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
                   Icon(
                     _getIconForMode(),
                     size: 18,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -944,7 +949,11 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               child: Icon(
                 Icons.navigate_next,
                 size: 24,
-                color: canGoNext ? null : Colors.grey.shade400,
+                color: canGoNext
+                    ? null
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.38),
               ),
             ),
           ),
@@ -1095,16 +1104,16 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   Color _getStateColor() {
     switch (_devState) {
       case _DevelopmentState.monitoring:
-        return Colors.green;
+        return context.appColors.success.color;
       case _DevelopmentState.changed:
-        return Colors.orange;
+        return context.appColors.warning.color;
       case _DevelopmentState.uploading:
       case _DevelopmentState.reloading:
-        return Colors.blue;
+        return context.appColors.info.color;
       case _DevelopmentState.error:
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
       default:
-        return Colors.grey;
+        return Theme.of(context).colorScheme.outline;
     }
   }
 
@@ -1187,7 +1196,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: Theme.of(context).colorScheme.error,
         duration: const Duration(seconds: 3),
       ),
     );

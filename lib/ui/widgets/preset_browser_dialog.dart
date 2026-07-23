@@ -18,6 +18,7 @@ import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/services/file_conflict_detector.dart';
 import 'package:nt_helper/services/preset_package_analyzer.dart';
 import 'package:nt_helper/models/preset_action.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/mobile_drill_down_navigator.dart';
 import 'package:nt_helper/ui/widgets/package_install_dialog.dart';
@@ -221,9 +222,11 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.error_outline,
-                                        color: Colors.red,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.error,
                                         size: 48,
                                       ),
                                       const SizedBox(height: 16),
@@ -646,9 +649,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       if (data == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Failed to download file'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -676,7 +679,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Download failed: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -726,7 +729,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Upload failed: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -783,7 +786,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to create folder: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -844,7 +847,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Rename failed: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -897,7 +900,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Delete failed: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -921,9 +924,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       if (data == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Failed to download file for preview'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -964,7 +967,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to view file: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -1003,9 +1006,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
     if (files.length > 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please drop only one file at a time'),
-          backgroundColor: Colors.orange,
+          backgroundColor: context.appColors.warning.color,
         ),
       );
       return;
@@ -1054,7 +1057,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Upload failed: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -1193,7 +1196,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   Widget _buildDragOverlay() {
     return Positioned.fill(
       child: Container(
-        color: Colors.blue.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         child: Center(
           child: Container(
             padding: const EdgeInsets.all(32),
@@ -1229,7 +1232,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   Widget _buildInstallOverlay() {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withValues(alpha: 0.5),
+        color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.5),
         child: const Center(child: CircularProgressIndicator()),
       ),
     );
@@ -1593,10 +1596,13 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
               width: 0.5,
             ),
           ),
-          child: const Center(
+          child: Center(
             child: Text(
               'Empty',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
         ),
