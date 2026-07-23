@@ -556,11 +556,11 @@ void main() {
 
       final semanticsHandle = tester.ensureSemantics();
       final node = tester.getSemantics(
-        find.bySemanticsLabel('Show standard parameter editor'),
+        find.bySemanticsLabel('Show spreadsheet parameter editor'),
       );
       final data = node.getSemanticsData();
-      expect(data.label, contains('Show standard parameter editor'));
-      expect(data.flagsCollection.isToggled == Tristate.isTrue, isTrue);
+      expect(data.label, contains('Show spreadsheet parameter editor'));
+      expect(data.flagsCollection.isSelected == Tristate.isTrue, isTrue);
       semanticsHandle.dispose();
     });
   });

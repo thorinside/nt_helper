@@ -24,8 +24,7 @@ class SectionParameterListView extends StatefulWidget {
   final ParameterPages pages;
   final SectionParameterController? sectionController;
   final bool spreadsheetEditingMode;
-  final VoidCallback? onToggleSpreadsheetEditingMode;
-  final bool spreadsheetToggleEnabled;
+  final Widget? editorModeSelector;
 
   const SectionParameterListView({
     super.key,
@@ -35,8 +34,7 @@ class SectionParameterListView extends StatefulWidget {
     required this.pages,
     this.sectionController,
     this.spreadsheetEditingMode = false,
-    this.onToggleSpreadsheetEditingMode,
-    this.spreadsheetToggleEnabled = true,
+    this.editorModeSelector,
   });
 
   @override
@@ -598,39 +596,8 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if (widget.onToggleSpreadsheetEditingMode != null)
-            Semantics(
-              container: true,
-              button: true,
-              toggled: widget.spreadsheetEditingMode,
-              label: widget.spreadsheetEditingMode
-                  ? 'Show standard parameter editor'
-                  : 'Show spreadsheet parameter editor',
-              hint: widget.spreadsheetEditingMode
-                  ? 'Returns to the full parameter controls'
-                  : 'Shows numeric parameter names and value cells',
-              onTap: widget.spreadsheetToggleEnabled
-                  ? widget.onToggleSpreadsheetEditingMode
-                  : null,
-              child: ExcludeSemantics(
-                child: IconButton.filledTonal(
-                  icon: Icon(
-                    widget.spreadsheetEditingMode
-                        ? Icons.view_list_rounded
-                        : Icons.table_rows_rounded,
-                  ),
-                  tooltip: widget.spreadsheetEditingMode
-                      ? 'Standard parameter editor'
-                      : 'Spreadsheet parameter editor',
-                  isSelected: widget.spreadsheetEditingMode,
-                  onPressed: widget.spreadsheetToggleEnabled
-                      ? widget.onToggleSpreadsheetEditingMode
-                      : null,
-                ),
-              ),
-            ),
-          if (widget.onToggleSpreadsheetEditingMode != null)
-            const SizedBox(width: 8),
+          ?widget.editorModeSelector,
+          if (widget.editorModeSelector != null) const SizedBox(width: 8),
           Tooltip(
             message: _isCollapsed ? 'Expand all' : 'Collapse all',
             child: IconButton.filledTonal(
