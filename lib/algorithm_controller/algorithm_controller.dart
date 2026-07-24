@@ -342,6 +342,12 @@ final class AlgorithmControllerRegistry {
       assetPath: 'assets/algorithm_controllers/crossfader.lua',
     ),
     AlgorithmControllerDefinition(
+      id: 'builtin.dj-filter',
+      algorithmGuid: 'djfi',
+      name: 'DJ Filter controller',
+      assetPath: 'assets/algorithm_controllers/dj_filter.lua',
+    ),
+    AlgorithmControllerDefinition(
       id: 'builtin.lfo',
       algorithmGuid: 'lfo ',
       name: 'LFO controller',
@@ -354,10 +360,22 @@ final class AlgorithmControllerRegistry {
       assetPath: 'assets/algorithm_controllers/envelope_dahdsr.lua',
     ),
     AlgorithmControllerDefinition(
+      id: 'builtin.envelope-ar-ad',
+      algorithmGuid: 'env2',
+      name: 'Envelope AR/AD controller',
+      assetPath: 'assets/algorithm_controllers/envelope_ar_ad.lua',
+    ),
+    AlgorithmControllerDefinition(
       id: 'builtin.parametric-eq',
       algorithmGuid: 'eqpa',
       name: 'Parametric EQ controller',
       assetPath: 'assets/algorithm_controllers/parametric_eq.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.mixer-mono',
+      algorithmGuid: 'mix1',
+      name: 'Mono mixer controller',
+      assetPath: 'assets/algorithm_controllers/mixer_mono.lua',
     ),
     AlgorithmControllerDefinition(
       id: 'builtin.mixer-stereo',
@@ -370,6 +388,18 @@ final class AlgorithmControllerRegistry {
       algorithmGuid: 'drea',
       name: 'Dream Machine controller',
       assetPath: 'assets/algorithm_controllers/dream_machine.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.macro-oscillator-2',
+      algorithmGuid: 'mac2',
+      name: 'Macro Oscillator 2 controller',
+      assetPath: 'assets/algorithm_controllers/macro_oscillator_2.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.poly-macro-oscillator-2',
+      algorithmGuid: 'pym2',
+      name: 'Poly Macro Oscillator 2 controller',
+      assetPath: 'assets/algorithm_controllers/macro_oscillator_2.lua',
     ),
     AlgorithmControllerDefinition(
       id: 'builtin.filter-bank',
@@ -400,6 +430,18 @@ final class AlgorithmControllerRegistry {
       algorithmGuid: 'quad',
       name: 'Quadraphonic mixer controller',
       assetPath: 'assets/algorithm_controllers/quadraphonic_mixer.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.seaside-jawari',
+      algorithmGuid: 'ssjw',
+      name: 'Seaside Jawari controller',
+      assetPath: 'assets/algorithm_controllers/seaside_jawari.lua',
+    ),
+    AlgorithmControllerDefinition(
+      id: 'builtin.stopwatch',
+      algorithmGuid: 'stpw',
+      name: 'Stopwatch controller',
+      assetPath: 'assets/algorithm_controllers/stopwatch.lua',
     ),
   ]);
 

@@ -6,11 +6,13 @@ remains the default and fallback.
 
 The app currently bundles controllers for Euclidean Patterns (`eucp`), Clock
 (`clck`), Clock Divider (`clkd`), Attenuverter (`attn`), Crossfader (`xfad`),
-LFO (`lfo `), Envelope (DAHDSR) (`envq`), EQ Parametric (`eqpa`), Mixer Stereo
-(`mix2`), Dream Machine (`drea`), Filter Bank (`fbnk`), Chaos (`xaoc`),
-Quantizer (`quan`), Envelope Sequencer (`ensq`), and Quadraphonic Mixer
-(`quad`). Installation and Gallery distribution are intentionally not enabled
-yet.
+DJ Filter (`djfi`), LFO (`lfo `), Envelope (DAHDSR) (`envq`), Envelope
+(AR/AD) (`env2`), EQ Parametric (`eqpa`), Mixer Mono (`mix1`), Mixer Stereo
+(`mix2`), Dream Machine (`drea`), Macro Oscillator 2 (`mac2`), Poly Macro
+Oscillator 2 (`pym2`), Filter Bank (`fbnk`), Chaos (`xaoc`), Quantizer
+(`quan`), Envelope Sequencer (`ensq`), Quadraphonic Mixer (`quad`), Seaside
+Jawari (`ssjw`), and Stopwatch (`stpw`). Installation and Gallery distribution
+are intentionally not enabled yet.
 
 ## Lifecycle
 
@@ -195,7 +197,9 @@ bind its exact live parameter number. The host reads inclusion from every new
 ## Drawing primitives
 
 `ui.canvas` is a responsive, normalized drawing surface. Coordinates and sizes
-are expressed relative to the canvas instead of in Flutter pixels.
+are expressed relative to the canvas instead of in Flutter pixels. The host
+caps canvases at 720 logical pixels wide and lets them shrink in narrower
+editors, so drawings stay legible without growing indefinitely on wide screens.
 
 ```lua
 ui.canvas {

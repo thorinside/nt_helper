@@ -17,6 +17,7 @@ typedef AlgorithmControllerSourceLoader = Future<String> Function(String path);
 
 const double _algorithmControllerXYPadWidth = 480;
 const double _algorithmControllerNoteMaskWidth = 480;
+const double _algorithmControllerCanvasWidth = 720;
 const double _algorithmControllerNoteTargetSize = 48;
 
 typedef _AlgorithmControllerParameterBinding = ({
@@ -649,16 +650,24 @@ class _AlgorithmControllerDocumentBody extends StatelessWidget {
 
   Widget _buildCanvas(BuildContext context, AlgorithmControllerCanvas node) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Semantics(
-      image: true,
-      label: node.semanticsLabel,
-      child: ExcludeSemantics(
-        child: AspectRatio(
-          aspectRatio: node.aspectRatio.clamp(0.25, 20),
-          child: CustomPaint(
-            painter: _AlgorithmControllerCanvasPainter(
-              shapes: node.shapes,
-              colorScheme: colorScheme,
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: _algorithmControllerCanvasWidth,
+        ),
+        child: Semantics(
+          image: true,
+          label: node.semanticsLabel,
+          child: ExcludeSemantics(
+            child: AspectRatio(
+              aspectRatio: node.aspectRatio.clamp(0.25, 20),
+              child: CustomPaint(
+                painter: _AlgorithmControllerCanvasPainter(
+                  shapes: node.shapes,
+                  colorScheme: colorScheme,
+                ),
+              ),
             ),
           ),
         ),

@@ -37,14 +37,39 @@ void main() {
           asset: 'assets/algorithm_controllers/envelope_dahdsr.lua',
         ),
         (
+          guid: 'env2',
+          name: 'Envelope (AR/AD)',
+          asset: 'assets/algorithm_controllers/envelope_ar_ad.lua',
+        ),
+        (
+          guid: 'djfi',
+          name: 'DJ Filter',
+          asset: 'assets/algorithm_controllers/dj_filter.lua',
+        ),
+        (
           guid: 'eqpa',
           name: 'EQ Parametric',
           asset: 'assets/algorithm_controllers/parametric_eq.lua',
         ),
         (
+          guid: 'mix1',
+          name: 'Mixer Mono',
+          asset: 'assets/algorithm_controllers/mixer_mono.lua',
+        ),
+        (
           guid: 'mix2',
           name: 'Mixer Stereo',
           asset: 'assets/algorithm_controllers/mixer_stereo.lua',
+        ),
+        (
+          guid: 'mac2',
+          name: 'Macro Oscillator 2',
+          asset: 'assets/algorithm_controllers/macro_oscillator_2.lua',
+        ),
+        (
+          guid: 'pym2',
+          name: 'Poly Macro Oscillator 2',
+          asset: 'assets/algorithm_controllers/macro_oscillator_2.lua',
         ),
         (
           guid: 'fbnk',
@@ -70,6 +95,16 @@ void main() {
           guid: 'quad',
           name: 'Quadraphonic Mixer',
           asset: 'assets/algorithm_controllers/quadraphonic_mixer.lua',
+        ),
+        (
+          guid: 'ssjw',
+          name: 'Seaside Jawari',
+          asset: 'assets/algorithm_controllers/seaside_jawari.lua',
+        ),
+        (
+          guid: 'stpw',
+          name: 'Stopwatch',
+          asset: 'assets/algorithm_controllers/stopwatch.lua',
         ),
       ];
 
@@ -215,6 +250,386 @@ void main() {
         ),
         containsAll(['12 notes down', '12 notes up']),
       );
+    },
+  );
+
+  test('new controllers expose focused, truthful interaction models', () async {
+    Future<List<AlgorithmControllerNode>> nodesFor(
+      String guid,
+      String name,
+      String asset, {
+      Map<String, int> values = const {},
+    }) async {
+      final document = engine.evaluate(
+        source: await File(asset).readAsString(),
+        slot: _slotFromMetadata(tables, guid: guid, name: name, values: values),
+        slotIndex: 7,
+        units: const [],
+      );
+      return _flatten(document.root);
+    }
+
+    final envelope = await nodesFor(
+      'env2',
+      'Envelope (AR/AD)',
+      'assets/algorithm_controllers/envelope_ar_ad.lua',
+    );
+    final envelopeCanvas = envelope
+        .whereType<AlgorithmControllerCanvas>()
+        .single;
+    expect(envelopeCanvas.aspectRatio, 6);
+    expect(envelopeCanvas.semanticsLabel, contains('not live output'));
+    expect(envelopeCanvas.semanticsLabel, contains('externally held gate'));
+    expect(
+      envelope.whereType<AlgorithmControllerSection>().first.title,
+      'Envelope shape',
+    );
+
+    final independentEnvelope = await nodesFor(
+      'env2',
+      'Envelope (AR/AD)',
+      'assets/algorithm_controllers/envelope_ar_ad.lua',
+      values: const {'Time mode': 2},
+    );
+    final independentLabels = independentEnvelope
+        .whereType<AlgorithmControllerSlider>()
+        .map((node) => node.label);
+    expect(independentLabels, containsAll(['Attack time', 'Release time']));
+    expect(independentLabels, isNot(contains('Joint time')));
+
+    final djFilter = await nodesFor(
+      'djfi',
+      'DJ Filter',
+      'assets/algorithm_controllers/dj_filter.lua',
+    );
+    final djPad = djFilter.whereType<AlgorithmControllerXYPad>().single;
+    expect(djPad.aspectRatio, 1.6);
+    expect(djPad.xLabel, 'Sweep');
+    expect(djPad.yLabel, 'Resonance');
+    expect(
+      djFilter.whereType<AlgorithmControllerSlider>().map((node) => node.label),
+      containsAll(['Sweep', 'Resonance']),
+    );
+
+    final monoMixer = await nodesFor(
+      'mix1',
+      'Mixer Mono',
+      'assets/algorithm_controllers/mixer_mono.lua',
+    );
+    final mixerSections = monoMixer
+        .whereType<AlgorithmControllerSection>()
+        .toList();
+    expect(
+      mixerSections.map((section) => section.title),
+      containsAll(['Main mix', 'Aux sends', 'Channel 1']),
+    );
+    expect(mixerSections.take(2).map((section) => section.title), [
+      'Main mix',
+      'Aux sends',
+    ]);
+    expect(
+      monoMixer.whereType<AlgorithmControllerCanvas>().single.semanticsLabel,
+      contains('not live signal meters'),
+    );
+
+    for (final testCase in const [
+      (
+        guid: 'mac2',
+        name: 'Macro Oscillator 2',
+        asset: 'assets/algorithm_controllers/macro_oscillator_2.lua',
+      ),
+      (
+        guid: 'pym2',
+        name: 'Poly Macro Oscillator 2',
+        asset: 'assets/algorithm_controllers/macro_oscillator_2.lua',
+      ),
+    ]) {
+      final macro = await nodesFor(
+        testCase.guid,
+        testCase.name,
+        testCase.asset,
+      );
+      final pad = macro.whereType<AlgorithmControllerXYPad>().single;
+      expect(pad.aspectRatio, 1, reason: testCase.guid);
+      expect(pad.xLabel, 'Timbre', reason: testCase.guid);
+      expect(pad.yLabel, 'Morph', reason: testCase.guid);
+      expect(
+        macro.whereType<AlgorithmControllerSection>().map(
+          (section) => section.title,
+        ),
+        containsAll(['Engine', 'Tone', 'Voice', 'Modulation depth']),
+        reason: testCase.guid,
+      );
+      expect(
+        macro.whereType<AlgorithmControllerSlider>().map((node) => node.label),
+        contains('Model'),
+        reason: '${testCase.guid} keeps its 24 models compact',
+      );
+      expect(
+        macro.whereType<AlgorithmControllerChoice>().map((node) => node.label),
+        isNot(contains('Model')),
+        reason: '${testCase.guid} must not render 24 model chips',
+      );
+    }
+
+    final jawari = await nodesFor(
+      'ssjw',
+      'Seaside Jawari',
+      'assets/algorithm_controllers/seaside_jawari.lua',
+    );
+    final jawariButtons = jawari
+        .whereType<AlgorithmControllerButton>()
+        .toList();
+    expect(
+      jawariButtons.map((button) => button.label),
+      containsAll(['Strum next string', 'Reset string sequence']),
+    );
+    expect(
+      jawariButtons.every(
+        (button) =>
+            button.action.type == AlgorithmControllerActionType.pulseParameter,
+      ),
+      isTrue,
+    );
+    expect(
+      jawari.whereType<AlgorithmControllerText>().map((node) => node.text),
+      isNot(anyElement(contains('current string'))),
+    );
+
+    final stopwatch = await nodesFor(
+      'stpw',
+      'Stopwatch',
+      'assets/algorithm_controllers/stopwatch.lua',
+    );
+    expect(
+      stopwatch.whereType<AlgorithmControllerToggle>().map(
+        (node) => node.label,
+      ),
+      contains('Run while gate is on'),
+    );
+    expect(
+      stopwatch.whereType<AlgorithmControllerSlider>(),
+      isEmpty,
+      reason: 'countdown fields stay hidden in timer mode',
+    );
+    expect(
+      stopwatch.whereType<AlgorithmControllerText>().map((node) => node.text),
+      anyElement(contains('does not receive a live clock')),
+    );
+    expect(
+      stopwatch.whereType<AlgorithmControllerSection>().map(
+        (section) => section.title,
+      ),
+      ['Controls', 'Setup'],
+    );
+
+    final countdownStopwatch = await nodesFor(
+      'stpw',
+      'Stopwatch',
+      'assets/algorithm_controllers/stopwatch.lua',
+      values: const {'Mode': 1, 'Start/stop mode': 1},
+    );
+    expect(
+      countdownStopwatch.whereType<AlgorithmControllerSlider>().map(
+        (node) => node.label,
+      ),
+      containsAll([
+        'Countdown hours',
+        'Countdown minutes',
+        'Countdown seconds',
+      ]),
+    );
+    expect(countdownStopwatch.whereType<AlgorithmControllerToggle>(), isEmpty);
+    expect(
+      countdownStopwatch.whereType<AlgorithmControllerButton>().map(
+        (node) => node.label,
+      ),
+      containsAll(['Trigger start or stop', 'Reset countdown']),
+    );
+    expect(
+      countdownStopwatch.whereType<AlgorithmControllerSection>().map(
+        (section) => section.title,
+      ),
+      ['Controls', 'Setup', 'Countdown'],
+      reason: 'stable sections retain their paths when Countdown appears',
+    );
+  });
+
+  test(
+    'new controllers bind only their intentional behavior vocabulary',
+    () async {
+      const allowedNames = <String, Set<String>>{
+        'env2': {
+          'Trigger mode',
+          'Time mode',
+          'Joint time',
+          'Attack time',
+          'Release time',
+          'Attack shape',
+          'Release shape',
+          'Enable',
+          'Amplitude',
+          'Offset',
+          'Velocity depth',
+        },
+        'djfi': {'Sweep', 'Resonance'},
+        'mix1': {
+          'Output gain',
+          'Pre/post',
+          'Gain',
+          'Mute',
+          'Solo',
+          'Send gain',
+        },
+        'mac2': {
+          'Model',
+          'Coarse tune',
+          'Fine tune',
+          'Harmonics',
+          'Timbre',
+          'Morph',
+          'FM',
+          'Timbre mod',
+          'Morph mod',
+          'Low-pass gate',
+          'Time/decay',
+        },
+        'pym2': {
+          'Model',
+          'Coarse tune',
+          'Fine tune',
+          'Harmonics',
+          'Timbre',
+          'Morph',
+          'FM',
+          'Timbre mod',
+          'Morph mod',
+          'Low-pass gate',
+          'Time/decay',
+        },
+        'ssjw': {
+          'Bridge shape',
+          'Tuning (1st string)',
+          'Transpose',
+          'Fine tune',
+          'Strum',
+          'Reset',
+          'Velocity',
+          'Damping',
+          'Length',
+          'Bounce count',
+          'Strum level',
+          'Bounce level',
+          'Start harmonic',
+          'End harmonic',
+          'Strum type',
+        },
+        'stpw': {
+          'Mode',
+          'Start/stop mode',
+          'Hours',
+          'Minutes',
+          'Seconds',
+          'Start/stop',
+          'Reset',
+        },
+      };
+      const cases = [
+        (
+          guid: 'env2',
+          name: 'Envelope (AR/AD)',
+          asset: 'assets/algorithm_controllers/envelope_ar_ad.lua',
+          values: <String, int>{},
+        ),
+        (
+          guid: 'env2',
+          name: 'Envelope (AR/AD)',
+          asset: 'assets/algorithm_controllers/envelope_ar_ad.lua',
+          values: {'Time mode': 2},
+        ),
+        (
+          guid: 'djfi',
+          name: 'DJ Filter',
+          asset: 'assets/algorithm_controllers/dj_filter.lua',
+          values: <String, int>{},
+        ),
+        (
+          guid: 'mix1',
+          name: 'Mixer Mono',
+          asset: 'assets/algorithm_controllers/mixer_mono.lua',
+          values: <String, int>{},
+        ),
+        (
+          guid: 'mac2',
+          name: 'Macro Oscillator 2',
+          asset: 'assets/algorithm_controllers/macro_oscillator_2.lua',
+          values: <String, int>{},
+        ),
+        (
+          guid: 'pym2',
+          name: 'Poly Macro Oscillator 2',
+          asset: 'assets/algorithm_controllers/macro_oscillator_2.lua',
+          values: <String, int>{},
+        ),
+        (
+          guid: 'ssjw',
+          name: 'Seaside Jawari',
+          asset: 'assets/algorithm_controllers/seaside_jawari.lua',
+          values: <String, int>{},
+        ),
+        (
+          guid: 'stpw',
+          name: 'Stopwatch',
+          asset: 'assets/algorithm_controllers/stopwatch.lua',
+          values: <String, int>{},
+        ),
+        (
+          guid: 'stpw',
+          name: 'Stopwatch',
+          asset: 'assets/algorithm_controllers/stopwatch.lua',
+          values: {'Mode': 1, 'Start/stop mode': 1},
+        ),
+      ];
+
+      for (final testCase in cases) {
+        final slot = _slotFromMetadata(
+          tables,
+          guid: testCase.guid,
+          name: testCase.name,
+          values: testCase.values,
+        );
+        final document = engine.evaluate(
+          source: await File(testCase.asset).readAsString(),
+          slot: slot,
+          slotIndex: 7,
+          units: const [],
+        );
+        final parametersByNumber = {
+          for (final parameter in slot.parameters)
+            parameter.parameterNumber: parameter,
+        };
+
+        for (final parameterNumber in _boundParameterNumbers(
+          _flatten(document.root),
+        )) {
+          final parameter = parametersByNumber[parameterNumber]!;
+          final name = parameter.name.split(':').last;
+          expect(
+            allowedNames[testCase.guid],
+            contains(name),
+            reason:
+                '${testCase.guid} unexpectedly exposes '
+                '${parameter.name} ($parameterNumber)',
+          );
+          expect(
+            parameter.ioFlags,
+            0,
+            reason:
+                '${testCase.guid} must not expose '
+                '${parameter.name} ($parameterNumber) as I/O',
+          );
+        }
+      }
     },
   );
 
@@ -651,22 +1066,5 @@ void _expectNoControllerBypass(
   List<AlgorithmControllerNode> nodes, {
   required String reason,
 }) {
-  for (final node in nodes) {
-    final parameterNumbers = switch (node) {
-      AlgorithmControllerSlider(:final parameterNumber) => [parameterNumber],
-      AlgorithmControllerChoice(:final parameterNumber) => [parameterNumber],
-      AlgorithmControllerToggle(:final parameterNumber) => [parameterNumber],
-      AlgorithmControllerButton(:final action) => [action.parameterNumber],
-      AlgorithmControllerXYPad(
-        :final xParameterNumber,
-        :final yParameterNumber,
-      ) =>
-        [xParameterNumber, yParameterNumber],
-      AlgorithmControllerNoteMask(:final notes) => [
-        for (final note in notes) note.parameterNumber,
-      ],
-      _ => const <int>[],
-    };
-    expect(parameterNumbers, isNot(contains(0)), reason: reason);
-  }
+  expect(_boundParameterNumbers(nodes), isNot(contains(0)), reason: reason);
 }

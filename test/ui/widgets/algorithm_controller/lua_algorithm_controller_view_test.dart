@@ -494,6 +494,67 @@ return {
     semantics.dispose();
   });
 
+  testWidgets('canvas stays bounded in a wide editor', (tester) async {
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const source = r'''
+return {
+  version = 1,
+  title = "Drawing",
+  root = ui.canvas {
+    semantics_label = "Bounded drawing",
+    aspect_ratio = 4,
+    shapes = {
+      ui.circle { x = 0.5, y = 0.5, radius = 0.1, fill = "primary" }
+    }
+  }
+}
+''';
+
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSize(find.bySemanticsLabel('Bounded drawing')),
+      const Size(720, 180),
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('canvas shrinks without overflow in a narrow editor', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const source = r'''
+return {
+  version = 1,
+  title = "Drawing",
+  root = ui.canvas {
+    semantics_label = "Narrow drawing",
+    aspect_ratio = 4,
+    shapes = {
+      ui.circle { x = 0.5, y = 0.5, radius = 0.1, fill = "primary" }
+    }
+  }
+}
+''';
+
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(_host(cubit, _slot(), source));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSize(find.bySemanticsLabel('Narrow drawing')),
+      const Size(320, 80),
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testWidgets('XY pad supports pointer and keyboard parameter writes', (
     tester,
   ) async {
