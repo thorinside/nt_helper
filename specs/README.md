@@ -26,6 +26,7 @@ recovery rule instead of asking for judgment.
 | `poly-sample-firmware-mapping/` | Match Disting NT automatic natural/switch mapping across domain state, preview, editor UI, accessibility, and persisted filename tags | 7 | steps 1–2 medium, steps 3–6 hard, step 7 medium/hard |
 | `improve-the-nt-helper-sample-editor-ux-based-on/` | Improve poly multisample sample editor UX with stable edit ordering, selection-scoped mapping/discard, bulk root/list controls, and loop/fade preview | 3 | steps 1–2 medium, step 3 hard |
 | `specification-aware-offline-metadata/` | Infer compact adjacent-repeat grammars, bundle them beside one flat shape, and expand the requested shape offline | 6 | steps 1–3 medium, steps 4–5 hard, step 6 hardware-dependent |
+| `chimera-sample-pickers/` | Add metadata-driven recursive folder and audio-file pickers for Chimera, including shared Beef folder and None sentinel handling | 2 | step 1 easy/medium, step 2 medium |
 
 ## Target executor
 
