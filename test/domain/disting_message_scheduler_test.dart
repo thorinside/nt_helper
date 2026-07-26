@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_midi_command/flutter_midi_command.dart';
@@ -7,6 +8,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/domain/disting_message_scheduler.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
+import 'package:nt_helper/models/sd_card_file_system.dart';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -173,6 +176,116 @@ void main() {
 
         final diag = scheduler.getDiagnostics();
         expect(diag['unmatchedResponsesDiscarded'], 1);
+      },
+    );
+
+    test(
+      'directory listing waiter ignores a file upload acknowledgement',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respDirectoryListing,
+          sdCardOperation: SdCardOperation.directoryListing,
+        );
+
+        final future = scheduler.sendRequest<DirectoryListing>(
+          _buildSysEx(DistingNTRespMessageType.respDirectoryListing, []),
+          key,
+        );
+
+        await Future.microtask(() {});
+
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respDirectoryListing,
+          [0, SdCardOperation.fileUpload.code],
+        );
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respDirectoryListing,
+          [0, SdCardOperation.directoryListing.code],
+        );
+
+        final result = await future;
+        expect(result, isA<DirectoryListing>());
+        expect(result!.entries, isEmpty);
+
+        final diagnostics = scheduler.getDiagnostics();
+        expect(diagnostics['unmatchedResponsesDiscarded'], 1);
+      },
+    );
+
+    test('file upload waiter ignores a directory listing response', () async {
+      final key = RequestKey(
+        sysExId: _testSysExId,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
+        sdCardOperation: SdCardOperation.fileUpload,
+      );
+
+      final future = scheduler.sendRequest<SdCardStatus>(
+        _buildSysEx(DistingNTRespMessageType.respDirectoryListing, []),
+        key,
+      );
+
+      await Future.microtask(() {});
+
+      _injectResponse(
+        incoming,
+        device,
+        DistingNTRespMessageType.respDirectoryListing,
+        [0, SdCardOperation.directoryListing.code],
+      );
+      _injectResponse(
+        incoming,
+        device,
+        DistingNTRespMessageType.respDirectoryListing,
+        [0, SdCardOperation.fileUpload.code],
+      );
+
+      final result = await future;
+      expect(result, isA<SdCardStatus>());
+      expect(result!.success, isTrue);
+
+      final diagnostics = scheduler.getDiagnostics();
+      expect(diagnostics['unmatchedResponsesDiscarded'], 1);
+    });
+
+    test(
+      'SD error completes the active operation with a typed exception',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respDirectoryListing,
+          sdCardOperation: SdCardOperation.directoryListing,
+        );
+
+        final future = scheduler.sendRequest<DirectoryListing>(
+          _buildSysEx(DistingNTRespMessageType.respDirectoryListing, []),
+          key,
+        );
+
+        await Future.microtask(() {});
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respDirectoryListing,
+          [1, ...ascii.encode('SD card is busy'), 0],
+        );
+
+        await expectLater(
+          future,
+          throwsA(
+            isA<SdCardOperationException>()
+                .having(
+                  (error) => error.operation,
+                  'operation',
+                  SdCardOperation.directoryListing,
+                )
+                .having((error) => error.message, 'message', 'SD card is busy'),
+          ),
+        );
       },
     );
 

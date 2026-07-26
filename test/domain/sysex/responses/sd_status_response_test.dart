@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/sysex/response_factory.dart';
+import 'package:nt_helper/domain/sysex/responses/sd_status_response.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 
 void main() {
@@ -29,6 +30,15 @@ void main() {
 
       expect(status.success, isFalse);
       expect(status.message, 'nope');
+    });
+
+    test('classifies an error before inspecting its operation-like byte', () {
+      final response = ResponseFactory.fromMessageType(
+        DistingNTRespMessageType.respDirectoryListing,
+        Uint8List.fromList([1, 1, 0]),
+      );
+
+      expect(response, isA<SdStatusResponse>());
     });
   });
 }

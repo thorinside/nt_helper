@@ -1,4 +1,5 @@
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
@@ -18,7 +19,7 @@ class RequestRemountSdMessage extends SysexMessage {
 
   @override
   Uint8List encode() {
-    final payload = [6]; // kOpRemount
+    final payload = [SdCardOperation.remount.code];
     final checksum = calculateChecksum(payload);
 
     return Uint8List.fromList([

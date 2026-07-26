@@ -1,4 +1,5 @@
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
@@ -12,10 +13,7 @@ class RequestDirectoryCreateMessage extends SysexMessage {
   @override
   Uint8List encode() {
     final pathBytes = encodeSysExAsciiPath(path);
-    final payload = [
-      7, // Opcode for new folder/directory creation (kOpNewFolder)
-      ...pathBytes,
-    ];
+    final payload = [SdCardOperation.directoryCreate.code, ...pathBytes];
     final checksum = calculateChecksum(payload);
 
     return Uint8List.fromList([

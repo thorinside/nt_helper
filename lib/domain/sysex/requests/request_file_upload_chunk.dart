@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
@@ -26,7 +27,7 @@ class RequestFileUploadChunkMessage extends SysexMessage {
     final message = <int>[
       ...buildHeader(sysExId),
       DistingNTRequestMessageType.sdCardOperation.value,
-      4, // kOpUpload
+      SdCardOperation.fileUpload.code,
       ...pathBytes,
       0, // Null terminator
       createAlways ? 1 : 0, // Create always flag

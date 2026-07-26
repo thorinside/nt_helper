@@ -1,4 +1,5 @@
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:nt_helper/domain/sysex/responses/algorithm_info_response.dart';
@@ -77,18 +78,18 @@ class ResponseFactory {
       case DistingNTRespMessageType.respDirectoryListing:
         // SD card operations (0x7A) need to be differentiated by operation code
         // Payload format: [status, operation, ...data]
-        if (payload.length >= 2) {
-          final operation = payload[1];
-          switch (operation) {
-            case 1: // Directory listing
-              return DirectoryListingResponse(payload);
-            case 2: // File download
-              return FileChunkResponse(payload);
-            default:
-              return SdStatusResponse(payload);
-          }
+        // Error payloads omit the operation and contain [status, ...message].
+        if (payload.length < 2 || payload[0] != 0) {
+          return SdStatusResponse(payload);
         }
-        return SdStatusResponse(payload);
+        switch (SdCardOperation.fromCode(payload[1])) {
+          case SdCardOperation.directoryListing:
+            return DirectoryListingResponse(payload);
+          case SdCardOperation.fileDownload:
+            return FileChunkResponse(payload);
+          default:
+            return SdStatusResponse(payload);
+        }
       case DistingNTRespMessageType.respFileChunk:
         return FileChunkResponse(payload);
       case DistingNTRespMessageType.respSdStatus:

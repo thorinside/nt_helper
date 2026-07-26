@@ -1,4 +1,6 @@
 import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
@@ -12,8 +14,9 @@ class RequestFileDownloadMessage extends SysexMessage {
     final pathBytes = encodeSysExAsciiPath(path);
 
     final message = <int>[
-      0xF0, 0x00, 0x21, 0x27, 0x6D, sysExId, 0x7A,
-      2, // Header + opcode (kOpDownload = 2)
+      ...buildHeader(sysExId),
+      DistingNTRequestMessageType.sdCardOperation.value,
+      SdCardOperation.fileDownload.code,
       ...pathBytes,
     ];
 

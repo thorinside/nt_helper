@@ -1,5 +1,6 @@
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show DistingNTRespMessageType;
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'package:nt_helper/domain/sysex/sysex_parser.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
@@ -10,6 +11,7 @@ class RequestKey {
   final int? algorithmIndex; // Optional - slot index (0-7)
   final int? parameterNumber; // Optional
   final int? libraryIndex; // Optional - algorithm library index (0-N)
+  final SdCardOperation? sdCardOperation; // Optional - SD operation (1-8)
 
   RequestKey({
     required this.sysExId,
@@ -17,11 +19,13 @@ class RequestKey {
     this.algorithmIndex,
     this.parameterNumber,
     this.libraryIndex,
+    this.sdCardOperation,
   });
 
   factory RequestKey.fromDistingNTParsedMessage(DistingNTParsedMessage msg) {
     int? algorithmIndex;
     int? parameterNumber;
+    SdCardOperation? sdCardOperation;
 
     switch (msg.messageType) {
       // These messages have an algorithm index as the first payload byte.
@@ -66,6 +70,15 @@ class RequestKey {
         }
         break;
 
+      // Successful SD responses carry [status, operation, ...data].
+      // Error responses carry [status, ...message] and cannot be attributed to
+      // an operation from their wire payload.
+      case DistingNTRespMessageType.respDirectoryListing:
+        if (msg.payload.length >= 2 && msg.payload[0] == 0) {
+          sdCardOperation = SdCardOperation.fromCode(msg.payload[1]);
+        }
+        break;
+
       // Other messages don't have these indices.
       case DistingNTRespMessageType.respAlgorithmInfo:
       default:
@@ -77,6 +90,7 @@ class RequestKey {
       messageType: msg.messageType,
       algorithmIndex: algorithmIndex,
       parameterNumber: parameterNumber,
+      sdCardOperation: sdCardOperation,
     );
   }
 
@@ -104,6 +118,10 @@ class RequestKey {
       return false;
     }
 
+    if (!_matchesSdCardOperation(msg, responseKey)) {
+      return false;
+    }
+
     return true;
   }
 
@@ -126,7 +144,30 @@ class RequestKey {
       return false;
     }
 
+    if (!_matchesSdCardOperation(msg, responseKey)) {
+      return false;
+    }
+
     return true;
+  }
+
+  bool _matchesSdCardOperation(
+    DistingNTParsedMessage msg,
+    RequestKey responseKey,
+  ) {
+    if (sdCardOperation == null) {
+      return true;
+    }
+
+    final isSdError =
+        messageType == DistingNTRespMessageType.respDirectoryListing &&
+        msg.payload.isNotEmpty &&
+        msg.payload[0] != 0;
+    if (isSdError) {
+      return true;
+    }
+
+    return sdCardOperation == responseKey.sdCardOperation;
   }
 
   @override
@@ -138,7 +179,8 @@ class RequestKey {
           messageType == other.messageType &&
           algorithmIndex == other.algorithmIndex &&
           parameterNumber == other.parameterNumber &&
-          libraryIndex == other.libraryIndex;
+          libraryIndex == other.libraryIndex &&
+          sdCardOperation == other.sdCardOperation;
 
   @override
   int get hashCode => Object.hash(
@@ -147,9 +189,10 @@ class RequestKey {
     algorithmIndex,
     parameterNumber,
     libraryIndex,
+    sdCardOperation,
   );
 
   @override
   String toString() =>
-      "RequestKey(sysExId: $sysExId, algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, libraryIndex: $libraryIndex, messageType: $messageType)";
+      "RequestKey(sysExId: $sysExId, algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, libraryIndex: $libraryIndex, sdCardOperation: $sdCardOperation, messageType: $messageType)";
 }

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 
@@ -25,7 +26,7 @@ class FileChunkResponse extends SysexResponse {
 
     // The second byte should be the operation (2 for download)
     final operation = data[1];
-    if (operation != 2) {
+    if (operation != SdCardOperation.fileDownload.code) {
       // Wrong operation
       return FileChunk(offset: 0, data: Uint8List(0));
     }

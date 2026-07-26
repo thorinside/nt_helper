@@ -17,6 +17,7 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 // Domain classes
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'package:nt_helper/domain/sysex/response_factory.dart';
 import 'package:nt_helper/domain/sysex/responses/parameter_pages_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_parser.dart';
@@ -752,6 +753,23 @@ class DistingMessageScheduler {
       'response #${request.id} rtt=${rtt.inMicroseconds / 1000}ms '
       'messageType=${parsed.messageType.name} key=${request.key}',
     );
+
+    final sdCardOperation = request.key.sdCardOperation;
+    final isSdCardError =
+        sdCardOperation != null &&
+        parsed.messageType == DistingNTRespMessageType.respDirectoryListing &&
+        parsed.payload.isNotEmpty &&
+        parsed.payload[0] != 0;
+    if (isSdCardError) {
+      request.completer.completeError(
+        SdCardOperationException.fromPayload(
+          operation: sdCardOperation,
+          payload: parsed.payload,
+        ),
+      );
+      _finishCurrentRequest();
+      return;
+    }
 
     // Parse and complete the response
     final response = ResponseFactory.fromMessageType(

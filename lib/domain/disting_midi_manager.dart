@@ -9,6 +9,7 @@ import 'package:nt_helper/domain/disting_message_scheduler.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/domain/request_key.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'package:nt_helper/domain/sysex/requests/add_algorithm.dart';
 import 'package:nt_helper/domain/sysex/requests/execute_lua.dart';
 import 'package:nt_helper/domain/sysex/requests/install_lua.dart';
@@ -107,6 +108,26 @@ class DistingMidiManager implements IDistingMidiManager {
         'SD Card operations require firmware version 1.10 or higher. Found $_firmwareVersion',
       );
     }
+  }
+
+  Future<T?> _sendSdRequest<T>(
+    Uint8List packet,
+    SdCardOperation operation, {
+    ResponseExpectation responseExpectation = ResponseExpectation.required,
+  }) {
+    return _scheduler.sendRequest<T>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
+        sdCardOperation: operation,
+      ),
+      responseExpectation: responseExpectation,
+      timeout: const Duration(seconds: 10),
+      // SD replies have no request identifier. Retrying can leave duplicate
+      // acknowledgements that are indistinguishable from a later request.
+      maxRetries: 1,
+    );
   }
 
   @override
@@ -1076,14 +1097,9 @@ class DistingMidiManager implements IDistingMidiManager {
       path: absolutePath,
     );
     final packet = message.encode();
-    return _scheduler.sendRequest<DirectoryListing>(
+    return _sendSdRequest<DirectoryListing>(
       packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respDirectoryListing,
-      ),
-      responseExpectation: ResponseExpectation.required,
-      timeout: const Duration(seconds: 10),
+      SdCardOperation.directoryListing,
     );
   }
 
@@ -1092,14 +1108,7 @@ class DistingMidiManager implements IDistingMidiManager {
     await _checkSdCardSupport();
     final message = RequestFileDeleteMessage(sysExId: sysExId, path: path);
     final packet = message.encode();
-    return _scheduler.sendRequest<SdCardStatus>(
-      packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respDirectoryListing,
-      ),
-      responseExpectation: ResponseExpectation.required,
-    );
+    return _sendSdRequest<SdCardStatus>(packet, SdCardOperation.fileDelete);
   }
 
   @override
@@ -1155,8 +1164,7 @@ class DistingMidiManager implements IDistingMidiManager {
     // SD card operations require absolute paths (see installFileToPath
     // in disting_cubit_plugin_delegate.dart for the same normalization).
     // Without a leading '/' the firmware can't locate the file and
-    // responds with a directory listing of the root, which surfaces as
-    // a type-mismatch error rather than useful file bytes.
+    // responds with a directory listing of the root instead of file bytes.
     final absolutePath = path.startsWith('/') ? path : '/$path';
     final message = RequestFileDownloadMessage(
       sysExId: sysExId,
@@ -1169,26 +1177,17 @@ class DistingMidiManager implements IDistingMidiManager {
     // file download responses, differentiated by the operation byte
     // (1 = listing, 2 = file download — see response_factory.dart).
     //
-    // When the path doesn't resolve to a readable file the firmware can
-    // respond with a directory listing instead of a FileChunk; the
-    // scheduler's type-checked complete() rejects the DirectoryListing
-    // value and surfaces a StateError. Catch it here and treat it as a
-    // clean "file not found" (null), matching the contract documented
-    // on the interface.
+    // Preserve the existing null result for malformed download responses.
+    // Wrong-operation directory listings are now rejected by RequestKey before
+    // they can be parsed as a FileChunk.
     try {
-      final chunk = await _scheduler.sendRequest<FileChunk>(
+      final chunk = await _sendSdRequest<FileChunk>(
         packet,
-        RequestKey(
-          sysExId: sysExId,
-          messageType: DistingNTRespMessageType.respDirectoryListing, // 0x7A
-        ),
-        responseExpectation: ResponseExpectation.required,
-        timeout: const Duration(seconds: 10), // Longer timeout for large files
+        SdCardOperation.fileDownload,
       );
       return chunk?.data;
     } on StateError {
-      // Firmware returned an unexpected shape (typically a directory
-      // listing for a missing/invalid file path). Treat as not found.
+      // Firmware returned a malformed response. Treat it as not found.
       return null;
     }
   }
@@ -1205,14 +1204,7 @@ class DistingMidiManager implements IDistingMidiManager {
       newPath: toPath,
     );
     final packet = message.encode();
-    return _scheduler.sendRequest<SdCardStatus>(
-      packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respDirectoryListing,
-      ),
-      responseExpectation: ResponseExpectation.required,
-    );
+    return _sendSdRequest<SdCardStatus>(packet, SdCardOperation.fileRename);
   }
 
   @override
@@ -1225,14 +1217,7 @@ class DistingMidiManager implements IDistingMidiManager {
       data: data,
     );
     final packet = message.encode();
-    return _scheduler.sendRequest<SdCardStatus>(
-      packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respDirectoryListing,
-      ),
-      responseExpectation: ResponseExpectation.required,
-    );
+    return _sendSdRequest<SdCardStatus>(packet, SdCardOperation.fileUpload);
   }
 
   @override
@@ -1252,15 +1237,7 @@ class DistingMidiManager implements IDistingMidiManager {
     );
     final packet = message.encode();
 
-    return _scheduler.sendRequest<SdCardStatus>(
-      packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respDirectoryListing,
-      ),
-      responseExpectation: ResponseExpectation.required,
-      timeout: const Duration(seconds: 10),
-    );
+    return _sendSdRequest<SdCardStatus>(packet, SdCardOperation.fileUpload);
   }
 
   @override
@@ -1268,13 +1245,9 @@ class DistingMidiManager implements IDistingMidiManager {
     await _checkSdCardSupport();
     final message = RequestDirectoryCreateMessage(sysExId: sysExId, path: path);
     final packet = message.encode();
-    return _scheduler.sendRequest<SdCardStatus>(
+    return _sendSdRequest<SdCardStatus>(
       packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respDirectoryListing,
-      ),
-      responseExpectation: ResponseExpectation.required,
+      SdCardOperation.directoryCreate,
     );
   }
 
@@ -1283,12 +1256,9 @@ class DistingMidiManager implements IDistingMidiManager {
     await _checkSdCardSupport();
     final message = RequestRescanPluginsMessage(sysExId: sysExId);
     final packet = message.encode();
-    await _scheduler.sendRequest<void>(
+    await _sendSdRequest<void>(
       packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respSdStatus,
-      ),
+      SdCardOperation.rescanPlugins,
       responseExpectation: ResponseExpectation.none, // Fire-and-forget
     );
   }
@@ -1298,12 +1268,9 @@ class DistingMidiManager implements IDistingMidiManager {
     await _checkSdCardSupport();
     final message = RequestRemountSdMessage(sysExId: sysExId);
     final packet = message.encode();
-    await _scheduler.sendRequest<void>(
+    await _sendSdRequest<SdCardStatus>(
       packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respSdStatus,
-      ),
+      SdCardOperation.remount,
       responseExpectation: ResponseExpectation.optional,
     );
   }

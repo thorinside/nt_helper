@@ -1,4 +1,5 @@
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
@@ -26,7 +27,7 @@ class RequestFileUploadMessage extends SysexMessage {
     final nybbleData = bytesToNybbles(data);
 
     final payload = [
-      4, // Opcode for upload
+      SdCardOperation.fileUpload.code,
       ...pathBytes,
       0, // Null terminator
       0,

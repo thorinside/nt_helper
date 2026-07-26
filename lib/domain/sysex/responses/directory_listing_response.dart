@@ -1,3 +1,4 @@
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 import 'dart:convert'; // For ascii
@@ -32,7 +33,7 @@ class DirectoryListingResponse extends SysexResponse {
     final status = data[0]; // Status byte within this payload
     final subCommand = data[1]; // Subcommand byte within this payload
 
-    if (status != 0x00 || subCommand != 0x01) {
+    if (status != 0x00 || subCommand != SdCardOperation.directoryListing.code) {
       // If status is not OK (0x00) or subcommand is not Directory Listing (0x01),
       // this is not a valid directory listing response as expected.
       // For now, return an empty listing or throw an error.

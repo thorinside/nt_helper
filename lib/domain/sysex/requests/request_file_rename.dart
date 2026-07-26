@@ -1,4 +1,5 @@
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/sd_card_operation.dart';
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
@@ -20,7 +21,7 @@ class RequestFileRenameMessage extends SysexMessage {
     final oldPathBytes = oldPath.codeUnits;
     final newPathBytes = newPath.codeUnits;
     final payload = [
-      5, // Opcode for rename
+      SdCardOperation.fileRename.code,
       ...oldPathBytes,
       0, // Null terminator
       ...newPathBytes,
