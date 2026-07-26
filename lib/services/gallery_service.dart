@@ -16,9 +16,15 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:nt_helper/utils/build_config.dart';
 
 /// GraphQL queries for the gallery
+const int _galleryPluginPageSize = 50;
+
 const String _getPluginsQuery = r'''
-  query GetPlugins($filter: PluginFilterInput) {
-    plugins(filter: $filter) {
+  query GetPlugins(
+    $filter: PluginFilterInput
+    $limit: Int!
+    $offset: Int!
+  ) {
+    plugins(filter: $filter, limit: $limit, offset: $offset) {
       slug
       name
       description
@@ -381,41 +387,54 @@ class GalleryService {
   /// Fetch plugins via GraphQL API
   Future<List<dynamic>> _fetchPluginsViaGraphQL() async {
     final endpoint = graphqlEndpoint;
+    final plugins = <dynamic>[];
+    var offset = 0;
 
-    final response = await http
-        .post(
-          Uri.parse(endpoint),
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Accept': 'application/json; charset=utf-8',
-            'Accept-Charset': 'utf-8',
-            'User-Agent': 'Disting-NT-Helper/1.0',
-          },
-          body: json.encode({
-            'query': _getPluginsQuery,
-            'variables': {
-              'filter': {'verified': true},
+    while (true) {
+      final response = await http
+          .post(
+            Uri.parse(endpoint),
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Accept': 'application/json; charset=utf-8',
+              'Accept-Charset': 'utf-8',
+              'User-Agent': 'Disting-NT-Helper/1.0',
             },
-          }),
-        )
-        .timeout(const Duration(seconds: 30));
+            body: json.encode({
+              'query': _getPluginsQuery,
+              'variables': {
+                'filter': {'verified': true},
+                'limit': _galleryPluginPageSize,
+                'offset': offset,
+              },
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
 
-    if (response.statusCode != 200) {
-      throw GalleryException(
-        'GraphQL request failed: HTTP ${response.statusCode}',
-      );
+      if (response.statusCode != 200) {
+        throw GalleryException(
+          'GraphQL request failed: HTTP ${response.statusCode}',
+        );
+      }
+
+      // Explicitly decode as UTF-8 to handle special characters correctly
+      // (http package defaults to latin-1 if charset not specified in headers)
+      final jsonData =
+          json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+
+      if (jsonData.containsKey('errors')) {
+        throw GalleryException('GraphQL error: ${jsonData['errors']}');
+      }
+
+      final page = jsonData['data']['plugins'] as List<dynamic>;
+      plugins.addAll(page);
+
+      if (page.length < _galleryPluginPageSize) {
+        return plugins;
+      }
+
+      offset += _galleryPluginPageSize;
     }
-
-    // Explicitly decode as UTF-8 to handle special characters correctly
-    // (http package defaults to latin-1 if charset not specified in headers)
-    final jsonData =
-        json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-
-    if (jsonData.containsKey('errors')) {
-      throw GalleryException('GraphQL error: ${jsonData['errors']}');
-    }
-
-    return jsonData['data']['plugins'] as List<dynamic>;
   }
 
   /// Fetch categories via GraphQL API
