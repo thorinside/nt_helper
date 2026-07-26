@@ -59,8 +59,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   bool get _usesNtSampleFolderEnumeration =>
       widget.rule.ntSampleFolderEnumeration;
 
-  bool get _hasMultisampleSampleSentinel =>
-      widget.rule.hasMultisampleSampleSentinel;
+  String? get _zeroValueSentinelLabel => widget.rule.zeroValueSentinelLabel;
+
+  bool get _hasZeroValueSentinel => _zeroValueSentinelLabel != null;
 
   // Development mode state for Lua Script
   Timer? _fileWatchTimer;
@@ -207,8 +208,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
   String? _getDisplayValueForCurrentValue() {
     final currentVal = widget.currentValue;
-    if (_hasMultisampleSampleSentinel && currentVal <= 0) {
-      return 'Multisample';
+    if (_hasZeroValueSentinel && currentVal <= 0) {
+      return _zeroValueSentinelLabel;
     }
     // Use min value to determine display offset: if min=0, show currentVal+1; if min=1, show currentVal
     final displayVal = widget.parameterInfo.min == 0
@@ -267,7 +268,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   void _incrementValue() {
-    final incrementedValue = _hasMultisampleSampleSentinel
+    final incrementedValue = _hasZeroValueSentinel
         ? (widget.currentValue < 1 ? 1 : widget.currentValue + 1)
         : widget.currentValue + 1;
     final newValue = incrementedValue.clamp(
@@ -281,7 +282,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   void _decrementValue() {
-    final decrementedValue = _hasMultisampleSampleSentinel
+    final decrementedValue = _hasZeroValueSentinel
         ? (widget.currentValue <= 1 ? 0 : widget.currentValue - 1)
         : widget.currentValue - 1;
     final newValue = decrementedValue.clamp(
@@ -449,8 +450,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               return a.name.toLowerCase().compareTo(b.name.toLowerCase());
             });
           }
-          if (_hasMultisampleSampleSentinel) {
-            availableFiles.insert(0, _multisampleSentinelEntry());
+          if (_hasZeroValueSentinel) {
+            availableFiles.insert(0, _zeroValueSentinelEntry());
           }
           _availableFiles = availableFiles;
           _isLoadingFiles = false;
@@ -709,22 +710,22 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   int _entryIndexForParameterValue(int value) {
-    if (_hasMultisampleSampleSentinel) {
+    if (_hasZeroValueSentinel) {
       return value <= 0 ? 0 : value;
     }
     return value - widget.parameterInfo.min;
   }
 
   int _parameterValueForEntryIndex(int index) {
-    if (_hasMultisampleSampleSentinel) {
+    if (_hasZeroValueSentinel) {
       return index <= 0 ? 0 : index;
     }
     return index + widget.parameterInfo.min;
   }
 
-  DirectoryEntry _multisampleSentinelEntry() {
+  DirectoryEntry _zeroValueSentinelEntry() {
     return DirectoryEntry(
-      name: 'Multisample',
+      name: _zeroValueSentinelLabel!,
       attributes: 0,
       date: 0,
       time: 0,
@@ -875,7 +876,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     final itemType = widget.rule.mode == FileSelectionMode.folderOnly
         ? 'folder'
         : 'file';
-    final canGoPrev = _hasMultisampleSampleSentinel
+    final canGoPrev = _hasZeroValueSentinel
         ? widget.currentValue > 0
         : widget.currentValue > widget.parameterInfo.min;
     final canGoNext = widget.currentValue < widget.parameterInfo.max;
@@ -1426,7 +1427,7 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
   }
 
   int get _selectedIndex {
-    if (widget.rule.hasMultisampleSampleSentinel) {
+    if (widget.rule.zeroValueSentinelLabel != null) {
       return widget.currentValue <= 0 ? 0 : widget.currentValue;
     }
     return widget.currentValue - widget.parameterInfo.min;

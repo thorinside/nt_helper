@@ -130,8 +130,8 @@ class ParameterEditorRule {
   /// Match the NT's recursive /samples folder numbering.
   final bool ntSampleFolderEnumeration;
 
-  /// Value 0 is the "Multisample" sentinel before real files.
-  final bool hasMultisampleSampleSentinel;
+  /// Optional label for a value-0 sentinel before real file entries.
+  final String? zeroValueSentinelLabel;
 
   const ParameterEditorRule({
     this.algorithmGuid,
@@ -145,7 +145,7 @@ class ParameterEditorRule {
     this.recursive = false,
     this.defaultFolder,
     this.ntSampleFolderEnumeration = false,
-    this.hasMultisampleSampleSentinel = false,
+    this.zeroValueSentinelLabel,
   });
 
   /// Check if this rule matches the given parameter
@@ -236,7 +236,7 @@ class ParameterEditorRegistry {
       allowedExtensions: ['.wav', '.aif', '.aiff'],
       description: 'Poly Multisample sample selection',
       ntSampleFolderEnumeration: true,
-      hasMultisampleSampleSentinel: true,
+      zeroValueSentinelLabel: 'Multisample',
     ),
     ParameterEditorRule(
       algorithmGuid: 'pyms',
@@ -256,7 +256,7 @@ class ParameterEditorRegistry {
       allowedExtensions: ['.wav', '.aif', '.aiff'],
       description: 'Poly Multisample legacy sample selection',
       ntSampleFolderEnumeration: true,
-      hasMultisampleSampleSentinel: true,
+      zeroValueSentinelLabel: 'Multisample',
     ),
 
     // Sample player - Folder selection

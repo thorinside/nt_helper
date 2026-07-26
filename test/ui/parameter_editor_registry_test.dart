@@ -145,8 +145,8 @@ void main() {
         expect(fileEditor.rule.baseDirectory, '/samples');
         expect(fileEditor.rule.ntSampleFolderEnumeration, isTrue);
         expect(
-          fileEditor.rule.hasMultisampleSampleSentinel,
-          parameterName == 'Sample',
+          fileEditor.rule.zeroValueSentinelLabel,
+          parameterName == 'Sample' ? 'Multisample' : isNull,
         );
       }
     });
@@ -165,8 +165,8 @@ void main() {
         expect(fileEditor.rule.baseDirectory, '/samples');
         expect(fileEditor.rule.ntSampleFolderEnumeration, isTrue);
         expect(
-          fileEditor.rule.hasMultisampleSampleSentinel,
-          parameterName == 'Sample',
+          fileEditor.rule.zeroValueSentinelLabel,
+          parameterName == 'Sample' ? 'Multisample' : isNull,
         );
       }
     });
@@ -183,7 +183,7 @@ void main() {
         final fileEditor = editor as FileParameterEditor;
         expect(fileEditor.rule.baseDirectory, '/samples');
         expect(fileEditor.rule.ntSampleFolderEnumeration, isFalse);
-        expect(fileEditor.rule.hasMultisampleSampleSentinel, isFalse);
+        expect(fileEditor.rule.zeroValueSentinelLabel, isNull);
       }
     });
 
