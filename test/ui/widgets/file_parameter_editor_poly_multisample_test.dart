@@ -37,32 +37,34 @@ void main() {
   });
 
   group('FileParameterEditor Poly Multisample folder/sample helpers', () {
-    testWidgets('pymu Folder value 0 resolves to first NT depth-first folder', (
-      tester,
-    ) async {
-      final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 0);
+    testWidgets(
+      'pymu Folder value 0 resolves to first NT breadth-first folder',
+      (tester) async {
+        final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 0);
 
-      await _pumpEditor(tester, cubit: cubit, slot: slot, parameterNumber: 0);
+        await _pumpEditor(tester, cubit: cubit, slot: slot, parameterNumber: 0);
 
-      expect(find.text('Multisample'), findsOneWidget);
-      expect(find.text('Multisample/BoC Alpha'), findsNothing);
-    });
-
-    testWidgets('pyms Folder value 1 resolves to first NT depth-first folder', (
-      tester,
-    ) async {
-      final slot = _polySlot(guid: 'pyms', folderMin: 1, folderValue: 1);
-
-      await _pumpEditor(tester, cubit: cubit, slot: slot, parameterNumber: 0);
-
-      expect(find.text('Multisample'), findsOneWidget);
-    });
+        expect(find.text('Multisample'), findsOneWidget);
+        expect(find.text('Multisample/BoC Alpha'), findsNothing);
+      },
+    );
 
     testWidgets(
-      'nested folders keep NT depth-first order and write matching value',
+      'pyms Folder value 1 resolves to first NT breadth-first folder',
+      (tester) async {
+        final slot = _polySlot(guid: 'pyms', folderMin: 1, folderValue: 1);
+
+        await _pumpEditor(tester, cubit: cubit, slot: slot, parameterNumber: 0);
+
+        expect(find.text('Multisample'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'nested folders follow NT breadth-first order and write matching value',
       (tester) async {
         final writtenValues = <int>[];
-        final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 1);
+        final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 2);
 
         await _pumpEditor(
           tester,
@@ -82,7 +84,7 @@ void main() {
         expect(find.text('Multisample/BoC Beta'), findsOneWidget);
         expect(find.text('.Hidden'), findsNothing);
 
-        await tester.tap(find.text('ZTop'));
+        await tester.tap(find.text('Multisample/BoC Beta'));
         await tester.pumpAndSettle();
 
         expect(writtenValues.single, 3);
@@ -138,7 +140,7 @@ void main() {
     testWidgets('Sample value 0 displays Multisample instead of first file', (
       tester,
     ) async {
-      final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 1);
+      final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 2);
 
       await _pumpEditor(tester, cubit: cubit, slot: slot, parameterNumber: 1);
 
@@ -152,7 +154,7 @@ void main() {
       final slot = _polySlot(
         guid: 'pymu',
         folderMin: 0,
-        folderValue: 1,
+        folderValue: 2,
         sampleValue: -1,
       );
 
@@ -165,7 +167,7 @@ void main() {
       tester,
     ) async {
       final writtenValues = <int>[];
-      final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 1);
+      final slot = _polySlot(guid: 'pymu', folderMin: 0, folderValue: 2);
 
       await _pumpEditor(
         tester,

@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show ParameterInfo;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
+import 'package:nt_helper/services/sample_directory_listing_cache.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
@@ -55,6 +58,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   String? _currentDirectory;
   String? _selectedFolderName;
   String? _selectedFileName;
+  int? _loadedSampleDirectoryCacheRevision;
 
   bool get _usesNtSampleFolderEnumeration =>
       widget.rule.ntSampleFolderEnumeration;
@@ -384,31 +388,25 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   Future<void> _loadDirectoryContents() async {
-    // Get cubit first before any async operations
     final cubit = context.read<DistingCubit>();
+    final disting = cubit.disting();
+    if (disting == null) return;
 
-    String? directoryToLoad = _currentDirectory;
-
-    // For Sample and MIDI Player file parameters, we need to load from the selected folder
-    if (_loadsFromSelectedFolder) {
-      directoryToLoad = await _getSelectedFolderPath();
-    }
-
-    if (directoryToLoad == null) return;
-
-    setState(() {
-      _isLoadingFiles = true;
-    });
+    setState(() => _isLoadingFiles = true);
+    final sampleCacheRevision = _usesNtSampleFolderEnumeration
+        ? SampleDirectoryListingCache.shared.revisionFor(disting)
+        : null;
 
     try {
-      final disting = cubit.disting();
+      String? directoryToLoad = _currentDirectory;
 
-      if (disting == null) {
-        if (mounted) {
-          setState(() {
-            _isLoadingFiles = false;
-          });
-        }
+      // Sample parameters load files from the paired folder parameter.
+      if (_loadsFromSelectedFolder) {
+        directoryToLoad = await _getSelectedFolderPath(disting);
+      }
+
+      if (directoryToLoad == null) {
+        if (mounted) setState(() => _isLoadingFiles = false);
         return;
       }
 
@@ -422,7 +420,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         allFiles = await _loadDirectoryRecursive(disting, directoryToLoad, '');
       } else {
         // Single directory listing
-        final listing = await disting.requestDirectoryListing(directoryToLoad);
+        final listing = await _requestDirectoryListing(
+          disting,
+          directoryToLoad,
+        );
 
         if (listing != null) {
           allFiles = listing.entries;
@@ -485,6 +486,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
           }
           _availableFiles = availableFiles;
           _isLoadingFiles = false;
+          _loadedSampleDirectoryCacheRevision = sampleCacheRevision;
         });
 
         // After loading, resolve the current value to actual name
@@ -504,12 +506,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     }
   }
 
-  Future<String?> _getSelectedFolderPath() async {
+  Future<String?> _getSelectedFolderPath(IDistingMidiManager disting) async {
     try {
-      // Get cubit first before any async operations
-      final cubit = context.read<DistingCubit>();
-      final disting = cubit.disting();
-
       // Find the specific folder parameter for the same trigger as this sample parameter
       final folderParamIndex = _findCorrespondingFolderParameter();
 
@@ -519,7 +517,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
       final folderValue = widget.slot.values[folderParamIndex].value;
 
-      if (disting == null || _currentDirectory == null) {
+      if (_currentDirectory == null) {
         return _currentDirectory;
       }
 
@@ -546,10 +544,13 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   Future<void> _showFileSelectionDialog() async {
+    await _reloadInvalidatedSampleDirectoryCache();
+    if (!mounted) return;
+
     if (_availableFiles.isEmpty && !_isLoadingFiles) {
       // Try to load files first
       await _loadDirectoryContents();
-      if (_availableFiles.isEmpty) {
+      if (_availableFiles.isEmpty && !_usesNtSampleFolderEnumeration) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -563,36 +564,83 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       }
     }
 
+    if (!mounted) return;
     if (_isLoadingFiles) {
       return; // Don't show dialog while loading
     }
 
-    if (!mounted) return;
-    final selectedEntry = await showDialog<DirectoryEntry>(
-      context: context,
-      builder: (context) => _FileSelectionDialog(
-        availableFiles: _availableFiles,
-        currentDirectory: _currentDirectory,
-        currentValue: widget.currentValue,
-        parameterInfo: widget.parameterInfo,
-        rule: widget.rule,
-        cleanDisplayName: _cleanDisplayName,
-        getFileIcon: _getFileIcon,
-        formatFileSize: _formatFileSize,
-      ),
-    );
+    while (mounted) {
+      final result = await showDialog<Object?>(
+        context: context,
+        builder: (context) => _FileSelectionDialog(
+          availableFiles: _availableFiles,
+          currentDirectory: _currentDirectory,
+          currentValue: widget.currentValue,
+          parameterInfo: widget.parameterInfo,
+          rule: widget.rule,
+          canRefresh: _usesNtSampleFolderEnumeration,
+          cleanDisplayName: _cleanDisplayName,
+          getFileIcon: _getFileIcon,
+          formatFileSize: _formatFileSize,
+        ),
+      );
+      if (!mounted) return;
 
-    if (selectedEntry != null) {
-      // Find the index of the selected entry and set the parameter value
-      final selectedIndex = _availableFiles.indexOf(selectedEntry);
-      if (selectedIndex != -1) {
-        final newValue = _parameterValueForEntryIndex(selectedIndex);
-        // Update the name immediately for UI feedback
-        _updateSelectedNameForValue(newValue);
-        // Then notify parent to update hardware
-        widget.onValueChanged(newValue);
+      if (result == _FileSelectionDialogAction.refresh) {
+        await _refreshSampleDirectoryCache();
+        continue;
       }
+
+      if (result is DirectoryEntry) {
+        // Find the index of the selected entry and set the parameter value.
+        final selectedIndex = _availableFiles.indexOf(result);
+        if (selectedIndex != -1) {
+          final newValue = _parameterValueForEntryIndex(selectedIndex);
+          _updateSelectedNameForValue(newValue);
+          widget.onValueChanged(newValue);
+        }
+      }
+      return;
     }
+  }
+
+  Future<void> _reloadInvalidatedSampleDirectoryCache() async {
+    if (!_usesNtSampleFolderEnumeration || _isLoadingFiles) return;
+
+    final disting = context.read<DistingCubit>().disting();
+    if (disting == null) return;
+    final currentRevision = SampleDirectoryListingCache.shared.revisionFor(
+      disting,
+    );
+    if (_loadedSampleDirectoryCacheRevision == currentRevision) return;
+
+    await _loadDirectoryContents();
+  }
+
+  Future<void> _refreshSampleDirectoryCache() async {
+    final disting = context.read<DistingCubit>().disting();
+    final rootPath = widget.rule.baseDirectory ?? _currentDirectory;
+    if (disting == null || rootPath == null) return;
+
+    SampleDirectoryListingCache.shared.invalidateTree(disting, rootPath);
+    await _loadDirectoryContents();
+    if (!mounted) return;
+
+    SemanticsService.sendAnnouncement(
+      WidgetsBinding.instance.platformDispatcher.views.first,
+      'Sample folder listing refreshed',
+      TextDirection.ltr,
+    );
+  }
+
+  Future<DirectoryListing?> _requestDirectoryListing(
+    IDistingMidiManager disting,
+    String path,
+  ) {
+    if (_usesNtSampleFolderEnumeration) {
+      return SampleDirectoryListingCache.shared.request(disting, path);
+    }
+    return disting.requestDirectoryListing(path);
   }
 
   Future<List<DirectoryEntry>> _loadDirectoryRecursive(
@@ -603,7 +651,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     final currentPath = relativePath.isEmpty
         ? basePath
         : '$basePath/$relativePath';
-    final listing = await disting.requestDirectoryListing(currentPath);
+    final listing = await _requestDirectoryListing(disting, currentPath);
 
     if (listing == null) return [];
 
@@ -658,7 +706,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     IDistingMidiManager disting,
     String path,
   ) async {
-    final listing = await disting.requestDirectoryListing(path);
+    final listing = await _requestDirectoryListing(disting, path);
     if (listing == null) return [];
     return listing.entries
         .where(
@@ -678,17 +726,13 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
     Future<DirectoryListing?> listingFor(String path) async {
       try {
-        return await disting.requestDirectoryListing(path);
+        return await _requestDirectoryListing(disting, path);
       } catch (_) {
         return null;
       }
     }
 
-    Future<void> walk(
-      String currentPath,
-      String relativePath,
-      DirectoryListing listing,
-    ) async {
+    List<DirectoryEntry> directoriesFor(DirectoryListing listing) {
       final directories =
           listing.entries.where((entry) {
             final name = _directoryEntryName(entry);
@@ -698,32 +742,46 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
           }).toList()..sort(
             (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
           );
-
-      for (final directory in directories) {
-        final name = _directoryEntryName(directory);
-        final childRelativePath = relativePath.isEmpty
-            ? name
-            : '$relativePath/$name';
-        final childPath = '$currentPath/$name';
-        results.add(
-          DirectoryEntry(
-            name: childRelativePath,
-            attributes: directory.attributes | 0x10,
-            date: directory.date,
-            time: directory.time,
-            size: directory.size,
-          ),
-        );
-        final childListing = await listingFor(childPath);
-        if (childListing != null) {
-          await walk(childPath, childRelativePath, childListing);
-        }
-      }
+      return directories;
     }
 
     final rootListing = await listingFor(basePath);
     if (rootListing == null) return results;
-    await walk(basePath, '', rootListing);
+
+    // The NT numbers every alphabetical folder at one depth before descending.
+    var currentLevel = <(String, String, DirectoryListing)>[
+      (basePath, '', rootListing),
+    ];
+
+    while (currentLevel.isNotEmpty) {
+      final nextLevel = <(String, String, DirectoryListing)>[];
+
+      for (final (currentPath, relativePath, listing) in currentLevel) {
+        for (final directory in directoriesFor(listing)) {
+          final name = _directoryEntryName(directory);
+          final childRelativePath = relativePath.isEmpty
+              ? name
+              : '$relativePath/$name';
+          final childPath = '$currentPath/$name';
+          results.add(
+            DirectoryEntry(
+              name: childRelativePath,
+              attributes: directory.attributes | 0x10,
+              date: directory.date,
+              time: directory.time,
+              size: directory.size,
+            ),
+          );
+          final childListing = await listingFor(childPath);
+          if (childListing != null) {
+            nextLevel.add((childPath, childRelativePath, childListing));
+          }
+        }
+      }
+
+      currentLevel = nextLevel;
+    }
+
     return results;
   }
 
@@ -1392,6 +1450,7 @@ class _FileSelectionDialog extends StatefulWidget {
   final int currentValue;
   final ParameterInfo parameterInfo;
   final ParameterEditorRule rule;
+  final bool canRefresh;
   final String Function(String, {required bool isFolder}) cleanDisplayName;
   final IconData Function(String) getFileIcon;
   final String Function(int) formatFileSize;
@@ -1402,6 +1461,7 @@ class _FileSelectionDialog extends StatefulWidget {
     required this.currentValue,
     required this.parameterInfo,
     required this.rule,
+    required this.canRefresh,
     required this.cleanDisplayName,
     required this.getFileIcon,
     required this.formatFileSize,
@@ -1504,63 +1564,82 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                itemCount: filtered.length,
-                itemExtent: 36,
-                itemBuilder: (context, index) {
-                  final (originalIndex, entry) = filtered[index];
-                  final isSelected = originalIndex == selectedIndex;
-                  final displayName = widget.cleanDisplayName(
-                    entry.name,
-                    isFolder: entry.isDirectory,
-                  );
-
-                  return InkWell(
-                    onTap: () => Navigator.of(context).pop(entry),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primaryContainer
-                                .withValues(alpha: 0.5)
-                          : null,
-                      child: Row(
-                        children: [
-                          Icon(
-                            entry.isDirectory
-                                ? Icons.folder
-                                : widget.getFileIcon(entry.name),
-                            size: 18,
-                            color: entry.isDirectory
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.secondary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              displayName,
-                              overflow: TextOverflow.ellipsis,
-                              style: isSelected
-                                  ? const TextStyle(fontWeight: FontWeight.bold)
-                                  : null,
-                            ),
-                          ),
-                          if (!entry.isDirectory)
-                            Text(
-                              widget.formatFileSize(entry.size),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                        ],
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Text(
+                        _searchQuery.isEmpty
+                            ? 'No ${isFolder ? 'folders' : 'files'} found'
+                            : 'No matching ${isFolder ? 'folders' : 'files'}',
                       ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      itemCount: filtered.length,
+                      itemExtent: 36,
+                      itemBuilder: (context, index) {
+                        final (originalIndex, entry) = filtered[index];
+                        final isSelected = originalIndex == selectedIndex;
+                        final displayName = widget.cleanDisplayName(
+                          entry.name,
+                          isFolder: entry.isDirectory,
+                        );
+
+                        return InkWell(
+                          onTap: () => Navigator.of(context).pop(entry),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                      .withValues(alpha: 0.5)
+                                : null,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  entry.isDirectory
+                                      ? Icons.folder
+                                      : widget.getFileIcon(entry.name),
+                                  size: 18,
+                                  color: entry.isDirectory
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.secondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    displayName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: isSelected
+                                        ? const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                                if (!entry.isDirectory)
+                                  Text(
+                                    widget.formatFileSize(entry.size),
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),
       ),
       actions: [
+        if (widget.canRefresh)
+          TextButton.icon(
+            onPressed: () =>
+                Navigator.of(context).pop(_FileSelectionDialogAction.refresh),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Refresh'),
+          ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
@@ -1569,3 +1648,5 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
     );
   }
 }
+
+enum _FileSelectionDialogAction { refresh }

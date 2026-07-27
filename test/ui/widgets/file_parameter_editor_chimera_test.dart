@@ -24,6 +24,7 @@ DirectoryEntry _file(String name, {int size = 128}) =>
 void main() {
   late _MockDistingCubit cubit;
   late _MockDistingMidiManager manager;
+  late Map<String, DirectoryListing> sampleTree;
 
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +37,8 @@ void main() {
     when(() => cubit.state).thenReturn(DistingStateInitial());
     when(() => cubit.stream).thenAnswer((_) => const Stream.empty());
     when(() => cubit.disting()).thenReturn(manager);
-    _stubChimeraSampleTree(manager);
+    sampleTree = _chimeraSampleTree();
+    _stubChimeraSampleTree(manager, sampleTree);
   });
 
   testWidgets('Chimera folder picker uses recursive NT sample folder values', (
@@ -60,6 +62,50 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(writtenValues.single, 4);
+  });
+
+  testWidgets('Chimera editors share one recursive sample directory scan', (
+    tester,
+  ) async {
+    final slot = _chimeraSlot();
+
+    await _pumpEditors(
+      tester,
+      cubit: cubit,
+      slot: slot,
+      parameterNumbers: const [0, 1],
+    );
+
+    verify(() => manager.requestDirectoryListing('/samples')).called(1);
+  });
+
+  testWidgets('Chimera sample browser can refresh its cached directory tree', (
+    tester,
+  ) async {
+    await _pumpEditor(
+      tester,
+      cubit: cubit,
+      slot: _chimeraSlot(),
+      parameterNumber: 0,
+    );
+
+    await tester.tap(find.text('Browse'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fresh'), findsNothing);
+
+    sampleTree['/samples'] = DirectoryListing(
+      entries: [_dir('Drums'), _dir('Breaks'), _dir('Fresh')],
+    );
+    sampleTree['/samples/Fresh'] = DirectoryListing(
+      entries: [_file('new.wav')],
+    );
+
+    await tester.tap(find.text('Refresh'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fresh'), findsOneWidget);
+    verify(() => manager.requestDirectoryListing('/samples')).called(2);
+    verify(() => manager.requestDirectoryListing('/samples/Breaks')).called(2);
   });
 
   testWidgets(
@@ -122,8 +168,8 @@ void main() {
   );
 }
 
-void _stubChimeraSampleTree(_MockDistingMidiManager manager) {
-  final listings = <String, DirectoryListing>{
+Map<String, DirectoryListing> _chimeraSampleTree() {
+  return <String, DirectoryListing>{
     '/samples': DirectoryListing(entries: [_dir('Drums'), _dir('Breaks')]),
     '/samples/Breaks': DirectoryListing(entries: [_dir('Lion'), _dir('Goat')]),
     '/samples/Breaks/Goat': DirectoryListing(
@@ -137,7 +183,12 @@ void _stubChimeraSampleTree(_MockDistingMidiManager manager) {
       entries: [_file('kick-b.wav'), _file('kick-a.wav')],
     ),
   };
+}
 
+void _stubChimeraSampleTree(
+  _MockDistingMidiManager manager,
+  Map<String, DirectoryListing> listings,
+) {
   when(() => manager.requestDirectoryListing(any())).thenAnswer((invocation) {
     final path = invocation.positionalArguments.single as String;
     return Future.value(listings[path] ?? DirectoryListing(entries: const []));
@@ -173,10 +224,41 @@ Future<void> _pumpEditor(
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpEditors(
+  WidgetTester tester, {
+  required DistingCubit cubit,
+  required Slot slot,
+  required List<int> parameterNumbers,
+}) async {
+  final editors = parameterNumbers.map((parameterNumber) {
+    final editor = ParameterEditorRegistry.findEditorFor(
+      slot: slot,
+      parameterInfo: slot.parameters[parameterNumber],
+      parameterNumber: parameterNumber,
+      currentValue: slot.values[parameterNumber].value,
+      onValueChanged: (_) {},
+    );
+    expect(editor, isA<FileParameterEditor>());
+    return editor!;
+  }).toList();
+
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: BlocProvider<DistingCubit>.value(
+          value: cubit,
+          child: SizedBox(width: 520, child: Column(children: editors)),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 Slot _chimeraSlot({
-  int lionFolderValue = 2,
+  int lionFolderValue = 3,
   int lionSampleValue = 0,
-  int goatFolderValue = 1,
+  int goatFolderValue = 2,
   int goatSampleValue = 0,
   int beefFolderValue = 4,
   int kickSampleValue = 0,
