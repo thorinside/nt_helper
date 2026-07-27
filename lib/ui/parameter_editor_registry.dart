@@ -48,9 +48,12 @@ class ParameterUnits {
   static const int modernVolts = 13;
   static const int modernBPM = 14;
   static const int modernDegrees = 15;
-  static const int modernHasStrings = 16; // File/folder with strings
-  static const int modernConfirm = 17; // Program files (needs confirmation)
-  static const int modernTextInput = 18; // Assumed for text input
+  static const int modernHasStrings =
+      16; // Calls the algorithm's parameterString() callback
+  static const int modernConfirm =
+      17; // Confirms changes and calls parameterString()
+  static const int modernTextInput =
+      18; // Factory text input, including mixer channel names
 
   /// Get the unit scheme for a given firmware version
   static ParameterUnitScheme schemeFor(FirmwareVersion? version) {
@@ -257,6 +260,36 @@ class ParameterEditorRegistry {
       description: 'Poly Multisample legacy sample selection',
       ntSampleFolderEnumeration: true,
       zeroValueSentinelLabel: 'Multisample',
+    ),
+
+    // Qualified sample parameters following the current NT sample-player
+    // contract. The unit gates keep arbitrary string-valued parameters out.
+    ParameterEditorRule(
+      parameterNamePattern: r'^(Kick|Snare|Perc|Hat|Crash) sample$',
+      units: [ParameterUnits.modernConfirm],
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.fileOnly,
+      allowedExtensions: ['.wav', '.aif', '.aiff'],
+      description: 'Role sample selection with None sentinel',
+      ntSampleFolderEnumeration: true,
+      zeroValueSentinelLabel: 'None',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'^.+ [Ff]older$',
+      units: [ParameterUnits.modernHasStrings],
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.folderOnly,
+      description: 'Qualified sample folder selection',
+      ntSampleFolderEnumeration: true,
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'^.+ [Ss]ample$',
+      units: [ParameterUnits.modernConfirm],
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.fileOnly,
+      allowedExtensions: ['.wav', '.aif', '.aiff'],
+      description: 'Qualified sample file selection',
+      ntSampleFolderEnumeration: true,
     ),
 
     // Sample player - Folder selection

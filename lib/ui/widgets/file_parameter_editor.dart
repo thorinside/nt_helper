@@ -63,6 +63,11 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
   bool get _hasZeroValueSentinel => _zeroValueSentinelLabel != null;
 
+  bool get _loadsFromSelectedFolder =>
+      widget.rule.mode == FileSelectionMode.fileOnly &&
+      (widget.parameterInfo.name.toLowerCase().contains('sample') ||
+          widget.parameterInfo.name.contains('File'));
+
   // Development mode state for Lua Script
   Timer? _fileWatchTimer;
   Timer? _debounceTimer;
@@ -121,9 +126,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     }
 
     // Check if this is a Sample or MIDI Player file parameter and if the folder value changed
-    if (widget.rule.mode == FileSelectionMode.fileOnly &&
-        (widget.parameterInfo.name.contains('Sample') ||
-            widget.parameterInfo.name.contains('File'))) {
+    if (_loadsFromSelectedFolder) {
       _checkForFolderChanges(oldWidget);
     }
 
@@ -171,8 +174,37 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       }
     }
 
+    // Match qualified pairs such as "Lion sample" and "Lion folder".
+    final sampleMatch = RegExp(r'^(.*)[Ss]ample$').firstMatch(currentParamName);
+    if (sampleMatch != null) {
+      final expectedFolderParamName = '${sampleMatch.group(1)!}folder'
+          .toLowerCase();
+      final qualifiedFolderIndex = widget.slot.parameters.indexWhere(
+        (parameter) => parameter.name.toLowerCase() == expectedFolderParamName,
+      );
+      if (qualifiedFolderIndex != -1) {
+        return qualifiedFolderIndex;
+      }
+    }
+
+    // Shared folders apply to following sample parameters until another folder
+    // parameter appears, as in a folder followed by several role samples.
+    final currentParameterIndex = widget.slot.parameters.indexWhere(
+      (parameter) =>
+          parameter.parameterNumber == widget.parameterInfo.parameterNumber,
+    );
+    for (var index = currentParameterIndex - 1; index >= 0; index--) {
+      final parameter = widget.slot.parameters[index];
+      if (parameter.unit == ParameterUnits.modernHasStrings &&
+          RegExp(r'[Ff]older$').hasMatch(parameter.name)) {
+        return index;
+      }
+    }
+
     // Fallback for non-per-trigger parameters or when trigger-specific not found
-    return widget.slot.parameters.indexWhere((p) => p.name.contains('Folder'));
+    return widget.slot.parameters.indexWhere(
+      (parameter) => parameter.name.toLowerCase().contains('folder'),
+    );
   }
 
   void _checkForFolderChanges(FileParameterEditor oldWidget) {
@@ -358,9 +390,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     String? directoryToLoad = _currentDirectory;
 
     // For Sample and MIDI Player file parameters, we need to load from the selected folder
-    if (widget.rule.mode == FileSelectionMode.fileOnly &&
-        (widget.parameterInfo.name.contains('Sample') ||
-            widget.parameterInfo.name.contains('File'))) {
+    if (_loadsFromSelectedFolder) {
       directoryToLoad = await _getSelectedFolderPath();
     }
 

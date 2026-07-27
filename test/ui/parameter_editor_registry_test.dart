@@ -204,6 +204,31 @@ void main() {
       }
     });
 
+    test('factory mixer channel names remain editable text parameters', () {
+      for (final guid in ['mix1', 'mix2', 'quad']) {
+        final slot = createTestSlot(
+          guid: guid,
+          parameterName: '1:Name',
+          unit: ParameterUnits.modernTextInput,
+        );
+
+        final editor = findEditor(slot);
+        expect(editor, isA<FileParameterEditor>(), reason: guid);
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, FileSelectionMode.textInput, reason: guid);
+      }
+    });
+
+    test('factory unit-16 controls do not become file editors', () {
+      final slot = createTestSlot(
+        guid: 'quad',
+        parameterName: '1:Spin rate',
+        unit: ParameterUnits.modernHasStrings,
+      );
+
+      expect(findEditor(slot), isNull);
+    });
+
     test('Wavetable matches with legacy, modern, and enum units', () {
       for (final unit in [
         ParameterUnits.legacyFilePath,
@@ -255,6 +280,114 @@ void main() {
         unit: 0,
       );
       expect(findEditor(slot), isNull);
+    });
+  });
+
+  group('ParameterEditorRegistry - Chimera', () {
+    test('Chimera folder parameters use recursive NT sample enumeration', () {
+      for (final parameterName in [
+        'Lion folder',
+        'Goat folder',
+        'Beef folder',
+      ]) {
+        final slot = createTestSlot(
+          guid: 'Chim',
+          parameterName: parameterName,
+          unit: ParameterUnits.modernHasStrings,
+          algorithmName: 'Chimera',
+        );
+        final editor = findEditor(slot);
+        expect(editor, isA<FileParameterEditor>(), reason: parameterName);
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, FileSelectionMode.folderOnly);
+        expect(fileEditor.rule.baseDirectory, '/samples');
+        expect(fileEditor.rule.ntSampleFolderEnumeration, isTrue);
+        expect(fileEditor.rule.zeroValueSentinelLabel, isNull);
+      }
+    });
+
+    test(
+      'Chimera loop sample parameters use confirm units and their own folders',
+      () {
+        for (final parameterName in ['Lion sample', 'Goat sample']) {
+          final slot = createTestSlot(
+            guid: 'Chim',
+            parameterName: parameterName,
+            unit: ParameterUnits.modernConfirm,
+            algorithmName: 'Chimera',
+          );
+          final editor = findEditor(slot);
+          expect(editor, isA<FileParameterEditor>(), reason: parameterName);
+          final fileEditor = editor as FileParameterEditor;
+          expect(fileEditor.rule.mode, FileSelectionMode.fileOnly);
+          expect(fileEditor.rule.baseDirectory, '/samples');
+          expect(fileEditor.rule.allowedExtensions, ['.wav', '.aif', '.aiff']);
+          expect(fileEditor.rule.ntSampleFolderEnumeration, isTrue);
+          expect(fileEditor.rule.zeroValueSentinelLabel, isNull);
+        }
+      },
+    );
+
+    test('Chimera Beef samples share Beef folder and use a None sentinel', () {
+      for (final parameterName in [
+        'Kick sample',
+        'Snare sample',
+        'Perc sample',
+        'Hat sample',
+        'Crash sample',
+      ]) {
+        final slot = createTestSlot(
+          guid: 'Chim',
+          parameterName: parameterName,
+          unit: ParameterUnits.modernConfirm,
+          algorithmName: 'Chimera',
+        );
+        final editor = findEditor(slot);
+        expect(editor, isA<FileParameterEditor>(), reason: parameterName);
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, FileSelectionMode.fileOnly);
+        expect(fileEditor.rule.baseDirectory, '/samples');
+        expect(fileEditor.rule.allowedExtensions, ['.wav', '.aif', '.aiff']);
+        expect(fileEditor.rule.ntSampleFolderEnumeration, isTrue);
+        expect(fileEditor.rule.zeroValueSentinelLabel, 'None');
+      }
+    });
+
+    test('qualified sample contract is not scoped to an algorithm GUID', () {
+      final slot = createTestSlot(
+        guid: 'test',
+        parameterName: 'Lion sample',
+        unit: ParameterUnits.modernConfirm,
+      );
+
+      expect(findEditor(slot), isA<FileParameterEditor>());
+    });
+
+    test('qualified sample names require the confirm unit', () {
+      final slot = createTestSlot(
+        guid: 'Chim',
+        parameterName: 'Lion sample',
+        unit: ParameterUnits.modernHasStrings,
+      );
+
+      expect(findEditor(slot), isNull);
+    });
+
+    test('string and confirm units alone do not imply sample file pickers', () {
+      final stringSlot = createTestSlot(
+        guid: 'test',
+        parameterName: 'Custom',
+        unit: ParameterUnits.modernHasStrings,
+      );
+      final confirmSlot = createTestSlot(
+        guid: 'test',
+        parameterName: 'Reseed',
+        unit: ParameterUnits.modernConfirm,
+      );
+
+      expect(findEditor(stringSlot), isNull);
+      final confirmEditor = findEditor(confirmSlot) as FileParameterEditor;
+      expect(confirmEditor.rule.mode, FileSelectionMode.textInput);
     });
   });
 
