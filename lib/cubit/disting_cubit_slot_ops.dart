@@ -49,7 +49,7 @@ mixin _DistingCubitSlotOps on _DistingCubitBase {
       _renameSlotVerificationOperations[algorithmIndex] =
           CancelableOperation.fromFuture(
             Future.delayed(const Duration(milliseconds: 750), () async {
-              if (state is! DistingStateSynchronized) return;
+              if (isClosed || state is! DistingStateSynchronized) return;
               final verificationState = state as DistingStateSynchronized;
 
               // Only proceed if the slot still exists and still matches our optimistic edit.
@@ -64,7 +64,7 @@ mixin _DistingCubitSlotOps on _DistingCubitBase {
 
               final actual = await disting.requestAlgorithmGuid(algorithmIndex);
               if (actual == null) return;
-              if (!identical(state, verificationState)) return;
+              if (isClosed || !identical(state, verificationState)) return;
 
               // If the device accepted it, the name should match. Otherwise, correct locally.
               if (actual.name != trimmed) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +7,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
+import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
 
@@ -29,6 +33,7 @@ void main() {
 
     Widget createTestWidget({
       required Future<void> Function(PackedMappingData) onSave,
+      Future<void> Function(PackedMappingData)? onSaveImmediately,
       PackedMappingData? initialData,
     }) {
       return MaterialApp(
@@ -38,6 +43,7 @@ void main() {
             body: PackedMappingDataEditor(
               initialData: initialData ?? testData,
               onSave: onSave,
+              onSaveImmediately: onSaveImmediately,
               slots: mockSlots,
               algorithmIndex: 0,
               parameterNumber: 0,
@@ -50,41 +56,37 @@ void main() {
       );
     }
 
-    testWidgets('CV Voltage slider triggers save after 1-second debounce', (
-      tester,
-    ) async {
-      int saveCount = 0;
-      PackedMappingData? lastSavedData;
+    testWidgets(
+      'CV Voltage slider hands off the requested mapping immediately',
+      (tester) async {
+        int saveCount = 0;
+        PackedMappingData? lastSavedData;
 
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {
-            saveCount++;
-            lastSavedData = data;
-          },
-        ),
-      );
+        await tester.pumpWidget(
+          createTestWidget(
+            onSave: (data) async {
+              saveCount++;
+              lastSavedData = data;
+            },
+          ),
+        );
 
-      await tester.tap(find.text('CV'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('CV'));
+        await tester.pumpAndSettle();
 
-      // Find the CV Voltage Slider (not a RangeSlider)
-      final sliderFinder = find.byType(Slider);
-      expect(sliderFinder, findsOneWidget);
+        // Find the CV Voltage Slider (not a RangeSlider)
+        final sliderFinder = find.byType(Slider);
+        expect(sliderFinder, findsOneWidget);
 
-      final slider = tester.widget<Slider>(sliderFinder);
-      // Invoke onChanged to simulate dragging to 7V
-      slider.onChanged!(7.0);
-      await tester.pump();
+        final slider = tester.widget<Slider>(sliderFinder);
+        // Invoke onChanged to simulate dragging to 7V
+        slider.onChanged!(7.0);
+        await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1);
-      expect(lastSavedData?.volts, equals(7));
-    });
+        expect(saveCount, 1);
+        expect(lastSavedData?.volts, equals(7));
+      },
+    );
 
     testWidgets('CV tab shows RangeSlider and Slider', (tester) async {
       await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
@@ -115,7 +117,9 @@ void main() {
       );
     });
 
-    testWidgets('MIDI CC field triggers save after debounce', (tester) async {
+    testWidgets('MIDI CC field hands off the requested mapping immediately', (
+      tester,
+    ) async {
       int saveCount = 0;
       PackedMappingData? lastSavedData;
 
@@ -140,18 +144,50 @@ void main() {
       await tester.enterText(textFieldFinder, '64');
       await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
       expect(saveCount, 1);
       expect(lastSavedData?.midiCC, equals(64));
     });
 
-    testWidgets('MIDI RangeSlider triggers save after debounce', (
+    testWidgets('MIDI detection bypasses the normal save debounce', (
       tester,
     ) async {
+      var normalSaveCount = 0;
+      var immediateSaveCount = 0;
+      PackedMappingData? detectedData;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (_) async {
+            normalSaveCount++;
+          },
+          onSaveImmediately: (data) async {
+            immediateSaveCount++;
+            detectedData = data;
+          },
+        ),
+      );
+
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      final detector = tester.widget<MidiDetectorWidget>(
+        find.byType(MidiDetectorWidget),
+      );
+      detector.onMidiEventFound!(
+        type: MidiEventType.cc,
+        channel: 2,
+        number: 74,
+      );
+      await tester.pump();
+
+      expect(normalSaveCount, 0);
+      expect(immediateSaveCount, 1);
+      expect(detectedData?.midiChannel, 2);
+      expect(detectedData?.midiCC, 74);
+      expect(detectedData?.isMidiEnabled, isTrue);
+    });
+
+    testWidgets('MIDI RangeSlider is present without editing', (tester) async {
       int saveCount = 0;
 
       await tester.pumpWidget(
@@ -171,7 +207,9 @@ void main() {
       expect(saveCount, 0);
     });
 
-    testWidgets('I2C CC field triggers save after debounce', (tester) async {
+    testWidgets('I2C CC field hands off the requested mapping immediately', (
+      tester,
+    ) async {
       int saveCount = 0;
       PackedMappingData? lastSavedData;
 
@@ -193,11 +231,6 @@ void main() {
       );
 
       await tester.enterText(textFieldFinder, '32');
-      await tester.pump();
-
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
       expect(saveCount, 1);
@@ -225,7 +258,7 @@ void main() {
     });
 
     testWidgets(
-      'Rapid slider edits collapse to single save after final debounce',
+      'Rapid slider edits hand off each intent with the latest data',
       (tester) async {
         int saveCount = 0;
         PackedMappingData? lastSavedData;
@@ -253,12 +286,7 @@ void main() {
         tester.widget<Slider>(sliderFinder).onChanged!(9.0);
         await tester.pump();
 
-        expect(saveCount, 0);
-
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
-
-        expect(saveCount, 1);
+        expect(saveCount, 3);
         expect(lastSavedData?.volts, equals(9));
       },
     );
@@ -322,11 +350,6 @@ void main() {
       dropdown.onSelected?.call(2);
       await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
       expect(saveCount, 1);
       expect(lastSavedData?.source, equals(2));
     });
@@ -387,11 +410,6 @@ void main() {
       dropdown.onSelected?.call(3);
       await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
       expect(saveCount, 1);
       expect(lastSavedData?.cvInput, equals(3));
     });
@@ -424,11 +442,6 @@ void main() {
       dropdown.onSelected?.call(5);
       await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
       expect(saveCount, 1);
       expect(lastSavedData?.midiChannel, equals(5));
     });
@@ -459,11 +472,6 @@ void main() {
       );
 
       dropdown.onSelected?.call(MidiMappingType.noteMomentary);
-      await tester.pump();
-
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
       expect(saveCount, 1);
@@ -500,11 +508,6 @@ void main() {
       );
       await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
       expect(saveCount, 1);
       expect(lastSavedData?.isUnipolar, equals(true));
     });
@@ -534,11 +537,6 @@ void main() {
       await tester.tap(
         find.descendant(of: switchFinder, matching: find.byType(Switch)),
       );
-      await tester.pump();
-
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
       expect(saveCount, 1);
@@ -572,11 +570,6 @@ void main() {
       );
       await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
       expect(saveCount, 1);
       expect(lastSavedData?.isMidiEnabled, equals(true));
     });
@@ -608,11 +601,6 @@ void main() {
       await tester.tap(
         find.descendant(of: switchFinder, matching: find.byType(Switch)),
       );
-      await tester.pump();
-
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
       expect(saveCount, 1);
@@ -651,11 +639,6 @@ void main() {
       );
       await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
       expect(saveCount, 1);
       expect(lastSavedData?.isMidiRelative, equals(true));
     });
@@ -687,11 +670,6 @@ void main() {
       );
       await tester.pump();
 
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
       expect(saveCount, 1);
       expect(lastSavedData?.isI2cEnabled, equals(true));
     });
@@ -721,11 +699,6 @@ void main() {
       await tester.tap(
         find.descendant(of: switchFinder, matching: find.byType(Switch)),
       );
-      await tester.pump();
-
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
       expect(saveCount, 1);
@@ -765,7 +738,7 @@ void main() {
       );
     }
 
-    testWidgets('Pending save is flushed when widget is disposed', (
+    testWidgets('Pending save remains handed off when widget is disposed', (
       tester,
     ) async {
       int saveCount = 0;
@@ -788,9 +761,9 @@ void main() {
       tester.widget<Slider>(sliderFinder).onChanged!(9.0);
       await tester.pump();
 
-      expect(saveCount, 0);
+      expect(saveCount, 1);
 
-      // Dispose widget before debounce completes
+      // Dispose the transient editor immediately.
       await tester.pumpWidget(Container());
 
       expect(saveCount, 1);
@@ -819,7 +792,9 @@ void main() {
       expect(saveCount, 0);
     });
 
-    testWidgets('Dialog dismissal triggers pending save', (tester) async {
+    testWidgets('Dialog dismissal does not duplicate the handed-off save', (
+      tester,
+    ) async {
       int saveCount = 0;
       PackedMappingData? lastSavedData;
 
@@ -874,7 +849,7 @@ void main() {
       await tester.enterText(textFieldFinder, '100');
       await tester.pump();
 
-      expect(saveCount, 0);
+      expect(saveCount, 1);
 
       // Dismiss dialog
       await tester.tapAt(const Offset(10, 10));
@@ -922,8 +897,17 @@ void main() {
       );
     }
 
+    Completer<void> pendingSave() {
+      final completer = Completer<void>();
+      addTearDown(() {
+        if (!completer.isCompleted) completer.complete();
+      });
+      return completer;
+    }
+
     testWidgets('Indicator shows when slider is modified', (tester) async {
-      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
+      final save = pendingSave();
+      await tester.pumpWidget(createTestWidget(onSave: (_) => save.future));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -959,7 +943,8 @@ void main() {
     });
 
     testWidgets('Indicator shows when dropdown is changed', (tester) async {
-      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
+      final save = pendingSave();
+      await tester.pumpWidget(createTestWidget(onSave: (_) => save.future));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -987,7 +972,8 @@ void main() {
     });
 
     testWidgets('Indicator shows when switch is toggled', (tester) async {
-      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
+      final save = pendingSave();
+      await tester.pumpWidget(createTestWidget(onSave: (_) => save.future));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -1015,16 +1001,16 @@ void main() {
       );
     });
 
-    testWidgets('Indicator shows "saving" state during debounce', (
+    testWidgets('Indicator advances to "saving" while the handoff is pending', (
       tester,
     ) async {
-      bool saveCalled = false;
+      var saveCompleted = false;
+      final save = pendingSave();
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) async {
-            // Simulate async save with a delay
-            await Future.delayed(const Duration(milliseconds: 100));
-            saveCalled = true;
+          onSave: (_) async {
+            await save.future;
+            saveCompleted = true;
           },
         ),
       );
@@ -1049,14 +1035,14 @@ void main() {
         findsOneWidget,
       );
 
-      // Wait for debounce to trigger save
+      // The Cubit starts its hardware save after the same coalescing delay.
       await tester.pump(const Duration(seconds: 1));
 
       // Pump once more to render the _isSaving=true state before save completes
       await tester.pump();
 
       // Saving state (blue) - the save is in progress (not yet completed)
-      expect(saveCalled, false); // Save hasn't completed yet
+      expect(saveCompleted, false);
       expect(
         find.byWidgetPredicate(
           (widget) =>
@@ -1068,10 +1054,9 @@ void main() {
         findsOneWidget,
       );
 
-      // Wait for save to complete
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(); // Process the setState after save
-      expect(saveCalled, true); // Now save has completed
+      save.complete();
+      await tester.pump();
+      expect(saveCompleted, true);
     });
 
     testWidgets('Indicator clears when save completes', (tester) async {
@@ -1107,7 +1092,8 @@ void main() {
     testWidgets('Indicator persists across tab switches until save completes', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
+      final save = pendingSave();
+      await tester.pumpWidget(createTestWidget(onSave: (_) => save.future));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -1133,8 +1119,8 @@ void main() {
         findsOneWidget,
       );
 
-      // Wait for save
-      await tester.pump(const Duration(seconds: 1));
+      save.complete();
+      await tester.pump();
       await tester.pump();
 
       // Indicator should be cleared
@@ -1155,7 +1141,8 @@ void main() {
     testWidgets('Indicator tooltip displays correct message for dirty state', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
+      final save = pendingSave();
+      await tester.pumpWidget(createTestWidget(onSave: (_) => save.future));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();

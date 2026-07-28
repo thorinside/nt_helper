@@ -17,6 +17,7 @@ import 'package:nt_helper/ui/widgets/mapping_range_slider.dart';
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
   final Future<void> Function(PackedMappingData) onSave;
+  final Future<void> Function(PackedMappingData)? onSaveImmediately;
   final List<Slot> slots;
   final int algorithmIndex;
   final int parameterNumber;
@@ -29,6 +30,7 @@ class PackedMappingDataEditor extends StatefulWidget {
     super.key,
     required this.initialData,
     required this.onSave,
+    this.onSaveImmediately,
     required this.slots,
     required this.algorithmIndex,
     required this.parameterNumber,
@@ -65,10 +67,11 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   late TextEditingController _i2cMinController;
   late TextEditingController _i2cMaxController;
 
-  // Debounce timer for optimistic saves
-  Timer? _debounceTimer;
-  static const _maxRetries = 3;
-  static const _debounceDuration = Duration(seconds: 1);
+  // The Cubit owns save debouncing. This timer only advances the visible
+  // indicator from "changes pending" to "saving".
+  Timer? _saveStatusTimer;
+  static const _saveStatusDelay = Duration(seconds: 1);
+  int _saveGeneration = 0;
 
   // Dirty state tracking
   bool _isDirty = false;
@@ -174,11 +177,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
   @override
   void dispose() {
-    // Flush pending save synchronously (widget is disposing)
-    if (_debounceTimer != null && _debounceTimer!.isActive) {
-      _debounceTimer?.cancel();
-      _performSaveSync();
-    }
+    _saveStatusTimer?.cancel();
     _tabController.dispose();
 
     // Dispose controllers
@@ -223,29 +222,39 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   }
 
   void _triggerOptimisticSave({bool force = false}) {
+    _syncDataFromControllers();
+    final generation = ++_saveGeneration;
+
     setState(() {
       _isDirty = true;
       _isSaving = force;
     });
-    _debounceTimer?.cancel();
+    _saveStatusTimer?.cancel();
     if (force) {
-      _attemptSave();
+      final save = widget.onSaveImmediately ?? widget.onSave;
+      unawaited(_trackSave(Future.sync(() => save(_data)), generation));
     } else {
-      _debounceTimer = Timer(_debounceDuration, () {
+      _saveStatusTimer = Timer(_saveStatusDelay, () {
+        if (!mounted || generation != _saveGeneration) return;
         setState(() {
           _isSaving = true;
         });
-        _attemptSave();
       });
+      unawaited(
+        _trackSave(Future.sync(() => widget.onSave(_data)), generation),
+      );
     }
   }
 
-  // Synchronous save for disposal - no setState calls
-  void _performSaveSync() {
-    // Update data from controllers without calling setState
-    final midiCC = int.tryParse(_midiCcController.text) ?? _data.midiCC;
-    final midiMin = int.tryParse(_midiMinController.text) ?? _data.midiMin;
-    final midiMax = int.tryParse(_midiMaxController.text) ?? _data.midiMax;
+  void _syncDataFromControllers() {
+    final midiCC = (int.tryParse(_midiCcController.text) ?? _data.midiCC).clamp(
+      0,
+      _data.version >= 7 ? 127 : 128,
+    );
+    final midiMin = (int.tryParse(_midiMinController.text) ?? _data.midiMin)
+        .clamp(-32768, 32767);
+    final midiMax = (int.tryParse(_midiMaxController.text) ?? _data.midiMax)
+        .clamp(-32768, 32767);
     final i2cCC = int.tryParse(_i2cCcController.text) ?? _data.i2cCC;
     final i2cMin = int.tryParse(_i2cMinController.text) ?? _data.i2cMin;
     final i2cMax = int.tryParse(_i2cMaxController.text) ?? _data.i2cMax;
@@ -258,43 +267,30 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       i2cMin: i2cMin,
       i2cMax: i2cMax,
     );
-
-    widget.onSave(_data);
   }
 
-  Future<void> _attemptSave({int attempt = 0}) async {
+  Future<void> _trackSave(Future<void> save, int generation) async {
     try {
-      _updateMidiCcFromController();
-      _updateMidiMinFromController();
-      _updateMidiMaxFromController();
-      _updateI2cCcFromController();
-      _updateI2cMinFromController();
-      _updateI2cMaxFromController();
+      await save;
 
-      await widget.onSave(_data);
-
-      if (mounted) {
+      if (mounted && generation == _saveGeneration) {
+        _saveStatusTimer?.cancel();
         setState(() {
           _isDirty = false;
           _isSaving = false;
         });
       }
     } catch (e) {
-      if (attempt < _maxRetries) {
-        final delay = Duration(milliseconds: 100 * (1 << attempt));
-        await Future.delayed(delay);
-        await _attemptSave(attempt: attempt + 1);
-      } else {
-        if (mounted) {
-          setState(() {
-            _isSaving = false;
-          });
-          SemanticsService.sendAnnouncement(
-            View.of(context),
-            'Failed to save changes',
-            TextDirection.ltr,
-          );
-        }
+      if (mounted && generation == _saveGeneration) {
+        _saveStatusTimer?.cancel();
+        setState(() {
+          _isSaving = false;
+        });
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          'Failed to save changes',
+          TextDirection.ltr,
+        );
       }
     }
   }
@@ -882,28 +878,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     }
   }
 
-  void _updateMidiMinFromController() {
-    final parsed = int.tryParse(_midiMinController.text) ?? _data.midiMin;
-    final clamped = parsed.clamp(-32768, 32767);
-    setState(() {
-      _data = _data.copyWith(midiMin: clamped);
-    });
-    if (_midiMinController.text != _data.midiMin.toString()) {
-      _midiMinController.text = _data.midiMin.toString();
-    }
-  }
-
-  void _updateMidiMaxFromController() {
-    final parsed = int.tryParse(_midiMaxController.text) ?? _data.midiMax;
-    final clamped = parsed.clamp(-32768, 32767);
-    setState(() {
-      _data = _data.copyWith(midiMax: clamped);
-    });
-    if (_midiMaxController.text != _data.midiMax.toString()) {
-      _midiMaxController.text = _data.midiMax.toString();
-    }
-  }
-
   /// ---------------------
   /// I2C Editor
   /// ---------------------
@@ -973,26 +947,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     });
     if (_i2cCcController.text != _data.i2cCC.toString()) {
       _i2cCcController.text = _data.i2cCC.toString();
-    }
-  }
-
-  void _updateI2cMinFromController() {
-    final parsed = int.tryParse(_i2cMinController.text) ?? _data.i2cMin;
-    setState(() {
-      _data = _data.copyWith(i2cMin: parsed);
-    });
-    if (_i2cMinController.text != _data.i2cMin.toString()) {
-      _i2cMinController.text = _data.i2cMin.toString();
-    }
-  }
-
-  void _updateI2cMaxFromController() {
-    final parsed = int.tryParse(_i2cMaxController.text) ?? _data.i2cMax;
-    setState(() {
-      _data = _data.copyWith(i2cMax: parsed);
-    });
-    if (_i2cMaxController.text != _data.i2cMax.toString()) {
-      _i2cMaxController.text = _data.i2cMax.toString();
     }
   }
 

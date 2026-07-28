@@ -355,7 +355,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         _moveVerificationOperation = CancelableOperation.fromFuture(
           Future.delayed(const Duration(seconds: 2), () async {
             // Check if state is still synchronized before proceeding
-            if (state is! DistingStateSynchronized) return;
+            if (isClosed || state is! DistingStateSynchronized) return;
             final verificationState = state as DistingStateSynchronized;
 
             // Only verify if the current state still matches the optimistic one we emitted
@@ -368,6 +368,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               // Check if the number of algorithms matches our optimistic state
               final actualNumAlgorithms =
                   await disting.requestNumAlgorithmsInPreset() ?? 0;
+              if (isClosed) return;
               if (actualNumAlgorithms != optimisticSlots.length) {
                 await _refreshStateFromManager(delay: Duration.zero);
                 return;
@@ -377,6 +378,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               bool mismatchDetected = false;
               for (int i = 0; i < optimisticSlots.length; i++) {
                 final actualAlgorithm = await disting.requestAlgorithmGuid(i);
+                if (isClosed) return;
                 final optimisticAlgorithm = optimisticSlots[i].algorithm;
 
                 if (actualAlgorithm == null ||
@@ -392,7 +394,9 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               } else {}
             } catch (e, stackTrace) {
               debugPrintStack(stackTrace: stackTrace);
-              await _refreshStateFromManager(delay: Duration.zero);
+              if (!isClosed) {
+                await _refreshStateFromManager(delay: Duration.zero);
+              }
             }
           }),
           onCancel: () {},
@@ -457,7 +461,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
     _moveVerificationOperation = CancelableOperation.fromFuture(
       Future.delayed(const Duration(seconds: 2), () async {
         // Check if state is still synchronized before proceeding
-        if (state is! DistingStateSynchronized) return;
+        if (isClosed || state is! DistingStateSynchronized) return;
         final verificationState = state as DistingStateSynchronized;
 
         // Only verify if the current state *still* matches the optimistic one we emitted.
@@ -473,7 +477,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           bool mismatchDetected = false;
           for (int i = 0; i < optimisticSlotsCorrected.length; i++) {
             final actualAlgorithm = await disting.requestAlgorithmGuid(i);
-            if (!identical(state, verificationState)) return;
+            if (isClosed || !identical(state, verificationState)) return;
             final optimisticAlgorithm = optimisticSlotsCorrected[i].algorithm;
 
             // Compare GUID and Name
@@ -492,7 +496,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               optimisticSlotsCorrected.length,
               disting,
             );
-            if (!identical(state, verificationState)) return;
+            if (isClosed || !identical(state, verificationState)) return;
             final preservedActualSlots =
                 _preserveKnownSlotSpecificationsForRefresh(
                   previousState: verificationState,
@@ -526,7 +530,9 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           } else {}
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);
-          _refreshStateFromManager(delay: Duration.zero);
+          if (!isClosed) {
+            _refreshStateFromManager(delay: Duration.zero);
+          }
         }
       }),
       onCancel: () {},
@@ -589,7 +595,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
     // 3. Verification
     _moveVerificationOperation = CancelableOperation.fromFuture(
       Future.delayed(const Duration(seconds: 2), () async {
-        if (state is! DistingStateSynchronized) return;
+        if (isClosed || state is! DistingStateSynchronized) return;
         final verificationState = state as DistingStateSynchronized;
 
         final eq = const DeepCollectionEquality();
@@ -602,7 +608,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           bool mismatchDetected = false;
           for (int i = 0; i < optimisticSlotsCorrected.length; i++) {
             final actualAlgorithm = await disting.requestAlgorithmGuid(i);
-            if (!identical(state, verificationState)) return;
+            if (isClosed || !identical(state, verificationState)) return;
             final optimisticAlgorithm = optimisticSlotsCorrected[i].algorithm;
 
             // Compare GUID and Name
@@ -621,7 +627,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               optimisticSlotsCorrected.length,
               disting,
             );
-            if (!identical(state, verificationState)) return;
+            if (isClosed || !identical(state, verificationState)) return;
             final preservedActualSlots =
                 _preserveKnownSlotSpecificationsForRefresh(
                   previousState: verificationState,
@@ -655,7 +661,9 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           } else {}
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);
-          _refreshStateFromManager(delay: Duration.zero);
+          if (!isClosed) {
+            _refreshStateFromManager(delay: Duration.zero);
+          }
         }
       }),
       onCancel: () {},

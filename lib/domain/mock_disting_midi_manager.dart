@@ -1187,7 +1187,28 @@ class MockDistingMidiManager implements IDistingMidiManager {
     int parameterNumber,
     PackedMappingData data,
   ) async {
-    // No-op
+    if (algorithmIndex < 0 || algorithmIndex >= _state.presetSlots.length) {
+      return;
+    }
+
+    final slot = _state.presetSlots[algorithmIndex];
+    if (parameterNumber < 0 || parameterNumber >= slot.mappings.length) {
+      return;
+    }
+
+    final currentMapping = slot.mappings[parameterNumber];
+    final updatedMappings = List<Mapping>.from(slot.mappings);
+    updatedMappings[parameterNumber] = Mapping(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      packedMappingData: data.copyWith(
+        // Performance-page assignments use a separate protocol.
+        perfPageIndex: currentMapping.packedMappingData.perfPageIndex,
+      ),
+    );
+    _state.presetSlots[algorithmIndex] = slot.copyWith(
+      mappings: updatedMappings,
+    );
   }
 
   @override

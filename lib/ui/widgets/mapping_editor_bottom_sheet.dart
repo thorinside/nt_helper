@@ -85,6 +85,13 @@ class MappingEditorBottomSheet extends StatelessWidget {
                       updatedData,
                     );
                   },
+                  onSaveImmediately: (updatedData) async {
+                    await distingCubit.saveMappingImmediately(
+                      algorithmIndex,
+                      parameterNumber,
+                      updatedData,
+                    );
+                  },
                 ),
               ),
             ],

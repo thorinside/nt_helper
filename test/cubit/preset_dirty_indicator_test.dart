@@ -1664,51 +1664,256 @@ void main() {
   });
 
   group('cubit mapping ops', () {
+    test('saveMapping coalesces rapid edits to the latest mapping', () async {
+      final first = PackedMappingData.filler().copyWith(
+        version: 6,
+        i2cCC: 12,
+        isI2cEnabled: true,
+        i2cMin: 0,
+        i2cMax: 100,
+      );
+      final latest = first.copyWith(i2cCC: 32);
+      final writes = <PackedMappingData>[];
+      var hardwareMapping = PackedMappingData.filler();
+
+      when(() => mockDisting.requestSetMapping(any(), any(), any())).thenAnswer(
+        (invocation) async {
+          hardwareMapping =
+              invocation.positionalArguments[2] as PackedMappingData;
+          writes.add(hardwareMapping);
+        },
+      );
+      when(() => mockDisting.requestMappings(0, 0)).thenAnswer(
+        (_) async => Mapping(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          packedMappingData: hardwareMapping,
+        ),
+      );
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+
+      await Future.wait([
+        cubit.saveMapping(0, 0, first),
+        cubit.saveMapping(0, 0, latest),
+      ]);
+
+      expect(writes, [latest]);
+      final state = cubit.state as DistingStateSynchronized;
+      expect(state.slots[0].mappings[0].packedMappingData, latest);
+      expect(state.isDirty, isTrue);
+    });
+
+    test('saveMapping rewrites until exact readback is verified', () async {
+      final desired = PackedMappingData.filler().copyWith(
+        version: 6,
+        midiChannel: 4,
+        midiCC: 74,
+        isMidiEnabled: true,
+        midiMin: 0,
+        midiMax: 100,
+      );
+      var writeCount = 0;
+
+      when(() => mockDisting.requestSetMapping(any(), any(), any())).thenAnswer(
+        (_) async {
+          writeCount++;
+        },
+      );
+      when(() => mockDisting.requestMappings(0, 0)).thenAnswer(
+        (_) async => Mapping(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          packedMappingData: writeCount >= 2
+              ? desired
+              : PackedMappingData.filler(),
+        ),
+      );
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+
+      await cubit.saveMapping(0, 0, desired);
+
+      expect(writeCount, 2);
+      verify(() => mockDisting.requestMappings(0, 0)).called(2);
+    });
+
     test(
-      'saveMapping marks state dirty (after device-refresh sweep)',
+      'saveMapping preserves a separate performance-page assignment',
       () async {
+        final original = PackedMappingData.filler().copyWith(
+          version: 6,
+          perfPageIndex: 5,
+        );
+        final desired = original.copyWith(
+          i2cCC: 32,
+          isI2cEnabled: true,
+          i2cMin: 0,
+          i2cMax: 100,
+        );
+
         when(
           () => mockDisting.requestSetMapping(any(), any(), any()),
         ).thenAnswer((_) async {});
-        when(
-          () => mockDisting.requestNumAlgorithmsInPreset(),
-        ).thenAnswer((_) async => 0);
-        when(
-          () => mockDisting.requestPresetName(),
-        ).thenAnswer((_) async => 'Test Preset');
-
+        when(() => mockDisting.requestMappings(0, 0)).thenAnswer(
+          (_) async => Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            // Performance pages are managed by a separate command and are
+            // therefore absent from mapping readback on current firmware.
+            packedMappingData: desired.copyWith(perfPageIndex: 0),
+          ),
+        );
         cubit.emit(
-          DistingStateSynchronized(
-            disting: mockDisting,
-            distingVersion: '1.10.0',
-            firmwareVersion: FirmwareVersion('1.14.0'),
-            presetName: 'Test Preset',
-            algorithms: const [],
-            slots: const [],
-            unitStrings: const [],
-            offline: true,
+          makeSyncState(
+            slots: [
+              makeSlot().copyWith(
+                mappings: [
+                  Mapping(
+                    algorithmIndex: 0,
+                    parameterNumber: 0,
+                    packedMappingData: original,
+                  ),
+                ],
+              ),
+            ],
           ),
         );
 
-        await cubit.saveMapping(0, 0, PackedMappingData.filler());
+        await cubit.saveMappingImmediately(0, 0, desired);
 
-        expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+        verify(() => mockDisting.requestSetMapping(0, 0, desired)).called(1);
+        final saved = (cubit.state as DistingStateSynchronized)
+            .slots[0]
+            .mappings[0]
+            .packedMappingData;
+        expect(saved.i2cCC, 32);
+        expect(saved.perfPageIndex, 5);
       },
     );
+
+    test('saveMapping retains intent until synchronization returns', () async {
+      final desired = PackedMappingData.filler().copyWith(
+        version: 6,
+        cvInput: 3,
+        volts: 5,
+        delta: 100,
+      );
+      var completed = false;
+
+      when(
+        () => mockDisting.requestSetMapping(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      when(() => mockDisting.requestMappings(0, 0)).thenAnswer(
+        (_) async => Mapping(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          packedMappingData: desired,
+        ),
+      );
+
+      final save = cubit
+          .saveMapping(0, 0, desired)
+          .whenComplete(() => completed = true);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(completed, isFalse);
+      verifyNever(() => mockDisting.requestSetMapping(any(), any(), any()));
+
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+      await save.timeout(const Duration(seconds: 3));
+
+      verify(() => mockDisting.requestSetMapping(0, 0, desired)).called(1);
+    });
+
+    test('saveMapping keeps failed intent queued until it succeeds', () async {
+      final desired = PackedMappingData.filler().copyWith(
+        version: 6,
+        i2cCC: 32,
+        isI2cEnabled: true,
+        i2cMin: 0,
+        i2cMax: 100,
+      );
+      var writeCount = 0;
+
+      when(() => mockDisting.requestSetMapping(any(), any(), any())).thenAnswer(
+        (_) async {
+          writeCount++;
+        },
+      );
+      when(() => mockDisting.requestMappings(0, 0)).thenAnswer(
+        (_) async => Mapping(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          packedMappingData: writeCount >= 5
+              ? desired
+              : desired.copyWith(i2cCC: 31),
+        ),
+      );
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+
+      final recovered = cubit.stream.firstWhere(
+        (state) =>
+            state is DistingStateSynchronized &&
+            state.slots[0].mappings[0].packedMappingData == desired,
+      );
+      await expectLater(
+        cubit.saveMappingImmediately(0, 0, desired),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(writeCount, 4);
+      await recovered.timeout(const Duration(seconds: 3));
+      expect(writeCount, 5);
+    });
+
+    test('saveMapping marks state dirty after verified write', () async {
+      PackedMappingData? deviceMapping;
+      when(
+        () => mockDisting.requestSetMapping(any(), any(), any()),
+      ).thenAnswer((invocation) async {
+        deviceMapping = invocation.positionalArguments[2] as PackedMappingData;
+      });
+      when(() => mockDisting.requestMappings(0, 0)).thenAnswer(
+        (_) async => Mapping(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          packedMappingData: deviceMapping!,
+        ),
+      );
+      cubit.emit(
+        DistingStateSynchronized(
+          disting: mockDisting,
+          distingVersion: '1.10.0',
+          firmwareVersion: FirmwareVersion('1.14.0'),
+          presetName: 'Test Preset',
+          algorithms: const [],
+          slots: const [],
+          unitStrings: const [],
+          offline: true,
+        ),
+      );
+
+      await cubit.saveMapping(0, 0, PackedMappingData.filler());
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
 
     test(
       'saveMapping downgrades non-expressive v7 mappings before 1.17',
       () async {
+        PackedMappingData? deviceMapping;
         when(
           () => mockDisting.requestSetMapping(any(), any(), any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockDisting.requestNumAlgorithmsInPreset(),
-        ).thenAnswer((_) async => 0);
-        when(
-          () => mockDisting.requestPresetName(),
-        ).thenAnswer((_) async => 'Test Preset');
-
+        ).thenAnswer((invocation) async {
+          deviceMapping =
+              invocation.positionalArguments[2] as PackedMappingData;
+        });
+        when(() => mockDisting.requestMappings(0, 0)).thenAnswer(
+          (_) async => Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: deviceMapping!,
+          ),
+        );
         cubit.emit(makeSyncState(firmwareVersion: '1.16.0'));
 
         await cubit.saveMapping(

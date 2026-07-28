@@ -669,7 +669,7 @@ void main() {
       );
     }
 
-    testWidgets('Debounce: rapid changes trigger single save after 1 second', (
+    testWidgets('rapid changes hand every intent to the save coordinator', (
       tester,
     ) async {
       int saveCount = 0;
@@ -703,17 +703,11 @@ void main() {
         await tester.pump(Duration(milliseconds: 100));
       }
 
-      expect(saveCount, 0); // No saves yet
-
-      // Wait for debounce timer (1 second)
-      await tester.pump(Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1); // Only one save triggered
+      expect(saveCount, 5);
       expect(lastSavedData, isNotNull);
     });
 
-    testWidgets('Debounce: changes on different fields reset timer', (
+    testWidgets('changes on different fields are handed off independently', (
       tester,
     ) async {
       int saveCount = 0;
@@ -749,23 +743,18 @@ void main() {
       );
       await tester.pump(Duration(milliseconds: 500));
 
-      expect(saveCount, 0); // No save yet
+      expect(saveCount, 1);
 
-      // Toggle Gate (resets timer)
+      // Toggle Gate.
       await tester.tap(
         find.descendant(of: gateFinder, matching: find.byType(Switch)),
       );
       await tester.pump(Duration(milliseconds: 500));
 
-      expect(saveCount, 0); // Still no save
-
-      // Wait for remaining debounce time
-      await tester.pump(Duration(milliseconds: 600));
-
-      expect(saveCount, 1); // One save after 1 second from last change
+      expect(saveCount, 2);
     });
 
-    testWidgets('Pending save flushed on dispose', (tester) async {
+    testWidgets('Handed-off save survives editor disposal', (tester) async {
       int saveCount = 0;
 
       await tester.pumpWidget(
@@ -787,16 +776,18 @@ void main() {
         return title is Text && title.data == 'Unipolar';
       });
 
-      // Trigger a change to start timer
+      // Trigger a change and hand it off.
       await tester.tap(
         find.descendant(of: switchFinder, matching: find.byType(Switch)),
       );
       await tester.pump();
 
-      // Dispose widget - should flush pending save
+      expect(saveCount, 1);
+
+      // Disposing the editor must not duplicate or cancel the handoff.
       await tester.pumpWidget(Container());
 
-      expect(saveCount, 1); // Save should be flushed on disposal
+      expect(saveCount, 1);
     });
 
     testWidgets('Tab switching does not trigger save', (tester) async {
@@ -822,7 +813,7 @@ void main() {
       await tester.tap(find.text('I2C'));
       await tester.pumpAndSettle();
 
-      // Wait for any potential debounce
+      // Wait for any delayed indicator work.
       await tester.pump(Duration(seconds: 2));
 
       expect(saveCount, 0); // Tab switching alone should not trigger saves
@@ -857,13 +848,7 @@ void main() {
       dropdown.onSelected?.call(1);
       await tester.pump();
 
-      expect(saveCount, 0); // No immediate save
-
-      // Wait for debounce
-      await tester.pump(Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1); // Save triggered after debounce
+      expect(saveCount, 1);
       expect(lastSavedData?.cvInput, equals(1));
     });
 
@@ -895,13 +880,7 @@ void main() {
       await tester.enterText(textFieldFinder, '64');
       await tester.pump();
 
-      expect(saveCount, 0); // No immediate save
-
-      // Wait for debounce
-      await tester.pump(Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1); // Save triggered after debounce
+      expect(saveCount, 1);
       expect(lastSavedData?.midiCC, equals(64));
     });
 
@@ -935,17 +914,13 @@ void main() {
       );
       await tester.pump();
 
-      expect(saveCount, 0); // No immediate save
-
-      // Wait for debounce
-      await tester.pump(Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1); // Save triggered after debounce
+      expect(saveCount, 1);
       expect(lastSavedData?.isI2cEnabled, equals(true));
     });
 
-    testWidgets('Multiple rapid changes only trigger one save', (tester) async {
+    testWidgets('Multiple rapid changes hand off the latest state', (
+      tester,
+    ) async {
       int saveCount = 0;
 
       await tester.pumpWidget(
@@ -989,13 +964,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(saveCount, 0); // No saves yet
-
-      // Wait for debounce
-      await tester.pump(Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1); // Only one save despite multiple changes
+      expect(saveCount, 3);
     });
   });
 

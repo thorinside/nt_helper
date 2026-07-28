@@ -218,6 +218,7 @@ class DistingCubit extends _DistingCubitBase
   @override
   Future<void> close() async {
     _ccNotificationDelegate.stop();
+    await _mappingDelegate.dispose();
     disting()?.dispose();
     _offlineManager?.dispose();
     _parameterQueue?.dispose();
@@ -529,6 +530,18 @@ class DistingCubit extends _DistingCubitBase
     PackedMappingData data,
   ) async {
     return _mappingDelegate.saveMapping(algorithmIndex, parameterNumber, data);
+  }
+
+  Future<void> saveMappingImmediately(
+    int algorithmIndex,
+    int parameterNumber,
+    PackedMappingData data,
+  ) async {
+    return _mappingDelegate.saveMappingImmediately(
+      algorithmIndex,
+      parameterNumber,
+      data,
+    );
   }
 
   void renameSlot(int algorithmIndex, String newName) async {

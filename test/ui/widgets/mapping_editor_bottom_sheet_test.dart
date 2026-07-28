@@ -113,5 +113,54 @@ void main() {
         isFalse,
       );
     });
+
+    testWidgets('hands i2c edits to the cubit before the sheet is dismissed', (
+      tester,
+    ) async {
+      var saveCalls = 0;
+      PackedMappingData? handedOffData;
+      when(() => distingCubit.saveMapping(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        saveCalls++;
+        handedOffData = invocation.positionalArguments[2] as PackedMappingData;
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MappingEditorBottomSheet(
+              myMidiCubit: midiCubit,
+              distingCubit: distingCubit,
+              data: PackedMappingData.filler(),
+              slots: const [],
+              algorithmIndex: 2,
+              parameterNumber: 7,
+              parameterMin: 0,
+              parameterMax: 100,
+              powerOfTen: 0,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('I2C'));
+      await tester.pumpAndSettle();
+
+      final i2cCcField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField && widget.decoration?.labelText == 'I2C CC',
+      );
+      await tester.enterText(i2cCcField, '32');
+      await tester.pump();
+
+      expect(saveCalls, 1);
+      expect(handedOffData?.i2cCC, 32);
+
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+
+      expect(saveCalls, 1);
+    });
   });
 }
