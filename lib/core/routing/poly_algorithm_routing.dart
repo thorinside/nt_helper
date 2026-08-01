@@ -4,6 +4,8 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'algorithm_routing.dart';
 import 'models/port.dart';
 
+typedef _GateCvParameterPair = ({ParameterInfo gate, ParameterInfo count});
+
 /// Configuration data for polyphonic algorithm routing.
 ///
 /// Defines the properties needed to configure polyphonic routing behavior,
@@ -75,6 +77,15 @@ class PolyAlgorithmConfig {
 /// final inputPorts = polyRouting.generateInputPorts();
 /// ```
 class PolyAlgorithmRouting extends CachedAlgorithmRouting {
+  static final RegExp _gateInputNamePattern = RegExp(
+    r'^Gate input (\d+)$',
+    caseSensitive: false,
+  );
+  static final RegExp _gateCvCountNamePattern = RegExp(
+    r'^Gate (\d+) CV count$',
+    caseSensitive: false,
+  );
+
   /// Configuration for this polyphonic routing instance
   final PolyAlgorithmConfig config;
 
@@ -315,10 +326,121 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
   /// Determines if this routing implementation can handle the given slot.
   ///
   /// Returns true if the algorithm GUID starts with 'py' (polysynth algorithms)
-  /// or is 'gran' (Granulator algorithm).
+  /// or is 'gran' (Granulator algorithm), or when an ordered parameter page
+  /// contains a confirmed gate-input/CV-count pattern.
   static bool canHandle(Slot slot) {
-    final guid = slot.algorithm.guid;
-    return guid.startsWith('py') || guid == 'gran';
+    return _isKnownPolyGuid(slot.algorithm.guid) ||
+        _findPageOrderedGateCvPairs(slot).isNotEmpty;
+  }
+
+  /// Resolves gate/count pairs from parameter numbers in each page's declared
+  /// order. The slot's parameter-list order is deliberately irrelevant.
+  ///
+  /// The ordered shape is the primary signal. A known factory poly GUID or
+  /// matching numbered names confirms that the structural match is polyphonic.
+  static List<_GateCvParameterPair> _findPageOrderedGateCvPairs(Slot slot) {
+    final parametersByNumber = <int, ParameterInfo>{
+      for (final parameter in slot.parameters)
+        parameter.parameterNumber: parameter,
+    };
+
+    for (final page in slot.pages.pages) {
+      final orderedParameters = <ParameterInfo>[];
+      for (final number in page.parameters) {
+        final parameter = parametersByNumber[number];
+        if (parameter == null) {
+          orderedParameters.clear();
+          break;
+        }
+        orderedParameters.add(parameter);
+      }
+      if (orderedParameters.isEmpty) continue;
+
+      final candidates = <List<_GateCvParameterPair>>[
+        _findInterleavedGateCvPairs(orderedParameters),
+        ..._findGateThenCountBlocks(orderedParameters),
+      ]..sort((left, right) => right.length.compareTo(left.length));
+
+      for (final pairs in candidates) {
+        if (pairs.isNotEmpty &&
+            (_isKnownPolyGuid(slot.algorithm.guid) ||
+                pairs.every(
+                  (pair) => _namesConfirmGateCvPair(pair.gate, pair.count),
+                ))) {
+          return pairs;
+        }
+      }
+    }
+
+    return const [];
+  }
+
+  static List<_GateCvParameterPair> _findInterleavedGateCvPairs(
+    List<ParameterInfo> orderedParameters,
+  ) {
+    final pairs = <_GateCvParameterPair>[];
+    for (var index = 0; index + 1 < orderedParameters.length; index++) {
+      final gate = orderedParameters[index];
+      final count = orderedParameters[index + 1];
+      if (_isGateInputCandidate(gate) && _isCvCountCandidate(count)) {
+        pairs.add((gate: gate, count: count));
+      }
+    }
+    return pairs;
+  }
+
+  static List<List<_GateCvParameterPair>> _findGateThenCountBlocks(
+    List<ParameterInfo> orderedParameters,
+  ) {
+    final candidates = <List<_GateCvParameterPair>>[];
+    for (var start = 0; start < orderedParameters.length; start++) {
+      if (!_isGateInputCandidate(orderedParameters[start])) continue;
+
+      var countStart = start;
+      while (countStart < orderedParameters.length &&
+          _isGateInputCandidate(orderedParameters[countStart])) {
+        countStart++;
+      }
+      final gateCount = countStart - start;
+      if (countStart + gateCount > orderedParameters.length) continue;
+
+      final counts = orderedParameters.sublist(
+        countStart,
+        countStart + gateCount,
+      );
+      if (!counts.every(_isCvCountCandidate)) continue;
+
+      candidates.add([
+        for (var offset = 0; offset < gateCount; offset++)
+          (gate: orderedParameters[start + offset], count: counts[offset]),
+      ]);
+    }
+    return candidates;
+  }
+
+  static bool _isKnownPolyGuid(String guid) =>
+      guid.startsWith('py') || guid == 'gran';
+
+  static bool _isGateInputCandidate(ParameterInfo parameter) =>
+      parameter.isInput && !parameter.isOutput && !parameter.isAudio;
+
+  static bool _isCvCountCandidate(ParameterInfo parameter) =>
+      !parameter.isInput &&
+      !parameter.isOutput &&
+      parameter.unit == 0 &&
+      parameter.min == 0 &&
+      parameter.max >= 0;
+
+  static bool _namesConfirmGateCvPair(ParameterInfo gate, ParameterInfo count) {
+    final gateMatch = _gateInputNamePattern.firstMatch(
+      AlgorithmRouting.stripPagePrefix(gate.name),
+    );
+    final countMatch = _gateCvCountNamePattern.firstMatch(
+      AlgorithmRouting.stripPagePrefix(count.name),
+    );
+    return gateMatch != null &&
+        countMatch != null &&
+        gateMatch.group(1) == countMatch.group(1);
   }
 
   /// Creates a PolyAlgorithmRouting instance from a slot.
@@ -361,20 +483,34 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
     // Extract gate configuration per CV/Gate Setup spec
     final gateInputs = <int>[];
     final gateCvCounts = <int>[];
+    final pageOrderedGateCvPairs = _findPageOrderedGateCvPairs(slot);
 
-    // Process all 6 possible gates
-    for (int i = 1; i <= 6; i++) {
-      // Gate input bus (0 = None, 1-28 = bus assignment)
-      final gateBus = strippedIoParameters['Gate input $i'] ?? 0;
-      gateInputs.add(gateBus);
-
-      // CV count for this gate (only relevant if gate is connected).
-      // Gate $i CV count is a numeric knob (unit=0), not a bus assignment,
-      // so it lacks ioFlags and is not present in ioParameters.
-      // Read it directly from the slot instead.
-      final cvCount =
-          AlgorithmRouting.getParameterValue(slot, 'Gate $i CV count');
-      gateCvCounts.add(cvCount);
+    if (pageOrderedGateCvPairs.isNotEmpty) {
+      for (final pair in pageOrderedGateCvPairs) {
+        gateInputs.add(
+          AlgorithmRouting.getParameterValueByNumber(
+            slot,
+            pair.gate.parameterNumber,
+            defaultValue: pair.gate.defaultValue,
+          ),
+        );
+        gateCvCounts.add(
+          AlgorithmRouting.getParameterValueByNumber(
+            slot,
+            pair.count.parameterNumber,
+            defaultValue: pair.count.defaultValue,
+          ),
+        );
+      }
+    } else {
+      // Legacy/offline fallback for slots without parameter-page metadata.
+      for (int i = 1; i <= 6; i++) {
+        final gateBus = strippedIoParameters['Gate input $i'] ?? 0;
+        gateInputs.add(gateBus);
+        gateCvCounts.add(
+          AlgorithmRouting.getParameterValue(slot, 'Gate $i CV count'),
+        );
+      }
     }
 
     // Trim trailing unconnected gates
@@ -390,6 +526,12 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
     // Find parameter info for each io parameter to get parameter numbers
     final paramsByName = <String, ParameterInfo>{
       for (final p in slot.parameters) p.name: p,
+    };
+    final pageOrderedGateCvParameterNumbers = {
+      for (final pair in pageOrderedGateCvPairs) ...[
+        pair.gate.parameterNumber,
+        pair.count.parameterNumber,
+      ],
     };
 
     for (final entry in ioParameters.entries) {
@@ -419,6 +561,12 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
       // Get parameter info to access I/O flags
       final paramInfo = paramsByName[paramName];
       if (paramInfo == null) continue;
+
+      if (pageOrderedGateCvParameterNumbers.contains(
+        paramInfo.parameterNumber,
+      )) {
+        continue;
+      }
 
       // Use I/O flags from hardware metadata to determine direction
       final isOutput = paramInfo.isOutput;
