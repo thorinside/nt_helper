@@ -52,9 +52,10 @@ void main() {
       );
       expect(find.widgetWithText(FilledButton, 'Connect'), findsOneWidget);
       expect(find.text('Enable ES-5'), findsOneWidget);
+      expect(find.text('Channel Group'), findsOneWidget);
       expect(
         find.text('Connect an NTX-8CV to read this setting.'),
-        findsOneWidget,
+        findsNWidgets(2),
       );
       expect(tester.takeException(), isNull);
     });

@@ -19,6 +19,14 @@ void main() {
           orderedEquals(Ntx8cvSysExFixtures.deviceInformationRequest),
         );
         expect(
+          codec.readSetting(deviceId: 0, settingId: 0x00),
+          orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
+        );
+        expect(
+          codec.writeSetting(deviceId: 0, settingId: 0x00, value: 7),
+          orderedEquals(Ntx8cvSysExFixtures.writeChannelGroupSetting),
+        );
+        expect(
           codec.readSetting(deviceId: 0, settingId: 0x01),
           orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
         );
@@ -54,22 +62,34 @@ void main() {
       expect(information.textFields, ['fixture-firmware', 'fixture-serial']);
     });
 
-    test('decodes complete ES-5 and mode setting responses', () {
-      final es5 = codec.decode(Ntx8cvSysExFixtures.es5EnabledResponse);
-      final mode = codec.decode(Ntx8cvSysExFixtures.modeSettingResponse);
+    test(
+      'decodes complete Channel Group, ES-5, and mode setting responses',
+      () {
+        final channelGroup = codec.decode(
+          Ntx8cvSysExFixtures.channelGroupResponse,
+        );
+        final es5 = codec.decode(Ntx8cvSysExFixtures.es5EnabledResponse);
+        final mode = codec.decode(Ntx8cvSysExFixtures.modeSettingResponse);
 
-      expect(es5, isA<Ntx8cvSettingValue>());
-      final es5Setting = es5! as Ntx8cvSettingValue;
-      expect(es5Setting.deviceId, 0);
-      expect(es5Setting.settingId, 0x01);
-      expect(es5Setting.value, 1);
+        expect(channelGroup, isA<Ntx8cvSettingValue>());
+        final channelGroupSetting = channelGroup! as Ntx8cvSettingValue;
+        expect(channelGroupSetting.deviceId, 0);
+        expect(channelGroupSetting.settingId, 0x00);
+        expect(channelGroupSetting.value, 7);
 
-      expect(mode, isA<Ntx8cvSettingValue>());
-      final modeSetting = mode! as Ntx8cvSettingValue;
-      expect(modeSetting.deviceId, 0);
-      expect(modeSetting.settingId, 0x1B);
-      expect(modeSetting.value, 2);
-    });
+        expect(es5, isA<Ntx8cvSettingValue>());
+        final es5Setting = es5! as Ntx8cvSettingValue;
+        expect(es5Setting.deviceId, 0);
+        expect(es5Setting.settingId, 0x01);
+        expect(es5Setting.value, 1);
+
+        expect(mode, isA<Ntx8cvSettingValue>());
+        final modeSetting = mode! as Ntx8cvSettingValue;
+        expect(modeSetting.deviceId, 0);
+        expect(modeSetting.settingId, 0x1B);
+        expect(modeSetting.value, 2);
+      },
+    );
 
     test('rejects malformed, wrong-product, and incomplete responses', () {
       expect(codec.decode(Ntx8cvSysExFixtures.malformedWrongProduct), isNull);

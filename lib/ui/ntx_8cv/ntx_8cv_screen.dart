@@ -124,6 +124,10 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                                   Ntx8cvSettingsSection(
                                     isConnected: connectionState.isConnected,
                                     state: settingsState,
+                                    onChannelGroupChanged:
+                                        _settingsCubit.setChannelGroup,
+                                    onRetryChannelGroupChange:
+                                        _settingsCubit.retryChannelGroupChange,
                                     onEs5Changed: _settingsCubit.setEs5Enabled,
                                     onRetryEs5Change:
                                         _settingsCubit.retryEs5Change,
@@ -440,6 +444,8 @@ class Ntx8cvSettingsSection extends StatelessWidget {
     super.key,
     required this.isConnected,
     required this.state,
+    required this.onChannelGroupChanged,
+    required this.onRetryChannelGroupChange,
     required this.onEs5Changed,
     required this.onRetryEs5Change,
     required this.onModeChanged,
@@ -448,6 +454,8 @@ class Ntx8cvSettingsSection extends StatelessWidget {
 
   final bool isConnected;
   final Ntx8cvSettingsState state;
+  final Future<void> Function(Ntx8cvChannelGroup) onChannelGroupChanged;
+  final Future<void> Function() onRetryChannelGroupChange;
   final Future<void> Function(bool) onEs5Changed;
   final Future<void> Function() onRetryEs5Change;
   final Future<void> Function(Ntx8cvExpansionMode) onModeChanged;
@@ -455,6 +463,11 @@ class Ntx8cvSettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canChangeChannelGroup =
+        isConnected &&
+        state.confirmedChannelGroup != null &&
+        !state.isBusy &&
+        !state.hasPendingChannelGroupChange;
     final canChangeEs5 =
         isConnected &&
         state.confirmedEs5Enabled != null &&
@@ -552,10 +565,62 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                 label: const Text('Retry send'),
               ),
             ],
+            const SizedBox(height: 24),
+            DropdownButtonFormField<Ntx8cvChannelGroup>(
+              key: ValueKey(
+                'ntx8cv-channel-group-${state.confirmedChannelGroup}',
+              ),
+              initialValue: state.confirmedChannelGroup,
+              decoration: InputDecoration(
+                labelText: 'Channel Group',
+                helperText: _channelGroupDescription(),
+              ),
+              items: Ntx8cvChannelGroup.values
+                  .map(
+                    (group) => DropdownMenuItem(
+                      value: group,
+                      child: Text(group.label),
+                    ),
+                  )
+                  .toList(),
+              onChanged: canChangeChannelGroup
+                  ? (group) {
+                      if (group != null) {
+                        unawaited(onChannelGroupChanged(group));
+                      }
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            Semantics(liveRegion: true, child: Text(_channelGroupStatus())),
+            if (state.hasPendingChannelGroupChange) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const Key('ntx8cv-retry-channel-group-change'),
+                onPressed: isConnected && !state.isBusy
+                    ? () {
+                        unawaited(onRetryChannelGroupChange());
+                      }
+                    : null,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry send'),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  String _channelGroupDescription() {
+    if (!isConnected) return 'Connect an NTX-8CV to read this setting.';
+    if (state.confirmedChannelGroup == null) {
+      return 'Waiting for a device-confirmed value.';
+    }
+    return 'Selects this NTX-8CV’s eight-channel block. This does not replace '
+        'the disting NT’s granular channel-enable controls; configure both '
+        'when needed. Changes are sent immediately and confirmed by reading '
+        'the setting back.';
   }
 
   String _es5Description() {
@@ -572,6 +637,32 @@ class Ntx8cvSettingsSection extends StatelessWidget {
       return state.modeMessage ?? 'Mode capability has not been evidenced.';
     }
     return 'Changes are sent immediately and take effect after reboot.';
+  }
+
+  String _channelGroupStatus() {
+    if (state.hasPendingChannelGroupChange) {
+      final attempted =
+          state.attemptedChannelGroup?.label ?? 'an invalid value';
+      final confirmed = state.confirmedChannelGroup == null
+          ? 'No device-confirmed value is available.'
+          : 'Last device-confirmed value: '
+                '${state.confirmedChannelGroup!.label}.';
+      final progress = state.isWritingChannelGroup
+          ? 'Sending and waiting for device readback.'
+          : state.channelGroupMessage ??
+                'The actual device state is uncertain.';
+      return 'Attempted Channel Group: $attempted, pending/failed and not '
+          'device-confirmed. $confirmed $progress';
+    }
+    if (state.isLoadingChannelGroup) {
+      return 'Reading Channel Group from the NTX-8CV.';
+    }
+    if (state.confirmedChannelGroup != null) {
+      return 'Device-confirmed Channel Group: '
+          '${state.confirmedChannelGroup!.label}.';
+    }
+    return state.channelGroupMessage ??
+        'No device-confirmed Channel Group value is available.';
   }
 
   String _es5Status() {

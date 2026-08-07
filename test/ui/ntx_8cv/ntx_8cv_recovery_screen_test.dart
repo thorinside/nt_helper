@@ -7,6 +7,8 @@ void main() {
   testWidgets(
     'keeps Retry send unavailable while disconnected and enables it after reconnect',
     (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       var retryCount = 0;
       final pendingState = Ntx8cvSettingsState(
         es5: const Ntx8cvSettingChange(
@@ -23,6 +25,8 @@ void main() {
           body: Ntx8cvSettingsSection(
             isConnected: isConnected,
             state: pendingState,
+            onChannelGroupChanged: (_) async {},
+            onRetryChannelGroupChange: () async {},
             onEs5Changed: (_) async {},
             onRetryEs5Change: () async {
               retryCount += 1;
@@ -68,6 +72,8 @@ void main() {
               mode: Ntx8cvSettingChange(confirmedValue: mode.value),
               modeCapabilityEvidenced: true,
             ),
+            onChannelGroupChanged: (_) async {},
+            onRetryChannelGroupChange: () async {},
             onEs5Changed: (_) async {},
             onRetryEs5Change: () async {},
             onModeChanged: (_) async {},
@@ -105,14 +111,76 @@ void main() {
   );
 
   testWidgets(
+    'offers released Channel Group blocks and explains their separate role',
+    (tester) async {
+      Ntx8cvChannelGroup? selectedGroup;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Ntx8cvSettingsSection(
+              isConnected: true,
+              state: const Ntx8cvSettingsState(
+                channelGroup: Ntx8cvSettingChange(confirmedValue: 0),
+              ),
+              onChannelGroupChanged: (group) async {
+                selectedGroup = group;
+              },
+              onRetryChannelGroupChange: () async {},
+              onEs5Changed: (_) async {},
+              onRetryEs5Change: () async {},
+              onModeChanged: (_) async {},
+              onRetryModeChange: () async {},
+            ),
+          ),
+        ),
+      );
+
+      final pickerFinder = find.byType(
+        DropdownButtonFormField<Ntx8cvChannelGroup>,
+      );
+      final picker = tester.widget<DropdownButtonFormField<Ntx8cvChannelGroup>>(
+        pickerFinder,
+      );
+      expect(find.text('Channel Group'), findsOneWidget);
+      expect(
+        find.textContaining('does not replace the disting NT’s granular'),
+        findsOneWidget,
+      );
+      expect(picker.onChanged, isNotNull);
+      await tester.tap(pickerFinder);
+      await tester.pumpAndSettle();
+      for (final label in [
+        '1–8',
+        '9–16',
+        '17–24',
+        '25–32',
+        '33–40',
+        '41–48',
+        '49–56',
+        '57–64',
+      ]) {
+        expect(find.text(label), findsWidgets);
+      }
+
+      await tester.tap(find.text('57–64').last);
+      await tester.pumpAndSettle();
+      expect(selectedGroup, Ntx8cvChannelGroup.channels57To64);
+    },
+  );
+
+  testWidgets(
     'shows a pending Mode separately from its confirmed value and reboot state',
     (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       var retryCount = 0;
       Widget buildSection(Ntx8cvSettingsState state) => MaterialApp(
         home: Scaffold(
           body: Ntx8cvSettingsSection(
             isConnected: true,
             state: state,
+            onChannelGroupChanged: (_) async {},
+            onRetryChannelGroupChange: () async {},
             onEs5Changed: (_) async {},
             onRetryEs5Change: () async {},
             onModeChanged: (_) async {},

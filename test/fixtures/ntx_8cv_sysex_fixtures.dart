@@ -32,6 +32,44 @@ abstract final class Ntx8cvSysExFixtures {
     0xF7,
   ]);
 
+  static final Uint8List readChannelGroupSetting = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x31,
+    0x00,
+    0xF7,
+  ]);
+
+  static final Uint8List channelGroupResponse = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x31,
+    0x00,
+    0x07,
+    0xF7,
+  ]);
+
+  static final Uint8List writeChannelGroupSetting = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x32,
+    0x00,
+    0x07,
+    0xF7,
+  ]);
+
   static final Uint8List readEs5EnabledSetting = Uint8List.fromList([
     0xF0,
     0x00,

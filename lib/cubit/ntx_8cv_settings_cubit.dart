@@ -4,6 +4,9 @@ import 'package:bloc/bloc.dart';
 import 'package:nt_helper/cubit/ntx_8cv_connection_cubit.dart';
 import 'package:nt_helper/domain/ntx_8cv/ntx_8cv_sysex.dart';
 
+/// The released NTX-8CV setting that selects its eight-channel block.
+const int kNtx8cvChannelGroupSettingId = 0x00;
+
 /// The released NTX-8CV setting that enables its ES-5 output use.
 const int kNtx8cvEs5EnabledSettingId = 0x01;
 
@@ -29,15 +32,41 @@ enum Ntx8cvExpansionMode {
   }
 }
 
-enum Ntx8cvSetting { es5Enabled, expansionMode }
+/// The released Channel Group values, each selecting one eight-channel block.
+enum Ntx8cvChannelGroup {
+  channels1To8(0, '1–8'),
+  channels9To16(1, '9–16'),
+  channels17To24(2, '17–24'),
+  channels25To32(3, '25–32'),
+  channels33To40(4, '33–40'),
+  channels41To48(5, '41–48'),
+  channels49To56(6, '49–56'),
+  channels57To64(7, '57–64');
+
+  const Ntx8cvChannelGroup(this.value, this.label);
+
+  final int value;
+  final String label;
+
+  static Ntx8cvChannelGroup? fromValue(int value) {
+    for (final group in values) {
+      if (group.value == value) return group;
+    }
+    return null;
+  }
+}
+
+enum Ntx8cvSetting { channelGroup, es5Enabled, expansionMode }
 
 extension on Ntx8cvSetting {
   int get id => switch (this) {
+    Ntx8cvSetting.channelGroup => kNtx8cvChannelGroupSettingId,
     Ntx8cvSetting.es5Enabled => kNtx8cvEs5EnabledSettingId,
     Ntx8cvSetting.expansionMode => kNtx8cvExpansionModeSettingId,
   };
 
   String get label => switch (this) {
+    Ntx8cvSetting.channelGroup => 'Channel Group',
     Ntx8cvSetting.es5Enabled => 'ES-5',
     Ntx8cvSetting.expansionMode => 'NT expansion mode',
   };
@@ -91,12 +120,14 @@ class Ntx8cvSettingChange {
 /// Presentation state for the device-confirmed NTX-8CV settings.
 class Ntx8cvSettingsState {
   const Ntx8cvSettingsState({
+    this.channelGroup = const Ntx8cvSettingChange(),
     this.es5 = const Ntx8cvSettingChange(),
     this.mode = const Ntx8cvSettingChange(),
     this.modeCapabilityEvidenced = false,
     this.modeRebootRequired = false,
   });
 
+  final Ntx8cvSettingChange channelGroup;
   final Ntx8cvSettingChange es5;
   final Ntx8cvSettingChange mode;
 
@@ -107,6 +138,21 @@ class Ntx8cvSettingsState {
 
   /// A confirmed mode change is stored but needs a reboot to take effect.
   final bool modeRebootRequired;
+
+  Ntx8cvChannelGroup? get confirmedChannelGroup =>
+      channelGroup.confirmedValue == null
+      ? null
+      : Ntx8cvChannelGroup.fromValue(channelGroup.confirmedValue!);
+
+  Ntx8cvChannelGroup? get attemptedChannelGroup =>
+      channelGroup.attemptedValue == null
+      ? null
+      : Ntx8cvChannelGroup.fromValue(channelGroup.attemptedValue!);
+
+  bool get isLoadingChannelGroup => channelGroup.isLoading;
+  bool get isWritingChannelGroup => channelGroup.isWriting;
+  String? get channelGroupMessage => channelGroup.message;
+  bool get hasPendingChannelGroupChange => channelGroup.hasPendingChange;
 
   bool? get confirmedEs5Enabled => switch (es5.confirmedValue) {
     0 => false,
@@ -139,15 +185,22 @@ class Ntx8cvSettingsState {
   bool get hasPendingModeChange => mode.hasPendingChange;
 
   bool get isBusy =>
-      es5.isLoading || es5.isWriting || mode.isLoading || mode.isWriting;
+      channelGroup.isLoading ||
+      channelGroup.isWriting ||
+      es5.isLoading ||
+      es5.isWriting ||
+      mode.isLoading ||
+      mode.isWriting;
 
   Ntx8cvSettingsState copyWith({
+    Ntx8cvSettingChange? channelGroup,
     Ntx8cvSettingChange? es5,
     Ntx8cvSettingChange? mode,
     bool? modeCapabilityEvidenced,
     bool? modeRebootRequired,
   }) {
     return Ntx8cvSettingsState(
+      channelGroup: channelGroup ?? this.channelGroup,
       es5: es5 ?? this.es5,
       mode: mode ?? this.mode,
       modeCapabilityEvidenced:
@@ -157,6 +210,7 @@ class Ntx8cvSettingsState {
   }
 
   Ntx8cvSettingChange changeFor(Ntx8cvSetting setting) => switch (setting) {
+    Ntx8cvSetting.channelGroup => channelGroup,
     Ntx8cvSetting.es5Enabled => es5,
     Ntx8cvSetting.expansionMode => mode,
   };
@@ -167,6 +221,11 @@ class Ntx8cvSettingsState {
     bool? modeCapabilityEvidenced,
     bool? modeRebootRequired,
   }) => switch (setting) {
+    Ntx8cvSetting.channelGroup => copyWith(
+      channelGroup: change,
+      modeCapabilityEvidenced: modeCapabilityEvidenced,
+      modeRebootRequired: modeRebootRequired,
+    ),
     Ntx8cvSetting.es5Enabled => copyWith(
       es5: change,
       modeCapabilityEvidenced: modeCapabilityEvidenced,
@@ -200,6 +259,11 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   Ntx8cvSession? _activeSession;
   String? _targetKey;
 
+  /// Changes Channel Group immediately, but commits it to presentation state
+  /// only after a same-setting read returns the attempted value.
+  Future<void> setChannelGroup(Ntx8cvChannelGroup group) =>
+      _setSetting(Ntx8cvSetting.channelGroup, group.value);
+
   /// Changes ES-5 use immediately, but commits it to presentation state only
   /// after a same-setting read returns the attempted value.
   Future<void> setEs5Enabled(bool enabled) =>
@@ -209,6 +273,12 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   /// probe. The three [Ntx8cvExpansionMode] values map to protocol `0..2`.
   Future<void> setExpansionMode(Ntx8cvExpansionMode mode) =>
       _setSetting(Ntx8cvSetting.expansionMode, mode.value);
+
+  /// Explicitly resends the retained, unconfirmed Channel Group change to the
+  /// current identity-validated NTX-8CV. It never reconnects or retries on
+  /// its own.
+  Future<void> retryChannelGroupChange() =>
+      _retrySetting(Ntx8cvSetting.channelGroup);
 
   /// Explicitly resends the retained, unconfirmed ES-5 change to the current
   /// identity-validated NTX-8CV. It never reconnects or retries on its own.
@@ -351,6 +421,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     }
 
     return Ntx8cvSettingsState(
+      channelGroup: retainedChange(state.channelGroup, 'Channel Group'),
       es5: retainedChange(state.es5, 'ES-5'),
       mode: retainedChange(state.mode, 'Mode'),
     );
@@ -375,6 +446,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     }
 
     return Ntx8cvSettingsState(
+      channelGroup: interruptedChange(state.channelGroup, 'Channel Group'),
       es5: interruptedChange(state.es5, 'ES-5'),
       mode: interruptedChange(state.mode, 'NT expansion mode'),
       modeRebootRequired: state.modeRebootRequired,
@@ -382,15 +454,19 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   }
 
   Future<void> _refreshSettings(Ntx8cvSession session) async {
-    // Do not read an ES-5 setting whose attempted value is pending: leaving
-    // that value untouched makes reconnect a recovery step, never an implicit
-    // confirmation or resend. A Mode probe is always safe and is required to
-    // enable a Mode retry for this newly validated session.
+    // Do not read an ES-5 or Channel Group setting whose attempted value is
+    // pending: leaving that value untouched makes reconnect a recovery step,
+    // never an implicit confirmation or resend. A Mode probe is always safe
+    // and is required to enable a Mode retry for this newly validated session.
     if (!state.es5.hasPendingChange) {
       await _readSetting(session, Ntx8cvSetting.es5Enabled);
     }
     if (!_isActiveSession(session)) return;
     await _readSetting(session, Ntx8cvSetting.expansionMode);
+    if (!_isActiveSession(session)) return;
+    if (!state.channelGroup.hasPendingChange) {
+      await _readSetting(session, Ntx8cvSetting.channelGroup);
+    }
   }
 
   Future<void> _readSetting(
@@ -438,11 +514,17 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
               .changeFor(setting)
               .copyWith(
                 isLoading: false,
-                message: setting == Ntx8cvSetting.expansionMode
-                    ? 'Mode capability was not evidenced. The NTX-8CV did not '
-                          'return a valid Mode setting value.'
-                    : 'Could not read the device-confirmed ES-5 setting. Check '
-                          'the NTX-8CV connection and reconnect to try again.',
+                message: switch (setting) {
+                  Ntx8cvSetting.expansionMode =>
+                    'Mode capability was not evidenced. The NTX-8CV did not '
+                        'return a valid Mode setting value.',
+                  Ntx8cvSetting.channelGroup =>
+                    'Could not read the device-confirmed Channel Group setting. '
+                        'Check the NTX-8CV connection and reconnect to try again.',
+                  Ntx8cvSetting.es5Enabled =>
+                    'Could not read the device-confirmed ES-5 setting. Check '
+                        'the NTX-8CV connection and reconnect to try again.',
+                },
               ),
           modeCapabilityEvidenced: setting == Ntx8cvSetting.expansionMode
               ? false
@@ -453,6 +535,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   }
 
   bool _isValidValue(Ntx8cvSetting setting, int value) => switch (setting) {
+    Ntx8cvSetting.channelGroup => Ntx8cvChannelGroup.fromValue(value) != null,
     Ntx8cvSetting.es5Enabled => value == 0 || value == 1,
     Ntx8cvSetting.expansionMode => Ntx8cvExpansionMode.fromValue(value) != null,
   };

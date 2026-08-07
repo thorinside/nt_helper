@@ -36,34 +36,45 @@ void main() {
       await midiConnection.dispose();
     });
 
-    test('reads ES-5 and probes Mode after connecting', () async {
-      midiConnection.transport.onSend = (packet) {
-        _respondWithSettings(midiConnection.transport, packet);
-      };
-      await connectionCubit.initialize();
-      await connectionCubit.connect();
-      await _flushEvents();
+    test(
+      'reads Channel Group, ES-5, and probes Mode after connecting',
+      () async {
+        midiConnection.transport.onSend = (packet) {
+          _respondWithSettings(midiConnection.transport, packet);
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
 
-      expect(settingsCubit.state.confirmedEs5Enabled, isFalse);
-      expect(
-        settingsCubit.state.confirmedMode,
-        Ntx8cvExpansionMode.audio2x8_16bit,
-      );
-      expect(settingsCubit.state.modeCapabilityEvidenced, isTrue);
-      expect(midiConnection.transport.sent, hasLength(3));
-      expect(
-        midiConnection.transport.sent[0],
-        orderedEquals(Ntx8cvSysExFixtures.deviceInformationRequest),
-      );
-      expect(
-        midiConnection.transport.sent[1],
-        orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
-      );
-      expect(
-        midiConnection.transport.sent[2],
-        orderedEquals(Ntx8cvSysExFixtures.readModeSetting),
-      );
-    });
+        expect(settingsCubit.state.confirmedEs5Enabled, isFalse);
+        expect(
+          settingsCubit.state.confirmedMode,
+          Ntx8cvExpansionMode.audio2x8_16bit,
+        );
+        expect(settingsCubit.state.modeCapabilityEvidenced, isTrue);
+        expect(midiConnection.transport.sent, hasLength(4));
+        expect(
+          midiConnection.transport.sent[0],
+          orderedEquals(Ntx8cvSysExFixtures.deviceInformationRequest),
+        );
+        expect(
+          midiConnection.transport.sent[1],
+          orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
+        );
+        expect(
+          midiConnection.transport.sent[2],
+          orderedEquals(Ntx8cvSysExFixtures.readModeSetting),
+        );
+        expect(
+          midiConnection.transport.sent[3],
+          orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
+        );
+        expect(
+          settingsCubit.state.confirmedChannelGroup,
+          Ntx8cvChannelGroup.channels1To8,
+        );
+      },
+    );
 
     test('changes ES-5 only after matching same-setting readback', () async {
       midiConnection.transport.onSend = (packet) {
@@ -84,16 +95,64 @@ void main() {
 
       expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
       expect(settingsCubit.state.hasPendingEs5Change, isFalse);
-      expect(midiConnection.transport.sent, hasLength(5));
+      expect(midiConnection.transport.sent, hasLength(6));
       expect(
-        midiConnection.transport.sent[3],
+        midiConnection.transport.sent[4],
         orderedEquals(Ntx8cvSysExFixtures.writeEs5EnabledSetting),
       );
       expect(
-        midiConnection.transport.sent[4],
+        midiConnection.transport.sent[5],
         orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
       );
     });
+
+    test(
+      'confirms a Channel Group only after matching readback and manual retry',
+      () async {
+        var reportedChannelGroup = Ntx8cvChannelGroup.channels1To8.value;
+        midiConnection.transport.onSend = (packet) {
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            channelGroupValue: reportedChannelGroup,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setChannelGroup(Ntx8cvChannelGroup.channels57To64);
+
+        expect(
+          settingsCubit.state.confirmedChannelGroup,
+          Ntx8cvChannelGroup.channels1To8,
+        );
+        expect(
+          settingsCubit.state.attemptedChannelGroup,
+          Ntx8cvChannelGroup.channels57To64,
+        );
+        expect(settingsCubit.state.hasPendingChannelGroupChange, isTrue);
+        expect(settingsCubit.state.channelGroupMessage, contains('uncertain'));
+        expect(
+          midiConnection.transport.sent[4],
+          orderedEquals(Ntx8cvSysExFixtures.writeChannelGroupSetting),
+        );
+        expect(
+          midiConnection.transport.sent[5],
+          orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
+        );
+
+        reportedChannelGroup = Ntx8cvChannelGroup.channels57To64.value;
+        await settingsCubit.retryChannelGroupChange();
+
+        expect(
+          settingsCubit.state.confirmedChannelGroup,
+          Ntx8cvChannelGroup.channels57To64,
+        );
+        expect(settingsCubit.state.hasPendingChannelGroupChange, isFalse);
+        expect(settingsCubit.state.modeRebootRequired, isFalse);
+      },
+    );
 
     test(
       'retains a mismatched ES-5 change across reconnect and retries only explicitly',
@@ -129,16 +188,26 @@ void main() {
         await _flushEvents();
 
         expect(settingsCubit.state.hasPendingEs5Change, isTrue);
-        // Reconnect validates identity and probes Mode, but never resends ES-5.
+        // Reconnect validates identity and refreshes Mode and Channel Group,
+        // but never resends ES-5.
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 2),
+          hasLength(sendsBeforeReconnect + 3),
         );
         expect(midiConnection.transport.sent[sendsBeforeReconnect][5], 2);
         expect(midiConnection.transport.sent[sendsBeforeReconnect][6], 0x22);
+        expect(midiConnection.transport.sent[sendsBeforeReconnect + 1][5], 2);
+        expect(
+          midiConnection.transport.sent[sendsBeforeReconnect + 1][6],
+          0x31,
+        );
+        expect(
+          midiConnection.transport.sent[sendsBeforeReconnect + 1][7],
+          0x1B,
+        );
         expect(midiConnection.transport.sent.last[5], 2);
         expect(midiConnection.transport.sent.last[6], 0x31);
-        expect(midiConnection.transport.sent.last[7], 0x1B);
+        expect(midiConnection.transport.sent.last[7], 0x00);
 
         returnEnabledValue = true;
         await settingsCubit.retryEs5Change();
@@ -148,16 +217,16 @@ void main() {
         expect(settingsCubit.state.modeRebootRequired, isFalse);
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 4),
-        );
-        expect(midiConnection.transport.sent[sendsBeforeReconnect + 2][5], 2);
-        expect(
-          midiConnection.transport.sent[sendsBeforeReconnect + 2][6],
-          0x32,
+          hasLength(sendsBeforeReconnect + 5),
         );
         expect(midiConnection.transport.sent[sendsBeforeReconnect + 3][5], 2);
         expect(
           midiConnection.transport.sent[sendsBeforeReconnect + 3][6],
+          0x32,
+        );
+        expect(midiConnection.transport.sent[sendsBeforeReconnect + 4][5], 2);
+        expect(
+          midiConnection.transport.sent[sendsBeforeReconnect + 4][6],
           0x31,
         );
       },
@@ -351,7 +420,7 @@ void main() {
         // Reconnect reads ES-5 and Mode but does not write a pending Mode.
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 3),
+          hasLength(sendsBeforeReconnect + 4),
         );
         expect(
           midiConnection.transport.sent.where((packet) => packet[6] == 0x32),
@@ -382,6 +451,7 @@ void main() {
 void _respondWithSettings(
   _FakeNtx8cvMidiTransport transport,
   Uint8List packet, {
+  int channelGroupValue = 0,
   int es5Value = 0,
   int modeValue = 2,
 }) {
@@ -390,6 +460,8 @@ void _respondWithSettings(
     transport.receive(
       _withDeviceId(Ntx8cvSysExFixtures.deviceInformationResponse, deviceId),
     );
+  } else if (packet[6] == 0x31 && packet[7] == 0x00) {
+    transport.receive(_settingResponse(0x00, channelGroupValue, deviceId));
   } else if (packet[6] == 0x31 && packet[7] == 0x01) {
     transport.receive(_settingResponse(0x01, es5Value, deviceId));
   } else if (packet[6] == 0x31 && packet[7] == 0x1B) {
