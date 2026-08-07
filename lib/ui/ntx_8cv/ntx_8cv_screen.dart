@@ -7,6 +7,9 @@ import 'package:nt_helper/cubit/ntx_8cv_connection_cubit.dart';
 import 'package:nt_helper/cubit/ntx_8cv_settings_cubit.dart';
 import 'package:nt_helper/utils/responsive.dart';
 
+Future<void> _ignoreAudioChannelChange(Ntx8cvAudioChannel _, bool _) async {}
+Future<void> _ignoreAudioChannelRetry(Ntx8cvAudioChannel _) async {}
+
 /// The primary page for configuring a separately connected NTX-8CV.
 class Ntx8cvScreen extends StatefulWidget {
   const Ntx8cvScreen({super.key, this.connectionCubit});
@@ -53,6 +56,11 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
     );
   }
 
+  Future<void> _refresh() async {
+    await _connectionCubit.refreshEndpoints();
+    await _settingsCubit.refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isNarrow = Responsive.isMobile(context);
@@ -93,7 +101,7 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                           isNarrow: isNarrow,
                           state: state,
                           deviceIdController: _deviceIdController,
-                          onRefresh: _connectionCubit.refreshEndpoints,
+                          onRefresh: _refresh,
                           onInputChanged: (device) {
                             unawaited(
                               _connectionCubit.selectInputDevice(device),
@@ -123,6 +131,7 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                               builder: (context, settingsState) =>
                                   Ntx8cvSettingsSection(
                                     isConnected: connectionState.isConnected,
+                                    isNarrow: isNarrow,
                                     state: settingsState,
                                     onChannelGroupChanged:
                                         _settingsCubit.setChannelGroup,
@@ -135,6 +144,10 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                                         _settingsCubit.setExpansionMode,
                                     onRetryModeChange:
                                         _settingsCubit.retryModeChange,
+                                    onAudioChannelChanged:
+                                        _settingsCubit.setAudioChannelEnabled,
+                                    onRetryAudioChannelChange:
+                                        _settingsCubit.retryAudioChannelChange,
                                     onReboot: _settingsCubit.reboot,
                                   ),
                             ),
@@ -213,12 +226,18 @@ class _ConnectionSection extends StatelessWidget {
                         },
                 ),
                 const SizedBox(width: 4),
-                Semantics(
-                  liveRegion: true,
-                  label: 'NTX-8CV connection status: ${state.statusLabel}',
-                  child: Chip(
-                    avatar: Icon(_statusIcon(state.status)),
-                    label: Text(state.statusLabel),
+                SizedBox(
+                  width: 144,
+                  child: Semantics(
+                    liveRegion: true,
+                    label: 'NTX-8CV connection status: ${state.statusLabel}',
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Chip(
+                        avatar: Icon(_statusIcon(state.status)),
+                        label: Text(state.statusLabel),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -233,29 +252,8 @@ class _ConnectionSection extends StatelessWidget {
               _NarrowConnectionControls(controls: controls)
             else
               _WideConnectionControls(controls: controls),
-            if (state.statusMessage != null) ...[
-              const SizedBox(height: 12),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  state.statusMessage!,
-                  style: TextStyle(
-                    color: state.status == Ntx8cvConnectionStatus.failed
-                        ? Theme.of(context).colorScheme.error
-                        : null,
-                  ),
-                ),
-              ),
-            ],
-            if (state.isConnected) ...[
-              const SizedBox(height: 12),
-              Semantics(
-                liveRegion: true,
-                child: const Text(
-                  'Device information verified from the selected MIDI input.',
-                ),
-              ),
-            ],
+            const SizedBox(height: 12),
+            _ConnectionFeedbackRegion(isNarrow: isNarrow, state: state),
           ],
         ),
       ),
@@ -269,6 +267,51 @@ class _ConnectionSection extends StatelessWidget {
         Ntx8cvConnectionStatus.connected => Icons.link,
         Ntx8cvConnectionStatus.failed => Icons.error_outline,
       };
+}
+
+/// A fixed-height connection feedback area keeps endpoint controls from
+/// shifting as lifecycle messages appear, disappear, or change length.
+class _ConnectionFeedbackRegion extends StatelessWidget {
+  const _ConnectionFeedbackRegion({
+    required this.isNarrow,
+    required this.state,
+  });
+
+  final bool isNarrow;
+  final Ntx8cvConnectionState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final message =
+        state.statusMessage ??
+        (state.isLoadingEndpoints
+            ? 'Refreshing NTX-8CV MIDI endpoints.'
+            : state.isConnected
+            ? 'Device information verified from the selected MIDI input.'
+            : 'Select the NTX-8CV MIDI endpoints, then connect to verify it.');
+    final isError = state.status == Ntx8cvConnectionStatus.failed;
+    return SizedBox(
+      height: isNarrow ? 72 : 56,
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: Semantics(
+          liveRegion: true,
+          label: message,
+          child: ExcludeSemantics(
+            child: SingleChildScrollView(
+              primary: false,
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: isError ? Theme.of(context).colorScheme.error : null,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _WideConnectionControls extends StatelessWidget {
@@ -290,7 +333,7 @@ class _WideConnectionControls extends StatelessWidget {
         const SizedBox(width: 12),
         Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: controls.button(),
+          child: SizedBox(width: 144, child: controls.button()),
         ),
       ],
     );
@@ -444,6 +487,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
   const Ntx8cvSettingsSection({
     super.key,
     required this.isConnected,
+    this.isNarrow = false,
     required this.state,
     required this.onChannelGroupChanged,
     required this.onRetryChannelGroupChange,
@@ -451,10 +495,13 @@ class Ntx8cvSettingsSection extends StatelessWidget {
     required this.onRetryEs5Change,
     required this.onModeChanged,
     required this.onRetryModeChange,
+    this.onAudioChannelChanged = _ignoreAudioChannelChange,
+    this.onRetryAudioChannelChange = _ignoreAudioChannelRetry,
     required this.onReboot,
   });
 
   final bool isConnected;
+  final bool isNarrow;
   final Ntx8cvSettingsState state;
   final Future<void> Function(Ntx8cvChannelGroup) onChannelGroupChanged;
   final Future<void> Function() onRetryChannelGroupChange;
@@ -462,6 +509,8 @@ class Ntx8cvSettingsSection extends StatelessWidget {
   final Future<void> Function() onRetryEs5Change;
   final Future<void> Function(Ntx8cvExpansionMode) onModeChanged;
   final Future<void> Function() onRetryModeChange;
+  final Future<void> Function(Ntx8cvAudioChannel, bool) onAudioChannelChanged;
+  final Future<void> Function(Ntx8cvAudioChannel) onRetryAudioChannelChange;
   final Future<void> Function() onReboot;
 
   @override
@@ -482,7 +531,31 @@ class Ntx8cvSettingsSection extends StatelessWidget {
         state.modeCapabilityEvidenced &&
         !state.isBusy &&
         !state.hasPendingModeChange;
+    final canChangeAudioChannels =
+        isConnected && _audioChannelsApply && !state.isBusy;
     final canReboot = isConnected && !state.isBusy;
+    final audioChannelTiles = [
+      for (final channel in Ntx8cvAudioChannel.values)
+        _AudioChannelTile(
+          key: Key('ntx8cv-audio-channel-${channel.number}'),
+          isNarrow: isNarrow,
+          channel: channel,
+          confirmedEnabled: state.confirmedAudioChannelEnabled(channel),
+          isWriting: state.isWritingAudioChannel(channel),
+          hasPendingChange: state.hasPendingAudioChannelChange(channel),
+          status: _audioChannelStatus(channel),
+          enabled:
+              canChangeAudioChannels &&
+              state.confirmedAudioChannelEnabled(channel) != null &&
+              !state.hasPendingAudioChannelChange(channel),
+          onChanged: (enabled) {
+            unawaited(onAudioChannelChanged(channel, enabled));
+          },
+          onRetry: () {
+            unawaited(onRetryAudioChannelChange(channel));
+          },
+        ),
+    ];
 
     return Card(
       child: Padding(
@@ -513,37 +586,45 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                             unawaited(onReboot());
                           }
                         : null,
-                    icon: const Icon(Icons.restart_alt),
-                    label: Text(
-                      state.isRebooting
-                          ? 'Rebooting NTX-8CV'
-                          : 'Reboot NTX-8CV',
-                    ),
+                    icon: state.isRebooting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.restart_alt),
+                    label: const Text('Reboot NTX-8CV'),
                   ),
                 ),
               ],
             ),
-            if (state.rebootMessage != null) ...[
-              const SizedBox(height: 8),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  state.rebootMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            ],
             const SizedBox(height: 8),
+            _ReservedSettingsStatusRegion(
+              isNarrow: isNarrow,
+              message:
+                  state.rebootMessage ??
+                  (state.isRebooting
+                      ? 'Rebooting the selected NTX-8CV and reacquiring its settings.'
+                      : ''),
+              isError: state.rebootMessage != null,
+            ),
             const Text(
-              'Connect an NTX-8CV to read and configure its settings. The '
-              'NTX-8CV Channel Group remains separate from the disting NT’s '
-              'granular channel-enable controls.',
+              'Connect an NTX-8CV to read and configure its settings. Channel '
+              'Group is separate from individual NTX-8CV audio-channel '
+              'enablement and does not alter disting NT algorithm routing.',
             ),
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Enable ES-5'),
-              subtitle: Text(_es5Description()),
+              subtitle: SizedBox(
+                height: 36,
+                child: Text(
+                  _es5Description(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               value: state.confirmedEs5Enabled ?? false,
               onChanged: canChangeEs5
                   ? (enabled) {
@@ -551,27 +632,23 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                     }
                   : null,
             ),
-            Semantics(liveRegion: true, child: Text(_es5Status())),
-            if (state.hasPendingEs5Change) ...[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('ntx8cv-retry-es5-change'),
-                onPressed: isConnected && !state.isBusy
-                    ? () {
-                        unawaited(onRetryEs5Change());
-                      }
-                    : null,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry send'),
-              ),
-            ],
+            _ReservedSettingsStatusRegion(
+              isNarrow: isNarrow,
+              message: _es5Status(),
+            ),
+            _RecoveryActionSlot(
+              visible: state.hasPendingEs5Change,
+              actionKey: const Key('ntx8cv-retry-es5-change'),
+              enabled: isConnected && !state.isBusy,
+              onPressed: onRetryEs5Change,
+            ),
             const SizedBox(height: 16),
             DropdownButtonFormField<Ntx8cvExpansionMode>(
               key: ValueKey('ntx8cv-expansion-mode-${state.confirmedMode}'),
               initialValue: state.confirmedMode,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'NT expansion mode',
-                helperText: _modeDescription(),
+                border: OutlineInputBorder(),
               ),
               items: Ntx8cvExpansionMode.values
                   .map(
@@ -587,33 +664,62 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                     }
                   : null,
             ),
-            const SizedBox(height: 8),
-            Semantics(liveRegion: true, child: Text(_modeStatus())),
-            if (state.hasPendingModeChange) ...[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('ntx8cv-retry-mode-change'),
-                onPressed:
-                    isConnected &&
-                        state.modeCapabilityEvidenced &&
-                        !state.isBusy
-                    ? () {
-                        unawaited(onRetryModeChange());
-                      }
-                    : null,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry send'),
+            _ReservedSettingsDescriptionRegion(
+              isNarrow: isNarrow,
+              message: _modeDescription(),
+            ),
+            _ReservedSettingsStatusRegion(
+              isNarrow: isNarrow,
+              message: _modeStatus(),
+            ),
+            _RecoveryActionSlot(
+              visible: state.hasPendingModeChange,
+              actionKey: const Key('ntx8cv-retry-mode-change'),
+              enabled:
+                  isConnected && state.modeCapabilityEvidenced && !state.isBusy,
+              onPressed: onRetryModeChange,
+            ),
+            const SizedBox(height: 16),
+            Semantics(
+              header: true,
+              child: Text(
+                'Audio channel enablement',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: isNarrow ? 56 : 40,
+              child: Text(
+                _audioChannelsDescription(),
+                maxLines: isNarrow ? 3 : 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isNarrow)
+              ...audioChannelTiles
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(children: audioChannelTiles.take(4).toList()),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(children: audioChannelTiles.skip(4).toList()),
+                  ),
+                ],
+              ),
             const SizedBox(height: 16),
             DropdownButtonFormField<Ntx8cvChannelGroup>(
               key: ValueKey(
                 'ntx8cv-channel-group-${state.confirmedChannelGroup}',
               ),
               initialValue: state.confirmedChannelGroup,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Channel Group',
-                helperText: _channelGroupDescription(),
+                border: OutlineInputBorder(),
               ),
               items: Ntx8cvChannelGroup.values
                   .map(
@@ -631,25 +737,78 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                     }
                   : null,
             ),
-            const SizedBox(height: 8),
-            Semantics(liveRegion: true, child: Text(_channelGroupStatus())),
-            if (state.hasPendingChannelGroupChange) ...[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('ntx8cv-retry-channel-group-change'),
-                onPressed: isConnected && !state.isBusy
-                    ? () {
-                        unawaited(onRetryChannelGroupChange());
-                      }
-                    : null,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry send'),
-              ),
-            ],
+            _ReservedSettingsDescriptionRegion(
+              isNarrow: isNarrow,
+              message: _channelGroupDescription(),
+            ),
+            _ReservedSettingsStatusRegion(
+              isNarrow: isNarrow,
+              message: _channelGroupStatus(),
+            ),
+            _RecoveryActionSlot(
+              visible: state.hasPendingChannelGroupChange,
+              actionKey: const Key('ntx8cv-retry-channel-group-change'),
+              enabled: isConnected && !state.isBusy,
+              onPressed: onRetryChannelGroupChange,
+            ),
           ],
         ),
       ),
     );
+  }
+
+  bool get _audioChannelsApply =>
+      !state.modeRebootRequired &&
+      switch (state.confirmedMode) {
+        Ntx8cvExpansionMode.audio1x8_32bit ||
+        Ntx8cvExpansionMode.audio2x8_16bit => true,
+        _ => false,
+      };
+
+  String _audioChannelsDescription() {
+    if (!isConnected) {
+      return 'Connect an NTX-8CV to read its audio-channel enable settings.';
+    }
+    if (!state.modeCapabilityEvidenced) {
+      return 'Audio-channel controls remain unavailable until Mode is evidenced.';
+    }
+    if (state.modeRebootRequired) {
+      return 'Audio-channel changes are unavailable until the confirmed Mode change is applied by rebooting the NTX-8CV.';
+    }
+    if (!_audioChannelsApply) {
+      return 'Audio channels are not applicable while the device-confirmed Mode is 8x8 CV.';
+    }
+    return 'Each channel is read from the selected NTX-8CV and changes require matching readback.';
+  }
+
+  String _audioChannelStatus(Ntx8cvAudioChannel channel) {
+    final change = state.audioChannelChange(channel);
+    if (!isConnected) {
+      return 'Connect to read the device-confirmed state.';
+    }
+    if (state.modeRebootRequired) {
+      return 'Unavailable until the confirmed Mode change is applied by rebooting the NTX-8CV.';
+    }
+    if (!_audioChannelsApply) {
+      return 'Unavailable: this channel applies only in an audio expansion mode.';
+    }
+    if (change.hasPendingChange) {
+      final attempted = state.attemptedAudioChannelEnabled(channel);
+      final confirmed = state.confirmedAudioChannelEnabled(channel);
+      final progress = change.isWriting
+          ? 'Sending and waiting for device readback.'
+          : change.message ?? 'The actual device state is uncertain.';
+      return 'Attempted ${attempted == true ? 'enabled' : 'disabled'}, '
+          'pending/failed and not device-confirmed. '
+          '${confirmed == null ? 'No device-confirmed value is available.' : 'Last device-confirmed value: ${confirmed ? 'enabled' : 'disabled'}.'} '
+          '$progress';
+    }
+    if (change.isLoading) return 'Reading this channel from the NTX-8CV.';
+    final confirmed = state.confirmedAudioChannelEnabled(channel);
+    if (confirmed != null) {
+      return 'Device-confirmed: ${confirmed ? 'enabled' : 'disabled'}.';
+    }
+    return change.message ?? 'No device-confirmed value is available.';
   }
 
   String _channelGroupDescription() {
@@ -657,10 +816,9 @@ class Ntx8cvSettingsSection extends StatelessWidget {
     if (state.confirmedChannelGroup == null) {
       return 'Waiting for a device-confirmed value.';
     }
-    return 'Selects this NTX-8CV’s eight-channel block. This does not replace '
-        'the disting NT’s granular channel-enable controls; configure both '
-        'when needed. Changes are sent immediately and confirmed by reading '
-        'the setting back.';
+    return 'Selects this NTX-8CV’s eight-channel block. It does not enable '
+        'individual audio channels or alter disting NT algorithm routing. '
+        'Changes are sent immediately and confirmed by reading the setting back.';
   }
 
   String _es5Description() {
@@ -753,5 +911,189 @@ class Ntx8cvSettingsSection extends StatelessWidget {
               'not take effect until this NTX-8CV is rebooted.'
         : '';
     return 'Device-confirmed NT expansion mode: ${confirmed.label}.$reboot';
+  }
+}
+
+/// Keeps explanatory text from changing a dropdown's rendered height.
+class _ReservedSettingsDescriptionRegion extends StatelessWidget {
+  const _ReservedSettingsDescriptionRegion({
+    required this.isNarrow,
+    required this.message,
+  });
+
+  final bool isNarrow;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: isNarrow ? 56 : 40,
+      child: Text(
+        message,
+        maxLines: isNarrow ? 3 : 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+/// Reserves enough vertical room for all lifecycle and recovery text without
+/// allowing a transient message to move adjacent settings controls.
+class _ReservedSettingsStatusRegion extends StatelessWidget {
+  const _ReservedSettingsStatusRegion({
+    required this.isNarrow,
+    required this.message,
+    this.isError = false,
+  });
+
+  final bool isNarrow;
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: isNarrow ? 72 : 56,
+      child: message.isEmpty
+          ? const SizedBox.shrink()
+          : Align(
+              alignment: Alignment.topLeft,
+              child: Semantics(
+                liveRegion: true,
+                label: message,
+                child: ExcludeSemantics(
+                  child: SingleChildScrollView(
+                    primary: false,
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        color: isError
+                            ? Theme.of(context).colorScheme.error
+                            : null,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+/// Keeps recovery actions from changing the settings card's geometry.
+class _RecoveryActionSlot extends StatelessWidget {
+  const _RecoveryActionSlot({
+    required this.visible,
+    required this.actionKey,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final bool visible;
+  final Key actionKey;
+  final bool enabled;
+  final Future<void> Function() onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: visible
+          ? Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                key: actionKey,
+                onPressed: enabled
+                    ? () {
+                        unawaited(onPressed());
+                      }
+                    : null,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry send'),
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+}
+
+class _AudioChannelTile extends StatelessWidget {
+  const _AudioChannelTile({
+    super.key,
+    required this.isNarrow,
+    required this.channel,
+    required this.confirmedEnabled,
+    required this.isWriting,
+    required this.hasPendingChange,
+    required this.status,
+    required this.enabled,
+    required this.onChanged,
+    required this.onRetry,
+  });
+
+  final bool isNarrow;
+  final Ntx8cvAudioChannel channel;
+  final bool? confirmedEnabled;
+  final bool isWriting;
+  final bool hasPendingChange;
+  final String status;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: isNarrow ? 132 : 116,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            container: true,
+            label: '${channel.label}. $status',
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(channel.label),
+              subtitle: SizedBox(
+                height: 36,
+                child: ExcludeSemantics(
+                  child: Tooltip(
+                    message: status,
+                    child: Text(
+                      status,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+              value: confirmedEnabled ?? false,
+              onChanged: enabled ? onChanged : null,
+              secondary: isWriting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+            ),
+          ),
+          SizedBox(
+            height: 32,
+            child: hasPendingChange
+                ? Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: Key('ntx8cv-retry-audio-channel-${channel.number}'),
+                      onPressed: enabled ? onRetry : null,
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Retry send'),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
   }
 }

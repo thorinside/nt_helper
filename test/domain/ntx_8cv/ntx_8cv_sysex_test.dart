@@ -35,6 +35,14 @@ void main() {
           orderedEquals(Ntx8cvSysExFixtures.writeEs5EnabledSetting),
         );
         expect(
+          codec.readSetting(deviceId: 0, settingId: 0x04),
+          orderedEquals(Ntx8cvSysExFixtures.readAudioChannel1EnabledSetting),
+        );
+        expect(
+          codec.writeSetting(deviceId: 0, settingId: 0x04, value: 0),
+          orderedEquals(Ntx8cvSysExFixtures.writeAudioChannel1DisabledSetting),
+        );
+        expect(
           codec.readSetting(deviceId: 0, settingId: 0x1B),
           orderedEquals(Ntx8cvSysExFixtures.readModeSetting),
         );
@@ -63,12 +71,15 @@ void main() {
     });
 
     test(
-      'decodes complete Channel Group, ES-5, and mode setting responses',
+      'decodes complete Channel Group, ES-5, audio-channel, and mode setting responses',
       () {
         final channelGroup = codec.decode(
           Ntx8cvSysExFixtures.channelGroupResponse,
         );
         final es5 = codec.decode(Ntx8cvSysExFixtures.es5EnabledResponse);
+        final audioChannel = codec.decode(
+          Ntx8cvSysExFixtures.audioChannel1EnabledResponse,
+        );
         final mode = codec.decode(Ntx8cvSysExFixtures.modeSettingResponse);
 
         expect(channelGroup, isA<Ntx8cvSettingValue>());
@@ -82,6 +93,12 @@ void main() {
         expect(es5Setting.deviceId, 0);
         expect(es5Setting.settingId, 0x01);
         expect(es5Setting.value, 1);
+
+        expect(audioChannel, isA<Ntx8cvSettingValue>());
+        final audioChannelSetting = audioChannel! as Ntx8cvSettingValue;
+        expect(audioChannelSetting.deviceId, 0);
+        expect(audioChannelSetting.settingId, 0x04);
+        expect(audioChannelSetting.value, 1);
 
         expect(mode, isA<Ntx8cvSettingValue>());
         final modeSetting = mode! as Ntx8cvSettingValue;
@@ -234,6 +251,21 @@ void main() {
         await expectLater(confirmation, throwsA(isA<StateError>()));
       },
     );
+
+    test('reports a malformed response from the selected device', () async {
+      final confirmation = session.writeAndConfirmSetting(
+        settingId: 0x1B,
+        value: 2,
+      );
+      await _flushMicrotasks();
+
+      transport.receive(Ntx8cvSysExFixtures.malformedSettingResponse);
+
+      await expectLater(
+        confirmation,
+        throwsA(isA<Ntx8cvMalformedResponseException>()),
+      );
+    });
 
     test('reports a configurable timeout when a response is absent', () {
       fakeAsync((async) {

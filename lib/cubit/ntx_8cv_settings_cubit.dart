@@ -10,6 +10,12 @@ const int kNtx8cvChannelGroupSettingId = 0x00;
 /// The released NTX-8CV setting that enables its ES-5 output use.
 const int kNtx8cvEs5EnabledSettingId = 0x01;
 
+/// The first of the eight released per-audio-channel enable settings.
+///
+/// The Expert Sleepers configuration tool identifies settings `0x04` through
+/// `0x0B` as the enable flags for audio channels 1 through 8, respectively.
+const int kNtx8cvFirstAudioChannelEnabledSettingId = 0x04;
+
 /// The upstream NT expansion-mode setting. It is probed before it is writable.
 const int kNtx8cvExpansionModeSettingId = 0x1B;
 
@@ -30,6 +36,26 @@ enum Ntx8cvExpansionMode {
     }
     return null;
   }
+}
+
+/// The eight individually configurable NTX-8CV audio channels.
+///
+/// These settings are applicable only while the device-confirmed expansion
+/// mode is one of the audio modes. Their setting IDs come directly from the
+/// released NTX-8CV configuration tool's `Enable audio channel` controls.
+enum Ntx8cvAudioChannel {
+  channel1,
+  channel2,
+  channel3,
+  channel4,
+  channel5,
+  channel6,
+  channel7,
+  channel8;
+
+  int get number => index + 1;
+  int get settingId => kNtx8cvFirstAudioChannelEnabledSettingId + index;
+  String get label => 'Audio channel $number';
 }
 
 /// The released Channel Group values, each selecting one eight-channel block.
@@ -123,6 +149,16 @@ class Ntx8cvSettingsState {
     this.channelGroup = const Ntx8cvSettingChange(),
     this.es5 = const Ntx8cvSettingChange(),
     this.mode = const Ntx8cvSettingChange(),
+    this.audioChannels = const [
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+    ],
     this.modeCapabilityEvidenced = false,
     this.modeRebootRequired = false,
     this.isRebooting = false,
@@ -132,6 +168,9 @@ class Ntx8cvSettingsState {
   final Ntx8cvSettingChange channelGroup;
   final Ntx8cvSettingChange es5;
   final Ntx8cvSettingChange mode;
+
+  /// One device-confirmed/pending state for each [Ntx8cvAudioChannel].
+  final List<Ntx8cvSettingChange> audioChannels;
 
   /// True only after the current session read setting `0x1B` with a value in
   /// `0..2`. A timeout is absence of evidence, not proof of unsupported
@@ -192,6 +231,27 @@ class Ntx8cvSettingsState {
   String? get modeMessage => mode.message;
   bool get hasPendingModeChange => mode.hasPendingChange;
 
+  Ntx8cvSettingChange audioChannelChange(Ntx8cvAudioChannel channel) =>
+      audioChannels[channel.index];
+
+  bool? confirmedAudioChannelEnabled(Ntx8cvAudioChannel channel) =>
+      _enabledValue(audioChannelChange(channel).confirmedValue);
+
+  bool? attemptedAudioChannelEnabled(Ntx8cvAudioChannel channel) =>
+      _enabledValue(audioChannelChange(channel).attemptedValue);
+
+  bool isLoadingAudioChannel(Ntx8cvAudioChannel channel) =>
+      audioChannelChange(channel).isLoading;
+
+  bool isWritingAudioChannel(Ntx8cvAudioChannel channel) =>
+      audioChannelChange(channel).isWriting;
+
+  bool hasPendingAudioChannelChange(Ntx8cvAudioChannel channel) =>
+      audioChannelChange(channel).hasPendingChange;
+
+  bool get hasAudioChannelOperationInProgress =>
+      audioChannels.any((change) => change.isLoading || change.isWriting);
+
   bool get isBusy =>
       isRebooting ||
       channelGroup.isLoading ||
@@ -199,7 +259,8 @@ class Ntx8cvSettingsState {
       es5.isLoading ||
       es5.isWriting ||
       mode.isLoading ||
-      mode.isWriting;
+      mode.isWriting ||
+      hasAudioChannelOperationInProgress;
 
   bool get hasSettingOperationInProgress =>
       channelGroup.isLoading ||
@@ -207,12 +268,14 @@ class Ntx8cvSettingsState {
       es5.isLoading ||
       es5.isWriting ||
       mode.isLoading ||
-      mode.isWriting;
+      mode.isWriting ||
+      hasAudioChannelOperationInProgress;
 
   Ntx8cvSettingsState copyWith({
     Ntx8cvSettingChange? channelGroup,
     Ntx8cvSettingChange? es5,
     Ntx8cvSettingChange? mode,
+    List<Ntx8cvSettingChange>? audioChannels,
     bool? modeCapabilityEvidenced,
     bool? modeRebootRequired,
     bool? isRebooting,
@@ -223,6 +286,7 @@ class Ntx8cvSettingsState {
       channelGroup: channelGroup ?? this.channelGroup,
       es5: es5 ?? this.es5,
       mode: mode ?? this.mode,
+      audioChannels: audioChannels ?? this.audioChannels,
       modeCapabilityEvidenced:
           modeCapabilityEvidenced ?? this.modeCapabilityEvidenced,
       modeRebootRequired: modeRebootRequired ?? this.modeRebootRequired,
@@ -238,6 +302,15 @@ class Ntx8cvSettingsState {
     Ntx8cvSetting.es5Enabled => es5,
     Ntx8cvSetting.expansionMode => mode,
   };
+
+  Ntx8cvSettingsState withAudioChannelChange(
+    Ntx8cvAudioChannel channel,
+    Ntx8cvSettingChange change,
+  ) {
+    final updatedChanges = List<Ntx8cvSettingChange>.of(audioChannels)
+      ..[channel.index] = change;
+    return copyWith(audioChannels: List.unmodifiable(updatedChanges));
+  }
 
   Ntx8cvSettingsState withChange(
     Ntx8cvSetting setting,
@@ -260,6 +333,12 @@ class Ntx8cvSettingsState {
       modeCapabilityEvidenced: modeCapabilityEvidenced,
       modeRebootRequired: modeRebootRequired,
     ),
+  };
+
+  static bool? _enabledValue(int? value) => switch (value) {
+    0 => false,
+    1 => true,
+    _ => null,
   };
 }
 
@@ -299,6 +378,26 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   /// probe. The three [Ntx8cvExpansionMode] values map to protocol `0..2`.
   Future<void> setExpansionMode(Ntx8cvExpansionMode mode) =>
       _setSetting(Ntx8cvSetting.expansionMode, mode.value);
+
+  /// Changes one supported audio channel only after the device-confirmed Mode
+  /// establishes that audio channels apply to this selected NTX-8CV.
+  Future<void> setAudioChannelEnabled(
+    Ntx8cvAudioChannel channel,
+    bool enabled,
+  ) => _setAudioChannel(channel, enabled ? 1 : 0);
+
+  /// Explicitly resends one retained, unconfirmed audio-channel change.
+  /// Reconnecting or refreshing never invokes this automatically.
+  Future<void> retryAudioChannelChange(Ntx8cvAudioChannel channel) =>
+      _retryAudioChannel(channel);
+
+  /// Reads the current device-confirmed settings without sending any writes.
+  /// A retained pending change is deliberately not retried or overwritten.
+  Future<void> refresh() async {
+    final session = _currentSession;
+    if (session == null || state.isBusy) return;
+    await _refreshSettings(session);
+  }
 
   /// Explicitly resends the retained, unconfirmed Channel Group change to the
   /// current identity-validated NTX-8CV. It never reconnects or retries on
@@ -382,6 +481,75 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       return;
     }
     await _writeSetting(setting, attemptedValue);
+  }
+
+  Future<void> _setAudioChannel(Ntx8cvAudioChannel channel, int value) async {
+    final change = state.audioChannelChange(channel);
+    if (!_audioChannelsApply ||
+        change.hasPendingChange ||
+        change.confirmedValue == null ||
+        change.confirmedValue == value ||
+        state.isBusy) {
+      return;
+    }
+    await _writeAudioChannel(channel, value);
+  }
+
+  Future<void> _retryAudioChannel(Ntx8cvAudioChannel channel) async {
+    final attemptedValue = state.audioChannelChange(channel).attemptedValue;
+    if (!_audioChannelsApply || attemptedValue == null || state.isBusy) return;
+    await _writeAudioChannel(channel, attemptedValue);
+  }
+
+  Future<void> _writeAudioChannel(Ntx8cvAudioChannel channel, int value) async {
+    final session = _currentSession;
+    if (session == null) return;
+
+    emit(
+      state.withAudioChannelChange(
+        channel,
+        state
+            .audioChannelChange(channel)
+            .copyWith(
+              attemptedValue: value,
+              isWriting: true,
+              clearMessage: true,
+            ),
+      ),
+    );
+    try {
+      await session.writeAndConfirmSetting(
+        settingId: channel.settingId,
+        value: value,
+      );
+      if (!_isActiveSession(session)) return;
+      emit(
+        state.withAudioChannelChange(
+          channel,
+          state
+              .audioChannelChange(channel)
+              .copyWith(
+                confirmedValue: value,
+                clearAttemptedValue: true,
+                isWriting: false,
+                clearMessage: true,
+              ),
+        ),
+      );
+    } catch (error) {
+      if (!_isActiveSession(session)) return;
+      emit(
+        state.withAudioChannelChange(
+          channel,
+          state
+              .audioChannelChange(channel)
+              .copyWith(
+                isWriting: false,
+                message: _audioWriteFailureMessage(channel, error),
+              ),
+        ),
+      );
+    }
   }
 
   Future<void> _writeSetting(Ntx8cvSetting setting, int value) async {
@@ -471,7 +639,12 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     _activeSession = session;
     // A prior probe applies to the old session. Reads below must evidence the
     // mode capability again before this session permits a Mode write or retry.
-    emit(state.copyWith(modeCapabilityEvidenced: false));
+    emit(
+      state.copyWith(
+        modeCapabilityEvidenced: false,
+        audioChannels: _audioChannelsForNewSession(),
+      ),
+    );
     unawaited(_refreshFor(session));
   }
 
@@ -496,6 +669,10 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       channelGroup: retainedChange(state.channelGroup, 'Channel Group'),
       es5: retainedChange(state.es5, 'ES-5'),
       mode: retainedChange(state.mode, 'Mode'),
+      audioChannels: List.unmodifiable([
+        for (final channel in Ntx8cvAudioChannel.values)
+          retainedChange(state.audioChannelChange(channel), channel.label),
+      ]),
       rebootMessage: state.rebootMessage,
     );
   }
@@ -522,6 +699,10 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       channelGroup: interruptedChange(state.channelGroup, 'Channel Group'),
       es5: interruptedChange(state.es5, 'ES-5'),
       mode: interruptedChange(state.mode, 'NT expansion mode'),
+      audioChannels: List.unmodifiable([
+        for (final channel in Ntx8cvAudioChannel.values)
+          interruptedChange(state.audioChannelChange(channel), channel.label),
+      ]),
       modeRebootRequired: state.modeRebootRequired,
       isRebooting: state.isRebooting,
       rebootMessage: state.rebootMessage,
@@ -551,18 +732,73 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   }
 
   Future<void> _refreshSettings(Ntx8cvSession session) async {
-    // Do not read an ES-5 or Channel Group setting whose attempted value is
-    // pending: leaving that value untouched makes reconnect a recovery step,
-    // never an implicit confirmation or resend. A Mode probe is always safe
-    // and is required to enable a Mode retry for this newly validated session.
+    // Do not read an ES-5, audio-channel, or Channel Group setting whose
+    // attempted value is pending: leaving that value untouched makes reconnect
+    // a recovery step, never an implicit confirmation or resend. A Mode probe
+    // is always safe and is required to enable a Mode retry for this newly
+    // validated session.
     if (!state.es5.hasPendingChange) {
       await _readSetting(session, Ntx8cvSetting.es5Enabled);
     }
     if (!_isActiveSession(session)) return;
     await _readSetting(session, Ntx8cvSetting.expansionMode);
     if (!_isActiveSession(session)) return;
+    for (final channel in Ntx8cvAudioChannel.values) {
+      if (!state.hasPendingAudioChannelChange(channel)) {
+        await _readAudioChannel(session, channel);
+      }
+      if (!_isActiveSession(session)) return;
+    }
     if (!state.channelGroup.hasPendingChange) {
       await _readSetting(session, Ntx8cvSetting.channelGroup);
+    }
+  }
+
+  Future<void> _readAudioChannel(
+    Ntx8cvSession session,
+    Ntx8cvAudioChannel channel,
+  ) async {
+    emit(
+      state.withAudioChannelChange(
+        channel,
+        state
+            .audioChannelChange(channel)
+            .copyWith(isLoading: true, clearMessage: true),
+      ),
+    );
+    try {
+      final response = await session.readSetting(settingId: channel.settingId);
+      if (!_isActiveSession(session)) return;
+      if (response.value != 0 && response.value != 1) {
+        throw StateError(
+          '${channel.label} has invalid value ${response.value}.',
+        );
+      }
+      emit(
+        state.withAudioChannelChange(
+          channel,
+          state
+              .audioChannelChange(channel)
+              .copyWith(
+                confirmedValue: response.value,
+                isLoading: false,
+                clearMessage: true,
+              ),
+        ),
+      );
+    } catch (error) {
+      if (!_isActiveSession(session)) return;
+      emit(
+        state.withAudioChannelChange(
+          channel,
+          state
+              .audioChannelChange(channel)
+              .copyWith(
+                isLoading: false,
+                message: _audioReadFailureMessage(channel, error),
+              ),
+        ),
+      );
     }
   }
 
@@ -636,6 +872,45 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     Ntx8cvSetting.es5Enabled => value == 0 || value == 1,
     Ntx8cvSetting.expansionMode => Ntx8cvExpansionMode.fromValue(value) != null,
   };
+
+  String _audioWriteFailureMessage(Ntx8cvAudioChannel channel, Object error) {
+    final reason = switch (error) {
+      Ntx8cvTimeoutException() => 'timed out waiting for device readback',
+      Ntx8cvMalformedResponseException() =>
+        'received a malformed device response',
+      StateError() => 'received mismatched device readback',
+      _ => 'was not confirmed by device readback',
+    };
+    return 'The ${channel.label} change $reason. The actual device state is '
+        'uncertain.';
+  }
+
+  String _audioReadFailureMessage(Ntx8cvAudioChannel channel, Object error) {
+    final reason = switch (error) {
+      Ntx8cvTimeoutException() => 'timed out',
+      Ntx8cvMalformedResponseException() => 'received a malformed response',
+      _ => 'failed',
+    };
+    return 'Could not read the device-confirmed ${channel.label} setting: '
+        '$reason. Check the NTX-8CV connection and reconnect to try again.';
+  }
+
+  bool get _audioChannelsApply =>
+      !state.modeRebootRequired &&
+      switch (state.confirmedMode) {
+        Ntx8cvExpansionMode.audio1x8_32bit ||
+        Ntx8cvExpansionMode.audio2x8_16bit => true,
+        _ => false,
+      };
+
+  List<Ntx8cvSettingChange> _audioChannelsForNewSession() => List.unmodifiable([
+    for (final channel in Ntx8cvAudioChannel.values)
+      state.hasPendingAudioChannelChange(channel)
+          ? state
+                .audioChannelChange(channel)
+                .copyWith(clearConfirmedValue: true)
+          : const Ntx8cvSettingChange(),
+  ]);
 
   Ntx8cvSession? get _currentSession {
     final session = _connectionCubit.session;

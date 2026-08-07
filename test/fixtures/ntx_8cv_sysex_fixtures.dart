@@ -121,6 +121,36 @@ abstract final class Ntx8cvSysExFixtures {
     0xF7,
   ]);
 
+  /// The released first per-audio-channel enable setting (`0x04`).
+  static final Uint8List readAudioChannel1EnabledSetting = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x31,
+    0x04,
+    0xF7,
+  ]);
+
+  static final Uint8List audioChannel1EnabledResponse = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x31,
+    0x04,
+    0x01,
+    0xF7,
+  ]);
+
+  static final Uint8List writeAudioChannel1DisabledSetting = Uint8List.fromList(
+    [0xF0, 0x00, 0x21, 0x27, 0x6A, 0x00, 0x32, 0x04, 0x00, 0xF7],
+  );
+
   static final Uint8List readModeSetting = Uint8List.fromList([
     0xF0,
     0x00,

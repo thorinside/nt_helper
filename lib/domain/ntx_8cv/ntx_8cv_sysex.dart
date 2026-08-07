@@ -219,6 +219,17 @@ class Ntx8cvTransportException implements Exception {
   String toString() => 'Ntx8cvTransportException($cause)';
 }
 
+/// Reports a malformed response from the selected NTX-8CV while a request was
+/// pending. Frames from another device family or device ID remain ignored.
+class Ntx8cvMalformedResponseException implements Exception {
+  const Ntx8cvMalformedResponseException({required this.operation});
+
+  final String operation;
+
+  @override
+  String toString() => 'Ntx8cvMalformedResponseException($operation)';
+}
+
 /// Serializes NTX-8CV requests and matches responses for one selected device.
 ///
 /// The session makes no implicit retries. A setting is only confirmed by
@@ -360,11 +371,20 @@ class Ntx8cvSession {
 
   void _handlePacket(Uint8List packet) {
     final pending = _pending;
+    if (pending == null) return;
+
     final message = _codec.decode(packet);
-    if (pending == null || message == null || message.deviceId != deviceId) {
+    if (message == null) {
+      if (_isMalformedFrameForSelectedDevice(packet)) {
+        _pending = null;
+        pending.cancelTimeout();
+        pending.completeError(
+          Ntx8cvMalformedResponseException(operation: pending.operation),
+        );
+      }
       return;
     }
-    if (!pending.matches(message)) return;
+    if (message.deviceId != deviceId || !pending.matches(message)) return;
 
     _pending = null;
     pending.cancelTimeout();
@@ -379,6 +399,15 @@ class Ntx8cvSession {
     pending.cancelTimeout();
     pending.completeError(Ntx8cvTransportException(error), stackTrace);
   }
+
+  bool _isMalformedFrameForSelectedDevice(Uint8List packet) =>
+      packet.length >= 6 &&
+      packet[0] == _sysExStart &&
+      packet[1] == kNtx8cvManufacturerId[0] &&
+      packet[2] == kNtx8cvManufacturerId[1] &&
+      packet[3] == kNtx8cvManufacturerId[2] &&
+      packet[4] == kNtx8cvProductByte &&
+      packet[5] == deviceId;
 
   void _ensureOpen() {
     if (_isClosed) {

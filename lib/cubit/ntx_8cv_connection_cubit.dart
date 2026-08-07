@@ -175,6 +175,7 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
 
   /// Refreshes the available input and output endpoint lists.
   Future<void> refreshEndpoints() async {
+    if (!isClosed) emit(state.copyWith(isLoadingEndpoints: true));
     try {
       final devices = await _midiConnection.listDevices();
       final inputDevices =

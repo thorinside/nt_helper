@@ -38,7 +38,7 @@ void main() {
     });
 
     test(
-      'reads Channel Group, ES-5, and probes Mode after connecting',
+      'reads Channel Group, ES-5, Mode, and every audio-channel setting after connecting',
       () async {
         midiConnection.transport.onSend = (packet) {
           _respondWithSettings(midiConnection.transport, packet);
@@ -53,7 +53,7 @@ void main() {
           Ntx8cvExpansionMode.audio2x8_16bit,
         );
         expect(settingsCubit.state.modeCapabilityEvidenced, isTrue);
-        expect(midiConnection.transport.sent, hasLength(4));
+        expect(midiConnection.transport.sent, hasLength(12));
         expect(
           midiConnection.transport.sent[0],
           orderedEquals(Ntx8cvSysExFixtures.deviceInformationRequest),
@@ -68,6 +68,16 @@ void main() {
         );
         expect(
           midiConnection.transport.sent[3],
+          orderedEquals(Ntx8cvSysExFixtures.readAudioChannel1EnabledSetting),
+        );
+        expect(
+          midiConnection.transport.sent
+              .sublist(3, 11)
+              .map((packet) => packet[7]),
+          orderedEquals([0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B]),
+        );
+        expect(
+          midiConnection.transport.sent[11],
           orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
         );
         expect(
@@ -129,7 +139,13 @@ void main() {
           orderedEquals(Ntx8cvSysExFixtures.readModeSetting),
         );
         expect(
-          midiConnection.transport.sent[sendsBeforeReboot + 4],
+          midiConnection.transport.sent
+              .sublist(sendsBeforeReboot + 4, sendsBeforeReboot + 12)
+              .map((packet) => packet[7]),
+          orderedEquals([0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B]),
+        );
+        expect(
+          midiConnection.transport.sent[sendsBeforeReboot + 12],
           orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
         );
         expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
@@ -144,6 +160,286 @@ void main() {
         expect(settingsCubit.state.modeCapabilityEvidenced, isTrue);
         expect(settingsCubit.state.modeRebootRequired, isFalse);
         expect(settingsCubit.state.isRebooting, isFalse);
+      },
+    );
+
+    test(
+      'confirms individual audio channels only after same-setting readback',
+      () async {
+        final audioChannelValues = [1, 0, 1, 0, 1, 0, 1, 0];
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x32 && packet[7] == 0x05) {
+            audioChannelValues[1] = packet[8];
+          }
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            audioChannelValues: audioChannelValues,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isTrue,
+        );
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel2,
+          ),
+          isFalse,
+        );
+
+        await settingsCubit.setAudioChannelEnabled(
+          Ntx8cvAudioChannel.channel2,
+          true,
+        );
+
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel2,
+          ),
+          isTrue,
+        );
+        expect(
+          settingsCubit.state.hasPendingAudioChannelChange(
+            Ntx8cvAudioChannel.channel2,
+          ),
+          isFalse,
+        );
+        expect(
+          midiConnection.transport.sent[midiConnection.transport.sent.length -
+              2],
+          orderedEquals(_writeSetting(0x05, 1)),
+        );
+        expect(
+          midiConnection.transport.sent.last,
+          orderedEquals(_readSetting(0x05)),
+        );
+      },
+    );
+
+    test(
+      'keeps a mismatched audio-channel change pending and uncertain',
+      () async {
+        midiConnection.transport.onSend = (packet) {
+          _respondWithSettings(midiConnection.transport, packet);
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setAudioChannelEnabled(
+          Ntx8cvAudioChannel.channel1,
+          false,
+        );
+
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isTrue,
+        );
+        expect(
+          settingsCubit.state.attemptedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isFalse,
+        );
+        expect(
+          settingsCubit.state.hasPendingAudioChannelChange(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isTrue,
+        );
+        expect(
+          settingsCubit.state
+              .audioChannelChange(Ntx8cvAudioChannel.channel1)
+              .message,
+          contains('uncertain'),
+        );
+      },
+    );
+
+    test(
+      'refresh and reconnect repopulate audio channels without resending',
+      () async {
+        var audioChannelValues = [1, 0, 1, 0, 1, 0, 1, 0];
+        midiConnection.transport.onSend = (packet) {
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            audioChannelValues: audioChannelValues,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        audioChannelValues = [0, 1, 0, 1, 0, 1, 0, 1];
+        final sendsBeforeRefresh = midiConnection.transport.sent.length;
+        await settingsCubit.refresh();
+
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isFalse,
+        );
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel2,
+          ),
+          isTrue,
+        );
+        expect(
+          midiConnection.transport.sent
+              .skip(sendsBeforeRefresh)
+              .every((packet) => packet[6] != 0x32),
+          isTrue,
+        );
+
+        await connectionCubit.disconnect();
+        final sendsBeforeReconnect = midiConnection.transport.sent.length;
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isFalse,
+        );
+        expect(
+          midiConnection.transport.sent
+              .skip(sendsBeforeReconnect)
+              .where((packet) => packet[6] == 0x32),
+          isEmpty,
+        );
+        expect(
+          midiConnection.transport.sent
+              .skip(sendsBeforeReconnect)
+              .where((packet) => packet[6] == 0x31)
+              .map((packet) => packet[7]),
+          containsAllInOrder([0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B]),
+        );
+      },
+    );
+
+    test(
+      'keeps a timed-out audio-channel change pending and uncertain',
+      () async {
+        var writeStarted = false;
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x32 && packet[7] == 0x04) {
+            writeStarted = true;
+            return;
+          }
+          if (writeStarted && packet[6] == 0x31 && packet[7] == 0x04) {
+            return;
+          }
+          _respondWithSettings(midiConnection.transport, packet);
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setAudioChannelEnabled(
+          Ntx8cvAudioChannel.channel1,
+          false,
+        );
+
+        final change = settingsCubit.state.audioChannelChange(
+          Ntx8cvAudioChannel.channel1,
+        );
+        expect(change.attemptedValue, 0);
+        expect(change.isWriting, isFalse);
+        expect(change.message, contains('timed out'));
+        expect(change.message, contains('uncertain'));
+      },
+    );
+
+    test('labels a malformed audio-channel readback as uncertain', () async {
+      var writeStarted = false;
+      midiConnection.transport.onSend = (packet) {
+        if (packet[6] == 0x32 && packet[7] == 0x04) {
+          writeStarted = true;
+          return;
+        }
+        if (writeStarted && packet[6] == 0x31 && packet[7] == 0x04) {
+          scheduleMicrotask(() {
+            midiConnection.transport.receive(
+              Uint8List.fromList([
+                0xF0,
+                0x00,
+                0x21,
+                0x27,
+                0x6A,
+                packet[5],
+                0x31,
+                0x04,
+                0xF7,
+              ]),
+            );
+          });
+          return;
+        }
+        _respondWithSettings(midiConnection.transport, packet);
+      };
+      await connectionCubit.initialize();
+      await connectionCubit.connect();
+      await _flushEvents();
+
+      await settingsCubit.setAudioChannelEnabled(
+        Ntx8cvAudioChannel.channel1,
+        false,
+      );
+
+      final change = settingsCubit.state.audioChannelChange(
+        Ntx8cvAudioChannel.channel1,
+      );
+      expect(change.attemptedValue, 0);
+      expect(change.message, contains('malformed'));
+      expect(change.message, contains('uncertain'));
+    });
+
+    test(
+      'does not offer audio-channel writes until a confirmed audio Mode is rebooted',
+      () async {
+        var modeValue = Ntx8cvExpansionMode.cv8x8.value;
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x32 && packet[7] == 0x1B) {
+            modeValue = packet[8];
+          }
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            modeValue: modeValue,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setExpansionMode(
+          Ntx8cvExpansionMode.audio1x8_32bit,
+        );
+        expect(settingsCubit.state.modeRebootRequired, isTrue);
+
+        final sendsBeforeAudioChange = midiConnection.transport.sent.length;
+        await settingsCubit.setAudioChannelEnabled(
+          Ntx8cvAudioChannel.channel1,
+          false,
+        );
+
+        expect(
+          midiConnection.transport.sent,
+          hasLength(sendsBeforeAudioChange),
+        );
       },
     );
 
@@ -166,13 +462,13 @@ void main() {
 
       expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
       expect(settingsCubit.state.hasPendingEs5Change, isFalse);
-      expect(midiConnection.transport.sent, hasLength(6));
+      expect(midiConnection.transport.sent, hasLength(14));
       expect(
-        midiConnection.transport.sent[4],
+        midiConnection.transport.sent[12],
         orderedEquals(Ntx8cvSysExFixtures.writeEs5EnabledSetting),
       );
       expect(
-        midiConnection.transport.sent[5],
+        midiConnection.transport.sent[13],
         orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
       );
     });
@@ -205,11 +501,11 @@ void main() {
         expect(settingsCubit.state.hasPendingChannelGroupChange, isTrue);
         expect(settingsCubit.state.channelGroupMessage, contains('uncertain'));
         expect(
-          midiConnection.transport.sent[4],
+          midiConnection.transport.sent[12],
           orderedEquals(Ntx8cvSysExFixtures.writeChannelGroupSetting),
         );
         expect(
-          midiConnection.transport.sent[5],
+          midiConnection.transport.sent[13],
           orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
         );
 
@@ -259,11 +555,11 @@ void main() {
         await _flushEvents();
 
         expect(settingsCubit.state.hasPendingEs5Change, isTrue);
-        // Reconnect validates identity and refreshes Mode and Channel Group,
-        // but never resends ES-5.
+        // Reconnect validates identity and reads Mode, all audio channels,
+        // and Channel Group, but never resends the pending ES-5 change.
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 3),
+          hasLength(sendsBeforeReconnect + 11),
         );
         expect(midiConnection.transport.sent[sendsBeforeReconnect][5], 2);
         expect(midiConnection.transport.sent[sendsBeforeReconnect][6], 0x22);
@@ -279,6 +575,12 @@ void main() {
         expect(midiConnection.transport.sent.last[5], 2);
         expect(midiConnection.transport.sent.last[6], 0x31);
         expect(midiConnection.transport.sent.last[7], 0x00);
+        expect(
+          midiConnection.transport.sent
+              .sublist(sendsBeforeReconnect + 2, sendsBeforeReconnect + 10)
+              .map((packet) => packet[7]),
+          orderedEquals([0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B]),
+        );
 
         returnEnabledValue = true;
         await settingsCubit.retryEs5Change();
@@ -288,16 +590,16 @@ void main() {
         expect(settingsCubit.state.modeRebootRequired, isFalse);
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 5),
+          hasLength(sendsBeforeReconnect + 13),
         );
-        expect(midiConnection.transport.sent[sendsBeforeReconnect + 3][5], 2);
+        expect(midiConnection.transport.sent[sendsBeforeReconnect + 11][5], 2);
         expect(
-          midiConnection.transport.sent[sendsBeforeReconnect + 3][6],
+          midiConnection.transport.sent[sendsBeforeReconnect + 11][6],
           0x32,
         );
-        expect(midiConnection.transport.sent[sendsBeforeReconnect + 4][5], 2);
+        expect(midiConnection.transport.sent[sendsBeforeReconnect + 12][5], 2);
         expect(
-          midiConnection.transport.sent[sendsBeforeReconnect + 4][6],
+          midiConnection.transport.sent[sendsBeforeReconnect + 12][6],
           0x31,
         );
       },
@@ -488,10 +790,11 @@ void main() {
         await _flushEvents();
 
         expect(settingsCubit.state.hasPendingModeChange, isTrue);
-        // Reconnect reads ES-5 and Mode but does not write a pending Mode.
+        // Reconnect reads ES-5, Mode, all audio channels, and Channel Group
+        // but does not write a pending Mode.
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 4),
+          hasLength(sendsBeforeReconnect + 12),
         );
         expect(
           midiConnection.transport.sent.where((packet) => packet[6] == 0x32),
@@ -525,6 +828,7 @@ void _respondWithSettings(
   int channelGroupValue = 0,
   int es5Value = 0,
   int modeValue = 2,
+  List<int> audioChannelValues = const [1, 0, 1, 0, 1, 0, 1, 0],
 }) {
   final deviceId = packet[5];
   if (packet[6] == 0x22) {
@@ -535,6 +839,14 @@ void _respondWithSettings(
     transport.receive(_settingResponse(0x00, channelGroupValue, deviceId));
   } else if (packet[6] == 0x31 && packet[7] == 0x01) {
     transport.receive(_settingResponse(0x01, es5Value, deviceId));
+  } else if (packet[6] == 0x31 && packet[7] >= 0x04 && packet[7] <= 0x0B) {
+    transport.receive(
+      _settingResponse(
+        packet[7],
+        audioChannelValues[packet[7] - 0x04],
+        deviceId,
+      ),
+    );
   } else if (packet[6] == 0x31 && packet[7] == 0x1B) {
     transport.receive(_settingResponse(0x1B, modeValue, deviceId));
   }
@@ -544,6 +856,10 @@ Future<void> _flushEvents() async {
   await Future<void>.delayed(Duration.zero);
   await Future<void>.delayed(Duration.zero);
 }
+
+Uint8List _readSetting(int settingId, [int deviceId = 0]) => Uint8List.fromList(
+  [0xF0, 0x00, 0x21, 0x27, 0x6A, deviceId, 0x31, settingId, 0xF7],
+);
 
 Uint8List _writeSetting(int settingId, int value, [int deviceId = 0]) =>
     Uint8List.fromList([
