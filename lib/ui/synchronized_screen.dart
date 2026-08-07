@@ -48,6 +48,7 @@ import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/poly_multisample/poly_samples_screen.dart';
 import 'package:nt_helper/ui/plugin_gallery_screen.dart';
+import 'package:nt_helper/ui/ntx_8cv/ntx_8cv_screen.dart';
 import 'package:nt_helper/ui/template_manager/current_preset_template_source.dart';
 import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 import 'package:nt_helper/ui/widgets/shortcut_help_overlay.dart';
@@ -2193,6 +2194,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   Widget _buildOverflowMenu(DistingCubit cubit) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
+      onSelected: (value) {
+        if (value == 'addons') {
+          _showAddonsSubmenu(context);
+        }
+      },
       itemBuilder: (popupCtx) {
         // Get offline status here for menu items that need it
         final isOffline = switch (cubit.state) {
@@ -2412,6 +2418,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 ],
               ),
             ),
+          PopupMenuItem(
+            value: 'addons',
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Add-ons'), Icon(Icons.extension_rounded)],
+            ),
+          ),
           // Switch Devices: Only disabled by loading (Fix context usage)
           PopupMenuItem(
             value: 'Switch Devices',
@@ -2869,6 +2882,36 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           _ => const Center(child: Text("Loading slots...")),
         };
       },
+    );
+  }
+
+  void _showAddonsSubmenu(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.extension_rounded),
+            SizedBox(width: 8),
+            Text('Add-ons'),
+          ],
+        ),
+        children: [
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const Ntx8cvScreen()));
+            },
+            child: const ListTile(
+              leading: Icon(Icons.tune_rounded),
+              title: Text('NTX-8CV'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
