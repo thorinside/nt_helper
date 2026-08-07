@@ -9,11 +9,13 @@ void main() {
     (tester) async {
       var retryCount = 0;
       final pendingState = Ntx8cvSettingsState(
-        confirmedEs5Enabled: false,
-        attemptedEs5Enabled: true,
-        es5Message:
-            'The ES-5 change was not confirmed by device readback. The '
-            'actual device state is uncertain.',
+        es5: const Ntx8cvSettingChange(
+          confirmedValue: 0,
+          attemptedValue: 1,
+          message:
+              'The ES-5 change was not confirmed by device readback. The '
+              'actual device state is uncertain.',
+        ),
       );
 
       Widget buildSection({required bool isConnected}) => MaterialApp(
@@ -25,6 +27,8 @@ void main() {
             onRetryEs5Change: () async {
               retryCount += 1;
             },
+            onModeChanged: (_) async {},
+            onRetryModeChange: () async {},
           ),
         ),
       );
@@ -49,6 +53,64 @@ void main() {
 
       await tester.tap(retry);
       expect(retryCount, 1);
+    },
+  );
+
+  testWidgets(
+    'shows a pending Mode separately from its confirmed value and reboot state',
+    (tester) async {
+      var retryCount = 0;
+      Widget buildSection(Ntx8cvSettingsState state) => MaterialApp(
+        home: Scaffold(
+          body: Ntx8cvSettingsSection(
+            isConnected: true,
+            state: state,
+            onEs5Changed: (_) async {},
+            onRetryEs5Change: () async {},
+            onModeChanged: (_) async {},
+            onRetryModeChange: () async {
+              retryCount += 1;
+            },
+          ),
+        ),
+      );
+      final pendingMode = Ntx8cvSettingsState(
+        modeCapabilityEvidenced: true,
+        mode: const Ntx8cvSettingChange(
+          confirmedValue: 2,
+          attemptedValue: 0,
+          message:
+              'The Mode change was not confirmed by device readback. The '
+              'actual device state is uncertain.',
+        ),
+      );
+
+      await tester.pumpWidget(buildSection(pendingMode));
+
+      final retry = find.byKey(const Key('ntx8cv-retry-mode-change'));
+      expect(retry, findsOneWidget);
+      expect(tester.widget<OutlinedButton>(retry).onPressed, isNotNull);
+      expect(
+        find.textContaining('Attempted NT expansion mode: 8x8 CV'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Last device-confirmed value: 2x8 16bit Audio'),
+        findsOneWidget,
+      );
+      await tester.tap(retry);
+      expect(retryCount, 1);
+
+      await tester.pumpWidget(
+        buildSection(
+          const Ntx8cvSettingsState(
+            modeCapabilityEvidenced: true,
+            modeRebootRequired: true,
+            mode: Ntx8cvSettingChange(confirmedValue: 0),
+          ),
+        ),
+      );
+      expect(find.textContaining('Reboot required'), findsOneWidget);
     },
   );
 }

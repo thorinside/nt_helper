@@ -36,62 +36,21 @@ void main() {
       await midiConnection.dispose();
     });
 
-    test('reads the device-confirmed ES-5 value after connecting', () async {
+    test('reads ES-5 and probes Mode after connecting', () async {
       midiConnection.transport.onSend = (packet) {
-        if (packet[6] == 0x22) {
-          midiConnection.transport.receive(
-            Ntx8cvSysExFixtures.deviceInformationResponse,
-          );
-        } else if (packet[6] == 0x31 && packet[7] == 0x01) {
-          midiConnection.transport.receive(
-            Ntx8cvSysExFixtures.es5DisabledResponse,
-          );
-        }
+        _respondWithSettings(midiConnection.transport, packet);
       };
       await connectionCubit.initialize();
-
       await connectionCubit.connect();
       await _flushEvents();
 
       expect(settingsCubit.state.confirmedEs5Enabled, isFalse);
-      expect(settingsCubit.state.hasPendingEs5Change, isFalse);
-      expect(midiConnection.transport.sent, hasLength(2));
       expect(
-        midiConnection.transport.sent[0],
-        orderedEquals(Ntx8cvSysExFixtures.deviceInformationRequest),
+        settingsCubit.state.confirmedMode,
+        Ntx8cvExpansionMode.audio2x8_16bit,
       );
-      expect(
-        midiConnection.transport.sent[1],
-        orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
-      );
-    });
-
-    test('changes ES-5 only after a matching same-setting readback', () async {
-      midiConnection.transport.onSend = (packet) {
-        if (packet[6] == 0x22) {
-          midiConnection.transport.receive(
-            Ntx8cvSysExFixtures.deviceInformationResponse,
-          );
-        } else if (packet[6] == 0x31 && packet[7] == 0x01) {
-          final hasWrittenEs5 = midiConnection.transport.sent.any(
-            (sent) => sent[6] == 0x32 && sent[7] == 0x01,
-          );
-          midiConnection.transport.receive(
-            hasWrittenEs5
-                ? Ntx8cvSysExFixtures.es5EnabledResponse
-                : Ntx8cvSysExFixtures.es5DisabledResponse,
-          );
-        }
-      };
-      await connectionCubit.initialize();
-      await connectionCubit.connect();
-      await _flushEvents();
-
-      await settingsCubit.setEs5Enabled(true);
-
-      expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
-      expect(settingsCubit.state.hasPendingEs5Change, isFalse);
-      expect(midiConnection.transport.sent, hasLength(4));
+      expect(settingsCubit.state.modeCapabilityEvidenced, isTrue);
+      expect(midiConnection.transport.sent, hasLength(3));
       expect(
         midiConnection.transport.sent[0],
         orderedEquals(Ntx8cvSysExFixtures.deviceInformationRequest),
@@ -102,37 +61,50 @@ void main() {
       );
       expect(
         midiConnection.transport.sent[2],
+        orderedEquals(Ntx8cvSysExFixtures.readModeSetting),
+      );
+    });
+
+    test('changes ES-5 only after matching same-setting readback', () async {
+      midiConnection.transport.onSend = (packet) {
+        final hasWrittenEs5 = midiConnection.transport.sent.any(
+          (sent) => sent[6] == 0x32 && sent[7] == 0x01,
+        );
+        _respondWithSettings(
+          midiConnection.transport,
+          packet,
+          es5Value: hasWrittenEs5 ? 1 : 0,
+        );
+      };
+      await connectionCubit.initialize();
+      await connectionCubit.connect();
+      await _flushEvents();
+
+      await settingsCubit.setEs5Enabled(true);
+
+      expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
+      expect(settingsCubit.state.hasPendingEs5Change, isFalse);
+      expect(midiConnection.transport.sent, hasLength(5));
+      expect(
+        midiConnection.transport.sent[3],
         orderedEquals(Ntx8cvSysExFixtures.writeEs5EnabledSetting),
       );
       expect(
-        midiConnection.transport.sent[3],
+        midiConnection.transport.sent[4],
         orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
       );
     });
 
     test(
-      'retains a mismatched ES-5 change across reconnect and retries it only explicitly',
+      'retains a mismatched ES-5 change across reconnect and retries only explicitly',
       () async {
         var returnEnabledValue = false;
         midiConnection.transport.onSend = (packet) {
-          final deviceId = packet[5];
-          if (packet[6] == 0x22) {
-            midiConnection.transport.receive(
-              _withDeviceId(
-                Ntx8cvSysExFixtures.deviceInformationResponse,
-                deviceId,
-              ),
-            );
-          } else if (packet[6] == 0x31 && packet[7] == 0x01) {
-            midiConnection.transport.receive(
-              _withDeviceId(
-                returnEnabledValue
-                    ? Ntx8cvSysExFixtures.es5EnabledResponse
-                    : Ntx8cvSysExFixtures.es5DisabledResponse,
-                deviceId,
-              ),
-            );
-          }
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            es5Value: returnEnabledValue ? 1 : 0,
+          );
         };
         await connectionCubit.initialize();
         await connectionCubit.connect();
@@ -157,30 +129,35 @@ void main() {
         await _flushEvents();
 
         expect(settingsCubit.state.hasPendingEs5Change, isTrue);
+        // Reconnect validates identity and probes Mode, but never resends ES-5.
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 1),
+          hasLength(sendsBeforeReconnect + 2),
         );
+        expect(midiConnection.transport.sent[sendsBeforeReconnect][5], 2);
+        expect(midiConnection.transport.sent[sendsBeforeReconnect][6], 0x22);
         expect(midiConnection.transport.sent.last[5], 2);
-        expect(midiConnection.transport.sent.last[6], 0x22);
+        expect(midiConnection.transport.sent.last[6], 0x31);
+        expect(midiConnection.transport.sent.last[7], 0x1B);
 
         returnEnabledValue = true;
         await settingsCubit.retryEs5Change();
 
         expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
         expect(settingsCubit.state.hasPendingEs5Change, isFalse);
+        expect(settingsCubit.state.modeRebootRequired, isFalse);
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 3),
-        );
-        expect(midiConnection.transport.sent[sendsBeforeReconnect + 1][5], 2);
-        expect(
-          midiConnection.transport.sent[sendsBeforeReconnect + 1][6],
-          0x32,
+          hasLength(sendsBeforeReconnect + 4),
         );
         expect(midiConnection.transport.sent[sendsBeforeReconnect + 2][5], 2);
         expect(
           midiConnection.transport.sent[sendsBeforeReconnect + 2][6],
+          0x32,
+        );
+        expect(midiConnection.transport.sent[sendsBeforeReconnect + 3][5], 2);
+        expect(
+          midiConnection.transport.sent[sendsBeforeReconnect + 3][6],
           0x31,
         );
       },
@@ -191,19 +168,14 @@ void main() {
       () async {
         var hasStartedWrite = false;
         midiConnection.transport.onSend = (packet) {
-          if (packet[6] == 0x22) {
-            midiConnection.transport.receive(
-              Ntx8cvSysExFixtures.deviceInformationResponse,
-            );
-          } else if (packet[6] == 0x32 && packet[7] == 0x01) {
+          if (packet[6] == 0x32 && packet[7] == 0x01) {
             hasStartedWrite = true;
-          } else if (packet[6] == 0x31 &&
-              packet[7] == 0x01 &&
-              !hasStartedWrite) {
-            midiConnection.transport.receive(
-              Ntx8cvSysExFixtures.es5DisabledResponse,
-            );
+            return;
           }
+          if (packet[6] == 0x31 && packet[7] == 0x01 && hasStartedWrite) {
+            return;
+          }
+          _respondWithSettings(midiConnection.transport, packet);
         };
         await connectionCubit.initialize();
         await connectionCubit.connect();
@@ -224,19 +196,14 @@ void main() {
       () async {
         var hasStartedWrite = false;
         midiConnection.transport.onSend = (packet) {
-          if (packet[6] == 0x22) {
-            midiConnection.transport.receive(
-              Ntx8cvSysExFixtures.deviceInformationResponse,
-            );
-          } else if (packet[6] == 0x32 && packet[7] == 0x01) {
+          if (packet[6] == 0x32 && packet[7] == 0x01) {
             hasStartedWrite = true;
-          } else if (packet[6] == 0x31 &&
-              packet[7] == 0x01 &&
-              !hasStartedWrite) {
-            midiConnection.transport.receive(
-              Ntx8cvSysExFixtures.es5DisabledResponse,
-            );
+            return;
           }
+          if (packet[6] == 0x31 && packet[7] == 0x01 && hasStartedWrite) {
+            return;
+          }
+          _respondWithSettings(midiConnection.transport, packet);
         };
         await connectionCubit.initialize();
         await connectionCubit.connect();
@@ -257,13 +224,158 @@ void main() {
         expect(settingsCubit.state.es5Message, contains('uncertain'));
       },
     );
+
+    test(
+      'keeps Mode disabled when its capability probe is not evidenced',
+      () async {
+        midiConnection.transport.onSend = (packet) {
+          _respondWithSettings(midiConnection.transport, packet, modeValue: 3);
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        expect(settingsCubit.state.modeCapabilityEvidenced, isFalse);
+        expect(settingsCubit.state.confirmedMode, isNull);
+        expect(settingsCubit.state.modeMessage, contains('not evidenced'));
+
+        final sendsBeforeModeChange = midiConnection.transport.sent.length;
+        await settingsCubit.setExpansionMode(Ntx8cvExpansionMode.cv8x8);
+        expect(midiConnection.transport.sent, hasLength(sendsBeforeModeChange));
+      },
+    );
+
+    test(
+      'reports a timed-out Mode probe as capability not evidenced',
+      () async {
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x22 || (packet[6] == 0x31 && packet[7] == 0x01)) {
+            _respondWithSettings(midiConnection.transport, packet);
+          }
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        expect(settingsCubit.state.modeCapabilityEvidenced, isFalse);
+        expect(settingsCubit.state.isLoadingMode, isFalse);
+        expect(settingsCubit.state.modeMessage, contains('not evidenced'));
+      },
+    );
+
+    test(
+      'confirms a retried Mode change only after matching readback and requires reboot',
+      () async {
+        var returnedModeValue = 2;
+        midiConnection.transport.onSend = (packet) {
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            modeValue: returnedModeValue,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setExpansionMode(Ntx8cvExpansionMode.cv8x8);
+
+        expect(
+          settingsCubit.state.confirmedMode,
+          Ntx8cvExpansionMode.audio2x8_16bit,
+        );
+        expect(settingsCubit.state.attemptedMode, Ntx8cvExpansionMode.cv8x8);
+        expect(settingsCubit.state.modeRebootRequired, isFalse);
+        expect(settingsCubit.state.modeMessage, contains('not confirmed'));
+        expect(settingsCubit.state.modeMessage, contains('uncertain'));
+
+        await connectionCubit.disconnect();
+        final sendsBeforeReconnect = midiConnection.transport.sent.length;
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        expect(settingsCubit.state.hasPendingModeChange, isTrue);
+        // Reconnect reads ES-5 and Mode but does not write a pending Mode.
+        expect(
+          midiConnection.transport.sent,
+          hasLength(sendsBeforeReconnect + 3),
+        );
+        expect(
+          midiConnection.transport.sent.where((packet) => packet[6] == 0x32),
+          hasLength(1),
+        );
+
+        returnedModeValue = 0;
+        await settingsCubit.retryModeChange();
+
+        expect(settingsCubit.state.confirmedMode, Ntx8cvExpansionMode.cv8x8);
+        expect(settingsCubit.state.hasPendingModeChange, isFalse);
+        expect(settingsCubit.state.modeRebootRequired, isTrue);
+        expect(settingsCubit.state.confirmedEs5Enabled, isFalse);
+        expect(
+          midiConnection.transport.sent[midiConnection.transport.sent.length -
+              2],
+          orderedEquals(_writeSetting(0x1B, 0)),
+        );
+        expect(
+          midiConnection.transport.sent.last,
+          orderedEquals(Ntx8cvSysExFixtures.readModeSetting),
+        );
+      },
+    );
   });
+}
+
+void _respondWithSettings(
+  _FakeNtx8cvMidiTransport transport,
+  Uint8List packet, {
+  int es5Value = 0,
+  int modeValue = 2,
+}) {
+  final deviceId = packet[5];
+  if (packet[6] == 0x22) {
+    transport.receive(
+      _withDeviceId(Ntx8cvSysExFixtures.deviceInformationResponse, deviceId),
+    );
+  } else if (packet[6] == 0x31 && packet[7] == 0x01) {
+    transport.receive(_settingResponse(0x01, es5Value, deviceId));
+  } else if (packet[6] == 0x31 && packet[7] == 0x1B) {
+    transport.receive(_settingResponse(0x1B, modeValue, deviceId));
+  }
 }
 
 Future<void> _flushEvents() async {
   await Future<void>.delayed(Duration.zero);
   await Future<void>.delayed(Duration.zero);
 }
+
+Uint8List _writeSetting(int settingId, int value, [int deviceId = 0]) =>
+    Uint8List.fromList([
+      0xF0,
+      0x00,
+      0x21,
+      0x27,
+      0x6A,
+      deviceId,
+      0x32,
+      settingId,
+      value,
+      0xF7,
+    ]);
+
+Uint8List _settingResponse(int settingId, int value, [int deviceId = 0]) =>
+    Uint8List.fromList([
+      0xF0,
+      0x00,
+      0x21,
+      0x27,
+      0x6A,
+      deviceId,
+      0x31,
+      settingId,
+      value,
+      0xF7,
+    ]);
 
 Uint8List _withDeviceId(Uint8List packet, int deviceId) {
   final copy = Uint8List.fromList(packet);

@@ -127,6 +127,10 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                                     onEs5Changed: _settingsCubit.setEs5Enabled,
                                     onRetryEs5Change:
                                         _settingsCubit.retryEs5Change,
+                                    onModeChanged:
+                                        _settingsCubit.setExpansionMode,
+                                    onRetryModeChange:
+                                        _settingsCubit.retryModeChange,
                                   ),
                             ),
                       ),
@@ -430,7 +434,7 @@ class _MidiEndpointField extends StatelessWidget {
   }
 }
 
-/// Displays the device-confirmed ES-5 value and any explicit retry action.
+/// Displays device-confirmed settings and explicit recovery actions.
 class Ntx8cvSettingsSection extends StatelessWidget {
   const Ntx8cvSettingsSection({
     super.key,
@@ -438,21 +442,30 @@ class Ntx8cvSettingsSection extends StatelessWidget {
     required this.state,
     required this.onEs5Changed,
     required this.onRetryEs5Change,
+    required this.onModeChanged,
+    required this.onRetryModeChange,
   });
 
   final bool isConnected;
   final Ntx8cvSettingsState state;
   final Future<void> Function(bool) onEs5Changed;
   final Future<void> Function() onRetryEs5Change;
+  final Future<void> Function(Ntx8cvExpansionMode) onModeChanged;
+  final Future<void> Function() onRetryModeChange;
 
   @override
   Widget build(BuildContext context) {
     final canChangeEs5 =
         isConnected &&
         state.confirmedEs5Enabled != null &&
-        !state.isLoadingEs5 &&
-        !state.isWritingEs5 &&
+        !state.isBusy &&
         !state.hasPendingEs5Change;
+    final canChangeMode =
+        isConnected &&
+        state.confirmedMode != null &&
+        state.modeCapabilityEvidenced &&
+        !state.isBusy &&
+        !state.hasPendingModeChange;
 
     return Card(
       child: Padding(
@@ -490,10 +503,49 @@ class Ntx8cvSettingsSection extends StatelessWidget {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 key: const Key('ntx8cv-retry-es5-change'),
-                onPressed:
-                    isConnected && !state.isLoadingEs5 && !state.isWritingEs5
+                onPressed: isConnected && !state.isBusy
                     ? () {
                         unawaited(onRetryEs5Change());
+                      }
+                    : null,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry send'),
+              ),
+            ],
+            const SizedBox(height: 24),
+            DropdownButtonFormField<Ntx8cvExpansionMode>(
+              key: ValueKey('ntx8cv-expansion-mode-${state.confirmedMode}'),
+              initialValue: state.confirmedMode,
+              decoration: InputDecoration(
+                labelText: 'NT expansion mode',
+                helperText: _modeDescription(),
+              ),
+              items: Ntx8cvExpansionMode.values
+                  .map(
+                    (mode) =>
+                        DropdownMenuItem(value: mode, child: Text(mode.label)),
+                  )
+                  .toList(),
+              onChanged: canChangeMode
+                  ? (mode) {
+                      if (mode != null) {
+                        unawaited(onModeChanged(mode));
+                      }
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            Semantics(liveRegion: true, child: Text(_modeStatus())),
+            if (state.hasPendingModeChange) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const Key('ntx8cv-retry-mode-change'),
+                onPressed:
+                    isConnected &&
+                        state.modeCapabilityEvidenced &&
+                        !state.isBusy
+                    ? () {
+                        unawaited(onRetryModeChange());
                       }
                     : null,
                 icon: const Icon(Icons.refresh),
@@ -507,33 +559,68 @@ class Ntx8cvSettingsSection extends StatelessWidget {
   }
 
   String _es5Description() {
-    if (!isConnected) {
-      return 'Connect an NTX-8CV to read this setting.';
-    }
+    if (!isConnected) return 'Connect an NTX-8CV to read this setting.';
     if (state.confirmedEs5Enabled == null) {
       return 'Waiting for a device-confirmed value.';
     }
     return 'Changes are sent immediately and confirmed by reading the setting back.';
   }
 
-  String _es5Status() {
-    if (state.isLoadingEs5) return 'Reading ES-5 setting from the NTX-8CV.';
-    if (state.isWritingEs5) {
-      return 'Sending the ES-5 change and waiting for device readback.';
+  String _modeDescription() {
+    if (!isConnected) return 'Connect an NTX-8CV to probe this setting.';
+    if (!state.modeCapabilityEvidenced) {
+      return state.modeMessage ?? 'Mode capability has not been evidenced.';
     }
+    return 'Changes are sent immediately and take effect after reboot.';
+  }
+
+  String _es5Status() {
     if (state.hasPendingEs5Change) {
       final attempted = state.attemptedEs5Enabled! ? 'enabled' : 'disabled';
       final confirmed = state.confirmedEs5Enabled == null
           ? 'No device-confirmed value is available.'
           : 'Last device-confirmed value: '
                 '${state.confirmedEs5Enabled! ? 'enabled' : 'disabled'}.';
-      return 'Attempted ES-5 value: $attempted, not confirmed. $confirmed '
-          '${state.es5Message ?? 'The actual device state is uncertain.'}';
+      final progress = state.isWritingEs5
+          ? 'Sending and waiting for device readback.'
+          : state.es5Message ?? 'The actual device state is uncertain.';
+      return 'Attempted ES-5 value: $attempted, pending/failed and not '
+          'device-confirmed. $confirmed $progress';
     }
+    if (state.isLoadingEs5) return 'Reading ES-5 setting from the NTX-8CV.';
     if (state.confirmedEs5Enabled != null) {
       return 'Device-confirmed ES-5 value: '
           '${state.confirmedEs5Enabled! ? 'enabled' : 'disabled'}.';
     }
     return state.es5Message ?? 'No device-confirmed ES-5 value is available.';
+  }
+
+  String _modeStatus() {
+    if (state.hasPendingModeChange) {
+      final attempted = state.attemptedMode?.label ?? 'an invalid value';
+      final confirmed = state.confirmedMode == null
+          ? 'No device-confirmed value is available.'
+          : 'Last device-confirmed value: ${state.confirmedMode!.label}.';
+      final progress = state.isWritingMode
+          ? 'Sending and waiting for device readback.'
+          : state.modeMessage ?? 'The actual device state is uncertain.';
+      return 'Attempted NT expansion mode: $attempted, pending/failed and not '
+          'device-confirmed. $confirmed $progress';
+    }
+    if (state.isLoadingMode) {
+      return 'Probing NT expansion mode capability from the NTX-8CV.';
+    }
+    if (!state.modeCapabilityEvidenced) {
+      return state.modeMessage ?? 'Mode capability has not been evidenced.';
+    }
+    final confirmed = state.confirmedMode;
+    if (confirmed == null) {
+      return 'No device-confirmed mode value is available.';
+    }
+    final reboot = state.modeRebootRequired
+        ? ' Reboot required: this confirmed Mode change is stored but does '
+              'not take effect until this NTX-8CV is rebooted.'
+        : '';
+    return 'Device-confirmed NT expansion mode: ${confirmed.label}.$reboot';
   }
 }
