@@ -57,6 +57,54 @@ void main() {
   );
 
   testWidgets(
+    'offers exactly three Mode choices while ES-5 remains available in each',
+    (tester) async {
+      Widget buildSection(Ntx8cvExpansionMode mode) => MaterialApp(
+        home: Scaffold(
+          body: Ntx8cvSettingsSection(
+            isConnected: true,
+            state: Ntx8cvSettingsState(
+              es5: const Ntx8cvSettingChange(confirmedValue: 1),
+              mode: Ntx8cvSettingChange(confirmedValue: mode.value),
+              modeCapabilityEvidenced: true,
+            ),
+            onEs5Changed: (_) async {},
+            onRetryEs5Change: () async {},
+            onModeChanged: (_) async {},
+            onRetryModeChange: () async {},
+          ),
+        ),
+      );
+
+      for (final mode in Ntx8cvExpansionMode.values) {
+        await tester.pumpWidget(buildSection(mode));
+
+        final modePickerFinder = find.byType(
+          DropdownButtonFormField<Ntx8cvExpansionMode>,
+        );
+        final modePicker = tester
+            .widget<DropdownButtonFormField<Ntx8cvExpansionMode>>(
+              modePickerFinder,
+            );
+        expect(modePicker.onChanged, isNotNull);
+        await tester.tap(modePickerFinder);
+        await tester.pumpAndSettle();
+        for (final label in ['8x8 CV', '1x8 32bit Audio', '2x8 16bit Audio']) {
+          expect(find.text(label), findsWidgets);
+        }
+        await tester.tapAt(Offset.zero);
+        await tester.pumpAndSettle();
+
+        final es5Switch = tester.widget<SwitchListTile>(
+          find.widgetWithText(SwitchListTile, 'Enable ES-5'),
+        );
+        expect(es5Switch.value, isTrue);
+        expect(es5Switch.onChanged, isNotNull);
+      }
+    },
+  );
+
+  testWidgets(
     'shows a pending Mode separately from its confirmed value and reboot state',
     (tester) async {
       var retryCount = 0;

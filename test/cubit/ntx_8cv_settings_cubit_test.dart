@@ -263,6 +263,59 @@ void main() {
       },
     );
 
+    test('confirms every supported Mode without changing ES-5', () async {
+      var deviceMode = Ntx8cvExpansionMode.cv8x8.value;
+      midiConnection.transport.onSend = (packet) {
+        if (packet[6] == 0x32 && packet[7] == 0x1B) {
+          deviceMode = packet[8];
+        }
+        _respondWithSettings(
+          midiConnection.transport,
+          packet,
+          es5Value: 1,
+          modeValue: deviceMode,
+        );
+      };
+      await connectionCubit.initialize();
+      await connectionCubit.connect();
+      await _flushEvents();
+
+      expect(
+        Ntx8cvExpansionMode.values.map((mode) => mode.label),
+        orderedEquals(['8x8 CV', '1x8 32bit Audio', '2x8 16bit Audio']),
+      );
+      expect(
+        Ntx8cvExpansionMode.values.map((mode) => mode.value),
+        orderedEquals([0, 1, 2]),
+      );
+
+      for (final mode in [
+        Ntx8cvExpansionMode.audio1x8_32bit,
+        Ntx8cvExpansionMode.audio2x8_16bit,
+        Ntx8cvExpansionMode.cv8x8,
+      ]) {
+        await settingsCubit.setExpansionMode(mode);
+
+        expect(settingsCubit.state.confirmedMode, mode);
+        expect(settingsCubit.state.hasPendingModeChange, isFalse);
+        expect(settingsCubit.state.modeRebootRequired, isTrue);
+        expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
+        expect(settingsCubit.state.hasPendingEs5Change, isFalse);
+      }
+
+      final settingWrites = midiConnection.transport.sent
+          .where((packet) => packet[6] == 0x32)
+          .toList();
+      expect(
+        settingWrites.map((packet) => packet[7]),
+        orderedEquals([0x1B, 0x1B, 0x1B]),
+      );
+      expect(
+        settingWrites.map((packet) => packet[8]),
+        orderedEquals([1, 2, 0]),
+      );
+    });
+
     test(
       'confirms a retried Mode change only after matching readback and requires reboot',
       () async {
