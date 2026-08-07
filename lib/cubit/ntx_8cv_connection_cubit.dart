@@ -110,6 +110,7 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
     Ntx8cvMidiConnection? midiConnection,
     Ntx8cvConnectionStore? store,
     this.sessionTimeout = const Duration(seconds: 1),
+    this.rebootReconnectDelay = const Duration(seconds: 1),
   }) : _midiConnection = midiConnection ?? NativeNtx8cvMidiConnection(),
        _store = store ?? SharedPreferencesNtx8cvConnectionStore(),
        super(const Ntx8cvConnectionState());
@@ -117,6 +118,11 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
   final Ntx8cvMidiConnection _midiConnection;
   final Ntx8cvConnectionStore _store;
   final Duration sessionTimeout;
+
+  /// Waits briefly for the selected device to restart before its endpoints are
+  /// reacquired. It is configurable so fixture-based tests do not need a
+  /// physical NTX-8CV reboot delay.
+  final Duration rebootReconnectDelay;
   StreamSubscription<MidiSetupChange>? _setupSubscription;
   Ntx8cvMidiTransport? _transport;
   Ntx8cvSession? _session;
@@ -370,6 +376,79 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
         );
       }
     }
+  }
+
+  /// Reboots only the current identity-validated NTX-8CV, then reacquires its
+  /// selected endpoints and validates a fresh device-information response.
+  ///
+  /// The protocol has no reboot acknowledgement. A `true` result means the
+  /// command was sent and the selected target subsequently reconnected and
+  /// passed identity validation. This never sends the reboot command again.
+  Future<bool> rebootAndReconnect() async {
+    final session = _session;
+    if (!state.isConnected || session == null) return false;
+
+    emit(
+      state.copyWith(
+        status: Ntx8cvConnectionStatus.connecting,
+        statusMessage: 'Rebooting the selected NTX-8CV, then reconnecting.',
+        clearDeviceInformation: true,
+      ),
+    );
+
+    try {
+      await session.reboot();
+    } catch (_) {
+      await _closeActiveConnection();
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            status: Ntx8cvConnectionStatus.failed,
+            statusMessage:
+                'Could not send the reboot command to the selected NTX-8CV.',
+            clearDeviceInformation: true,
+          ),
+        );
+      }
+      return false;
+    }
+
+    // The command is scoped to the session that was created for the selected
+    // endpoint pair and device ID. Do not continue if another action replaced
+    // that session while the send was in flight.
+    if (!identical(_session, session)) return false;
+
+    await _closeActiveConnection();
+    if (isClosed) return false;
+    emit(
+      state.copyWith(
+        status: Ntx8cvConnectionStatus.disconnected,
+        statusMessage: 'Reacquiring the selected NTX-8CV after reboot.',
+        clearDeviceInformation: true,
+      ),
+    );
+
+    if (rebootReconnectDelay > Duration.zero) {
+      await Future<void>.delayed(rebootReconnectDelay);
+    }
+    if (isClosed) return false;
+
+    await refreshEndpoints();
+    if (!state.canConnect) {
+      emit(
+        state.copyWith(
+          status: Ntx8cvConnectionStatus.failed,
+          statusMessage:
+              'Could not reacquire the selected NTX-8CV after reboot. Check '
+              'its MIDI endpoints and reconnect it.',
+          clearDeviceInformation: true,
+        ),
+      );
+      return false;
+    }
+
+    await connect();
+    return state.isConnected;
   }
 
   Future<void> disconnect() async {

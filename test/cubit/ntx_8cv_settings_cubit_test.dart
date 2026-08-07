@@ -26,6 +26,7 @@ void main() {
         midiConnection: midiConnection,
         store: _MemoryNtx8cvConnectionStore(),
         sessionTimeout: const Duration(milliseconds: 10),
+        rebootReconnectDelay: Duration.zero,
       );
       settingsCubit = Ntx8cvSettingsCubit(connectionCubit: connectionCubit);
     });
@@ -73,6 +74,76 @@ void main() {
           settingsCubit.state.confirmedChannelGroup,
           Ntx8cvChannelGroup.channels1To8,
         );
+      },
+    );
+
+    test(
+      'reboots only the selected NTX-8CV then revalidates and refreshes settings',
+      () async {
+        var channelGroupValue = Ntx8cvChannelGroup.channels1To8.value;
+        var es5Value = 0;
+        var modeValue = Ntx8cvExpansionMode.cv8x8.value;
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x32 && packet[7] == 0x1B) {
+            modeValue = packet[8];
+          }
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            channelGroupValue: channelGroupValue,
+            es5Value: es5Value,
+            modeValue: modeValue,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setExpansionMode(
+          Ntx8cvExpansionMode.audio1x8_32bit,
+        );
+        expect(settingsCubit.state.modeRebootRequired, isTrue);
+
+        channelGroupValue = Ntx8cvChannelGroup.channels57To64.value;
+        es5Value = 1;
+        final sendsBeforeReboot = midiConnection.transport.sent.length;
+
+        await settingsCubit.reboot();
+
+        expect(midiConnection.openCount, 2);
+        expect(midiConnection.closeCount, 1);
+        expect(
+          midiConnection.transport.sent[sendsBeforeReboot],
+          orderedEquals(Ntx8cvSysExFixtures.reboot),
+        );
+        expect(
+          midiConnection.transport.sent[sendsBeforeReboot + 1],
+          orderedEquals(Ntx8cvSysExFixtures.deviceInformationRequest),
+        );
+        expect(
+          midiConnection.transport.sent[sendsBeforeReboot + 2],
+          orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
+        );
+        expect(
+          midiConnection.transport.sent[sendsBeforeReboot + 3],
+          orderedEquals(Ntx8cvSysExFixtures.readModeSetting),
+        );
+        expect(
+          midiConnection.transport.sent[sendsBeforeReboot + 4],
+          orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
+        );
+        expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
+        expect(
+          settingsCubit.state.confirmedMode,
+          Ntx8cvExpansionMode.audio1x8_32bit,
+        );
+        expect(
+          settingsCubit.state.confirmedChannelGroup,
+          Ntx8cvChannelGroup.channels57To64,
+        );
+        expect(settingsCubit.state.modeCapabilityEvidenced, isTrue);
+        expect(settingsCubit.state.modeRebootRequired, isFalse);
+        expect(settingsCubit.state.isRebooting, isFalse);
       },
     );
 
@@ -531,6 +602,8 @@ class _MemoryNtx8cvConnectionStore implements Ntx8cvConnectionStore {
 class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
   List<MidiDevice> devices = [];
   final _FakeNtx8cvMidiTransport transport = _FakeNtx8cvMidiTransport();
+  int openCount = 0;
+  int closeCount = 0;
 
   @override
   Stream<MidiSetupChange>? get setupChanges => null;
@@ -542,14 +615,19 @@ class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
   Future<Ntx8cvMidiTransport> open({
     required MidiDevice inputDevice,
     required MidiDevice outputDevice,
-  }) async => transport;
+  }) async {
+    openCount += 1;
+    return transport;
+  }
 
   @override
   Future<void> close({
     required Ntx8cvMidiTransport transport,
     required MidiDevice inputDevice,
     required MidiDevice outputDevice,
-  }) async {}
+  }) async {
+    closeCount += 1;
+  }
 
   Future<void> dispose() => transport.close();
 }

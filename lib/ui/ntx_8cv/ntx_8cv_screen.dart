@@ -135,6 +135,7 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                                         _settingsCubit.setExpansionMode,
                                     onRetryModeChange:
                                         _settingsCubit.retryModeChange,
+                                    onReboot: _settingsCubit.reboot,
                                   ),
                             ),
                       ),
@@ -450,6 +451,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
     required this.onRetryEs5Change,
     required this.onModeChanged,
     required this.onRetryModeChange,
+    required this.onReboot,
   });
 
   final bool isConnected;
@@ -460,6 +462,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
   final Future<void> Function() onRetryEs5Change;
   final Future<void> Function(Ntx8cvExpansionMode) onModeChanged;
   final Future<void> Function() onRetryModeChange;
+  final Future<void> Function() onReboot;
 
   @override
   Widget build(BuildContext context) {
@@ -479,6 +482,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
         state.modeCapabilityEvidenced &&
         !state.isBusy &&
         !state.hasPendingModeChange;
+    final canReboot = isConnected && !state.isBusy;
 
     return Card(
       child: Padding(
@@ -486,13 +490,49 @@ class Ntx8cvSettingsSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Semantics(
-              header: true,
-              child: Text(
-                'Settings',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      'Settings',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Semantics(
+                  label:
+                      'Reboot only the currently selected, identity-verified '
+                      'NTX-8CV',
+                  child: FilledButton.icon(
+                    key: const Key('ntx8cv-reboot'),
+                    onPressed: canReboot
+                        ? () {
+                            unawaited(onReboot());
+                          }
+                        : null,
+                    icon: const Icon(Icons.restart_alt),
+                    label: Text(
+                      state.isRebooting
+                          ? 'Rebooting NTX-8CV'
+                          : 'Reboot NTX-8CV',
+                    ),
+                  ),
+                ),
+              ],
             ),
+            if (state.rebootMessage != null) ...[
+              const SizedBox(height: 8),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  state.rebootMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             const Text(
               'Connect an NTX-8CV to read and configure its settings. The '
@@ -525,7 +565,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                 label: const Text('Retry send'),
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             DropdownButtonFormField<Ntx8cvExpansionMode>(
               key: ValueKey('ntx8cv-expansion-mode-${state.confirmedMode}'),
               initialValue: state.confirmedMode,
@@ -565,7 +605,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                 label: const Text('Retry send'),
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             DropdownButtonFormField<Ntx8cvChannelGroup>(
               key: ValueKey(
                 'ntx8cv-channel-group-${state.confirmedChannelGroup}',

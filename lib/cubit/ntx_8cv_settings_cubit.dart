@@ -125,6 +125,8 @@ class Ntx8cvSettingsState {
     this.mode = const Ntx8cvSettingChange(),
     this.modeCapabilityEvidenced = false,
     this.modeRebootRequired = false,
+    this.isRebooting = false,
+    this.rebootMessage,
   });
 
   final Ntx8cvSettingChange channelGroup;
@@ -138,6 +140,12 @@ class Ntx8cvSettingsState {
 
   /// A confirmed mode change is stored but needs a reboot to take effect.
   final bool modeRebootRequired;
+
+  /// True while the selected device is being rebooted and revalidated.
+  final bool isRebooting;
+
+  /// A failed reboot or post-reboot refresh explanation for the user.
+  final String? rebootMessage;
 
   Ntx8cvChannelGroup? get confirmedChannelGroup =>
       channelGroup.confirmedValue == null
@@ -185,6 +193,15 @@ class Ntx8cvSettingsState {
   bool get hasPendingModeChange => mode.hasPendingChange;
 
   bool get isBusy =>
+      isRebooting ||
+      channelGroup.isLoading ||
+      channelGroup.isWriting ||
+      es5.isLoading ||
+      es5.isWriting ||
+      mode.isLoading ||
+      mode.isWriting;
+
+  bool get hasSettingOperationInProgress =>
       channelGroup.isLoading ||
       channelGroup.isWriting ||
       es5.isLoading ||
@@ -198,6 +215,9 @@ class Ntx8cvSettingsState {
     Ntx8cvSettingChange? mode,
     bool? modeCapabilityEvidenced,
     bool? modeRebootRequired,
+    bool? isRebooting,
+    String? rebootMessage,
+    bool clearRebootMessage = false,
   }) {
     return Ntx8cvSettingsState(
       channelGroup: channelGroup ?? this.channelGroup,
@@ -206,6 +226,10 @@ class Ntx8cvSettingsState {
       modeCapabilityEvidenced:
           modeCapabilityEvidenced ?? this.modeCapabilityEvidenced,
       modeRebootRequired: modeRebootRequired ?? this.modeRebootRequired,
+      isRebooting: isRebooting ?? this.isRebooting,
+      rebootMessage: clearRebootMessage
+          ? null
+          : rebootMessage ?? this.rebootMessage,
     );
   }
 
@@ -257,6 +281,8 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   final Ntx8cvConnectionCubit _connectionCubit;
   late final StreamSubscription<Ntx8cvConnectionState> _connectionSubscription;
   Ntx8cvSession? _activeSession;
+  Ntx8cvSession? _refreshSession;
+  Future<void>? _refreshFuture;
   String? _targetKey;
 
   /// Changes Channel Group immediately, but commits it to presentation state
@@ -287,6 +313,52 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   /// Explicitly resends the retained, unconfirmed Mode change to the current
   /// identity-validated NTX-8CV. Matching readback is still required.
   Future<void> retryModeChange() => _retrySetting(Ntx8cvSetting.expansionMode);
+
+  /// Reboots the currently connected NTX-8CV once, then waits for its selected
+  /// endpoint pair to be revalidated and all non-pending settings to refresh.
+  /// No confirmation dialog or automatic resend is involved.
+  Future<void> reboot() async {
+    if (_currentSession == null || state.isBusy) return;
+
+    emit(state.copyWith(isRebooting: true, clearRebootMessage: true));
+    final reconnected = await _connectionCubit.rebootAndReconnect();
+    if (isClosed) return;
+
+    if (!reconnected) {
+      emit(
+        state.copyWith(
+          isRebooting: false,
+          rebootMessage:
+              'Could not complete the NTX-8CV reboot and refresh. Check the '
+              'selected MIDI endpoints and reconnect the device.',
+        ),
+      );
+      return;
+    }
+
+    final session = await _waitForCurrentSession();
+    if (session == null) {
+      emit(
+        state.copyWith(
+          isRebooting: false,
+          rebootMessage:
+              'The NTX-8CV disconnected before its settings could refresh '
+              'after reboot.',
+        ),
+      );
+      return;
+    }
+
+    await _refreshFor(session);
+    if (!_isActiveSession(session)) return;
+    emit(
+      state.copyWith(
+        isRebooting: false,
+        modeRebootRequired: false,
+        clearRebootMessage: true,
+      ),
+    );
+  }
 
   Future<void> _setSetting(Ntx8cvSetting setting, int value) async {
     final change = state.changeFor(setting);
@@ -389,7 +461,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     final session = _connectionCubit.session;
     if (session == null) {
       _activeSession = null;
-      if (!isClosed && state.isBusy) {
+      if (!isClosed && state.hasSettingOperationInProgress) {
         emit(_stateForInterruptedConnection());
       }
       return;
@@ -400,7 +472,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     // A prior probe applies to the old session. Reads below must evidence the
     // mode capability again before this session permits a Mode write or retry.
     emit(state.copyWith(modeCapabilityEvidenced: false));
-    unawaited(_refreshSettings(session));
+    unawaited(_refreshFor(session));
   }
 
   /// Clears confirmations that belong to a changed target while retaining an
@@ -424,6 +496,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       channelGroup: retainedChange(state.channelGroup, 'Channel Group'),
       es5: retainedChange(state.es5, 'ES-5'),
       mode: retainedChange(state.mode, 'Mode'),
+      rebootMessage: state.rebootMessage,
     );
   }
 
@@ -450,7 +523,31 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       es5: interruptedChange(state.es5, 'ES-5'),
       mode: interruptedChange(state.mode, 'NT expansion mode'),
       modeRebootRequired: state.modeRebootRequired,
+      isRebooting: state.isRebooting,
+      rebootMessage: state.rebootMessage,
     );
+  }
+
+  Future<Ntx8cvSession?> _waitForCurrentSession() async {
+    // Cubit stream listeners receive the revalidated connection state
+    // asynchronously. Give that listener two event turns to bind the new
+    // session and begin its shared refresh rather than starting a duplicate.
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final session = _currentSession;
+      if (session != null) return session;
+      await Future<void>.delayed(Duration.zero);
+    }
+    return _currentSession;
+  }
+
+  Future<void> _refreshFor(Ntx8cvSession session) {
+    if (identical(_refreshSession, session) && _refreshFuture != null) {
+      return _refreshFuture!;
+    }
+    _refreshSession = session;
+    final refresh = _refreshSettings(session);
+    _refreshFuture = refresh;
+    return refresh;
   }
 
   Future<void> _refreshSettings(Ntx8cvSession session) async {

@@ -33,6 +33,7 @@ void main() {
             },
             onModeChanged: (_) async {},
             onRetryModeChange: () async {},
+            onReboot: () async {},
           ),
         ),
       );
@@ -78,6 +79,7 @@ void main() {
             onRetryEs5Change: () async {},
             onModeChanged: (_) async {},
             onRetryModeChange: () async {},
+            onReboot: () async {},
           ),
         ),
       );
@@ -130,6 +132,7 @@ void main() {
               onRetryEs5Change: () async {},
               onModeChanged: (_) async {},
               onRetryModeChange: () async {},
+              onReboot: () async {},
             ),
           ),
         ),
@@ -187,6 +190,7 @@ void main() {
             onRetryModeChange: () async {
               retryCount += 1;
             },
+            onReboot: () async {},
           ),
         ),
       );
@@ -227,6 +231,45 @@ void main() {
         ),
       );
       expect(find.textContaining('Reboot required'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'reboots the selected NTX-8CV with one activation and no dialog',
+    (tester) async {
+      var rebootCount = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Ntx8cvSettingsSection(
+              isConnected: true,
+              state: const Ntx8cvSettingsState(
+                modeRebootRequired: true,
+                modeCapabilityEvidenced: true,
+                mode: Ntx8cvSettingChange(confirmedValue: 0),
+              ),
+              onChannelGroupChanged: (_) async {},
+              onRetryChannelGroupChange: () async {},
+              onEs5Changed: (_) async {},
+              onRetryEs5Change: () async {},
+              onModeChanged: (_) async {},
+              onRetryModeChange: () async {},
+              onReboot: () async {
+                rebootCount += 1;
+              },
+            ),
+          ),
+        ),
+      );
+
+      final reboot = find.byKey(const Key('ntx8cv-reboot'));
+      expect(reboot, findsOneWidget);
+      expect(find.text('Reboot NTX-8CV'), findsOneWidget);
+      expect(tester.widget<FilledButton>(reboot).onPressed, isNotNull);
+
+      await tester.tap(reboot);
+      expect(rebootCount, 1);
+      expect(find.byType(AlertDialog), findsNothing);
     },
   );
 }
