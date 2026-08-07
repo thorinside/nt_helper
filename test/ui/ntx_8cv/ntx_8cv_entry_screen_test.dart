@@ -44,8 +44,8 @@ void main() {
         find.byKey(const Key('ntx8cv-connection-controls-narrow')),
         findsNothing,
       );
-      expect(find.widgetWithText(TextFormField, 'MIDI input'), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, 'MIDI output'), findsOneWidget);
+      expect(find.byKey(const Key('ntx8cv-midi-input')), findsOneWidget);
+      expect(find.byKey(const Key('ntx8cv-midi-output')), findsOneWidget);
       expect(
         find.widgetWithText(TextFormField, 'SysEx device ID'),
         findsOneWidget,
