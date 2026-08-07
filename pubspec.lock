@@ -524,7 +524,7 @@ packages:
     source: hosted
     version: "1.0.2"
   flutter_midi_command_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: flutter_midi_command_platform_interface
       sha256: "1e3a50a11a742245178f97d7ba524b94994fb7e960797132cbfc517f6d35020d"
