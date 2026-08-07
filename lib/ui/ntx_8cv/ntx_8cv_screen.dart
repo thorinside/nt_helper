@@ -531,7 +531,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
         state.modeCapabilityEvidenced &&
         !state.isBusy &&
         !state.hasPendingModeChange;
-    final canChangeAudioChannels =
+    final canOperateAudioChannels =
         isConnected && _audioChannelsApply && !state.isBusy;
     final canReboot = isConnected && !state.isBusy;
     final audioChannelTiles = [
@@ -545,9 +545,10 @@ class Ntx8cvSettingsSection extends StatelessWidget {
           hasPendingChange: state.hasPendingAudioChannelChange(channel),
           status: _audioChannelStatus(channel),
           enabled:
-              canChangeAudioChannels &&
+              canOperateAudioChannels &&
               state.confirmedAudioChannelEnabled(channel) != null &&
               !state.hasPendingAudioChannelChange(channel),
+          retryEnabled: canOperateAudioChannels,
           onChanged: (enabled) {
             unawaited(onAudioChannelChanged(channel, enabled));
           },
@@ -1027,6 +1028,7 @@ class _AudioChannelTile extends StatelessWidget {
     required this.hasPendingChange,
     required this.status,
     required this.enabled,
+    required this.retryEnabled,
     required this.onChanged,
     required this.onRetry,
   });
@@ -1038,6 +1040,7 @@ class _AudioChannelTile extends StatelessWidget {
   final bool hasPendingChange;
   final String status;
   final bool enabled;
+  final bool retryEnabled;
   final ValueChanged<bool> onChanged;
   final VoidCallback onRetry;
 
@@ -1085,7 +1088,7 @@ class _AudioChannelTile extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       key: Key('ntx8cv-retry-audio-channel-${channel.number}'),
-                      onPressed: enabled ? onRetry : null,
+                      onPressed: retryEnabled ? onRetry : null,
                       icon: const Icon(Icons.refresh, size: 16),
                       label: const Text('Retry send'),
                     ),

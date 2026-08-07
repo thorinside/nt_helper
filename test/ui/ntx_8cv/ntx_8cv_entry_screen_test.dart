@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/cubit/ntx_8cv_connection_cubit.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
@@ -77,6 +78,67 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets(
+      'keeps the full page geometry stable through connection lifecycle feedback on narrow and wide screens',
+      (tester) async {
+        const lifecycleStates = [
+          Ntx8cvConnectionState(isLoadingEndpoints: true),
+          Ntx8cvConnectionState(
+            status: Ntx8cvConnectionStatus.connecting,
+            statusMessage: 'Connecting to the selected NTX-8CV.',
+            isLoadingEndpoints: false,
+          ),
+          Ntx8cvConnectionState(
+            status: Ntx8cvConnectionStatus.connected,
+            isLoadingEndpoints: false,
+          ),
+          Ntx8cvConnectionState(
+            status: Ntx8cvConnectionStatus.disconnected,
+            statusMessage: 'Disconnecting the selected NTX-8CV.',
+            isLoadingEndpoints: false,
+          ),
+          Ntx8cvConnectionState(
+            status: Ntx8cvConnectionStatus.connecting,
+            statusMessage: 'Rebooting the selected NTX-8CV, then reconnecting.',
+            isLoadingEndpoints: false,
+          ),
+          Ntx8cvConnectionState(
+            status: Ntx8cvConnectionStatus.disconnected,
+            statusMessage: 'Reacquiring the selected NTX-8CV after reboot.',
+            isLoadingEndpoints: false,
+          ),
+          Ntx8cvConnectionState(
+            status: Ntx8cvConnectionStatus.failed,
+            statusMessage:
+                'Could not reacquire the selected NTX-8CV after reboot. Check its MIDI endpoints and reconnect it.',
+            isLoadingEndpoints: false,
+          ),
+        ];
+
+        for (final size in [const Size(900, 2600), const Size(500, 2600)]) {
+          await _setScreenSize(tester, size);
+          final connectionCubit = _LifecycleConnectionCubit();
+          await tester.pumpWidget(
+            MaterialApp(home: Ntx8cvScreen(connectionCubit: connectionCubit)),
+          );
+          final settingsSection = find.byType(Ntx8cvSettingsSection);
+          final initialPosition = tester.getTopLeft(settingsSection);
+          final initialSize = tester.getSize(settingsSection);
+
+          for (final state in lifecycleStates) {
+            connectionCubit.show(state);
+            await tester.pump();
+            expect(tester.getTopLeft(settingsSection), initialPosition);
+            expect(tester.getSize(settingsSection), initialSize);
+          }
+          expect(tester.takeException(), isNull);
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await connectionCubit.close();
+        }
+      },
+    );
+
     testWidgets('opens from the main overflow menu through Add-ons', (
       tester,
     ) async {
@@ -142,6 +204,15 @@ void main() {
       expect(find.text('Settings'), findsOneWidget);
     });
   });
+}
+
+class _LifecycleConnectionCubit extends Ntx8cvConnectionCubit {
+  _LifecycleConnectionCubit() : super();
+
+  @override
+  Future<void> initialize() async {}
+
+  void show(Ntx8cvConnectionState value) => emit(value);
 }
 
 Future<void> _setScreenSize(WidgetTester tester, Size size) async {

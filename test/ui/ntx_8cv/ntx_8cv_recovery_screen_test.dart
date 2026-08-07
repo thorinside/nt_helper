@@ -366,6 +366,65 @@ void main() {
   );
 
   testWidgets(
+    'enables Retry send for a pending audio-channel change without enabling its switch',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      var retryCount = 0;
+      final pendingAudioState = Ntx8cvSettingsState(
+        modeCapabilityEvidenced: true,
+        mode: const Ntx8cvSettingChange(confirmedValue: 2),
+        audioChannels: const [
+          Ntx8cvSettingChange(
+            confirmedValue: 1,
+            attemptedValue: 0,
+            message:
+                'The Audio channel 1 change was not confirmed by device readback. The actual device state is uncertain.',
+          ),
+          Ntx8cvSettingChange(),
+          Ntx8cvSettingChange(),
+          Ntx8cvSettingChange(),
+          Ntx8cvSettingChange(),
+          Ntx8cvSettingChange(),
+          Ntx8cvSettingChange(),
+          Ntx8cvSettingChange(),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Ntx8cvSettingsSection(
+              isConnected: true,
+              state: pendingAudioState,
+              onChannelGroupChanged: (_) async {},
+              onRetryChannelGroupChange: () async {},
+              onEs5Changed: (_) async {},
+              onRetryEs5Change: () async {},
+              onModeChanged: (_) async {},
+              onRetryModeChange: () async {},
+              onAudioChannelChanged: (_, _) async {},
+              onRetryAudioChannelChange: (_) async {
+                retryCount += 1;
+              },
+              onReboot: () async {},
+            ),
+          ),
+        ),
+      );
+
+      final channelSwitch = tester.widget<SwitchListTile>(
+        find.widgetWithText(SwitchListTile, 'Audio channel 1'),
+      );
+      final retry = find.byKey(const Key('ntx8cv-retry-audio-channel-1'));
+      expect(channelSwitch.onChanged, isNull);
+      expect(tester.widget<TextButton>(retry).onPressed, isNotNull);
+
+      await tester.tap(retry);
+      expect(retryCount, 1);
+    },
+  );
+
+  testWidgets(
     'keeps settings geometry stable through loading, pending failure, and reboot feedback on narrow and wide layouts',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(900, 2200));

@@ -732,11 +732,13 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   }
 
   Future<void> _refreshSettings(Ntx8cvSession session) async {
-    // Do not read an ES-5, audio-channel, or Channel Group setting whose
-    // attempted value is pending: leaving that value untouched makes reconnect
-    // a recovery step, never an implicit confirmation or resend. A Mode probe
-    // is always safe and is required to enable a Mode retry for this newly
-    // validated session.
+    // Do not read an ES-5 or Channel Group setting whose attempted value is
+    // pending: leaving those values untouched makes reconnect a recovery step,
+    // never an implicit confirmation or resend. Audio-channel reads remain
+    // safe: a matching readback confirms a pending channel change, while a
+    // different readback keeps it pending and updates the displayed hardware
+    // state. A Mode probe is always safe and is required to enable a Mode retry
+    // for this newly validated session.
     if (!state.es5.hasPendingChange) {
       await _readSetting(session, Ntx8cvSetting.es5Enabled);
     }
@@ -744,9 +746,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     await _readSetting(session, Ntx8cvSetting.expansionMode);
     if (!_isActiveSession(session)) return;
     for (final channel in Ntx8cvAudioChannel.values) {
-      if (!state.hasPendingAudioChannelChange(channel)) {
-        await _readAudioChannel(session, channel);
-      }
+      await _readAudioChannel(session, channel);
       if (!_isActiveSession(session)) return;
     }
     if (!state.channelGroup.hasPendingChange) {
@@ -774,16 +774,23 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
           '${channel.label} has invalid value ${response.value}.',
         );
       }
+      final change = state.audioChannelChange(channel);
+      final attemptedValue = change.attemptedValue;
+      final matchesPendingAttempt =
+          attemptedValue == null || attemptedValue == response.value;
       emit(
         state.withAudioChannelChange(
           channel,
-          state
-              .audioChannelChange(channel)
-              .copyWith(
-                confirmedValue: response.value,
-                isLoading: false,
-                clearMessage: true,
-              ),
+          change.copyWith(
+            confirmedValue: response.value,
+            clearAttemptedValue: matchesPendingAttempt,
+            isLoading: false,
+            message: matchesPendingAttempt
+                ? null
+                : 'The ${channel.label} attempted value did not match the '
+                      'device-confirmed readback. Retry send to try again.',
+            clearMessage: matchesPendingAttempt,
+          ),
         ),
       );
     } catch (error) {

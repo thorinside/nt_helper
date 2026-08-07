@@ -331,6 +331,122 @@ void main() {
     );
 
     test(
+      'manual refresh reads a pending audio channel without resending and confirms a matching readback',
+      () async {
+        var audioChannelValues = [1, 0, 1, 0, 1, 0, 1, 0];
+        midiConnection.transport.onSend = (packet) {
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            audioChannelValues: audioChannelValues,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setAudioChannelEnabled(
+          Ntx8cvAudioChannel.channel1,
+          false,
+        );
+        expect(
+          settingsCubit.state.hasPendingAudioChannelChange(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isTrue,
+        );
+
+        audioChannelValues[0] = 0;
+        final sendsBeforeRefresh = midiConnection.transport.sent.length;
+        await settingsCubit.refresh();
+
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isFalse,
+        );
+        expect(
+          settingsCubit.state.hasPendingAudioChannelChange(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isFalse,
+        );
+        expect(
+          midiConnection.transport.sent
+              .skip(sendsBeforeRefresh)
+              .where((packet) => packet[6] == 0x32),
+          isEmpty,
+        );
+        expect(
+          midiConnection.transport.sent
+              .skip(sendsBeforeRefresh)
+              .where((packet) => packet[6] == 0x31 && packet[7] == 0x04),
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
+      'reconnect refreshes a pending audio channel without resending',
+      () async {
+        var audioChannelValues = [1, 0, 1, 0, 1, 0, 1, 0];
+        midiConnection.transport.onSend = (packet) {
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            audioChannelValues: audioChannelValues,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setAudioChannelEnabled(
+          Ntx8cvAudioChannel.channel1,
+          false,
+        );
+        expect(
+          settingsCubit.state.hasPendingAudioChannelChange(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isTrue,
+        );
+
+        audioChannelValues[0] = 0;
+        await connectionCubit.disconnect();
+        final sendsBeforeReconnect = midiConnection.transport.sent.length;
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        expect(
+          settingsCubit.state.confirmedAudioChannelEnabled(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isFalse,
+        );
+        expect(
+          settingsCubit.state.hasPendingAudioChannelChange(
+            Ntx8cvAudioChannel.channel1,
+          ),
+          isFalse,
+        );
+        expect(
+          midiConnection.transport.sent
+              .skip(sendsBeforeReconnect)
+              .where((packet) => packet[6] == 0x32),
+          isEmpty,
+        );
+        expect(
+          midiConnection.transport.sent
+              .skip(sendsBeforeReconnect)
+              .where((packet) => packet[6] == 0x31 && packet[7] == 0x04),
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
       'keeps a timed-out audio-channel change pending and uncertain',
       () async {
         var writeStarted = false;
