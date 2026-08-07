@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/ntx_8cv_connection_cubit.dart';
+import 'package:nt_helper/cubit/ntx_8cv_settings_cubit.dart';
 import 'package:nt_helper/utils/responsive.dart';
 
 /// The primary page for configuring a separately connected NTX-8CV.
 class Ntx8cvScreen extends StatefulWidget {
   const Ntx8cvScreen({super.key, this.connectionCubit});
 
-  /// Supplying a cubit is useful for embedding and automated tests.
+  /// Supplying a connection cubit is useful for embedding and automated tests.
   final Ntx8cvConnectionCubit? connectionCubit;
 
   @override
@@ -19,6 +20,7 @@ class Ntx8cvScreen extends StatefulWidget {
 
 class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
   late final Ntx8cvConnectionCubit _connectionCubit;
+  late final Ntx8cvSettingsCubit _settingsCubit;
   late final bool _ownsConnectionCubit;
   final TextEditingController _deviceIdController = TextEditingController(
     text: '0',
@@ -29,12 +31,14 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
     super.initState();
     _ownsConnectionCubit = widget.connectionCubit == null;
     _connectionCubit = widget.connectionCubit ?? Ntx8cvConnectionCubit();
+    _settingsCubit = Ntx8cvSettingsCubit(connectionCubit: _connectionCubit);
     unawaited(_connectionCubit.initialize());
   }
 
   @override
   void dispose() {
     _deviceIdController.dispose();
+    unawaited(_settingsCubit.close());
     if (_ownsConnectionCubit) {
       unawaited(_connectionCubit.close());
     }
@@ -108,7 +112,22 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const _SettingsSection(),
+                      BlocBuilder<Ntx8cvConnectionCubit, Ntx8cvConnectionState>(
+                        bloc: _connectionCubit,
+                        builder: (context, connectionState) =>
+                            BlocBuilder<
+                              Ntx8cvSettingsCubit,
+                              Ntx8cvSettingsState
+                            >(
+                              bloc: _settingsCubit,
+                              builder: (context, settingsState) =>
+                                  _SettingsSection(
+                                    isConnected: connectionState.isConnected,
+                                    state: settingsState,
+                                    onEs5Changed: _settingsCubit.setEs5Enabled,
+                                  ),
+                            ),
+                      ),
                     ],
                   ),
                 ),
@@ -410,10 +429,25 @@ class _MidiEndpointField extends StatelessWidget {
 }
 
 class _SettingsSection extends StatelessWidget {
-  const _SettingsSection();
+  const _SettingsSection({
+    required this.isConnected,
+    required this.state,
+    required this.onEs5Changed,
+  });
+
+  final bool isConnected;
+  final Ntx8cvSettingsState state;
+  final Future<void> Function(bool) onEs5Changed;
 
   @override
   Widget build(BuildContext context) {
+    final canChangeEs5 =
+        isConnected &&
+        state.confirmedEs5Enabled != null &&
+        !state.isLoadingEs5 &&
+        !state.isWritingEs5 &&
+        !state.hasPendingEs5Change;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -433,9 +467,53 @@ class _SettingsSection extends StatelessWidget {
               'NTX-8CV Channel Group remains separate from the disting NT’s '
               'granular channel-enable controls.',
             ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Enable ES-5'),
+              subtitle: Text(_es5Description()),
+              value: state.confirmedEs5Enabled ?? false,
+              onChanged: canChangeEs5
+                  ? (enabled) {
+                      unawaited(onEs5Changed(enabled));
+                    }
+                  : null,
+            ),
+            Semantics(liveRegion: true, child: Text(_es5Status())),
           ],
         ),
       ),
     );
+  }
+
+  String _es5Description() {
+    if (!isConnected) {
+      return 'Connect an NTX-8CV to read this setting.';
+    }
+    if (state.confirmedEs5Enabled == null) {
+      return 'Waiting for a device-confirmed value.';
+    }
+    return 'Changes are sent immediately and confirmed by reading the setting back.';
+  }
+
+  String _es5Status() {
+    if (state.isLoadingEs5) return 'Reading ES-5 setting from the NTX-8CV.';
+    if (state.isWritingEs5) {
+      return 'Sending the ES-5 change and waiting for device readback.';
+    }
+    if (state.hasPendingEs5Change) {
+      final attempted = state.attemptedEs5Enabled! ? 'enabled' : 'disabled';
+      final confirmed = state.confirmedEs5Enabled == null
+          ? 'No device-confirmed value is available.'
+          : 'Last device-confirmed value: '
+                '${state.confirmedEs5Enabled! ? 'enabled' : 'disabled'}.';
+      return 'Attempted ES-5 value: $attempted, not confirmed. $confirmed '
+          '${state.es5Message ?? 'The actual device state is uncertain.'}';
+    }
+    if (state.confirmedEs5Enabled != null) {
+      return 'Device-confirmed ES-5 value: '
+          '${state.confirmedEs5Enabled! ? 'enabled' : 'disabled'}.';
+    }
+    return state.es5Message ?? 'No device-confirmed ES-5 value is available.';
   }
 }

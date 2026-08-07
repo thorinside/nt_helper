@@ -32,6 +32,57 @@ abstract final class Ntx8cvSysExFixtures {
     0xF7,
   ]);
 
+  static final Uint8List readEs5EnabledSetting = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x31,
+    0x01,
+    0xF7,
+  ]);
+
+  static final Uint8List es5DisabledResponse = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x31,
+    0x01,
+    0x00,
+    0xF7,
+  ]);
+
+  static final Uint8List writeEs5EnabledSetting = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x32,
+    0x01,
+    0x01,
+    0xF7,
+  ]);
+
+  static final Uint8List es5EnabledResponse = Uint8List.fromList([
+    0xF0,
+    0x00,
+    0x21,
+    0x27,
+    0x6A,
+    0x00,
+    0x31,
+    0x01,
+    0x01,
+    0xF7,
+  ]);
+
   static final Uint8List readModeSetting = Uint8List.fromList([
     0xF0,
     0x00,
