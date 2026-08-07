@@ -121,10 +121,12 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                             >(
                               bloc: _settingsCubit,
                               builder: (context, settingsState) =>
-                                  _SettingsSection(
+                                  Ntx8cvSettingsSection(
                                     isConnected: connectionState.isConnected,
                                     state: settingsState,
                                     onEs5Changed: _settingsCubit.setEs5Enabled,
+                                    onRetryEs5Change:
+                                        _settingsCubit.retryEs5Change,
                                   ),
                             ),
                       ),
@@ -428,16 +430,20 @@ class _MidiEndpointField extends StatelessWidget {
   }
 }
 
-class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
+/// Displays the device-confirmed ES-5 value and any explicit retry action.
+class Ntx8cvSettingsSection extends StatelessWidget {
+  const Ntx8cvSettingsSection({
+    super.key,
     required this.isConnected,
     required this.state,
     required this.onEs5Changed,
+    required this.onRetryEs5Change,
   });
 
   final bool isConnected;
   final Ntx8cvSettingsState state;
   final Future<void> Function(bool) onEs5Changed;
+  final Future<void> Function() onRetryEs5Change;
 
   @override
   Widget build(BuildContext context) {
@@ -480,6 +486,20 @@ class _SettingsSection extends StatelessWidget {
                   : null,
             ),
             Semantics(liveRegion: true, child: Text(_es5Status())),
+            if (state.hasPendingEs5Change) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const Key('ntx8cv-retry-es5-change'),
+                onPressed:
+                    isConnected && !state.isLoadingEs5 && !state.isWritingEs5
+                    ? () {
+                        unawaited(onRetryEs5Change());
+                      }
+                    : null,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry send'),
+              ),
+            ],
           ],
         ),
       ),

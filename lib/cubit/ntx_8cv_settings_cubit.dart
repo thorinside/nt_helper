@@ -84,7 +84,25 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
         state.confirmedEs5Enabled == enabled) {
       return;
     }
+    await _writeEs5Enabled(session, enabled);
+  }
 
+  /// Explicitly resends the retained, unconfirmed ES-5 change to the current
+  /// identity-validated NTX-8CV. This method never reconnects or retries on
+  /// its own, so a retry always uses the currently selected endpoints and ID.
+  Future<void> retryEs5Change() async {
+    final session = _currentSession;
+    final attemptedValue = state.attemptedEs5Enabled;
+    if (session == null ||
+        attemptedValue == null ||
+        state.isLoadingEs5 ||
+        state.isWritingEs5) {
+      return;
+    }
+    await _writeEs5Enabled(session, attemptedValue);
+  }
+
+  Future<void> _writeEs5Enabled(Ntx8cvSession session, bool enabled) async {
     emit(
       state.copyWith(
         attemptedEs5Enabled: enabled,
@@ -128,9 +146,16 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   void _handleConnectionState(Ntx8cvConnectionState connectionState) {
     final targetKey = _connectionTargetKey(connectionState);
     if (targetKey != null && targetKey != _targetKey) {
+      final hasPreviousTarget = _targetKey != null;
       _targetKey = targetKey;
       _activeSession = null;
-      if (!isClosed) emit(const Ntx8cvSettingsState());
+      if (!isClosed) {
+        emit(
+          hasPreviousTarget
+              ? _stateForChangedTarget()
+              : const Ntx8cvSettingsState(),
+        );
+      }
     }
 
     final session = _connectionCubit.session;
@@ -154,6 +179,20 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     if (!state.hasPendingEs5Change) {
       unawaited(_readEs5Enabled(session));
     }
+  }
+
+  /// Clears a confirmation that belongs to a different selected target while
+  /// retaining an explicit pending change for a user-directed retry.
+  Ntx8cvSettingsState _stateForChangedTarget() {
+    final attemptedValue = state.attemptedEs5Enabled;
+    return Ntx8cvSettingsState(
+      attemptedEs5Enabled: attemptedValue,
+      es5Message: attemptedValue == null
+          ? null
+          : 'The NTX-8CV target changed before the ES-5 change could be '
+                'confirmed. The actual device state is uncertain. Retry send '
+                'will use the current selected connection and device ID.',
+    );
   }
 
   Future<void> _readEs5Enabled(Ntx8cvSession session) async {
