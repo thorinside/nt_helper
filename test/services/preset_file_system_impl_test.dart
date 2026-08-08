@@ -56,6 +56,19 @@ void main() {
       expect(result, ['samples/kick.wav', 'samples/snare.wav']);
     });
 
+    test('root path does not introduce duplicate separators', () async {
+      when(
+        () => mockManager.requestDirectoryListing('/'),
+      ).thenAnswer((_) async => DirectoryListing(entries: [_dir('samples')]));
+      when(
+        () => mockManager.requestDirectoryListing('/samples'),
+      ).thenAnswer((_) async => DirectoryListing(entries: [_file('kick.wav')]));
+
+      final result = await fileSystem.listFiles('/', recursive: true);
+
+      expect(result, ['/samples/kick.wav']);
+    });
+
     test('non-recursive does not descend into subdirectories', () async {
       when(() => mockManager.requestDirectoryListing('samples')).thenAnswer(
         (_) async =>

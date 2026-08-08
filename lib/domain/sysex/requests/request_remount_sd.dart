@@ -9,9 +9,10 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 /// This refreshes the file system without a full reboot, useful after
 /// external changes to the SD card contents.
 ///
-/// Message format: [F0, 00 21 27, 6D, sysExId, 7A, 06, checksum, F7]
+/// Message format: [F0, 00 21 27, 6D, sysExId, 7A, 06, 00, checksum, F7]
 /// - 0x7A = SD card operation
 /// - 0x06 = Remount operation
+/// - 0x00 = Full remount/rescan (reserved for future partial rescans)
 ///
 /// The response is always success.
 class RequestRemountSdMessage extends SysexMessage {
@@ -19,7 +20,7 @@ class RequestRemountSdMessage extends SysexMessage {
 
   @override
   Uint8List encode() {
-    final payload = [SdCardOperation.remount.code];
+    final payload = [SdCardOperation.remount.code, 0x00];
     final checksum = calculateChecksum(payload);
 
     return Uint8List.fromList([

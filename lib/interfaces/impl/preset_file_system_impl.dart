@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/interfaces/preset_file_system.dart';
+import 'package:path/path.dart' as p;
 
 class PresetFileSystemImpl implements PresetFileSystem {
   final IDistingMidiManager manager;
@@ -30,7 +31,7 @@ class PresetFileSystemImpl implements PresetFileSystem {
       final entryName = entry.name.endsWith('/')
           ? entry.name.substring(0, entry.name.length - 1)
           : entry.name;
-      final entryPath = '$directoryPath/$entryName';
+      final entryPath = p.posix.join(directoryPath, entryName);
       if (entry.isDirectory) {
         if (recursive) {
           result.addAll(await listEntries(entryPath, recursive: true));

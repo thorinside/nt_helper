@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 import 'package:nt_helper/ui/widgets/preset_browser_dialog.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -145,6 +146,80 @@ void main() {
 
       // Sort toggle should be visible
       expect(find.byIcon(Icons.sort_by_alpha), findsOneWidget);
+    });
+
+    testWidgets('enables wave cache troubleshooting on firmware 1.17', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      when(() => mockCubit.state).thenReturn(
+        PresetBrowserState.loaded(
+          currentPath: '/',
+          leftPanelItems: const [],
+          centerPanelItems: const [],
+          rightPanelItems: const [],
+          selectedLeftItem: null,
+          selectedCenterItem: null,
+          selectedRightItem: null,
+          navigationHistory: const [],
+          sortByDate: false,
+        ),
+      );
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: PresetBrowserDialog(
+            distingCubit: mockDistingCubit,
+            firmwareVersion: FirmwareVersion('1.17.0'),
+          ),
+        ),
+      );
+
+      final action = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Wave cache'),
+      );
+      expect(action.onPressed, isNotNull);
+    });
+
+    testWidgets('disables wave cache troubleshooting before firmware 1.17', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      when(() => mockCubit.state).thenReturn(
+        PresetBrowserState.loaded(
+          currentPath: '/',
+          leftPanelItems: const [],
+          centerPanelItems: const [],
+          rightPanelItems: const [],
+          selectedLeftItem: null,
+          selectedCenterItem: null,
+          selectedRightItem: null,
+          navigationHistory: const [],
+          sortByDate: false,
+        ),
+      );
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: PresetBrowserDialog(
+            distingCubit: mockDistingCubit,
+            firmwareVersion: FirmwareVersion('1.16.9'),
+          ),
+        ),
+      );
+
+      final action = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Wave cache'),
+      );
+      expect(action.onPressed, isNull);
     });
 
     testWidgets('calls selectDirectory when directory tapped', (tester) async {

@@ -31,6 +31,11 @@ class FirmwareVersion {
     return isSupported('1.17.0');
   }
 
+  /// Firmware 1.17+ exposes generated wave-cache files in SD-card listings.
+  bool get hasWaveCacheListing {
+    return isSupported('1.17.0');
+  }
+
   /// Firmware 1.15+ supports entering bootloader mode via SysEx.
   bool get hasBootloaderSysEx {
     return major > 1 || (major == 1 && minor >= 15);

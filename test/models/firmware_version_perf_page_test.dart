@@ -51,4 +51,15 @@ void main() {
       expect(FirmwareVersion('2.0').hasExpressiveMidiMapping, true);
     });
   });
+
+  group('FirmwareVersion.hasWaveCacheListing', () {
+    test('is false before firmware 1.17', () {
+      expect(FirmwareVersion('1.16.9').hasWaveCacheListing, false);
+    });
+
+    test('is true for firmware 1.17 and newer', () {
+      expect(FirmwareVersion('1.17.0').hasWaveCacheListing, true);
+      expect(FirmwareVersion('2.0').hasWaveCacheListing, true);
+    });
+  });
 }

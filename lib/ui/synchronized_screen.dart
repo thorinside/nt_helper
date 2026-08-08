@@ -40,6 +40,7 @@ import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/video_popup_window_service.dart';
+import 'package:nt_helper/services/wave_cache_maintenance_service.dart';
 import 'package:nt_helper/ui/theme/app_theme.dart';
 
 import 'package:nt_helper/ui/cpu_monitor_widget.dart';
@@ -74,6 +75,7 @@ import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/widgets/app_update_banner.dart';
 import 'package:nt_helper/ui/widgets/app_update_dialog.dart';
 import 'package:nt_helper/ui/widgets/contextual_help_bar.dart';
+import 'package:nt_helper/ui/widgets/wave_cache_troubleshooting_dialog.dart';
 import 'package:nt_helper/models/app_release.dart';
 import 'package:nt_helper/services/app_update_service.dart';
 import 'package:nt_helper/utils/build_config.dart';
@@ -933,7 +935,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             builder: (context) => BlocProvider(
               create: (context) =>
                   PresetBrowserCubit(midiManager: midiManager, prefs: prefs),
-              child: PresetBrowserDialog(distingCubit: cubit),
+              child: PresetBrowserDialog(
+                distingCubit: cubit,
+                firmwareVersion: currentState.firmwareVersion,
+              ),
             ),
           );
           if (presetInfo != null && presetInfo is Map) {
@@ -2242,7 +2247,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               midiManager: midiManager,
                               prefs: prefs,
                             ),
-                            child: PresetBrowserDialog(distingCubit: cubit),
+                            child: PresetBrowserDialog(
+                              distingCubit: cubit,
+                              firmwareVersion: currentState.firmwareVersion,
+                            ),
                           ),
                         );
                         if (presetInfo != null && presetInfo is Map) {
@@ -2888,6 +2896,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   void _showSystemSubmenu(BuildContext context, DistingCubit cubit) {
+    final supportsWaveCacheTroubleshooting =
+        widget.firmwareVersion.hasWaveCacheListing;
     showDialog(
       context: context,
       builder: (dialogContext) => SimpleDialog(
@@ -2913,6 +2923,23 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             child: const ListTile(
               leading: Icon(Icons.sd_card),
               title: Text('Remount SD Card'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: supportsWaveCacheTroubleshooting
+                ? () {
+                    Navigator.of(dialogContext).pop();
+                    _showWaveCacheTroubleshooting(context, cubit);
+                  }
+                : null,
+            child: ListTile(
+              enabled: supportsWaveCacheTroubleshooting,
+              leading: const Icon(Icons.troubleshoot),
+              title: const Text('Wave Cache Troubleshooting'),
+              subtitle: supportsWaveCacheTroubleshooting
+                  ? const Text('Find and reset corrupted WAV caches')
+                  : const Text('Requires firmware 1.17 or later'),
               contentPadding: EdgeInsets.zero,
             ),
           ),
@@ -2945,6 +2972,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showWaveCacheTroubleshooting(
+    BuildContext context,
+    DistingCubit cubit,
+  ) async {
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => WaveCacheTroubleshootingDialog(
+        service: WaveCacheMaintenanceService(cubit.requireDisting()),
       ),
     );
   }

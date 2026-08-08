@@ -15,14 +15,17 @@ import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
 import 'package:nt_helper/models/package_analysis.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/file_conflict_detector.dart';
 import 'package:nt_helper/services/preset_package_analyzer.dart';
+import 'package:nt_helper/services/wave_cache_maintenance_service.dart';
 import 'package:nt_helper/models/preset_action.dart';
 import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/mobile_drill_down_navigator.dart';
 import 'package:nt_helper/ui/widgets/package_install_dialog.dart';
 import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
+import 'package:nt_helper/ui/widgets/wave_cache_troubleshooting_dialog.dart';
 import 'package:nt_helper/utils/responsive.dart';
 import 'package:nt_helper/services/preset_analyzer.dart';
 
@@ -40,8 +43,13 @@ class _DeleteSelectedIntent extends Intent {
 
 class PresetBrowserDialog extends StatefulWidget {
   final DistingCubit distingCubit;
+  final FirmwareVersion? firmwareVersion;
 
-  const PresetBrowserDialog({super.key, required this.distingCubit});
+  const PresetBrowserDialog({
+    super.key,
+    required this.distingCubit,
+    this.firmwareVersion,
+  });
 
   @override
   State<PresetBrowserDialog> createState() => _PresetBrowserDialogState();
@@ -54,6 +62,10 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
   PackageAnalysis? _currentAnalysis;
   Uint8List? _currentPackageData;
+
+  bool get _supportsWaveCacheTroubleshooting {
+    return widget.firmwareVersion?.hasWaveCacheListing ?? false;
+  }
 
   @override
   void initState() {
@@ -135,6 +147,27 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                     );
                   },
                 ),
+                if (isMobile)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.troubleshoot,
+                      semanticLabel: 'Wave cache troubleshooting',
+                    ),
+                    onPressed: _supportsWaveCacheTroubleshooting
+                        ? _showWaveCacheTroubleshooting
+                        : null,
+                    tooltip: _supportsWaveCacheTroubleshooting
+                        ? 'Wave cache troubleshooting'
+                        : 'Wave cache troubleshooting requires firmware 1.17 or later',
+                  )
+                else
+                  TextButton.icon(
+                    onPressed: _supportsWaveCacheTroubleshooting
+                        ? _showWaveCacheTroubleshooting
+                        : null,
+                    icon: const Icon(Icons.troubleshoot),
+                    label: const Text('Wave cache'),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.close, semanticLabel: 'Close'),
                   onPressed: () => Navigator.of(context).pop(),
@@ -362,6 +395,21 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     }
 
     return content;
+  }
+
+  Future<void> _showWaveCacheTroubleshooting() async {
+    final remountRequested = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => WaveCacheTroubleshootingDialog(
+        service: WaveCacheMaintenanceService(
+          widget.distingCubit.requireDisting(),
+        ),
+      ),
+    );
+    if (remountRequested == true && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Widget _buildDesktopBreadcrumbs(BuildContext context, dynamic loaded) {
