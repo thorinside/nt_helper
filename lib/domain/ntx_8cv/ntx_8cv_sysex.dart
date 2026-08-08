@@ -21,6 +21,8 @@ const int _reboot = 0x7F;
 ///
 /// This intentionally does not reuse the disting NT parser: an NTX-8CV frame
 /// carries product byte [kNtx8cvProductByte], not the disting NT's `0x6D`.
+/// Protocol framing was audited against `expertsleepersltd/NTX-8CV` main at
+/// commit `717b288fe487ea7d700f30d327a9c79a85568d1d`.
 class Ntx8cvSysExCodec {
   const Ntx8cvSysExCodec();
 
@@ -72,9 +74,10 @@ class Ntx8cvSysExCodec {
           rawBytes: rawBytes,
         );
       case _deviceInformationResponse:
-        // Firmware and serial values are opaque NUL-terminated ASCII fields.
-        // Their number and contents are intentionally not interpreted here.
-        if (payload.isNotEmpty && payload.last != 0) return null;
+        // The firmware version is an opaque NUL-terminated ASCII field. Keep
+        // decoding multiple fields for forward compatibility without claiming
+        // a grammar for any additional values.
+        if (payload.isEmpty || payload.last != 0) return null;
         return Ntx8cvDeviceInformation(
           deviceId: deviceId,
           textFields: _decodeNulTerminatedFields(payload),

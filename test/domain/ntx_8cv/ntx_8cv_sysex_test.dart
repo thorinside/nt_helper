@@ -58,8 +58,8 @@ void main() {
       final information = decoded! as Ntx8cvDeviceInformation;
       expect(information.deviceId, 0);
       expect(information.firmwareText, 'fixture-firmware');
-      expect(information.serialText, 'fixture-serial');
-      expect(information.textFields, ['fixture-firmware', 'fixture-serial']);
+      expect(information.serialText, isNull);
+      expect(information.textFields, ['fixture-firmware']);
     });
 
     test(
@@ -99,6 +99,12 @@ void main() {
       );
       expect(
         codec.decode(Ntx8cvSysExFixtures.malformedInformationResponse),
+        isNull,
+      );
+      expect(
+        codec.decode(
+          Uint8List.fromList([0xF0, 0x00, 0x21, 0x27, 0x6A, 0x00, 0x32, 0xF7]),
+        ),
         isNull,
       );
       expect(
@@ -181,7 +187,7 @@ void main() {
       expect(transport.sent, hasLength(1));
 
       transport.receive(Ntx8cvSysExFixtures.deviceInformationResponse);
-      expect((await response).serialText, 'fixture-serial');
+      expect((await response).firmwareText, 'fixture-firmware');
     });
 
     test(

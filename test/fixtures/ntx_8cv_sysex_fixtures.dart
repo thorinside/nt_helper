@@ -3,8 +3,8 @@ import 'dart:typed_data';
 /// Deterministic NTX-8CV frames derived from the approved protocol contract.
 ///
 /// The device-information text is deliberately opaque fixture data rather than
-/// a claimed firmware or serial-number grammar. Both fields are NUL-terminated
-/// ASCII as required by the protocol contract.
+/// a claimed firmware-version grammar. It is NUL-terminated as required by the
+/// protocol contract.
 abstract final class Ntx8cvSysExFixtures {
   static final Uint8List deviceInformationRequest = Uint8List.fromList([
     0xF0,
@@ -26,8 +26,6 @@ abstract final class Ntx8cvSysExFixtures {
     0x00,
     0x32,
     ...'fixture-firmware'.codeUnits,
-    0x00,
-    ...'fixture-serial'.codeUnits,
     0x00,
     0xF7,
   ]);
