@@ -31,12 +31,13 @@ class Ntx8cvConnectionState {
     this.statusMessage,
     this.deviceInformation,
     this.isLoadingEndpoints = true,
+    this.isReacquiringAfterReboot = false,
   });
 
-  final List<MidiDevice> inputDevices;
-  final List<MidiDevice> outputDevices;
-  final MidiDevice? selectedInputDevice;
-  final MidiDevice? selectedOutputDevice;
+  final List<Ntx8cvMidiEndpoint> inputDevices;
+  final List<Ntx8cvMidiEndpoint> outputDevices;
+  final Ntx8cvMidiEndpoint? selectedInputDevice;
+  final Ntx8cvMidiEndpoint? selectedOutputDevice;
   final int deviceId;
   final String deviceIdText;
   final String? deviceIdError;
@@ -44,9 +45,11 @@ class Ntx8cvConnectionState {
   final String? statusMessage;
   final Ntx8cvDeviceInformation? deviceInformation;
   final bool isLoadingEndpoints;
+  final bool isReacquiringAfterReboot;
 
   bool get isConnected => status == Ntx8cvConnectionStatus.connected;
   bool get isConnecting => status == Ntx8cvConnectionStatus.connecting;
+  bool get isBusy => isConnecting || isReacquiringAfterReboot;
   bool get canConnect =>
       !isLoadingEndpoints &&
       !isConnecting &&
@@ -54,14 +57,15 @@ class Ntx8cvConnectionState {
       selectedOutputDevice != null &&
       deviceIdError == null;
 
-  String get statusLabel => status.label;
+  String get statusLabel =>
+      isReacquiringAfterReboot ? 'Reconnecting' : status.label;
 
   Ntx8cvConnectionState copyWith({
-    List<MidiDevice>? inputDevices,
-    List<MidiDevice>? outputDevices,
-    MidiDevice? selectedInputDevice,
+    List<Ntx8cvMidiEndpoint>? inputDevices,
+    List<Ntx8cvMidiEndpoint>? outputDevices,
+    Ntx8cvMidiEndpoint? selectedInputDevice,
     bool clearSelectedInputDevice = false,
-    MidiDevice? selectedOutputDevice,
+    Ntx8cvMidiEndpoint? selectedOutputDevice,
     bool clearSelectedOutputDevice = false,
     int? deviceId,
     String? deviceIdText,
@@ -73,6 +77,7 @@ class Ntx8cvConnectionState {
     Ntx8cvDeviceInformation? deviceInformation,
     bool clearDeviceInformation = false,
     bool? isLoadingEndpoints,
+    bool? isReacquiringAfterReboot,
   }) {
     return Ntx8cvConnectionState(
       inputDevices: inputDevices ?? this.inputDevices,
@@ -96,6 +101,8 @@ class Ntx8cvConnectionState {
           ? null
           : deviceInformation ?? this.deviceInformation,
       isLoadingEndpoints: isLoadingEndpoints ?? this.isLoadingEndpoints,
+      isReacquiringAfterReboot:
+          isReacquiringAfterReboot ?? this.isReacquiringAfterReboot,
     );
   }
 }
@@ -111,6 +118,8 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
     Ntx8cvConnectionStore? store,
     this.sessionTimeout = const Duration(seconds: 1),
     this.rebootReconnectDelay = const Duration(seconds: 1),
+    this.rebootReconnectPollInterval = const Duration(milliseconds: 500),
+    this.rebootReconnectTimeout = const Duration(seconds: 15),
   }) : _midiConnection = midiConnection ?? NativeNtx8cvMidiConnection(),
        _store = store ?? SharedPreferencesNtx8cvConnectionStore(),
        super(const Ntx8cvConnectionState());
@@ -123,11 +132,19 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
   /// reacquired. It is configurable so fixture-based tests do not need a
   /// physical NTX-8CV reboot delay.
   final Duration rebootReconnectDelay;
+
+  /// How often endpoint discovery and identity validation are retried while a
+  /// rebooted NTX-8CV is returning.
+  final Duration rebootReconnectPollInterval;
+
+  /// Maximum time spent reacquiring and revalidating the selected NTX-8CV
+  /// after the one reboot command has been sent.
+  final Duration rebootReconnectTimeout;
   StreamSubscription<MidiSetupChange>? _setupSubscription;
   Ntx8cvMidiTransport? _transport;
   Ntx8cvSession? _session;
-  MidiDevice? _activeInputDevice;
-  MidiDevice? _activeOutputDevice;
+  Ntx8cvMidiEndpoint? _activeInputDevice;
+  Ntx8cvMidiEndpoint? _activeOutputDevice;
   String? _desiredInputDeviceName;
   String? _desiredInputDeviceId;
   String? _desiredOutputDeviceName;
@@ -177,12 +194,10 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
   Future<void> refreshEndpoints() async {
     try {
       final devices = await _midiConnection.listDevices();
-      final inputDevices =
-          devices.where((device) => device.inputPorts.isNotEmpty).toList()
-            ..sort(_compareDevices);
-      final outputDevices =
-          devices.where((device) => device.outputPorts.isNotEmpty).toList()
-            ..sort(_compareDevices);
+      final inputDevices = devices.where((device) => device.hasInput).toList()
+        ..sort(_compareDevices);
+      final outputDevices = devices.where((device) => device.hasOutput).toList()
+        ..sort(_compareDevices);
 
       var inputDevice = _resolveSavedDevice(
         inputDevices,
@@ -248,7 +263,7 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
     }
   }
 
-  Future<void> selectInputDevice(MidiDevice? device) async {
+  Future<void> selectInputDevice(Ntx8cvMidiEndpoint? device) async {
     if (_sameDevice(state.selectedInputDevice, device)) return;
     await _disconnectForTargetChange();
     if (device == null) {
@@ -269,7 +284,7 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
     await _persistSelection();
   }
 
-  Future<void> selectOutputDevice(MidiDevice? device) async {
+  Future<void> selectOutputDevice(Ntx8cvMidiEndpoint? device) async {
     if (_sameDevice(state.selectedOutputDevice, device)) return;
     await _disconnectForTargetChange();
     if (device == null) {
@@ -361,6 +376,7 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
           status: Ntx8cvConnectionStatus.connected,
           deviceInformation: deviceInformation,
           clearStatusMessage: true,
+          isReacquiringAfterReboot: false,
         ),
       );
     } catch (error) {
@@ -393,6 +409,7 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
         status: Ntx8cvConnectionStatus.connecting,
         statusMessage: 'Rebooting the selected NTX-8CV, then reconnecting.',
         clearDeviceInformation: true,
+        isReacquiringAfterReboot: true,
       ),
     );
 
@@ -407,6 +424,7 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
             statusMessage:
                 'Could not send the reboot command to the selected NTX-8CV.',
             clearDeviceInformation: true,
+            isReacquiringAfterReboot: false,
           ),
         );
       }
@@ -416,7 +434,12 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
     // The command is scoped to the session that was created for the selected
     // endpoint pair and device ID. Do not continue if another action replaced
     // that session while the send was in flight.
-    if (!identical(_session, session)) return false;
+    if (!identical(_session, session)) {
+      if (!isClosed) {
+        emit(state.copyWith(isReacquiringAfterReboot: false));
+      }
+      return false;
+    }
 
     await _closeActiveConnection();
     if (isClosed) return false;
@@ -433,22 +456,44 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
     }
     if (isClosed) return false;
 
-    await refreshEndpoints();
-    if (!state.canConnect) {
+    final stopwatch = Stopwatch()..start();
+    while (!isClosed) {
+      await refreshEndpoints();
+      if (isClosed) return false;
+
+      if (state.canConnect) {
+        await connect();
+        if (state.isConnected) return true;
+      }
+
+      if (stopwatch.elapsed >= rebootReconnectTimeout) break;
+      emit(
+        state.copyWith(
+          status: Ntx8cvConnectionStatus.disconnected,
+          statusMessage: 'Waiting for the NTX-8CV to return after reboot.',
+          clearDeviceInformation: true,
+        ),
+      );
+
+      final remaining = rebootReconnectTimeout - stopwatch.elapsed;
+      final delay = rebootReconnectPollInterval < remaining
+          ? rebootReconnectPollInterval
+          : remaining;
+      if (delay > Duration.zero) await Future<void>.delayed(delay);
+    }
+
+    if (!isClosed) {
       emit(
         state.copyWith(
           status: Ntx8cvConnectionStatus.failed,
           statusMessage:
-              'Could not reacquire the selected NTX-8CV after reboot. Check '
-              'its MIDI endpoints and reconnect it.',
+              'NTX-8CV did not return after reboot. Check its MIDI connection.',
           clearDeviceInformation: true,
+          isReacquiringAfterReboot: false,
         ),
       );
-      return false;
     }
-
-    await connect();
-    return state.isConnected;
+    return false;
   }
 
   Future<void> disconnect() async {
@@ -459,6 +504,7 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
           status: Ntx8cvConnectionStatus.disconnected,
           clearStatusMessage: true,
           clearDeviceInformation: true,
+          isReacquiringAfterReboot: false,
         ),
       );
     }
@@ -523,18 +569,18 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
     }
   }
 
-  void _rememberInputDevice(MidiDevice device) {
+  void _rememberInputDevice(Ntx8cvMidiEndpoint device) {
     _desiredInputDeviceName = device.name;
     _desiredInputDeviceId = device.id;
   }
 
-  void _rememberOutputDevice(MidiDevice device) {
+  void _rememberOutputDevice(Ntx8cvMidiEndpoint device) {
     _desiredOutputDeviceName = device.name;
     _desiredOutputDeviceId = device.id;
   }
 
-  static MidiDevice? _resolveSavedDevice(
-    List<MidiDevice> devices, {
+  static Ntx8cvMidiEndpoint? _resolveSavedDevice(
+    List<Ntx8cvMidiEndpoint> devices, {
     required String? deviceId,
     required String? deviceName,
   }) {
@@ -548,17 +594,24 @@ class Ntx8cvConnectionCubit extends Cubit<Ntx8cvConnectionState> {
     return namedDevices.length == 1 ? namedDevices.single : null;
   }
 
-  static MidiDevice? _singleNtx8cvEndpoint(List<MidiDevice> devices) {
+  static Ntx8cvMidiEndpoint? _singleNtx8cvEndpoint(
+    List<Ntx8cvMidiEndpoint> devices,
+  ) {
     final matches = devices.where(
       (device) => device.name.trim().toLowerCase() == 'ntx-8cv',
     );
     return matches.length == 1 ? matches.single : null;
   }
 
-  static bool _sameDevice(MidiDevice? first, MidiDevice? second) =>
-      first?.id == second?.id;
+  static bool _sameDevice(
+    Ntx8cvMidiEndpoint? first,
+    Ntx8cvMidiEndpoint? second,
+  ) => first?.id == second?.id;
 
-  static int _compareDevices(MidiDevice first, MidiDevice second) {
+  static int _compareDevices(
+    Ntx8cvMidiEndpoint first,
+    Ntx8cvMidiEndpoint second,
+  ) {
     final nameOrder = first.name.toLowerCase().compareTo(
       second.name.toLowerCase(),
     );

@@ -23,6 +23,25 @@ class Ntx8cvSavedConnection {
   final int deviceId;
 }
 
+/// Immutable endpoint data exposed by the NTX-8CV MIDI connection module.
+///
+/// The native MIDI package owns mutable [MidiDevice] instances and rewrites
+/// them when packets arrive. Keeping those objects behind this module's
+/// interface prevents out-of-band mutations from leaking into Cubit state.
+class Ntx8cvMidiEndpoint {
+  const Ntx8cvMidiEndpoint({
+    required this.id,
+    required this.name,
+    required this.hasInput,
+    required this.hasOutput,
+  });
+
+  final String id;
+  final String name;
+  final bool hasInput;
+  final bool hasOutput;
+}
+
 /// Persists only the selected NTX-8CV endpoints and its SysEx device ID.
 abstract interface class Ntx8cvConnectionStore {
   Future<Ntx8cvSavedConnection> load();
@@ -100,19 +119,19 @@ class SharedPreferencesNtx8cvConnectionStore implements Ntx8cvConnectionStore {
 ///
 /// It intentionally has no dependency on [DistingCubit] or its connection.
 abstract interface class Ntx8cvMidiConnection {
-  Future<List<MidiDevice>> listDevices();
+  Future<List<Ntx8cvMidiEndpoint>> listDevices();
 
   Stream<MidiSetupChange>? get setupChanges;
 
   Future<Ntx8cvMidiTransport> open({
-    required MidiDevice inputDevice,
-    required MidiDevice outputDevice,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
   });
 
   Future<void> close({
     required Ntx8cvMidiTransport transport,
-    required MidiDevice inputDevice,
-    required MidiDevice outputDevice,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
   });
 }
 
@@ -122,32 +141,49 @@ class NativeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
     : _midiCommand = midiCommand ?? createNativeMidiCommand();
 
   final MidiCommand _midiCommand;
+  final Map<String, MidiDevice> _nativeDevicesById = {};
 
   @override
   Stream<MidiSetupChange>? get setupChanges => _midiCommand.onMidiSetupChanged;
 
   @override
-  Future<List<MidiDevice>> listDevices() async =>
-      List<MidiDevice>.of(await _midiCommand.devices ?? const []);
+  Future<List<Ntx8cvMidiEndpoint>> listDevices() async {
+    final devices = List<MidiDevice>.of(await _midiCommand.devices ?? const []);
+    _nativeDevicesById
+      ..clear()
+      ..addEntries(devices.map((device) => MapEntry(device.id, device)));
+    return List.unmodifiable(
+      devices.map(
+        (device) => Ntx8cvMidiEndpoint(
+          id: device.id,
+          name: device.name,
+          hasInput: device.inputPorts.isNotEmpty,
+          hasOutput: device.outputPorts.isNotEmpty,
+        ),
+      ),
+    );
+  }
 
   @override
   Future<Ntx8cvMidiTransport> open({
-    required MidiDevice inputDevice,
-    required MidiDevice outputDevice,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
   }) async {
+    final nativeInputDevice = _nativeDevice(inputDevice);
+    final nativeOutputDevice = _nativeDevice(outputDevice);
     final transport = _Ntx8cvMidiCommandTransport(
       midiCommand: _midiCommand,
-      inputDevice: inputDevice,
-      outputDevice: outputDevice,
+      inputDevice: nativeInputDevice,
+      outputDevice: nativeOutputDevice,
     );
     try {
       await transport.open();
       return transport;
     } catch (_) {
       await transport.close();
-      _midiCommand.disconnectDevice(inputDevice);
-      if (inputDevice.id != outputDevice.id) {
-        _midiCommand.disconnectDevice(outputDevice);
+      _midiCommand.disconnectDevice(nativeInputDevice);
+      if (nativeInputDevice.id != nativeOutputDevice.id) {
+        _midiCommand.disconnectDevice(nativeOutputDevice);
       }
       rethrow;
     }
@@ -156,16 +192,22 @@ class NativeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
   @override
   Future<void> close({
     required Ntx8cvMidiTransport transport,
-    required MidiDevice inputDevice,
-    required MidiDevice outputDevice,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
   }) async {
     if (transport is _Ntx8cvMidiCommandTransport) {
       await transport.close();
+      _midiCommand.disconnectDevice(transport._inputDevice);
+      if (transport._inputDevice.id != transport._outputDevice.id) {
+        _midiCommand.disconnectDevice(transport._outputDevice);
+      }
     }
-    _midiCommand.disconnectDevice(inputDevice);
-    if (inputDevice.id != outputDevice.id) {
-      _midiCommand.disconnectDevice(outputDevice);
-    }
+  }
+
+  MidiDevice _nativeDevice(Ntx8cvMidiEndpoint endpoint) {
+    final device = _nativeDevicesById[endpoint.id];
+    if (device != null) return device;
+    throw StateError('MIDI endpoint ${endpoint.name} is no longer available.');
   }
 }
 

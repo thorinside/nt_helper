@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/ntx_8cv_connection_cubit.dart';
 import 'package:nt_helper/cubit/ntx_8cv_settings_cubit.dart';
+import 'package:nt_helper/domain/ntx_8cv/ntx_8cv_midi_connection.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/utils/responsive.dart';
 
 /// The primary page for configuring a separately connected NTX-8CV.
@@ -60,6 +61,8 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
 
     return BlocListener<Ntx8cvConnectionCubit, Ntx8cvConnectionState>(
       bloc: _connectionCubit,
+      listenWhen: (previous, current) =>
+          previous.deviceIdText != current.deviceIdText,
       listener: (_, state) => _syncDeviceIdText(state),
       child: Scaffold(
         appBar: AppBar(title: const Text('NTX-8CV')),
@@ -74,21 +77,33 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          'NTX-8CV',
-                          style: theme.textTheme.headlineMedium,
-                        ),
+                      Row(
+                        children: [
+                          _Ntx8cvSyncIndicator(
+                            connectionCubit: _connectionCubit,
+                            settingsCubit: _settingsCubit,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Semantics(
+                              header: true,
+                              child: Text(
+                                'NTX-8CV',
+                                style: theme.textTheme.headlineMedium,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Connect the NTX-8CV directly. Its USB MIDI connection '
-                        'is separate from your disting NT.',
+                        'Configure the NTX-8CV over its dedicated USB MIDI '
+                        'connection.',
                       ),
                       const SizedBox(height: 24),
                       BlocBuilder<Ntx8cvConnectionCubit, Ntx8cvConnectionState>(
                         bloc: _connectionCubit,
+                        buildWhen: _connectionPresentationChanged,
                         builder: (context, state) => _ConnectionSection(
                           isNarrow: isNarrow,
                           state: state,
@@ -112,9 +127,14 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      BlocBuilder<Ntx8cvConnectionCubit, Ntx8cvConnectionState>(
+                      BlocSelector<
+                        Ntx8cvConnectionCubit,
+                        Ntx8cvConnectionState,
+                        bool
+                      >(
                         bloc: _connectionCubit,
-                        builder: (context, connectionState) =>
+                        selector: (state) => state.isConnected,
+                        builder: (context, isConnected) =>
                             BlocBuilder<
                               Ntx8cvSettingsCubit,
                               Ntx8cvSettingsState
@@ -122,7 +142,7 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                               bloc: _settingsCubit,
                               builder: (context, settingsState) =>
                                   Ntx8cvSettingsSection(
-                                    isConnected: connectionState.isConnected,
+                                    isConnected: isConnected,
                                     state: settingsState,
                                     onChannelGroupChanged:
                                         _settingsCubit.setChannelGroup,
@@ -151,6 +171,164 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
   }
 }
 
+bool _connectionPresentationChanged(
+  Ntx8cvConnectionState previous,
+  Ntx8cvConnectionState current,
+) {
+  return !_sameEndpointLists(previous.inputDevices, current.inputDevices) ||
+      !_sameEndpointLists(previous.outputDevices, current.outputDevices) ||
+      previous.selectedInputDevice?.id != current.selectedInputDevice?.id ||
+      previous.selectedOutputDevice?.id != current.selectedOutputDevice?.id ||
+      previous.deviceIdText != current.deviceIdText ||
+      previous.deviceIdError != current.deviceIdError ||
+      (!previous.isReacquiringAfterReboot &&
+          !current.isReacquiringAfterReboot &&
+          previous.status != current.status) ||
+      previous.statusLabel != current.statusLabel ||
+      previous.isBusy != current.isBusy ||
+      previous.canConnect != current.canConnect ||
+      previous.isConnected != current.isConnected ||
+      (!current.isBusy && previous.statusMessage != current.statusMessage);
+}
+
+bool _sameEndpointLists(
+  List<Ntx8cvMidiEndpoint> first,
+  List<Ntx8cvMidiEndpoint> second,
+) {
+  if (identical(first, second)) return true;
+  if (first.length != second.length) return false;
+  for (var index = 0; index < first.length; index++) {
+    final a = first[index];
+    final b = second[index];
+    if (a.id != b.id ||
+        a.name != b.name ||
+        a.hasInput != b.hasInput ||
+        a.hasOutput != b.hasOutput) {
+      return false;
+    }
+  }
+  return true;
+}
+
+class _Ntx8cvSyncIndicator extends StatefulWidget {
+  const _Ntx8cvSyncIndicator({
+    required this.connectionCubit,
+    required this.settingsCubit,
+  });
+
+  final Ntx8cvConnectionCubit connectionCubit;
+  final Ntx8cvSettingsCubit settingsCubit;
+
+  @override
+  State<_Ntx8cvSyncIndicator> createState() => _Ntx8cvSyncIndicatorState();
+}
+
+class _Ntx8cvSyncIndicatorState extends State<_Ntx8cvSyncIndicator> {
+  static const _visibleAfterSync = Duration(seconds: 2);
+  static const _fadeDuration = Duration(milliseconds: 600);
+
+  late final StreamSubscription<Ntx8cvConnectionState> _connectionSubscription;
+  late final StreamSubscription<Ntx8cvSettingsState> _settingsSubscription;
+  late bool _isSynced;
+  double _opacity = 1;
+  Timer? _fadeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _isSynced = _calculateIsSynced();
+    _connectionSubscription = widget.connectionCubit.stream.listen(
+      (_) => _updateSyncState(),
+    );
+    _settingsSubscription = widget.settingsCubit.stream.listen(
+      (_) => _updateSyncState(),
+    );
+    if (_isSynced) _scheduleFade();
+  }
+
+  @override
+  void dispose() {
+    _fadeTimer?.cancel();
+    unawaited(_connectionSubscription.cancel());
+    unawaited(_settingsSubscription.cancel());
+    super.dispose();
+  }
+
+  bool _calculateIsSynced() {
+    final connection = widget.connectionCubit.state;
+    final settings = widget.settingsCubit.state;
+    return connection.isConnected &&
+        !connection.isBusy &&
+        !connection.isLoadingEndpoints &&
+        !settings.isBusy &&
+        !settings.hasPendingChannelGroupChange &&
+        !settings.hasPendingEs5Change &&
+        !settings.hasPendingModeChange &&
+        settings.confirmedChannelGroup != null &&
+        settings.confirmedEs5Enabled != null &&
+        settings.confirmedMode != null &&
+        settings.modeCapabilityEvidenced &&
+        settings.channelGroupMessage == null &&
+        settings.es5Message == null &&
+        settings.modeMessage == null &&
+        settings.rebootMessage == null;
+  }
+
+  void _updateSyncState() {
+    final nextIsSynced = _calculateIsSynced();
+    if (nextIsSynced == _isSynced) return;
+
+    _fadeTimer?.cancel();
+    setState(() {
+      _isSynced = nextIsSynced;
+      _opacity = 1;
+    });
+    if (nextIsSynced) _scheduleFade();
+  }
+
+  void _scheduleFade() {
+    _fadeTimer?.cancel();
+    _fadeTimer = Timer(_visibleAfterSync, () {
+      if (!mounted || !_isSynced) return;
+      setState(() => _opacity = 0);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _isSynced
+        ? 'NTX-8CV data synced'
+        : 'NTX-8CV data not fully synced';
+    return SizedBox(
+      width: 10,
+      height: 10,
+      child: IgnorePointer(
+        ignoring: _opacity == 0,
+        child: AnimatedOpacity(
+          key: const Key('ntx8cv-sync-indicator'),
+          opacity: _opacity,
+          duration: _fadeDuration,
+          child: Semantics(
+            liveRegion: true,
+            label: label,
+            child: Tooltip(
+              message: label,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isSynced
+                      ? context.appColors.info.color
+                      : context.appColors.warning.color,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ConnectionSection extends StatelessWidget {
   const _ConnectionSection({
     required this.isNarrow,
@@ -168,8 +346,8 @@ class _ConnectionSection extends StatelessWidget {
   final Ntx8cvConnectionState state;
   final TextEditingController deviceIdController;
   final Future<void> Function() onRefresh;
-  final ValueChanged<MidiDevice?> onInputChanged;
-  final ValueChanged<MidiDevice?> onOutputChanged;
+  final ValueChanged<Ntx8cvMidiEndpoint?> onInputChanged;
+  final ValueChanged<Ntx8cvMidiEndpoint?> onOutputChanged;
   final ValueChanged<String> onDeviceIdChanged;
   final Future<void> Function() onConnect;
   final Future<void> Function() onDisconnect;
@@ -206,56 +384,32 @@ class _ConnectionSection extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   tooltip: 'Refresh NTX-8CV MIDI endpoints',
-                  onPressed: state.isConnecting
+                  onPressed: state.isBusy
                       ? null
                       : () {
                           unawaited(onRefresh());
                         },
                 ),
                 const SizedBox(width: 4),
-                Semantics(
-                  liveRegion: true,
-                  label: 'NTX-8CV connection status: ${state.statusLabel}',
-                  child: Chip(
-                    avatar: Icon(_statusIcon(state.status)),
-                    label: Text(state.statusLabel),
-                  ),
-                ),
+                _ConnectionStatusChip(state: state),
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Choose the NTX-8CV MIDI input and output, then connect to '
-              'verify the device before changing its settings.',
-            ),
+            const Text('Select its MIDI input and output, then connect.'),
             const SizedBox(height: 16),
             if (isNarrow)
               _NarrowConnectionControls(controls: controls)
             else
               _WideConnectionControls(controls: controls),
-            if (state.statusMessage != null) ...[
-              const SizedBox(height: 12),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  state.statusMessage!,
-                  style: TextStyle(
-                    color: state.status == Ntx8cvConnectionStatus.failed
-                        ? Theme.of(context).colorScheme.error
-                        : null,
-                  ),
-                ),
-              ),
-            ],
-            if (state.isConnected) ...[
-              const SizedBox(height: 12),
-              Semantics(
-                liveRegion: true,
-                child: const Text(
-                  'Device information verified from the selected MIDI input.',
-                ),
-              ),
-            ],
+            const SizedBox(height: 12),
+            Row(
+              key: const Key('ntx8cv-connection-actions'),
+              children: [
+                Expanded(child: _ConnectionMessageSlot(state: state)),
+                const SizedBox(width: 12),
+                controls.button(),
+              ],
+            ),
           ],
         ),
       ),
@@ -269,6 +423,143 @@ class _ConnectionSection extends StatelessWidget {
         Ntx8cvConnectionStatus.connected => Icons.link,
         Ntx8cvConnectionStatus.failed => Icons.error_outline,
       };
+}
+
+class _ConnectionStatusChip extends StatelessWidget {
+  const _ConnectionStatusChip({required this.state});
+
+  final Ntx8cvConnectionState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: const Key('ntx8cv-connection-status'),
+      liveRegion: true,
+      label: 'NTX-8CV connection status: ${state.statusLabel}',
+      excludeSemantics: true,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const ExcludeSemantics(
+            child: Opacity(
+              opacity: 0,
+              child: Chip(
+                avatar: Icon(Icons.link_off),
+                label: _HiddenLayoutText('Reconnecting'),
+              ),
+            ),
+          ),
+          Chip(
+            avatar: Icon(
+              state.isReacquiringAfterReboot
+                  ? Icons.sync
+                  : _ConnectionSection._statusIcon(state.status),
+            ),
+            label: Text(state.statusLabel),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectionMessageSlot extends StatelessWidget {
+  const _ConnectionMessageSlot({required this.state});
+
+  final Ntx8cvConnectionState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = state.isBusy || state.isLoadingEndpoints;
+    return _StableMessageSlot(
+      message: isActive ? null : state.statusMessage,
+      isError: state.status == Ntx8cvConnectionStatus.failed,
+      height: 20,
+    );
+  }
+}
+
+class _StableMessageSlot extends StatelessWidget {
+  const _StableMessageSlot({
+    required this.message,
+    this.isError = false,
+    this.height = 32,
+    this.reserveRetrySpace = false,
+    this.retryKey,
+    this.onRetry,
+  });
+
+  final String? message;
+  final bool isError;
+  final double height;
+  final bool reserveRetrySpace;
+  final Key? retryKey;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: isError ? Theme.of(context).colorScheme.error : null,
+    );
+    final messageText = message == null
+        ? const SizedBox.shrink()
+        : Tooltip(
+            message: message,
+            child: Semantics(
+              liveRegion: true,
+              label: message,
+              excludeSemantics: true,
+              child: Text(
+                message!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle,
+              ),
+            ),
+          );
+
+    return SizedBox(
+      height: height,
+      child: Row(
+        children: [
+          Expanded(
+            child: Align(alignment: Alignment.centerLeft, child: messageText),
+          ),
+          if (reserveRetrySpace || retryKey != null) ...[
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 116,
+              child: retryKey == null
+                  ? null
+                  : OutlinedButton.icon(
+                      key: retryKey,
+                      onPressed: onRetry,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 32),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Retry send'),
+                    ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HiddenLayoutText extends StatelessWidget {
+  const _HiddenLayoutText(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => RichText(
+    text: TextSpan(style: DefaultTextStyle.of(context).style, text: text),
+  );
 }
 
 class _WideConnectionControls extends StatelessWidget {
@@ -287,11 +578,6 @@ class _WideConnectionControls extends StatelessWidget {
         Expanded(child: controls.outputField()),
         const SizedBox(width: 12),
         Expanded(child: controls.deviceIdField()),
-        const SizedBox(width: 12),
-        Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: controls.button(),
-        ),
       ],
     );
   }
@@ -313,8 +599,6 @@ class _NarrowConnectionControls extends StatelessWidget {
         controls.outputField(),
         const SizedBox(height: 12),
         controls.deviceIdField(),
-        const SizedBox(height: 16),
-        controls.button(),
       ],
     );
   }
@@ -333,8 +617,8 @@ class _ConnectionControls {
 
   final Ntx8cvConnectionState state;
   final TextEditingController deviceIdController;
-  final ValueChanged<MidiDevice?> onInputChanged;
-  final ValueChanged<MidiDevice?> onOutputChanged;
+  final ValueChanged<Ntx8cvMidiEndpoint?> onInputChanged;
+  final ValueChanged<Ntx8cvMidiEndpoint?> onOutputChanged;
   final ValueChanged<String> onDeviceIdChanged;
   final Future<void> Function() onConnect;
   final Future<void> Function() onDisconnect;
@@ -344,7 +628,7 @@ class _ConnectionControls {
     label: 'MIDI input',
     devices: state.inputDevices,
     selectedDevice: state.selectedInputDevice,
-    enabled: !state.isConnecting,
+    enabled: !state.isBusy,
     onChanged: onInputChanged,
   );
 
@@ -353,14 +637,14 @@ class _ConnectionControls {
     label: 'MIDI output',
     devices: state.outputDevices,
     selectedDevice: state.selectedOutputDevice,
-    enabled: !state.isConnecting,
+    enabled: !state.isBusy,
     onChanged: onOutputChanged,
   );
 
   Widget deviceIdField() => TextFormField(
     key: const Key('ntx8cv-device-id'),
     controller: deviceIdController,
-    enabled: !state.isConnecting,
+    enabled: !state.isBusy,
     keyboardType: TextInputType.number,
     onChanged: onDeviceIdChanged,
     decoration: InputDecoration(
@@ -373,22 +657,30 @@ class _ConnectionControls {
 
   Widget button() {
     if (state.isConnected) {
-      return FilledButton.icon(
-        onPressed: () {
-          unawaited(onDisconnect());
-        },
-        icon: const Icon(Icons.link_off),
-        label: const Text('Disconnect'),
+      return SizedBox(
+        width: 140,
+        child: FilledButton.icon(
+          key: const Key('ntx8cv-connect-button'),
+          onPressed: () {
+            unawaited(onDisconnect());
+          },
+          icon: const Icon(Icons.link_off),
+          label: const Text('Disconnect'),
+        ),
       );
     }
-    return FilledButton.icon(
-      onPressed: state.canConnect
-          ? () {
-              unawaited(onConnect());
-            }
-          : null,
-      icon: Icon(state.isConnecting ? Icons.sync : Icons.link),
-      label: Text(state.isConnecting ? 'Connecting' : 'Connect'),
+    return SizedBox(
+      width: 140,
+      child: FilledButton.icon(
+        key: const Key('ntx8cv-connect-button'),
+        onPressed: state.canConnect && !state.isReacquiringAfterReboot
+            ? () {
+                unawaited(onConnect());
+              }
+            : null,
+        icon: Icon(state.isBusy ? Icons.sync : Icons.link),
+        label: const Text('Connect'),
+      ),
     );
   }
 }
@@ -404,14 +696,14 @@ class _MidiEndpointField extends StatelessWidget {
   });
 
   final String label;
-  final List<MidiDevice> devices;
-  final MidiDevice? selectedDevice;
+  final List<Ntx8cvMidiEndpoint> devices;
+  final Ntx8cvMidiEndpoint? selectedDevice;
   final bool enabled;
-  final ValueChanged<MidiDevice?> onChanged;
+  final ValueChanged<Ntx8cvMidiEndpoint?> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    MidiDevice? selectedValue;
+    Ntx8cvMidiEndpoint? selectedValue;
     for (final device in devices) {
       if (device.id == selectedDevice?.id) {
         selectedValue = device;
@@ -420,7 +712,7 @@ class _MidiEndpointField extends StatelessWidget {
     }
     return KeyedSubtree(
       key: ValueKey('$label:${selectedValue?.id}'),
-      child: DropdownButtonFormField<MidiDevice>(
+      child: DropdownButtonFormField<Ntx8cvMidiEndpoint>(
         key: ValueKey('$label-dropdown'),
         initialValue: selectedValue,
         isExpanded: true,
@@ -466,23 +758,38 @@ class Ntx8cvSettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isGloballyUnavailable =
+        !isConnected || state.isRebooting || state.isRefreshing;
+    final displayedChannelGroup = state.isWritingChannelGroup
+        ? state.attemptedChannelGroup ?? state.confirmedChannelGroup
+        : state.confirmedChannelGroup;
+    final displayedEs5Enabled = state.isWritingEs5
+        ? state.attemptedEs5Enabled ?? state.confirmedEs5Enabled
+        : state.confirmedEs5Enabled;
+    final displayedMode = state.isWritingMode
+        ? state.attemptedMode ?? state.confirmedMode
+        : state.confirmedMode;
     final canChangeChannelGroup =
-        isConnected &&
+        !isGloballyUnavailable &&
         state.confirmedChannelGroup != null &&
-        !state.isBusy &&
-        !state.hasPendingChannelGroupChange;
+        !state.isLoadingChannelGroup &&
+        (!state.hasPendingChannelGroupChange || state.isWritingChannelGroup);
     final canChangeEs5 =
-        isConnected &&
+        !isGloballyUnavailable &&
         state.confirmedEs5Enabled != null &&
-        !state.isBusy &&
-        !state.hasPendingEs5Change;
+        !state.isLoadingEs5 &&
+        (!state.hasPendingEs5Change || state.isWritingEs5);
     final canChangeMode =
-        isConnected &&
+        !isGloballyUnavailable &&
         state.confirmedMode != null &&
         state.modeCapabilityEvidenced &&
-        !state.isBusy &&
-        !state.hasPendingModeChange;
+        !state.isLoadingMode &&
+        (!state.hasPendingModeChange || state.isWritingMode);
     final canReboot = isConnected && !state.isBusy;
+    final es5Message = _es5Message();
+    final modeMessage = _modeMessage();
+    final channelGroupMessage = _channelGroupMessage();
+    final rebootMessage = state.rebootMessage;
 
     return Card(
       child: Padding(
@@ -490,88 +797,53 @@ class Ntx8cvSettingsSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      'Settings',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Semantics(
-                  label:
-                      'Reboot only the currently selected, identity-verified '
-                      'NTX-8CV',
-                  child: FilledButton.icon(
-                    key: const Key('ntx8cv-reboot'),
-                    onPressed: canReboot
-                        ? () {
-                            unawaited(onReboot());
-                          }
-                        : null,
-                    icon: const Icon(Icons.restart_alt),
-                    label: Text(
-                      state.isRebooting
-                          ? 'Rebooting NTX-8CV'
-                          : 'Reboot NTX-8CV',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (state.rebootMessage != null) ...[
-              const SizedBox(height: 8),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  state.rebootMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
+            Semantics(
+              header: true,
+              child: Text(
+                'Settings',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-            ],
-            const SizedBox(height: 8),
-            const Text(
-              'Connect an NTX-8CV to read and configure its settings. The '
-              'NTX-8CV Channel Group remains separate from the disting NT’s '
-              'granular channel-enable controls.',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
+            _StableMessageSlot(
+              message: rebootMessage,
+              isError: rebootMessage != null,
+              height: 20,
+            ),
+            const SizedBox(height: 4),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Enable ES-5'),
-              subtitle: Text(_es5Description()),
-              value: state.confirmedEs5Enabled ?? false,
+              value: displayedEs5Enabled ?? false,
               onChanged: canChangeEs5
                   ? (enabled) {
                       unawaited(onEs5Changed(enabled));
                     }
                   : null,
             ),
-            Semantics(liveRegion: true, child: Text(_es5Status())),
-            if (state.hasPendingEs5Change) ...[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('ntx8cv-retry-es5-change'),
-                onPressed: isConnected && !state.isBusy
-                    ? () {
-                        unawaited(onRetryEs5Change());
-                      }
-                    : null,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry send'),
-              ),
-            ],
-            const SizedBox(height: 16),
+            _StableMessageSlot(
+              message: es5Message,
+              reserveRetrySpace: true,
+              retryKey: state.hasPendingEs5Change && !state.isWritingEs5
+                  ? const Key('ntx8cv-retry-es5-change')
+                  : null,
+              onRetry:
+                  state.hasPendingEs5Change &&
+                      !isGloballyUnavailable &&
+                      !state.isLoadingEs5 &&
+                      !state.isWritingEs5
+                  ? () {
+                      unawaited(onRetryEs5Change());
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 12),
             DropdownButtonFormField<Ntx8cvExpansionMode>(
-              key: ValueKey('ntx8cv-expansion-mode-${state.confirmedMode}'),
-              initialValue: state.confirmedMode,
-              decoration: InputDecoration(
+              key: ValueKey('ntx8cv-expansion-mode-$displayedMode'),
+              initialValue: displayedMode,
+              decoration: const InputDecoration(
                 labelText: 'NT expansion mode',
-                helperText: _modeDescription(),
+                border: OutlineInputBorder(),
               ),
               items: Ntx8cvExpansionMode.values
                   .map(
@@ -587,33 +859,30 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                     }
                   : null,
             ),
-            const SizedBox(height: 8),
-            Semantics(liveRegion: true, child: Text(_modeStatus())),
-            if (state.hasPendingModeChange) ...[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('ntx8cv-retry-mode-change'),
-                onPressed:
-                    isConnected &&
-                        state.modeCapabilityEvidenced &&
-                        !state.isBusy
-                    ? () {
-                        unawaited(onRetryModeChange());
-                      }
-                    : null,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry send'),
-              ),
-            ],
-            const SizedBox(height: 16),
+            _StableMessageSlot(
+              message: modeMessage,
+              reserveRetrySpace: true,
+              retryKey: state.hasPendingModeChange && !state.isWritingMode
+                  ? const Key('ntx8cv-retry-mode-change')
+                  : null,
+              onRetry:
+                  state.hasPendingModeChange &&
+                      !isGloballyUnavailable &&
+                      state.modeCapabilityEvidenced &&
+                      !state.isLoadingMode &&
+                      !state.isWritingMode
+                  ? () {
+                      unawaited(onRetryModeChange());
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 12),
             DropdownButtonFormField<Ntx8cvChannelGroup>(
-              key: ValueKey(
-                'ntx8cv-channel-group-${state.confirmedChannelGroup}',
-              ),
-              initialValue: state.confirmedChannelGroup,
-              decoration: InputDecoration(
+              key: ValueKey('ntx8cv-channel-group-$displayedChannelGroup'),
+              initialValue: displayedChannelGroup,
+              decoration: const InputDecoration(
                 labelText: 'Channel Group',
-                helperText: _channelGroupDescription(),
+                border: OutlineInputBorder(),
               ),
               items: Ntx8cvChannelGroup.values
                   .map(
@@ -631,127 +900,89 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                     }
                   : null,
             ),
+            _StableMessageSlot(
+              message: channelGroupMessage,
+              reserveRetrySpace: true,
+              retryKey:
+                  state.hasPendingChannelGroupChange &&
+                      !state.isWritingChannelGroup
+                  ? const Key('ntx8cv-retry-channel-group-change')
+                  : null,
+              onRetry:
+                  state.hasPendingChannelGroupChange &&
+                      !isGloballyUnavailable &&
+                      !state.isLoadingChannelGroup &&
+                      !state.isWritingChannelGroup
+                  ? () {
+                      unawaited(onRetryChannelGroupChange());
+                    }
+                  : null,
+            ),
             const SizedBox(height: 8),
-            Semantics(liveRegion: true, child: Text(_channelGroupStatus())),
-            if (state.hasPendingChannelGroupChange) ...[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('ntx8cv-retry-channel-group-change'),
-                onPressed: isConnected && !state.isBusy
-                    ? () {
-                        unawaited(onRetryChannelGroupChange());
-                      }
-                    : null,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry send'),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Semantics(
+                label:
+                    'Reboot only the currently selected, identity-verified '
+                    'NTX-8CV',
+                child: SizedBox(
+                  width: 184,
+                  child: FilledButton.icon(
+                    key: const Key('ntx8cv-reboot'),
+                    onPressed: canReboot
+                        ? () {
+                            unawaited(onReboot());
+                          }
+                        : null,
+                    icon: const Icon(Icons.restart_alt),
+                    label: const Text('Reboot NTX-8CV'),
+                  ),
+                ),
               ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  String _channelGroupDescription() {
-    if (!isConnected) return 'Connect an NTX-8CV to read this setting.';
-    if (state.confirmedChannelGroup == null) {
-      return 'Waiting for a device-confirmed value.';
-    }
-    return 'Selects this NTX-8CV’s eight-channel block. This does not replace '
-        'the disting NT’s granular channel-enable controls; configure both '
-        'when needed. Changes are sent immediately and confirmed by reading '
-        'the setting back.';
-  }
-
-  String _es5Description() {
-    if (!isConnected) return 'Connect an NTX-8CV to read this setting.';
-    if (state.confirmedEs5Enabled == null) {
-      return 'Waiting for a device-confirmed value.';
-    }
-    return 'Changes are sent immediately and confirmed by reading the setting back.';
-  }
-
-  String _modeDescription() {
-    if (!isConnected) return 'Connect an NTX-8CV to probe this setting.';
-    if (!state.modeCapabilityEvidenced) {
-      return state.modeMessage ?? 'Mode capability has not been evidenced.';
-    }
-    return 'Changes are sent immediately and take effect after reboot.';
-  }
-
-  String _channelGroupStatus() {
+  String? _channelGroupMessage() {
     if (state.hasPendingChannelGroupChange) {
-      final attempted =
-          state.attemptedChannelGroup?.label ?? 'an invalid value';
-      final confirmed = state.confirmedChannelGroup == null
-          ? 'No device-confirmed value is available.'
-          : 'Last device-confirmed value: '
-                '${state.confirmedChannelGroup!.label}.';
-      final progress = state.isWritingChannelGroup
-          ? 'Sending and waiting for device readback.'
-          : state.channelGroupMessage ??
-                'The actual device state is uncertain.';
-      return 'Attempted Channel Group: $attempted, pending/failed and not '
-          'device-confirmed. $confirmed $progress';
+      return state.isWritingChannelGroup
+          ? null
+          : 'Channel Group change not confirmed.';
     }
-    if (state.isLoadingChannelGroup) {
-      return 'Reading Channel Group from the NTX-8CV.';
-    }
-    if (state.confirmedChannelGroup != null) {
-      return 'Device-confirmed Channel Group: '
-          '${state.confirmedChannelGroup!.label}.';
-    }
-    return state.channelGroupMessage ??
-        'No device-confirmed Channel Group value is available.';
+    if (state.isRefreshing) return null;
+    if (!isConnected) return null;
+    if (state.isLoadingChannelGroup) return null;
+    return state.confirmedChannelGroup == null
+        ? 'Channel Group unavailable.'
+        : null;
   }
 
-  String _es5Status() {
+  String? _es5Message() {
     if (state.hasPendingEs5Change) {
-      final attempted = state.attemptedEs5Enabled! ? 'enabled' : 'disabled';
-      final confirmed = state.confirmedEs5Enabled == null
-          ? 'No device-confirmed value is available.'
-          : 'Last device-confirmed value: '
-                '${state.confirmedEs5Enabled! ? 'enabled' : 'disabled'}.';
-      final progress = state.isWritingEs5
-          ? 'Sending and waiting for device readback.'
-          : state.es5Message ?? 'The actual device state is uncertain.';
-      return 'Attempted ES-5 value: $attempted, pending/failed and not '
-          'device-confirmed. $confirmed $progress';
+      return state.isWritingEs5 ? null : 'ES-5 change not confirmed.';
     }
-    if (state.isLoadingEs5) return 'Reading ES-5 setting from the NTX-8CV.';
-    if (state.confirmedEs5Enabled != null) {
-      return 'Device-confirmed ES-5 value: '
-          '${state.confirmedEs5Enabled! ? 'enabled' : 'disabled'}.';
-    }
-    return state.es5Message ?? 'No device-confirmed ES-5 value is available.';
+    if (state.isRefreshing) return null;
+    if (!isConnected) return null;
+    if (state.isLoadingEs5) return null;
+    return state.confirmedEs5Enabled == null ? 'ES-5 unavailable.' : null;
   }
 
-  String _modeStatus() {
+  String? _modeMessage() {
     if (state.hasPendingModeChange) {
-      final attempted = state.attemptedMode?.label ?? 'an invalid value';
-      final confirmed = state.confirmedMode == null
-          ? 'No device-confirmed value is available.'
-          : 'Last device-confirmed value: ${state.confirmedMode!.label}.';
-      final progress = state.isWritingMode
-          ? 'Sending and waiting for device readback.'
-          : state.modeMessage ?? 'The actual device state is uncertain.';
-      return 'Attempted NT expansion mode: $attempted, pending/failed and not '
-          'device-confirmed. $confirmed $progress';
+      return state.isWritingMode
+          ? null
+          : 'Expansion mode change not confirmed.';
     }
-    if (state.isLoadingMode) {
-      return 'Probing NT expansion mode capability from the NTX-8CV.';
-    }
+    if (state.isRefreshing) return null;
+    if (!isConnected) return null;
+    if (state.isLoadingMode) return null;
     if (!state.modeCapabilityEvidenced) {
-      return state.modeMessage ?? 'Mode capability has not been evidenced.';
+      return 'Expansion mode unavailable.';
     }
-    final confirmed = state.confirmedMode;
-    if (confirmed == null) {
-      return 'No device-confirmed mode value is available.';
-    }
-    final reboot = state.modeRebootRequired
-        ? ' Reboot required: this confirmed Mode change is stored but does '
-              'not take effect until this NTX-8CV is rebooted.'
-        : '';
-    return 'Device-confirmed NT expansion mode: ${confirmed.label}.$reboot';
+    if (state.confirmedMode == null) return 'Expansion mode unavailable.';
+    return state.modeRebootRequired ? 'Reboot to apply.' : null;
   }
 }

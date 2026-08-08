@@ -2195,8 +2195,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
       onSelected: (value) {
-        if (value == 'addons') {
-          _showAddonsSubmenu(context);
+        if (value == 'expanders') {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const Ntx8cvScreen()));
         }
       },
       itemBuilder: (popupCtx) {
@@ -2419,10 +2421,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               ),
             ),
           PopupMenuItem(
-            value: 'addons',
+            value: 'expanders',
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text('Add-ons'), Icon(Icons.extension_rounded)],
+              children: [Text('Expanders'), Icon(Icons.hub_outlined)],
             ),
           ),
           // Switch Devices: Only disabled by loading (Fix context usage)
@@ -2882,36 +2884,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           _ => const Center(child: Text("Loading slots...")),
         };
       },
-    );
-  }
-
-  void _showAddonsSubmenu(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.extension_rounded),
-            SizedBox(width: 8),
-            Text('Add-ons'),
-          ],
-        ),
-        children: [
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const Ntx8cvScreen()));
-            },
-            child: const ListTile(
-              leading: Icon(Icons.tune_rounded),
-              title: Text('NTX-8CV'),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

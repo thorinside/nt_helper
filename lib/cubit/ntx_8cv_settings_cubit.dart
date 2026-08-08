@@ -126,6 +126,7 @@ class Ntx8cvSettingsState {
     this.modeCapabilityEvidenced = false,
     this.modeRebootRequired = false,
     this.isRebooting = false,
+    this.isRefreshing = false,
     this.rebootMessage,
   });
 
@@ -143,6 +144,9 @@ class Ntx8cvSettingsState {
 
   /// True while the selected device is being rebooted and revalidated.
   final bool isRebooting;
+
+  /// True while the current session's complete settings snapshot is read.
+  final bool isRefreshing;
 
   /// A failed reboot or post-reboot refresh explanation for the user.
   final String? rebootMessage;
@@ -194,6 +198,7 @@ class Ntx8cvSettingsState {
 
   bool get isBusy =>
       isRebooting ||
+      isRefreshing ||
       channelGroup.isLoading ||
       channelGroup.isWriting ||
       es5.isLoading ||
@@ -202,6 +207,7 @@ class Ntx8cvSettingsState {
       mode.isWriting;
 
   bool get hasSettingOperationInProgress =>
+      isRefreshing ||
       channelGroup.isLoading ||
       channelGroup.isWriting ||
       es5.isLoading ||
@@ -216,6 +222,7 @@ class Ntx8cvSettingsState {
     bool? modeCapabilityEvidenced,
     bool? modeRebootRequired,
     bool? isRebooting,
+    bool? isRefreshing,
     String? rebootMessage,
     bool clearRebootMessage = false,
   }) {
@@ -227,6 +234,7 @@ class Ntx8cvSettingsState {
           modeCapabilityEvidenced ?? this.modeCapabilityEvidenced,
       modeRebootRequired: modeRebootRequired ?? this.modeRebootRequired,
       isRebooting: isRebooting ?? this.isRebooting,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       rebootMessage: clearRebootMessage
           ? null
           : rebootMessage ?? this.rebootMessage,
@@ -283,6 +291,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
   Ntx8cvSession? _activeSession;
   Ntx8cvSession? _refreshSession;
   Future<void>? _refreshFuture;
+  Future<void> _settingWriteQueue = Future<void>.value();
   String? _targetKey;
 
   /// Changes Channel Group immediately, but commits it to presentation state
@@ -328,9 +337,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       emit(
         state.copyWith(
           isRebooting: false,
-          rebootMessage:
-              'Could not complete the NTX-8CV reboot and refresh. Check the '
-              'selected MIDI endpoints and reconnect the device.',
+          rebootMessage: 'Reboot did not complete. Reconnect the NTX-8CV.',
         ),
       );
       return;
@@ -342,8 +349,7 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
         state.copyWith(
           isRebooting: false,
           rebootMessage:
-              'The NTX-8CV disconnected before its settings could refresh '
-              'after reboot.',
+              'Settings refresh stopped after reboot. Reconnect the NTX-8CV.',
         ),
       );
       return;
@@ -360,28 +366,48 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     );
   }
 
-  Future<void> _setSetting(Ntx8cvSetting setting, int value) async {
-    final change = state.changeFor(setting);
-    if (change.hasPendingChange ||
-        change.confirmedValue == null ||
-        change.confirmedValue == value ||
-        state.isBusy ||
-        (setting == Ntx8cvSetting.expansionMode &&
-            !state.modeCapabilityEvidenced)) {
-      return;
-    }
-    await _writeSetting(setting, value);
+  Future<void> _setSetting(Ntx8cvSetting setting, int value) {
+    return _enqueueSettingWrite(() async {
+      final change = state.changeFor(setting);
+      if (change.hasPendingChange ||
+          change.confirmedValue == null ||
+          change.confirmedValue == value ||
+          change.isLoading ||
+          change.isWriting ||
+          state.isRebooting ||
+          state.isRefreshing ||
+          (setting == Ntx8cvSetting.expansionMode &&
+              !state.modeCapabilityEvidenced)) {
+        return;
+      }
+      await _writeSetting(setting, value);
+    });
   }
 
-  Future<void> _retrySetting(Ntx8cvSetting setting) async {
-    final attemptedValue = state.changeFor(setting).attemptedValue;
-    if (attemptedValue == null ||
-        state.isBusy ||
-        (setting == Ntx8cvSetting.expansionMode &&
-            !state.modeCapabilityEvidenced)) {
-      return;
-    }
-    await _writeSetting(setting, attemptedValue);
+  Future<void> _retrySetting(Ntx8cvSetting setting) {
+    return _enqueueSettingWrite(() async {
+      final change = state.changeFor(setting);
+      final attemptedValue = change.attemptedValue;
+      if (attemptedValue == null ||
+          change.isLoading ||
+          change.isWriting ||
+          state.isRebooting ||
+          state.isRefreshing ||
+          (setting == Ntx8cvSetting.expansionMode &&
+              !state.modeCapabilityEvidenced)) {
+        return;
+      }
+      await _writeSetting(setting, attemptedValue);
+    });
+  }
+
+  Future<void> _enqueueSettingWrite(Future<void> Function() operation) {
+    final queued = _settingWriteQueue.then((_) async {
+      if (isClosed) return;
+      await operation();
+    });
+    _settingWriteQueue = queued;
+    return queued;
   }
 
   Future<void> _writeSetting(Ntx8cvSetting setting, int value) async {
@@ -469,9 +495,6 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     if (identical(session, _activeSession)) return;
 
     _activeSession = session;
-    // A prior probe applies to the old session. Reads below must evidence the
-    // mode capability again before this session permits a Mode write or retry.
-    emit(state.copyWith(modeCapabilityEvidenced: false));
     unawaited(_refreshFor(session));
   }
 
@@ -496,7 +519,6 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       channelGroup: retainedChange(state.channelGroup, 'Channel Group'),
       es5: retainedChange(state.es5, 'ES-5'),
       mode: retainedChange(state.mode, 'Mode'),
-      rebootMessage: state.rebootMessage,
     );
   }
 
@@ -555,78 +577,84 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     // pending: leaving that value untouched makes reconnect a recovery step,
     // never an implicit confirmation or resend. A Mode probe is always safe
     // and is required to enable a Mode retry for this newly validated session.
-    if (!state.es5.hasPendingChange) {
-      await _readSetting(session, Ntx8cvSetting.es5Enabled);
-    }
-    if (!_isActiveSession(session)) return;
-    await _readSetting(session, Ntx8cvSetting.expansionMode);
-    if (!_isActiveSession(session)) return;
-    if (!state.channelGroup.hasPendingChange) {
-      await _readSetting(session, Ntx8cvSetting.channelGroup);
-    }
-  }
-
-  Future<void> _readSetting(
-    Ntx8cvSession session,
-    Ntx8cvSetting setting,
-  ) async {
     emit(
-      state.withChange(
-        setting,
-        state.changeFor(setting).copyWith(isLoading: true, clearMessage: true),
-        modeCapabilityEvidenced: setting == Ntx8cvSetting.expansionMode
-            ? false
-            : null,
+      state.copyWith(
+        isRefreshing: true,
+        modeCapabilityEvidenced: false,
+        clearRebootMessage: true,
       ),
     );
+
+    var es5 = state.es5;
+    var mode = state.mode;
+    var channelGroup = state.channelGroup;
+
+    if (!es5.hasPendingChange) {
+      es5 = await _readSettingResult(session, Ntx8cvSetting.es5Enabled, es5);
+    }
+    if (!_isActiveSession(session)) return;
+
+    mode = await _readSettingResult(session, Ntx8cvSetting.expansionMode, mode);
+    if (!_isActiveSession(session)) return;
+
+    if (!channelGroup.hasPendingChange) {
+      channelGroup = await _readSettingResult(
+        session,
+        Ntx8cvSetting.channelGroup,
+        channelGroup,
+      );
+    }
+    if (!_isActiveSession(session)) return;
+
+    emit(
+      Ntx8cvSettingsState(
+        channelGroup: channelGroup,
+        es5: es5,
+        mode: mode,
+        modeCapabilityEvidenced:
+            mode.confirmedValue != null &&
+            _isValidValue(Ntx8cvSetting.expansionMode, mode.confirmedValue!) &&
+            mode.message == null,
+        modeRebootRequired: state.modeRebootRequired,
+        isRebooting: state.isRebooting,
+        rebootMessage: state.rebootMessage,
+      ),
+    );
+  }
+
+  Future<Ntx8cvSettingChange> _readSettingResult(
+    Ntx8cvSession session,
+    Ntx8cvSetting setting,
+    Ntx8cvSettingChange current,
+  ) async {
     try {
       final response = await session.readSetting(settingId: setting.id);
-      if (!_isActiveSession(session)) return;
+      if (!_isActiveSession(session)) return current;
       if (!_isValidValue(setting, response.value)) {
         throw StateError(
           '${setting.label} setting has invalid value ${response.value}.',
         );
       }
-      emit(
-        state.withChange(
-          setting,
-          state
-              .changeFor(setting)
-              .copyWith(
-                confirmedValue: response.value,
-                isLoading: false,
-                clearMessage: true,
-              ),
-          modeCapabilityEvidenced: setting == Ntx8cvSetting.expansionMode
-              ? true
-              : null,
-        ),
+      return current.copyWith(
+        confirmedValue: response.value,
+        isLoading: false,
+        clearMessage: true,
       );
     } catch (_) {
-      if (!_isActiveSession(session)) return;
-      emit(
-        state.withChange(
-          setting,
-          state
-              .changeFor(setting)
-              .copyWith(
-                isLoading: false,
-                message: switch (setting) {
-                  Ntx8cvSetting.expansionMode =>
-                    'Mode capability was not evidenced. The NTX-8CV did not '
-                        'return a valid Mode setting value.',
-                  Ntx8cvSetting.channelGroup =>
-                    'Could not read the device-confirmed Channel Group setting. '
-                        'Check the NTX-8CV connection and reconnect to try again.',
-                  Ntx8cvSetting.es5Enabled =>
-                    'Could not read the device-confirmed ES-5 setting. Check '
-                        'the NTX-8CV connection and reconnect to try again.',
-                },
-              ),
-          modeCapabilityEvidenced: setting == Ntx8cvSetting.expansionMode
-              ? false
-              : null,
-        ),
+      if (!_isActiveSession(session)) return current;
+      return current.copyWith(
+        isLoading: false,
+        message: switch (setting) {
+          Ntx8cvSetting.expansionMode =>
+            'Mode capability was not evidenced. The NTX-8CV did not '
+                'return a valid Mode setting value.',
+          Ntx8cvSetting.channelGroup =>
+            'Could not read the device-confirmed Channel Group setting. '
+                'Check the NTX-8CV connection and reconnect to try again.',
+          Ntx8cvSetting.es5Enabled =>
+            'Could not read the device-confirmed ES-5 setting. Check '
+                'the NTX-8CV connection and reconnect to try again.',
+        },
       );
     }
   }

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_midi_command/flutter_midi_command.dart';
-import 'package:flutter_midi_command_platform_interface/midi_port.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/cubit/ntx_8cv_connection_cubit.dart';
 import 'package:nt_helper/domain/ntx_8cv/ntx_8cv_midi_connection.dart';
@@ -23,6 +22,9 @@ void main() {
         midiConnection: midiConnection,
         store: store,
         sessionTimeout: const Duration(milliseconds: 10),
+        rebootReconnectDelay: Duration.zero,
+        rebootReconnectPollInterval: Duration.zero,
+        rebootReconnectTimeout: const Duration(milliseconds: 50),
       );
     });
 
@@ -162,6 +164,50 @@ void main() {
     );
 
     test(
+      'waits for endpoints to return after reboot before reconnecting',
+      () async {
+        final ntx8cv = _midiDevice(
+          id: 'ntx8cv',
+          name: 'NTX-8CV',
+          input: true,
+          output: true,
+        );
+        var rebooted = false;
+        var postRebootLists = 0;
+        midiConnection.onListDevices = () {
+          if (!rebooted) return [ntx8cv];
+          postRebootLists += 1;
+          return postRebootLists < 3 ? [] : [ntx8cv];
+        };
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x7F) {
+            rebooted = true;
+            return;
+          }
+          midiConnection.transport.receive(
+            Ntx8cvSysExFixtures.deviceInformationResponse,
+          );
+        };
+        await cubit.initialize();
+        await cubit.connect();
+        final recoveryStates = <bool>[];
+        final recoverySubscription = cubit.stream.listen(
+          (state) => recoveryStates.add(state.isReacquiringAfterReboot),
+        );
+        addTearDown(recoverySubscription.cancel);
+
+        final reconnected = await cubit.rebootAndReconnect();
+
+        expect(reconnected, isTrue);
+        expect(recoveryStates, contains(true));
+        expect(cubit.state.isReacquiringAfterReboot, isFalse);
+        expect(postRebootLists, 3);
+        expect(cubit.state.status, Ntx8cvConnectionStatus.connected);
+        expect(midiConnection.openedPairs, hasLength(2));
+      },
+    );
+
+    test(
       'disconnects on endpoint loss, reselects on return, and never reconnects automatically',
       () async {
         final ntx8cv = _midiDevice(
@@ -206,17 +252,13 @@ Future<void> _flushEvents() async {
   await Future<void>.delayed(Duration.zero);
 }
 
-MidiDevice _midiDevice({
+Ntx8cvMidiEndpoint _midiDevice({
   required String id,
   required String name,
   bool input = false,
   bool output = false,
-}) {
-  final device = MidiDevice(id, name, MidiDeviceType.serial, false);
-  if (input) device.inputPorts = [MidiPort(1, MidiPortType.IN)];
-  if (output) device.outputPorts = [MidiPort(2, MidiPortType.OUT)];
-  return device;
-}
+}) =>
+    Ntx8cvMidiEndpoint(id: id, name: name, hasInput: input, hasOutput: output);
 
 class _MemoryNtx8cvConnectionStore implements Ntx8cvConnectionStore {
   Ntx8cvSavedConnection saved = const Ntx8cvSavedConnection();
@@ -231,7 +273,8 @@ class _MemoryNtx8cvConnectionStore implements Ntx8cvConnectionStore {
 }
 
 class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
-  List<MidiDevice> devices = [];
+  List<Ntx8cvMidiEndpoint> devices = [];
+  List<Ntx8cvMidiEndpoint> Function()? onListDevices;
   final _setupChanges = StreamController<MidiSetupChange>.broadcast();
   final _FakeNtx8cvMidiTransport transport = _FakeNtx8cvMidiTransport();
   final List<_OpenedPair> openedPairs = [];
@@ -240,12 +283,13 @@ class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
   Stream<MidiSetupChange> get setupChanges => _setupChanges.stream;
 
   @override
-  Future<List<MidiDevice>> listDevices() async => List.of(devices);
+  Future<List<Ntx8cvMidiEndpoint>> listDevices() async =>
+      List.of(onListDevices?.call() ?? devices);
 
   @override
   Future<Ntx8cvMidiTransport> open({
-    required MidiDevice inputDevice,
-    required MidiDevice outputDevice,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
   }) async {
     openedPairs.add(_OpenedPair(inputDevice, outputDevice));
     return transport;
@@ -254,8 +298,8 @@ class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
   @override
   Future<void> close({
     required Ntx8cvMidiTransport transport,
-    required MidiDevice inputDevice,
-    required MidiDevice outputDevice,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
   }) async {}
 
   void notifySetupChange(MidiSetupChange change) => _setupChanges.add(change);
@@ -269,8 +313,8 @@ class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
 class _OpenedPair {
   const _OpenedPair(this.inputDevice, this.outputDevice);
 
-  final MidiDevice inputDevice;
-  final MidiDevice outputDevice;
+  final Ntx8cvMidiEndpoint inputDevice;
+  final Ntx8cvMidiEndpoint outputDevice;
 }
 
 class _FakeNtx8cvMidiTransport implements Ntx8cvMidiTransport {

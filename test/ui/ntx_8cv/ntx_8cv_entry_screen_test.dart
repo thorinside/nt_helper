@@ -1,19 +1,28 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/cubit/ntx_8cv_connection_cubit.dart';
+import 'package:nt_helper/cubit/ntx_8cv_settings_cubit.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/domain/ntx_8cv/ntx_8cv_midi_connection.dart';
+import 'package:nt_helper/domain/ntx_8cv/ntx_8cv_sysex.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/ui/ntx_8cv/ntx_8cv_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
+
+import '../../fixtures/ntx_8cv_sysex_fixtures.dart';
 
 class _MockDistingCubit extends Mock implements DistingCubit {}
 
@@ -53,10 +62,7 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Connect'), findsOneWidget);
       expect(find.text('Enable ES-5'), findsOneWidget);
       expect(find.text('Channel Group'), findsOneWidget);
-      expect(
-        find.text('Connect an NTX-8CV to read this setting.'),
-        findsNWidgets(2),
-      );
+      expect(find.textContaining('Connect an NTX-8CV to read'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -77,7 +83,174 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('opens from the main overflow menu through Add-ons', (
+    testWidgets(
+      'keeps endpoint names singular when the native connection mutates devices',
+      (tester) async {
+        await _setScreenSize(tester, const Size(1280, 900));
+        final midiConnection = _FakeNtx8cvMidiConnection()
+          ..devices = [_ntx8cvDevice(name: 'NTX-8CV')];
+        final cubit = Ntx8cvConnectionCubit(
+          midiConnection: midiConnection,
+          store: _MemoryNtx8cvConnectionStore(),
+          sessionTimeout: const Duration(milliseconds: 10),
+        );
+        addTearDown(() async {
+          await cubit.close();
+          await midiConnection.dispose();
+        });
+
+        await tester.pumpWidget(
+          MaterialApp(home: Ntx8cvScreen(connectionCubit: cubit)),
+        );
+        await tester.pumpAndSettle();
+        await cubit.connect();
+        await tester.pump();
+
+        expect(midiConnection.nativeDeviceName, 'NTX-8CV NTX-8CV');
+        for (final fieldKey in const [
+          Key('ntx8cv-midi-input'),
+          Key('ntx8cv-midi-output'),
+        ]) {
+          final field = find.byKey(fieldKey);
+          expect(
+            find.descendant(of: field, matching: find.text('NTX-8CV NTX-8CV')),
+            findsNothing,
+          );
+          expect(
+            find.descendant(of: field, matching: find.text('NTX-8CV')),
+            findsOneWidget,
+          );
+        }
+      },
+    );
+
+    testWidgets('uses one aggregate sync light that fades after confirmation', (
+      tester,
+    ) async {
+      await _setScreenSize(tester, const Size(1280, 900));
+      final midiConnection = _FakeNtx8cvMidiConnection()
+        ..devices = [_ntx8cvDevice(name: 'NTX-8CV')];
+      final cubit = Ntx8cvConnectionCubit(
+        midiConnection: midiConnection,
+        store: _MemoryNtx8cvConnectionStore(),
+        sessionTimeout: const Duration(milliseconds: 10),
+      );
+      addTearDown(() async {
+        await cubit.close();
+        await midiConnection.dispose();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(home: Ntx8cvScreen(connectionCubit: cubit)),
+      );
+      await tester.pumpAndSettle();
+
+      final indicator = find.byKey(const Key('ntx8cv-sync-indicator'));
+      Color indicatorColor() {
+        final decoration =
+            tester
+                    .widget<DecoratedBox>(
+                      find.descendant(
+                        of: indicator,
+                        matching: find.byType(DecoratedBox),
+                      ),
+                    )
+                    .decoration
+                as BoxDecoration;
+        return decoration.color!;
+      }
+
+      final theme = Theme.of(tester.element(indicator));
+      expect(find.byKey(const Key('ntx8cv-sync-indicator')), findsOneWidget);
+      expect(tester.widget<AnimatedOpacity>(indicator).opacity, 1);
+      expect(indicatorColor(), theme.appColors.warning.color);
+
+      await cubit.connect();
+      for (var attempt = 0; attempt < 20; attempt++) {
+        await tester.pump(const Duration(milliseconds: 10));
+        if (indicatorColor() == theme.appColors.info.color) break;
+      }
+
+      expect(indicatorColor(), theme.appColors.info.color);
+      expect(tester.widget<AnimatedOpacity>(indicator).opacity, 1);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(tester.widget<AnimatedOpacity>(indicator).opacity, 0);
+    });
+
+    testWidgets('keeps the full control grid stable when connecting', (
+      tester,
+    ) async {
+      await _setScreenSize(tester, const Size(1280, 900));
+      final midiConnection = _FakeNtx8cvMidiConnection()
+        ..devices = [_ntx8cvDevice(name: 'NTX-8CV')];
+      final cubit = Ntx8cvConnectionCubit(
+        midiConnection: midiConnection,
+        store: _MemoryNtx8cvConnectionStore(),
+        sessionTimeout: const Duration(milliseconds: 10),
+      );
+      addTearDown(() async {
+        await cubit.close();
+        await midiConnection.dispose();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(home: Ntx8cvScreen(connectionCubit: cubit)),
+      );
+      await tester.pumpAndSettle();
+      final connectionCard = find.byType(Card).first;
+      final settingsCard = find.byType(Card).at(1);
+      final disconnectedHeight = tester.getSize(connectionCard).height;
+      final disconnectedSettingsHeight = tester.getSize(settingsCard).height;
+      final connectionStatus = find.byKey(
+        const Key('ntx8cv-connection-status'),
+      );
+      final disconnectedStatusWidth = tester.getSize(connectionStatus).width;
+      final connectButton = find.byKey(const Key('ntx8cv-connect-button'));
+      final disconnectedButtonWidth = tester.getSize(connectButton).width;
+      final disconnectedCardRect = tester.getRect(connectionCard);
+      final disconnectedButtonRect = tester.getRect(connectButton);
+      expect(
+        disconnectedButtonRect.right,
+        closeTo(disconnectedCardRect.right - 20, 0.01),
+      );
+      expect(
+        disconnectedButtonRect.bottom,
+        closeTo(disconnectedCardRect.bottom - 20, 0.01),
+      );
+      final disconnectedModeRect = tester.getRect(
+        find.byType(DropdownButtonFormField<Ntx8cvExpansionMode>),
+      );
+      final disconnectedChannelGroupRect = tester.getRect(
+        find.byType(DropdownButtonFormField<Ntx8cvChannelGroup>),
+      );
+
+      await cubit.connect();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Device information verified from the selected MIDI input.'),
+        findsNothing,
+      );
+      expect(tester.getSize(connectionStatus).width, disconnectedStatusWidth);
+      expect(tester.getSize(connectionCard).height, disconnectedHeight);
+      expect(tester.getSize(settingsCard).height, disconnectedSettingsHeight);
+      expect(tester.getSize(connectButton).width, disconnectedButtonWidth);
+      expect(
+        tester.getRect(
+          find.byType(DropdownButtonFormField<Ntx8cvExpansionMode>),
+        ),
+        disconnectedModeRect,
+      );
+      expect(
+        tester.getRect(
+          find.byType(DropdownButtonFormField<Ntx8cvChannelGroup>),
+        ),
+        disconnectedChannelGroupRect,
+      );
+    });
+
+    testWidgets('opens directly from the Expanders overflow item', (
       tester,
     ) async {
       final cubit = _MockDistingCubit();
@@ -129,19 +302,104 @@ void main() {
 
       await tester.tap(find.bySemanticsLabel('More options'));
       await tester.pumpAndSettle();
-      expect(find.text('Add-ons'), findsOneWidget);
+      expect(find.text('Expanders'), findsOneWidget);
+      expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
 
-      await tester.tap(find.text('Add-ons'));
-      await tester.pumpAndSettle();
-      expect(find.text('NTX-8CV'), findsOneWidget);
-
-      await tester.tap(find.text('NTX-8CV'));
+      await tester.tap(find.text('Expanders'));
       await tester.pumpAndSettle();
       expect(find.byType(Ntx8cvScreen), findsOneWidget);
+      expect(find.byType(SimpleDialog), findsNothing);
       expect(find.text('Connection'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
     });
   });
+}
+
+Ntx8cvMidiEndpoint _ntx8cvDevice({required String name}) => Ntx8cvMidiEndpoint(
+  id: 'ntx8cv',
+  name: name,
+  hasInput: true,
+  hasOutput: true,
+);
+
+class _MemoryNtx8cvConnectionStore implements Ntx8cvConnectionStore {
+  Ntx8cvSavedConnection saved = const Ntx8cvSavedConnection();
+
+  @override
+  Future<Ntx8cvSavedConnection> load() async => saved;
+
+  @override
+  Future<void> save(Ntx8cvSavedConnection selection) async {
+    saved = selection;
+  }
+}
+
+class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
+  List<Ntx8cvMidiEndpoint> devices = [];
+  final _setupChanges = StreamController<MidiSetupChange>.broadcast();
+  final _FakeNtx8cvMidiTransport transport = _FakeNtx8cvMidiTransport();
+  String nativeDeviceName = 'NTX-8CV';
+  bool _mutatedNativeDeviceName = false;
+
+  @override
+  Stream<MidiSetupChange> get setupChanges => _setupChanges.stream;
+
+  @override
+  Future<List<Ntx8cvMidiEndpoint>> listDevices() async => List.of(devices);
+
+  @override
+  Future<Ntx8cvMidiTransport> open({
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
+  }) async {
+    transport.beforeReceive = () {
+      if (_mutatedNativeDeviceName) return;
+      _mutatedNativeDeviceName = true;
+      nativeDeviceName = '$nativeDeviceName $nativeDeviceName';
+    };
+    return transport;
+  }
+
+  @override
+  Future<void> close({
+    required Ntx8cvMidiTransport transport,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
+  }) async {}
+
+  Future<void> dispose() async {
+    await transport.close();
+    await _setupChanges.close();
+  }
+}
+
+class _FakeNtx8cvMidiTransport implements Ntx8cvMidiTransport {
+  final _received = StreamController<Uint8List>.broadcast(sync: true);
+  void Function()? beforeReceive;
+  bool _closed = false;
+
+  @override
+  Stream<Uint8List> get receivedPackets => _received.stream;
+
+  @override
+  Future<void> send(Uint8List packet) async {
+    if (_closed) return;
+    beforeReceive?.call();
+    final response = switch ((packet[6], packet.length > 7 ? packet[7] : -1)) {
+      (0x22, _) => Ntx8cvSysExFixtures.deviceInformationResponse,
+      (0x31, 0x00) => Ntx8cvSysExFixtures.channelGroupResponse,
+      (0x31, 0x01) => Ntx8cvSysExFixtures.es5DisabledResponse,
+      (0x31, 0x1B) => Ntx8cvSysExFixtures.modeSettingResponse,
+      _ => null,
+    };
+    if (response != null) _received.add(response);
+  }
+
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    await _received.close();
+  }
 }
 
 Future<void> _setScreenSize(WidgetTester tester, Size size) async {

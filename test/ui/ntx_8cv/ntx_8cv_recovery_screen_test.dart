@@ -44,20 +44,243 @@ void main() {
       expect(retry, findsOneWidget);
       expect(find.bySemanticsLabel('Retry send'), findsOneWidget);
       expect(tester.widget<OutlinedButton>(retry).onPressed, isNull);
-      expect(
-        find.textContaining('Attempted ES-5 value: enabled'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('Last device-confirmed value: disabled'),
-        findsOneWidget,
-      );
+      expect(find.text('ES-5 change not confirmed.'), findsOneWidget);
+      expect(find.textContaining('Attempted ES-5 value'), findsNothing);
 
       await tester.pumpWidget(buildSection(isConnected: true));
       expect(tester.widget<OutlinedButton>(retry).onPressed, isNotNull);
 
       await tester.tap(retry);
       expect(retryCount, 1);
+    },
+  );
+
+  testWidgets('keeps confirmed settings copy concise', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Ntx8cvSettingsSection(
+            isConnected: true,
+            state: const Ntx8cvSettingsState(
+              channelGroup: Ntx8cvSettingChange(confirmedValue: 0),
+              es5: Ntx8cvSettingChange(confirmedValue: 1),
+              mode: Ntx8cvSettingChange(confirmedValue: 1),
+              modeCapabilityEvidenced: true,
+            ),
+            onChannelGroupChanged: (_) async {},
+            onRetryChannelGroupChange: () async {},
+            onEs5Changed: (_) async {},
+            onRetryEs5Change: () async {},
+            onModeChanged: (_) async {},
+            onRetryModeChange: () async {},
+            onReboot: () async {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Takes effect after reboot.'), findsNothing);
+    final modePicker = tester
+        .widget<DropdownButtonFormField<Ntx8cvExpansionMode>>(
+          find.byType(DropdownButtonFormField<Ntx8cvExpansionMode>),
+        );
+    final channelGroupPicker = tester
+        .widget<DropdownButtonFormField<Ntx8cvChannelGroup>>(
+          find.byType(DropdownButtonFormField<Ntx8cvChannelGroup>),
+        );
+    expect(modePicker.decoration.border, isA<OutlineInputBorder>());
+    expect(channelGroupPicker.decoration.border, isA<OutlineInputBorder>());
+    expect(find.textContaining('device-confirmed'), findsNothing);
+    expect(find.textContaining('Changes are sent immediately'), findsNothing);
+    expect(find.textContaining('does not replace the disting'), findsNothing);
+    expect(
+      find.textContaining('Connect an NTX-8CV to read and configure'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('keeps every settings row active while ES-5 is writing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Ntx8cvSettingsSection(
+            isConnected: true,
+            state: const Ntx8cvSettingsState(
+              channelGroup: Ntx8cvSettingChange(confirmedValue: 0),
+              es5: Ntx8cvSettingChange(
+                confirmedValue: 0,
+                attemptedValue: 1,
+                isWriting: true,
+              ),
+              mode: Ntx8cvSettingChange(confirmedValue: 0),
+              modeCapabilityEvidenced: true,
+            ),
+            onChannelGroupChanged: (_) async {},
+            onRetryChannelGroupChange: () async {},
+            onEs5Changed: (_) async {},
+            onRetryEs5Change: () async {},
+            onModeChanged: (_) async {},
+            onRetryModeChange: () async {},
+            onReboot: () async {},
+          ),
+        ),
+      ),
+    );
+
+    final modePicker = tester
+        .widget<DropdownButtonFormField<Ntx8cvExpansionMode>>(
+          find.byType(DropdownButtonFormField<Ntx8cvExpansionMode>),
+        );
+    final channelGroupPicker = tester
+        .widget<DropdownButtonFormField<Ntx8cvChannelGroup>>(
+          find.byType(DropdownButtonFormField<Ntx8cvChannelGroup>),
+        );
+    final es5Switch = tester.widget<SwitchListTile>(
+      find.widgetWithText(SwitchListTile, 'Enable ES-5'),
+    );
+
+    expect(es5Switch.value, isTrue);
+    expect(es5Switch.onChanged, isNotNull);
+    expect(modePicker.onChanged, isNotNull);
+    expect(channelGroupPicker.onChanged, isNotNull);
+    expect(find.textContaining('pending'), findsNothing);
+    expect(find.textContaining('Saving'), findsNothing);
+  });
+
+  testWidgets(
+    'keeps settings geometry stable across connected, pending, and disconnected states',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      const confirmedState = Ntx8cvSettingsState(
+        channelGroup: Ntx8cvSettingChange(confirmedValue: 0),
+        es5: Ntx8cvSettingChange(confirmedValue: 1),
+        mode: Ntx8cvSettingChange(confirmedValue: 1),
+        modeCapabilityEvidenced: true,
+      );
+      const pendingState = Ntx8cvSettingsState(
+        channelGroup: Ntx8cvSettingChange(
+          confirmedValue: 0,
+          attemptedValue: 1,
+          message: 'Channel Group change not confirmed.',
+        ),
+        es5: Ntx8cvSettingChange(
+          confirmedValue: 1,
+          attemptedValue: 0,
+          message: 'ES-5 change not confirmed.',
+        ),
+        mode: Ntx8cvSettingChange(
+          confirmedValue: 1,
+          attemptedValue: 2,
+          message: 'Expansion mode change not confirmed.',
+        ),
+        modeCapabilityEvidenced: true,
+        rebootMessage:
+            'NTX-8CV did not return after reboot. Check its MIDI connection.',
+      );
+      const activeState = Ntx8cvSettingsState(
+        channelGroup: Ntx8cvSettingChange(confirmedValue: 0, isLoading: true),
+        es5: Ntx8cvSettingChange(
+          confirmedValue: 1,
+          attemptedValue: 0,
+          isWriting: true,
+        ),
+        mode: Ntx8cvSettingChange(confirmedValue: 1, isLoading: true),
+        modeCapabilityEvidenced: true,
+      );
+
+      Widget buildSection({
+        required bool isConnected,
+        required Ntx8cvSettingsState state,
+      }) => MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Ntx8cvSettingsSection(
+              isConnected: isConnected,
+              state: state,
+              onChannelGroupChanged: (_) async {},
+              onRetryChannelGroupChange: () async {},
+              onEs5Changed: (_) async {},
+              onRetryEs5Change: () async {},
+              onModeChanged: (_) async {},
+              onRetryModeChange: () async {},
+              onReboot: () async {},
+            ),
+          ),
+        ),
+      );
+
+      Map<String, Rect> geometry() => {
+        'card': tester.getRect(find.byType(Card)),
+        'reboot': tester.getRect(find.byKey(const Key('ntx8cv-reboot'))),
+        'es5': tester.getRect(
+          find.widgetWithText(SwitchListTile, 'Enable ES-5'),
+        ),
+        'mode': tester.getRect(
+          find.byType(DropdownButtonFormField<Ntx8cvExpansionMode>),
+        ),
+        'channelGroup': tester.getRect(
+          find.byType(DropdownButtonFormField<Ntx8cvChannelGroup>),
+        ),
+      };
+      await tester.pumpWidget(
+        buildSection(isConnected: true, state: confirmedState),
+      );
+      final confirmedGeometry = geometry();
+      expect(
+        confirmedGeometry['reboot']!.right,
+        closeTo(confirmedGeometry['card']!.right - 20, 0.01),
+      );
+      expect(
+        confirmedGeometry['reboot']!.bottom,
+        closeTo(confirmedGeometry['card']!.bottom - 20, 0.01),
+      );
+
+      await tester.pumpWidget(
+        buildSection(
+          isConnected: true,
+          state: confirmedState.copyWith(isRebooting: true),
+        ),
+      );
+      expect(geometry(), confirmedGeometry);
+      expect(find.text('Reboot NTX-8CV'), findsOneWidget);
+
+      await tester.pumpWidget(
+        buildSection(
+          isConnected: true,
+          state: const Ntx8cvSettingsState(isRefreshing: true),
+        ),
+      );
+      expect(geometry(), confirmedGeometry);
+      expect(find.textContaining('unavailable'), findsNothing);
+
+      await tester.pumpWidget(
+        buildSection(isConnected: true, state: activeState),
+      );
+      expect(geometry(), confirmedGeometry);
+      expect(find.textContaining('Reading'), findsNothing);
+      expect(find.textContaining('Saving'), findsNothing);
+      expect(find.text('Reboot NTX-8CV'), findsOneWidget);
+
+      await tester.pumpWidget(
+        buildSection(isConnected: true, state: pendingState),
+      );
+      expect(geometry(), confirmedGeometry);
+      expect(
+        find.text(
+          'NTX-8CV did not return after reboot. Check its MIDI connection.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('ntx8cv-retry-es5-change')), findsOneWidget);
+
+      await tester.pumpWidget(
+        buildSection(isConnected: false, state: confirmedState),
+      );
+      expect(geometry(), confirmedGeometry);
     },
   );
 
@@ -112,64 +335,63 @@ void main() {
     },
   );
 
-  testWidgets(
-    'offers released Channel Group blocks and explains their separate role',
-    (tester) async {
-      Ntx8cvChannelGroup? selectedGroup;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Ntx8cvSettingsSection(
-              isConnected: true,
-              state: const Ntx8cvSettingsState(
-                channelGroup: Ntx8cvSettingChange(confirmedValue: 0),
-              ),
-              onChannelGroupChanged: (group) async {
-                selectedGroup = group;
-              },
-              onRetryChannelGroupChange: () async {},
-              onEs5Changed: (_) async {},
-              onRetryEs5Change: () async {},
-              onModeChanged: (_) async {},
-              onRetryModeChange: () async {},
-              onReboot: () async {},
+  testWidgets('offers released Channel Group blocks without long helper copy', (
+    tester,
+  ) async {
+    Ntx8cvChannelGroup? selectedGroup;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Ntx8cvSettingsSection(
+            isConnected: true,
+            state: const Ntx8cvSettingsState(
+              channelGroup: Ntx8cvSettingChange(confirmedValue: 0),
             ),
+            onChannelGroupChanged: (group) async {
+              selectedGroup = group;
+            },
+            onRetryChannelGroupChange: () async {},
+            onEs5Changed: (_) async {},
+            onRetryEs5Change: () async {},
+            onModeChanged: (_) async {},
+            onRetryModeChange: () async {},
+            onReboot: () async {},
           ),
         ),
-      );
+      ),
+    );
 
-      final pickerFinder = find.byType(
-        DropdownButtonFormField<Ntx8cvChannelGroup>,
-      );
-      final picker = tester.widget<DropdownButtonFormField<Ntx8cvChannelGroup>>(
-        pickerFinder,
-      );
-      expect(find.text('Channel Group'), findsOneWidget);
-      expect(
-        find.textContaining('does not replace the disting NT’s granular'),
-        findsOneWidget,
-      );
-      expect(picker.onChanged, isNotNull);
-      await tester.tap(pickerFinder);
-      await tester.pumpAndSettle();
-      for (final label in [
-        '1–8',
-        '9–16',
-        '17–24',
-        '25–32',
-        '33–40',
-        '41–48',
-        '49–56',
-        '57–64',
-      ]) {
-        expect(find.text(label), findsWidgets);
-      }
+    final pickerFinder = find.byType(
+      DropdownButtonFormField<Ntx8cvChannelGroup>,
+    );
+    final picker = tester.widget<DropdownButtonFormField<Ntx8cvChannelGroup>>(
+      pickerFinder,
+    );
+    expect(find.text('Channel Group'), findsOneWidget);
+    expect(
+      find.textContaining('does not replace the disting NT’s granular'),
+      findsNothing,
+    );
+    expect(picker.onChanged, isNotNull);
+    await tester.tap(pickerFinder);
+    await tester.pumpAndSettle();
+    for (final label in [
+      '1–8',
+      '9–16',
+      '17–24',
+      '25–32',
+      '33–40',
+      '41–48',
+      '49–56',
+      '57–64',
+    ]) {
+      expect(find.text(label), findsWidgets);
+    }
 
-      await tester.tap(find.text('57–64').last);
-      await tester.pumpAndSettle();
-      expect(selectedGroup, Ntx8cvChannelGroup.channels57To64);
-    },
-  );
+    await tester.tap(find.text('57–64').last);
+    await tester.pumpAndSettle();
+    expect(selectedGroup, Ntx8cvChannelGroup.channels57To64);
+  });
 
   testWidgets(
     'shows a pending Mode separately from its confirmed value and reboot state',
@@ -210,14 +432,8 @@ void main() {
       final retry = find.byKey(const Key('ntx8cv-retry-mode-change'));
       expect(retry, findsOneWidget);
       expect(tester.widget<OutlinedButton>(retry).onPressed, isNotNull);
-      expect(
-        find.textContaining('Attempted NT expansion mode: 8x8 CV'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('Last device-confirmed value: 2x8 16bit Audio'),
-        findsOneWidget,
-      );
+      expect(find.text('Expansion mode change not confirmed.'), findsOneWidget);
+      expect(find.textContaining('Attempted NT expansion mode'), findsNothing);
       await tester.tap(retry);
       expect(retryCount, 1);
 
@@ -230,7 +446,7 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('Reboot required'), findsOneWidget);
+      expect(find.text('Reboot to apply.'), findsOneWidget);
     },
   );
 

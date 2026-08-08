@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_midi_command/flutter_midi_command.dart';
-import 'package:flutter_midi_command_platform_interface/midi_port.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/cubit/ntx_8cv_connection_cubit.dart';
 import 'package:nt_helper/cubit/ntx_8cv_settings_cubit.dart';
@@ -44,9 +43,19 @@ void main() {
           _respondWithSettings(midiConnection.transport, packet);
         };
         await connectionCubit.initialize();
+        final refreshStates = <Ntx8cvSettingsState>[];
+        final refreshSubscription = settingsCubit.stream.listen(
+          refreshStates.add,
+        );
+        addTearDown(refreshSubscription.cancel);
         await connectionCubit.connect();
         await _flushEvents();
 
+        expect(
+          refreshStates.where((state) => state.isRefreshing),
+          hasLength(1),
+        );
+        expect(refreshStates.last.isRefreshing, isFalse);
         expect(settingsCubit.state.confirmedEs5Enabled, isFalse);
         expect(
           settingsCubit.state.confirmedMode,
@@ -147,6 +156,33 @@ void main() {
       },
     );
 
+    test(
+      'clears a failed reboot message after a later manual reconnect',
+      () async {
+        var failReboot = true;
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x7F && failReboot) {
+            throw StateError('reboot send failed');
+          }
+          _respondWithSettings(midiConnection.transport, packet);
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.reboot();
+
+        expect(settingsCubit.state.rebootMessage, isNotNull);
+        failReboot = false;
+        await connectionCubit.refreshEndpoints();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        expect(connectionCubit.state.isConnected, isTrue);
+        expect(settingsCubit.state.rebootMessage, isNull);
+      },
+    );
+
     test('changes ES-5 only after matching same-setting readback', () async {
       midiConnection.transport.onSend = (packet) {
         final hasWrittenEs5 = midiConnection.transport.sent.any(
@@ -174,6 +210,62 @@ void main() {
       expect(
         midiConnection.transport.sent[5],
         orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
+      );
+    });
+
+    test('serializes writes without blocking unrelated settings', () async {
+      var es5WriteStarted = false;
+      var modeValue = Ntx8cvExpansionMode.cv8x8.value;
+      midiConnection.transport.onSend = (packet) {
+        if (packet[6] == 0x32 && packet[7] == 0x01) {
+          es5WriteStarted = true;
+          return;
+        }
+        if (packet[6] == 0x31 && packet[7] == 0x01 && es5WriteStarted) {
+          return;
+        }
+        if (packet[6] == 0x32 && packet[7] == 0x1B) {
+          modeValue = packet[8];
+        }
+        _respondWithSettings(
+          midiConnection.transport,
+          packet,
+          modeValue: modeValue,
+        );
+      };
+      await connectionCubit.initialize();
+      await connectionCubit.connect();
+      await _flushEvents();
+
+      final es5Write = settingsCubit.setEs5Enabled(true);
+      await _flushEvents();
+      expect(settingsCubit.state.isWritingEs5, isTrue);
+
+      final modeWrite = settingsCubit.setExpansionMode(
+        Ntx8cvExpansionMode.audio1x8_32bit,
+      );
+      await _flushEvents();
+      expect(
+        midiConnection.transport.sent.where(
+          (packet) => packet[6] == 0x32 && packet[7] == 0x1B,
+        ),
+        isEmpty,
+      );
+
+      midiConnection.transport.receive(_settingResponse(0x01, 1));
+      await es5Write;
+      await modeWrite;
+
+      expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
+      expect(
+        settingsCubit.state.confirmedMode,
+        Ntx8cvExpansionMode.audio1x8_32bit,
+      );
+      expect(
+        midiConnection.transport.sent
+            .where((packet) => packet[6] == 0x32)
+            .map((packet) => packet[7]),
+        orderedEquals([0x01, 0x1B]),
       );
     });
 
@@ -395,7 +487,7 @@ void main() {
         };
         await connectionCubit.initialize();
         await connectionCubit.connect();
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await Future<void>.delayed(const Duration(milliseconds: 35));
 
         expect(settingsCubit.state.modeCapabilityEvidenced, isFalse);
         expect(settingsCubit.state.isLoadingMode, isFalse);
@@ -579,17 +671,13 @@ Uint8List _withDeviceId(Uint8List packet, int deviceId) {
   return copy;
 }
 
-MidiDevice _midiDevice({
+Ntx8cvMidiEndpoint _midiDevice({
   required String id,
   required String name,
   bool input = false,
   bool output = false,
-}) {
-  final device = MidiDevice(id, name, MidiDeviceType.serial, false);
-  if (input) device.inputPorts = [MidiPort(1, MidiPortType.IN)];
-  if (output) device.outputPorts = [MidiPort(2, MidiPortType.OUT)];
-  return device;
-}
+}) =>
+    Ntx8cvMidiEndpoint(id: id, name: name, hasInput: input, hasOutput: output);
 
 class _MemoryNtx8cvConnectionStore implements Ntx8cvConnectionStore {
   @override
@@ -600,7 +688,7 @@ class _MemoryNtx8cvConnectionStore implements Ntx8cvConnectionStore {
 }
 
 class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
-  List<MidiDevice> devices = [];
+  List<Ntx8cvMidiEndpoint> devices = [];
   final _FakeNtx8cvMidiTransport transport = _FakeNtx8cvMidiTransport();
   int openCount = 0;
   int closeCount = 0;
@@ -609,12 +697,12 @@ class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
   Stream<MidiSetupChange>? get setupChanges => null;
 
   @override
-  Future<List<MidiDevice>> listDevices() async => List.of(devices);
+  Future<List<Ntx8cvMidiEndpoint>> listDevices() async => List.of(devices);
 
   @override
   Future<Ntx8cvMidiTransport> open({
-    required MidiDevice inputDevice,
-    required MidiDevice outputDevice,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
   }) async {
     openCount += 1;
     return transport;
@@ -623,8 +711,8 @@ class _FakeNtx8cvMidiConnection implements Ntx8cvMidiConnection {
   @override
   Future<void> close({
     required Ntx8cvMidiTransport transport,
-    required MidiDevice inputDevice,
-    required MidiDevice outputDevice,
+    required Ntx8cvMidiEndpoint inputDevice,
+    required Ntx8cvMidiEndpoint outputDevice,
   }) async {
     closeCount += 1;
   }
