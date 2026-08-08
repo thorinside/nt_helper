@@ -62,7 +62,7 @@ void main() {
           Ntx8cvExpansionMode.audio2x8_16bit,
         );
         expect(settingsCubit.state.modeCapabilityEvidenced, isTrue);
-        expect(midiConnection.transport.sent, hasLength(4));
+        expect(midiConnection.transport.sent, hasLength(13));
         expect(
           midiConnection.transport.sent[0],
           orderedEquals(Ntx8cvSysExFixtures.deviceInformationRequest),
@@ -80,9 +80,120 @@ void main() {
           orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
         );
         expect(
+          midiConnection.transport.sent[4],
+          orderedEquals(_readSetting(kNtx8cvUsbHostEnabledSettingId)),
+        );
+        for (var index = 0; index < kNtx8cvAudioChannelCount; index++) {
+          expect(
+            midiConnection.transport.sent[5 + index],
+            orderedEquals(
+              _readSetting(kNtx8cvFirstAudioChannelSettingId + index),
+            ),
+          );
+        }
+        expect(
           settingsCubit.state.confirmedChannelGroup,
           Ntx8cvChannelGroup.channels1To8,
         );
+        expect(settingsCubit.state.confirmedUsbHostEnabled, isFalse);
+        expect([
+          for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
+            settingsCubit.state.confirmedAudioChannelEnabled(index),
+        ], everyElement(isTrue));
+      },
+    );
+
+    test(
+      'changes USB host and audio channels with confirmed readback',
+      () async {
+        var usbHostValue = 0;
+        final audioChannelValues = List<int>.filled(
+          kNtx8cvAudioChannelCount,
+          1,
+        );
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x32 &&
+              packet[7] == kNtx8cvUsbHostEnabledSettingId) {
+            usbHostValue = packet[8];
+          }
+          if (packet[6] == 0x32 &&
+              packet[7] >= kNtx8cvFirstAudioChannelSettingId &&
+              packet[7] <
+                  kNtx8cvFirstAudioChannelSettingId +
+                      kNtx8cvAudioChannelCount) {
+            audioChannelValues[packet[7] - kNtx8cvFirstAudioChannelSettingId] =
+                packet[8];
+          }
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            usbHostValue: usbHostValue,
+            audioChannelValues: audioChannelValues,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setUsbHostEnabled(true);
+        await settingsCubit.setAudioChannelEnabled(3, false);
+
+        expect(settingsCubit.state.confirmedUsbHostEnabled, isTrue);
+        expect(settingsCubit.state.confirmedAudioChannelEnabled(3), isFalse);
+        final writes = midiConnection.transport.sent.sublist(13);
+        expect(writes, hasLength(4));
+        expect(
+          writes[0],
+          orderedEquals(_writeSetting(kNtx8cvUsbHostEnabledSettingId, 1)),
+        );
+        expect(
+          writes[1],
+          orderedEquals(_readSetting(kNtx8cvUsbHostEnabledSettingId)),
+        );
+        expect(
+          writes[2],
+          orderedEquals(
+            _writeSetting(kNtx8cvFirstAudioChannelSettingId + 3, 0),
+          ),
+        );
+        expect(
+          writes[3],
+          orderedEquals(_readSetting(kNtx8cvFirstAudioChannelSettingId + 3)),
+        );
+      },
+    );
+
+    test(
+      'a repeated audio-channel toggle retries uncertain readback',
+      () async {
+        var audioChannel1Value = 1;
+        var acceptWrite = false;
+        midiConnection.transport.onSend = (packet) {
+          if (packet[6] == 0x32 &&
+              packet[7] == kNtx8cvFirstAudioChannelSettingId &&
+              acceptWrite) {
+            audioChannel1Value = packet[8];
+          }
+          final audioValues = <int>[audioChannel1Value, 1, 1, 1, 1, 1, 1, 1];
+          _respondWithSettings(
+            midiConnection.transport,
+            packet,
+            audioChannelValues: audioValues,
+          );
+        };
+        await connectionCubit.initialize();
+        await connectionCubit.connect();
+        await _flushEvents();
+
+        await settingsCubit.setAudioChannelEnabled(0, false);
+        expect(settingsCubit.state.hasPendingAudioChannelChange(0), isTrue);
+        expect(settingsCubit.state.confirmedAudioChannelEnabled(0), isTrue);
+
+        acceptWrite = true;
+        await settingsCubit.setAudioChannelEnabled(0, false);
+
+        expect(settingsCubit.state.hasPendingAudioChannelChange(0), isFalse);
+        expect(settingsCubit.state.confirmedAudioChannelEnabled(0), isFalse);
       },
     );
 
@@ -202,13 +313,13 @@ void main() {
 
       expect(settingsCubit.state.confirmedEs5Enabled, isTrue);
       expect(settingsCubit.state.hasPendingEs5Change, isFalse);
-      expect(midiConnection.transport.sent, hasLength(6));
+      expect(midiConnection.transport.sent, hasLength(15));
       expect(
-        midiConnection.transport.sent[4],
+        midiConnection.transport.sent[13],
         orderedEquals(Ntx8cvSysExFixtures.writeEs5EnabledSetting),
       );
       expect(
-        midiConnection.transport.sent[5],
+        midiConnection.transport.sent[14],
         orderedEquals(Ntx8cvSysExFixtures.readEs5EnabledSetting),
       );
     });
@@ -297,11 +408,11 @@ void main() {
         expect(settingsCubit.state.hasPendingChannelGroupChange, isTrue);
         expect(settingsCubit.state.channelGroupMessage, contains('uncertain'));
         expect(
-          midiConnection.transport.sent[4],
+          midiConnection.transport.sent[13],
           orderedEquals(Ntx8cvSysExFixtures.writeChannelGroupSetting),
         );
         expect(
-          midiConnection.transport.sent[5],
+          midiConnection.transport.sent[14],
           orderedEquals(Ntx8cvSysExFixtures.readChannelGroupSetting),
         );
 
@@ -351,11 +462,11 @@ void main() {
         await _flushEvents();
 
         expect(settingsCubit.state.hasPendingEs5Change, isTrue);
-        // Reconnect validates identity and refreshes Mode and Channel Group,
-        // but never resends ES-5.
+        // Reconnect validates identity and refreshes every non-pending
+        // setting, but never resends ES-5.
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 3),
+          hasLength(sendsBeforeReconnect + 12),
         );
         expect(midiConnection.transport.sent[sendsBeforeReconnect][5], 2);
         expect(midiConnection.transport.sent[sendsBeforeReconnect][6], 0x22);
@@ -370,7 +481,7 @@ void main() {
         );
         expect(midiConnection.transport.sent.last[5], 2);
         expect(midiConnection.transport.sent.last[6], 0x31);
-        expect(midiConnection.transport.sent.last[7], 0x00);
+        expect(midiConnection.transport.sent.last[7], 0x0B);
 
         returnEnabledValue = true;
         await settingsCubit.retryEs5Change();
@@ -380,16 +491,16 @@ void main() {
         expect(settingsCubit.state.modeRebootRequired, isFalse);
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 5),
+          hasLength(sendsBeforeReconnect + 14),
         );
-        expect(midiConnection.transport.sent[sendsBeforeReconnect + 3][5], 2);
+        expect(midiConnection.transport.sent[sendsBeforeReconnect + 12][5], 2);
         expect(
-          midiConnection.transport.sent[sendsBeforeReconnect + 3][6],
+          midiConnection.transport.sent[sendsBeforeReconnect + 12][6],
           0x32,
         );
-        expect(midiConnection.transport.sent[sendsBeforeReconnect + 4][5], 2);
+        expect(midiConnection.transport.sent[sendsBeforeReconnect + 13][5], 2);
         expect(
-          midiConnection.transport.sent[sendsBeforeReconnect + 4][6],
+          midiConnection.transport.sent[sendsBeforeReconnect + 13][6],
           0x31,
         );
       },
@@ -487,7 +598,7 @@ void main() {
         };
         await connectionCubit.initialize();
         await connectionCubit.connect();
-        await Future<void>.delayed(const Duration(milliseconds: 35));
+        await Future<void>.delayed(const Duration(milliseconds: 160));
 
         expect(settingsCubit.state.modeCapabilityEvidenced, isFalse);
         expect(settingsCubit.state.isLoadingMode, isFalse);
@@ -580,10 +691,10 @@ void main() {
         await _flushEvents();
 
         expect(settingsCubit.state.hasPendingModeChange, isTrue);
-        // Reconnect reads ES-5 and Mode but does not write a pending Mode.
+        // Reconnect reads every setting but does not write a pending Mode.
         expect(
           midiConnection.transport.sent,
-          hasLength(sendsBeforeReconnect + 4),
+          hasLength(sendsBeforeReconnect + 13),
         );
         expect(
           midiConnection.transport.sent.where((packet) => packet[6] == 0x32),
@@ -617,6 +728,8 @@ void _respondWithSettings(
   int channelGroupValue = 0,
   int es5Value = 0,
   int modeValue = 2,
+  int usbHostValue = 0,
+  List<int> audioChannelValues = const [1, 1, 1, 1, 1, 1, 1, 1],
 }) {
   final deviceId = packet[5];
   if (packet[6] == 0x22) {
@@ -629,6 +742,18 @@ void _respondWithSettings(
     transport.receive(_settingResponse(0x01, es5Value, deviceId));
   } else if (packet[6] == 0x31 && packet[7] == 0x1B) {
     transport.receive(_settingResponse(0x1B, modeValue, deviceId));
+  } else if (packet[6] == 0x31 && packet[7] == kNtx8cvUsbHostEnabledSettingId) {
+    transport.receive(
+      _settingResponse(kNtx8cvUsbHostEnabledSettingId, usbHostValue, deviceId),
+    );
+  } else if (packet[6] == 0x31 &&
+      packet[7] >= kNtx8cvFirstAudioChannelSettingId &&
+      packet[7] <
+          kNtx8cvFirstAudioChannelSettingId + kNtx8cvAudioChannelCount) {
+    final index = packet[7] - kNtx8cvFirstAudioChannelSettingId;
+    transport.receive(
+      _settingResponse(packet[7], audioChannelValues[index], deviceId),
+    );
   }
 }
 
@@ -650,6 +775,10 @@ Uint8List _writeSetting(int settingId, int value, [int deviceId = 0]) =>
       value,
       0xF7,
     ]);
+
+Uint8List _readSetting(int settingId, [int deviceId = 0]) => Uint8List.fromList(
+  [0xF0, 0x00, 0x21, 0x27, 0x6A, deviceId, 0x31, settingId, 0xF7],
+);
 
 Uint8List _settingResponse(int settingId, int value, [int deviceId = 0]) =>
     Uint8List.fromList([

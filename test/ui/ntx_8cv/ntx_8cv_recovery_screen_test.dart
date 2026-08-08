@@ -5,6 +5,110 @@ import 'package:nt_helper/ui/ntx_8cv/ntx_8cv_screen.dart';
 
 void main() {
   testWidgets(
+    'USB Settings toggles host and eight audio channels without layout shifts',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      bool? requestedUsbHost;
+      (int, bool)? requestedAudioChannel;
+
+      Widget buildSection({
+        required bool isConnected,
+        required Ntx8cvSettingsState state,
+      }) => MaterialApp(
+        home: Scaffold(
+          body: Ntx8cvUsbAudioSection(
+            isConnected: isConnected,
+            state: state,
+            onUsbHostChanged: (enabled) async {
+              requestedUsbHost = enabled;
+            },
+            onAudioChannelChanged: (index, enabled) async {
+              requestedAudioChannel = (index, enabled);
+            },
+          ),
+        ),
+      );
+
+      Map<String, Rect> geometry() => {
+        'card': tester.getRect(find.byKey(const Key('ntx8cv-usb-audio-card'))),
+        'host': tester.getRect(find.byKey(const Key('ntx8cv-usb-host'))),
+        for (var channel = 1; channel <= kNtx8cvAudioChannelCount; channel++)
+          'channel$channel': tester.getRect(
+            find.byKey(Key('ntx8cv-audio-channel-$channel')),
+          ),
+      };
+
+      await tester.pumpWidget(
+        buildSection(isConnected: true, state: _confirmedUsbAudioState),
+      );
+      final confirmedGeometry = geometry();
+      expect(find.text('USB Settings'), findsOneWidget);
+      expect(find.text('USB host'), findsOneWidget);
+      expect(find.text('Audio channels'), findsOneWidget);
+      expect(find.byType(FilterChip), findsNWidgets(8));
+      expect(
+        tester
+            .widget<SwitchListTile>(find.byKey(const Key('ntx8cv-usb-host')))
+            .value,
+        isFalse,
+      );
+
+      await tester.tap(find.byKey(const Key('ntx8cv-usb-host')));
+      await tester.tap(find.byKey(const Key('ntx8cv-audio-channel-4')));
+      expect(requestedUsbHost, isTrue);
+      expect(requestedAudioChannel, (3, false));
+
+      await tester.pumpWidget(
+        buildSection(
+          isConnected: true,
+          state: _confirmedUsbAudioState.copyWith(
+            usbHost: const Ntx8cvSettingChange(
+              confirmedValue: 0,
+              attemptedValue: 1,
+              isWriting: true,
+            ),
+            audioChannels: const [
+              Ntx8cvSettingChange(confirmedValue: 1),
+              Ntx8cvSettingChange(confirmedValue: 1),
+              Ntx8cvSettingChange(confirmedValue: 1),
+              Ntx8cvSettingChange(
+                confirmedValue: 1,
+                attemptedValue: 0,
+                isWriting: true,
+              ),
+              Ntx8cvSettingChange(confirmedValue: 1),
+              Ntx8cvSettingChange(confirmedValue: 1),
+              Ntx8cvSettingChange(confirmedValue: 1),
+              Ntx8cvSettingChange(confirmedValue: 1),
+            ],
+          ),
+        ),
+      );
+      expect(geometry(), confirmedGeometry);
+      expect(
+        tester
+            .widget<SwitchListTile>(find.byKey(const Key('ntx8cv-usb-host')))
+            .value,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<FilterChip>(find.byKey(const Key('ntx8cv-audio-channel-4')))
+            .selected,
+        isFalse,
+      );
+      expect(find.textContaining('Saving'), findsNothing);
+      expect(find.textContaining('pending'), findsNothing);
+
+      await tester.pumpWidget(
+        buildSection(isConnected: false, state: _confirmedUsbAudioState),
+      );
+      expect(geometry(), confirmedGeometry);
+    },
+  );
+
+  testWidgets(
     'keeps Retry send unavailable while disconnected and enables it after reconnect',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
@@ -489,3 +593,17 @@ void main() {
     },
   );
 }
+
+const _confirmedUsbAudioState = Ntx8cvSettingsState(
+  usbHost: Ntx8cvSettingChange(confirmedValue: 0),
+  audioChannels: [
+    Ntx8cvSettingChange(confirmedValue: 1),
+    Ntx8cvSettingChange(confirmedValue: 1),
+    Ntx8cvSettingChange(confirmedValue: 1),
+    Ntx8cvSettingChange(confirmedValue: 1),
+    Ntx8cvSettingChange(confirmedValue: 1),
+    Ntx8cvSettingChange(confirmedValue: 1),
+    Ntx8cvSettingChange(confirmedValue: 1),
+    Ntx8cvSettingChange(confirmedValue: 1),
+  ],
+);

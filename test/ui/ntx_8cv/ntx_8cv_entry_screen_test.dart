@@ -62,6 +62,8 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Connect'), findsOneWidget);
       expect(find.text('Enable ES-5'), findsOneWidget);
       expect(find.text('Channel Group'), findsOneWidget);
+      expect(find.text('USB Settings'), findsOneWidget);
+      expect(find.text('disting NT Expander Settings'), findsOneWidget);
       expect(find.textContaining('Connect an NTX-8CV to read'), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -79,7 +81,8 @@ void main() {
         findsNothing,
       );
       expect(find.text('Disconnected'), findsOneWidget);
-      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('USB Settings'), findsOneWidget);
+      expect(find.text('disting NT Expander Settings'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -150,10 +153,7 @@ void main() {
         final decoration =
             tester
                     .widget<DecoratedBox>(
-                      find.descendant(
-                        of: indicator,
-                        matching: find.byType(DecoratedBox),
-                      ),
+                      find.byKey(const Key('ntx8cv-sync-fill')),
                     )
                     .decoration
                 as BoxDecoration;
@@ -176,6 +176,15 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       await tester.pump(const Duration(milliseconds: 600));
       expect(tester.widget<AnimatedOpacity>(indicator).opacity, 0);
+      final outlineDecoration =
+          tester
+                  .widget<DecoratedBox>(
+                    find.byKey(const Key('ntx8cv-sync-outline')),
+                  )
+                  .decoration
+              as BoxDecoration;
+      expect(outlineDecoration.shape, BoxShape.circle);
+      expect(outlineDecoration.border, isNotNull);
     });
 
     testWidgets('keeps the full control grid stable when connecting', (
@@ -199,9 +208,18 @@ void main() {
       );
       await tester.pumpAndSettle();
       final connectionCard = find.byType(Card).first;
-      final settingsCard = find.byType(Card).at(1);
+      final usbSettingsCard = find.byKey(const Key('ntx8cv-usb-audio-card'));
+      final expanderSettingsCard = find.ancestor(
+        of: find.text('disting NT Expander Settings'),
+        matching: find.byType(Card),
+      );
       final disconnectedHeight = tester.getSize(connectionCard).height;
-      final disconnectedSettingsHeight = tester.getSize(settingsCard).height;
+      final disconnectedUsbSettingsHeight = tester
+          .getSize(usbSettingsCard)
+          .height;
+      final disconnectedExpanderSettingsHeight = tester
+          .getSize(expanderSettingsCard)
+          .height;
       final connectionStatus = find.byKey(
         const Key('ntx8cv-connection-status'),
       );
@@ -234,7 +252,14 @@ void main() {
       );
       expect(tester.getSize(connectionStatus).width, disconnectedStatusWidth);
       expect(tester.getSize(connectionCard).height, disconnectedHeight);
-      expect(tester.getSize(settingsCard).height, disconnectedSettingsHeight);
+      expect(
+        tester.getSize(usbSettingsCard).height,
+        disconnectedUsbSettingsHeight,
+      );
+      expect(
+        tester.getSize(expanderSettingsCard).height,
+        disconnectedExpanderSettingsHeight,
+      );
       expect(tester.getSize(connectButton).width, disconnectedButtonWidth);
       expect(
         tester.getRect(
@@ -310,7 +335,8 @@ void main() {
       expect(find.byType(Ntx8cvScreen), findsOneWidget);
       expect(find.byType(SimpleDialog), findsNothing);
       expect(find.text('Connection'), findsOneWidget);
-      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('USB Settings'), findsOneWidget);
+      expect(find.text('disting NT Expander Settings'), findsOneWidget);
     });
   });
 }
@@ -390,6 +416,16 @@ class _FakeNtx8cvMidiTransport implements Ntx8cvMidiTransport {
       (0x31, 0x00) => Ntx8cvSysExFixtures.channelGroupResponse,
       (0x31, 0x01) => Ntx8cvSysExFixtures.es5DisabledResponse,
       (0x31, 0x1B) => Ntx8cvSysExFixtures.modeSettingResponse,
+      (0x31, kNtx8cvUsbHostEnabledSettingId) => _settingResponse(
+        kNtx8cvUsbHostEnabledSettingId,
+        0,
+      ),
+      (0x31, final settingId)
+          when settingId >= kNtx8cvFirstAudioChannelSettingId &&
+              settingId <
+                  kNtx8cvFirstAudioChannelSettingId +
+                      kNtx8cvAudioChannelCount =>
+        _settingResponse(settingId, 1),
       _ => null,
     };
     if (response != null) _received.add(response);
@@ -401,6 +437,19 @@ class _FakeNtx8cvMidiTransport implements Ntx8cvMidiTransport {
     await _received.close();
   }
 }
+
+Uint8List _settingResponse(int settingId, int value) => Uint8List.fromList([
+  0xF0,
+  0x00,
+  0x21,
+  0x27,
+  0x6A,
+  0x00,
+  0x31,
+  settingId,
+  value,
+  0xF7,
+]);
 
 Future<void> _setScreenSize(WidgetTester tester, Size size) async {
   tester.view.physicalSize = size;

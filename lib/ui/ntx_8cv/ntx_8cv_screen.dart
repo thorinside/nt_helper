@@ -134,12 +134,32 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                       >(
                         bloc: _connectionCubit,
                         selector: (state) => state.isConnected,
-                        builder: (context, isConnected) =>
+                        builder: (context, isConnected) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                             BlocBuilder<
                               Ntx8cvSettingsCubit,
                               Ntx8cvSettingsState
                             >(
                               bloc: _settingsCubit,
+                              buildWhen: _usbAudioPresentationChanged,
+                              builder: (context, settingsState) =>
+                                  Ntx8cvUsbAudioSection(
+                                    isConnected: isConnected,
+                                    state: settingsState,
+                                    onUsbHostChanged:
+                                        _settingsCubit.setUsbHostEnabled,
+                                    onAudioChannelChanged:
+                                        _settingsCubit.setAudioChannelEnabled,
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                            BlocBuilder<
+                              Ntx8cvSettingsCubit,
+                              Ntx8cvSettingsState
+                            >(
+                              bloc: _settingsCubit,
+                              buildWhen: _expanderSettingsPresentationChanged,
                               builder: (context, settingsState) =>
                                   Ntx8cvSettingsSection(
                                     isConnected: isConnected,
@@ -158,6 +178,8 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                                     onReboot: _settingsCubit.reboot,
                                   ),
                             ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -170,6 +192,28 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
     );
   }
 }
+
+bool _usbAudioPresentationChanged(
+  Ntx8cvSettingsState previous,
+  Ntx8cvSettingsState current,
+) =>
+    previous.usbHost != current.usbHost ||
+    previous.audioChannels != current.audioChannels ||
+    previous.isRefreshing != current.isRefreshing ||
+    previous.isRebooting != current.isRebooting;
+
+bool _expanderSettingsPresentationChanged(
+  Ntx8cvSettingsState previous,
+  Ntx8cvSettingsState current,
+) =>
+    previous.channelGroup != current.channelGroup ||
+    previous.es5 != current.es5 ||
+    previous.mode != current.mode ||
+    previous.modeCapabilityEvidenced != current.modeCapabilityEvidenced ||
+    previous.modeRebootRequired != current.modeRebootRequired ||
+    previous.isRefreshing != current.isRefreshing ||
+    previous.isRebooting != current.isRebooting ||
+    previous.rebootMessage != current.rebootMessage;
 
 bool _connectionPresentationChanged(
   Ntx8cvConnectionState previous,
@@ -263,13 +307,16 @@ class _Ntx8cvSyncIndicatorState extends State<_Ntx8cvSyncIndicator> {
         !settings.isBusy &&
         !settings.hasPendingChannelGroupChange &&
         !settings.hasPendingEs5Change &&
+        !settings.hasPendingUsbAudioChange &&
         !settings.hasPendingModeChange &&
         settings.confirmedChannelGroup != null &&
         settings.confirmedEs5Enabled != null &&
+        settings.hasConfirmedUsbAudioSnapshot &&
         settings.confirmedMode != null &&
         settings.modeCapabilityEvidenced &&
         settings.channelGroupMessage == null &&
         settings.es5Message == null &&
+        !settings.hasUsbAudioError &&
         settings.modeMessage == null &&
         settings.rebootMessage == null;
   }
@@ -299,30 +346,189 @@ class _Ntx8cvSyncIndicatorState extends State<_Ntx8cvSyncIndicator> {
     final label = _isSynced
         ? 'NTX-8CV data synced'
         : 'NTX-8CV data not fully synced';
-    return SizedBox(
-      width: 10,
-      height: 10,
-      child: IgnorePointer(
-        ignoring: _opacity == 0,
-        child: AnimatedOpacity(
-          key: const Key('ntx8cv-sync-indicator'),
-          opacity: _opacity,
-          duration: _fadeDuration,
-          child: Semantics(
-            liveRegion: true,
-            label: label,
-            child: Tooltip(
-              message: label,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _isSynced
-                      ? context.appColors.info.color
-                      : context.appColors.warning.color,
+    return Semantics(
+      liveRegion: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: SizedBox(
+          width: 10,
+          height: 10,
+          child: DecoratedBox(
+            key: const Key('ntx8cv-sync-outline'),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.7),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: AnimatedOpacity(
+                key: const Key('ntx8cv-sync-indicator'),
+                opacity: _opacity,
+                duration: _fadeDuration,
+                child: DecoratedBox(
+                  key: const Key('ntx8cv-sync-fill'),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _isSynced
+                        ? context.appColors.info.color
+                        : context.appColors.warning.color,
+                  ),
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class Ntx8cvUsbAudioSection extends StatelessWidget {
+  const Ntx8cvUsbAudioSection({
+    super.key,
+    required this.isConnected,
+    required this.state,
+    required this.onUsbHostChanged,
+    required this.onAudioChannelChanged,
+  });
+
+  final bool isConnected;
+  final Ntx8cvSettingsState state;
+  final Future<void> Function(bool) onUsbHostChanged;
+  final Future<void> Function(int, bool) onAudioChannelChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isGloballyUnavailable =
+        !isConnected || state.isRebooting || state.isRefreshing;
+    final displayedUsbHost = state.isWritingUsbHost
+        ? state.attemptedUsbHostEnabled ?? state.confirmedUsbHostEnabled
+        : state.confirmedUsbHostEnabled;
+    final canChangeUsbHost =
+        !isGloballyUnavailable &&
+        state.confirmedUsbHostEnabled != null &&
+        !state.isLoadingUsbHost;
+
+    return Card(
+      key: const Key('ntx8cv-usb-audio-card'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Semantics(
+              header: true,
+              child: Text(
+                'USB Settings',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              key: const Key('ntx8cv-usb-host'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('USB host'),
+              value: displayedUsbHost ?? false,
+              onChanged: canChangeUsbHost
+                  ? (enabled) {
+                      unawaited(onUsbHostChanged(enabled));
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Audio channels',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
+                  _Ntx8cvAudioChannelChip(
+                    index: index,
+                    state: state,
+                    enabled:
+                        !isGloballyUnavailable &&
+                        state.confirmedAudioChannelEnabled(index) != null &&
+                        !state.isLoadingAudioChannel(index),
+                    onChanged: (enabled) {
+                      unawaited(onAudioChannelChanged(index, enabled));
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _StableMessageSlot(
+              message: _errorMessage(),
+              isError: true,
+              height: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _errorMessage() {
+    if (!isConnected || state.isRefreshing) return null;
+    if (state.usbHostMessage != null && !state.isWritingUsbHost) {
+      return 'USB host setting not confirmed.';
+    }
+    for (var index = 0; index < kNtx8cvAudioChannelCount; index++) {
+      if (state.audioChannelMessage(index) != null &&
+          !state.isWritingAudioChannel(index)) {
+        return 'Audio channel ${index + 1} setting not confirmed.';
+      }
+    }
+    if (!state.hasConfirmedUsbAudioSnapshot) {
+      return 'USB audio settings unavailable.';
+    }
+    return null;
+  }
+}
+
+class _Ntx8cvAudioChannelChip extends StatelessWidget {
+  const _Ntx8cvAudioChannelChip({
+    required this.index,
+    required this.state,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final int index;
+  final Ntx8cvSettingsState state;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final confirmed = state.confirmedAudioChannelEnabled(index);
+    final selected = state.isWritingAudioChannel(index)
+        ? state.attemptedAudioChannelEnabled(index) ?? confirmed ?? false
+        : confirmed ?? false;
+    final label = 'Audio channel ${index + 1}';
+    return Semantics(
+      label: label,
+      button: true,
+      selected: selected,
+      child: SizedBox(
+        width: 52,
+        child: FilterChip(
+          key: Key('ntx8cv-audio-channel-${index + 1}'),
+          label: SizedBox(
+            width: 20,
+            child: Text('${index + 1}', textAlign: TextAlign.center),
+          ),
+          tooltip: label,
+          selected: selected,
+          onSelected: enabled ? onChanged : null,
         ),
       ),
     );
@@ -800,7 +1006,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
             Semantics(
               header: true,
               child: Text(
-                'Settings',
+                'disting NT Expander Settings',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
