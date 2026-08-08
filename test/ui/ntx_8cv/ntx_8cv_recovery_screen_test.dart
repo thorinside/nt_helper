@@ -7,6 +7,7 @@ void main() {
   testWidgets(
     'USB Settings toggles host and eight audio channels without layout shifts',
     (tester) async {
+      final semantics = tester.ensureSemantics();
       await tester.binding.setSurfaceSize(const Size(420, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       bool? requestedUsbHost;
@@ -46,7 +47,11 @@ void main() {
       expect(find.text('USB Settings'), findsOneWidget);
       expect(find.text('USB host'), findsOneWidget);
       expect(find.text('Audio channels'), findsOneWidget);
-      expect(find.byType(FilterChip), findsNWidgets(8));
+      expect(find.byType(Checkbox), findsNWidgets(8));
+      for (var channel = 1; channel <= kNtx8cvAudioChannelCount; channel++) {
+        expect(find.text('$channel'), findsOneWidget);
+      }
+      expect(find.bySemanticsLabel('Audio channel 4'), findsOneWidget);
       expect(
         tester
             .widget<SwitchListTile>(find.byKey(const Key('ntx8cv-usb-host')))
@@ -94,8 +99,8 @@ void main() {
       );
       expect(
         tester
-            .widget<FilterChip>(find.byKey(const Key('ntx8cv-audio-channel-4')))
-            .selected,
+            .widget<Checkbox>(find.byKey(const Key('ntx8cv-audio-channel-4')))
+            .value,
         isFalse,
       );
       expect(find.textContaining('Saving'), findsNothing);
@@ -105,6 +110,7 @@ void main() {
         buildSection(isConnected: false, state: _confirmedUsbAudioState),
       );
       expect(geometry(), confirmedGeometry);
+      semantics.dispose();
     },
   );
 

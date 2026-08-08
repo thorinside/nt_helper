@@ -451,7 +451,7 @@ class Ntx8cvUsbAudioSection extends StatelessWidget {
               runSpacing: 8,
               children: [
                 for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
-                  _Ntx8cvAudioChannelChip(
+                  _Ntx8cvAudioChannelCheckbox(
                     index: index,
                     state: state,
                     enabled:
@@ -494,8 +494,8 @@ class Ntx8cvUsbAudioSection extends StatelessWidget {
   }
 }
 
-class _Ntx8cvAudioChannelChip extends StatelessWidget {
-  const _Ntx8cvAudioChannelChip({
+class _Ntx8cvAudioChannelCheckbox extends StatelessWidget {
+  const _Ntx8cvAudioChannelCheckbox({
     required this.index,
     required this.state,
     required this.enabled,
@@ -514,21 +514,31 @@ class _Ntx8cvAudioChannelChip extends StatelessWidget {
         ? state.attemptedAudioChannelEnabled(index) ?? confirmed ?? false
         : confirmed ?? false;
     final label = 'Audio channel ${index + 1}';
-    return Semantics(
-      label: label,
-      button: true,
-      selected: selected,
-      child: SizedBox(
-        width: 52,
-        child: FilterChip(
-          key: Key('ntx8cv-audio-channel-${index + 1}'),
-          label: SizedBox(
-            width: 20,
-            child: Text('${index + 1}', textAlign: TextAlign.center),
+    return Tooltip(
+      message: label,
+      child: MergeSemantics(
+        child: Semantics(
+          label: label,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ExcludeSemantics(
+                child: Text(
+                  '${index + 1}',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ),
+              Checkbox(
+                key: Key('ntx8cv-audio-channel-${index + 1}'),
+                value: selected,
+                onChanged: enabled
+                    ? (value) {
+                        if (value != null) onChanged(value);
+                      }
+                    : null,
+              ),
+            ],
           ),
-          tooltip: label,
-          selected: selected,
-          onSelected: enabled ? onChanged : null,
         ),
       ),
     );
