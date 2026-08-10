@@ -400,6 +400,67 @@ void main() {
       });
     });
 
+    group('NRPN detection', () {
+      test('detects a supported NRPN when Data Entry MSB arrives', () {
+        expect(engine.processCc(2, 99, 0), isNull);
+        expect(engine.processCc(2, 98, 42), isNull);
+
+        final result = engine.processCc(2, 6, 32);
+
+        expect(
+          result,
+          const DetectionResult(
+            type: MidiEventType.nrpn,
+            channel: 2,
+            number: 42,
+          ),
+        );
+      });
+
+      test('accepts reversed parameter select order and Data Entry LSB', () {
+        expect(engine.processCc(5, 98, 17), isNull);
+        expect(engine.processCc(5, 99, 0), isNull);
+        expect(engine.processCc(5, 38, 127), isNull);
+
+        final result = engine.processCc(5, 6, 10);
+
+        expect(result?.type, MidiEventType.nrpn);
+        expect(result?.channel, 5);
+        expect(result?.number, 17);
+      });
+
+      test('ignores NRPN numbers above firmware mapping range', () {
+        engine.processCc(0, 99, 1);
+        engine.processCc(0, 98, 42);
+
+        expect(engine.processCc(0, 6, 64), isNull);
+      });
+
+      test('keeps selectors isolated by MIDI channel', () {
+        engine.processCc(0, 99, 0);
+        engine.processCc(1, 98, 42);
+
+        expect(engine.processCc(0, 6, 64), isNull);
+        expect(engine.processCc(1, 6, 64), isNull);
+      });
+
+      test('RPN selection clears an active NRPN selection', () {
+        engine.processCc(0, 99, 0);
+        engine.processCc(0, 98, 42);
+        engine.processCc(0, 101, 0);
+
+        expect(engine.processCc(0, 6, 64), isNull);
+      });
+
+      test('reset clears active NRPN selectors', () {
+        engine.processCc(0, 99, 0);
+        engine.processCc(0, 98, 42);
+        engine.reset();
+
+        expect(engine.processCc(0, 6, 64), isNull);
+      });
+    });
+
     group('reset behavior', () {
       test('reset clears buffer', () {
         for (int i = 0; i < 5; i++) {

@@ -187,6 +187,42 @@ void main() {
       expect(detectedData?.isMidiEnabled, isTrue);
     });
 
+    testWidgets('NRPN detection saves the firmware-compatible CC mapping', (
+      tester,
+    ) async {
+      PackedMappingData? detectedData;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (_) async {},
+          onSaveImmediately: (data) async {
+            detectedData = data;
+          },
+          initialData: testData.copyWith(midiMin: -25, midiMax: 75),
+        ),
+      );
+
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      final detector = tester.widget<MidiDetectorWidget>(
+        find.byType(MidiDetectorWidget),
+      );
+      detector.onMidiEventFound!(
+        type: MidiEventType.nrpn,
+        channel: 4,
+        number: 42,
+      );
+      await tester.pump();
+
+      expect(detectedData?.midiMappingType, MidiMappingType.cc);
+      expect(detectedData?.midiChannel, 4);
+      expect(detectedData?.midiCC, 42);
+      expect(detectedData?.midiMin, -25);
+      expect(detectedData?.midiMax, 75);
+      expect(detectedData?.isMidiEnabled, isTrue);
+    });
+
     testWidgets('MIDI RangeSlider is present without editing', (tester) async {
       int saveCount = 0;
 

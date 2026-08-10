@@ -3,8 +3,8 @@ import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
 void main() {
   group('MidiEventType enum', () {
-    test('has exactly 7 variants', () {
-      expect(MidiEventType.values.length, 7);
+    test('has exactly 8 variants', () {
+      expect(MidiEventType.values.length, 8);
       expect(
         MidiEventType.values,
         containsAll([
@@ -15,6 +15,7 @@ void main() {
           MidiEventType.cc14BitHighFirst,
           MidiEventType.pitchBend,
           MidiEventType.channelPressure,
+          MidiEventType.nrpn,
         ]),
       );
     });

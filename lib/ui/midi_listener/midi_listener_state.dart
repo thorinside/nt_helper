@@ -22,6 +22,12 @@ enum MidiEventType {
 
   /// Channel Pressure message
   channelPressure,
+
+  /// NRPN parameter selection (firmware 1.18+ supports numbers 0-127).
+  ///
+  /// The disting NT stores this as an ordinary CC mapping whose CC number is
+  /// the NRPN number.
+  nrpn,
 }
 
 @freezed

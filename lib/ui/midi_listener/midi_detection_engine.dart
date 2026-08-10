@@ -48,10 +48,19 @@ class MidiDetectionEngine {
   /// Sliding window of recent CC events.
   final List<({int channel, int cc, int value})> _buffer = [];
 
+  /// Active NRPN parameter selectors, isolated by MIDI channel.
+  final Map<int, _NrpnSelector> _nrpnSelectors = {};
+
   /// Process a CC message.
   ///
   /// Returns [DetectionResult] when a pattern is detected, null otherwise.
   DetectionResult? processCc(int channel, int ccNumber, int ccValue) {
+    final nrpnResult = _processNrpnCc(channel, ccNumber, ccValue);
+    if (nrpnResult != null) {
+      _buffer.clear();
+      return nrpnResult;
+    }
+
     _buffer.add((channel: channel, cc: ccNumber, value: ccValue));
     if (_buffer.length > kBufferSize) {
       _buffer.removeAt(0);
@@ -129,6 +138,45 @@ class MidiDetectionEngine {
   /// Reset all tracking state.
   void reset() {
     _buffer.clear();
+    _nrpnSelectors.clear();
+  }
+
+  DetectionResult? _processNrpnCc(int channel, int ccNumber, int ccValue) {
+    // Selecting an RPN replaces any active NRPN selection on that channel.
+    if (ccNumber == 101 || ccNumber == 100) {
+      _nrpnSelectors.remove(channel);
+      return null;
+    }
+
+    if (ccNumber == 99 || ccNumber == 98) {
+      final selector = _nrpnSelectors.putIfAbsent(channel, _NrpnSelector.new);
+      if (ccNumber == 99) {
+        selector.msb = ccValue;
+      } else {
+        selector.lsb = ccValue;
+      }
+
+      // 127/127 is the standard null selection.
+      if (selector.msb == 127 && selector.lsb == 127) {
+        _nrpnSelectors.remove(channel);
+      }
+      return null;
+    }
+
+    // The 1.18 beta responds to Data Entry MSB and ignores Data Entry LSB.
+    if (ccNumber != 6) return null;
+
+    final selector = _nrpnSelectors[channel];
+    if (selector?.msb == null || selector?.lsb == null) return null;
+
+    final number = (selector!.msb! << 7) | selector.lsb!;
+    if (number > 127) return null;
+
+    return DetectionResult(
+      type: MidiEventType.nrpn,
+      channel: channel,
+      number: number,
+    );
   }
 
   /// Analyze the buffer for 7-bit or 14-bit CC patterns.
@@ -177,4 +225,9 @@ class MidiDetectionEngine {
 
     return null;
   }
+}
+
+class _NrpnSelector {
+  int? msb;
+  int? lsb;
 }

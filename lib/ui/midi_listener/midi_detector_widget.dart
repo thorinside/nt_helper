@@ -201,6 +201,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                           'Channel pressure',
                           lastDetectedCc,
                         ),
+                        MidiEventType.nrpn => ('NRPN', lastDetectedCc),
                       };
 
                       final eventNumber = eventInfo.$2;
@@ -214,6 +215,8 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                             'Pitch bend Ch ${lastDetectedChannel + 1}',
                           MidiEventType.channelPressure =>
                             'Channel pressure Ch ${lastDetectedChannel + 1}',
+                          MidiEventType.nrpn =>
+                            'NRPN $eventNumber Ch ${lastDetectedChannel + 1}',
                           _ =>
                             'Detected $eventTypeStr $eventNumber on channel ${lastDetectedChannel + 1}',
                         };

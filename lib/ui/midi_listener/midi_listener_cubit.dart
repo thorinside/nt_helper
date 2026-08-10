@@ -7,6 +7,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../domain/midi_command_factory.dart';
 import '../../services/debug_service.dart';
 import 'midi_detection_engine.dart';
+import 'midi_message_decoder.dart';
 
 part 'midi_listener_cubit.freezed.dart';
 part 'midi_listener_state.dart';
@@ -208,7 +209,21 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       return;
     }
 
-    final statusByte = data[0];
+    final messages = decodeMidiChannelMessages(data);
+    if (messages.isEmpty) {
+      _debugLog(
+        'Unsupported or incomplete packet dropped: ${data.length} bytes from ${packet.device.name}',
+      );
+      return;
+    }
+
+    for (final message in messages) {
+      _handleMidiMessage(message);
+    }
+  }
+
+  void _handleMidiMessage(MidiChannelMessage message) {
+    final statusByte = message.statusByte;
     final messageType = statusByte & 0xF0;
     final channel = statusByte & 0x0F;
 
@@ -222,37 +237,30 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     };
     _debugLog(
       'Packet: status=0x${statusByte.toRadixString(16).toUpperCase()} '
-      'type=$typeLabel ch=$channel data=[${data.skip(1).map((b) => b.toString()).join(', ')}]',
+      'type=$typeLabel ch=$channel data=[${message.data1}${message.data2 == null ? '' : ', ${message.data2}'}]',
     );
 
     DetectionResult? result;
 
     if (messageType == 0xD0) {
-      if (data.length < 2) {
-        _debugLog(
-          'Short channel pressure packet dropped: ${data.length} bytes',
-        );
-        return;
-      }
       result = _detectionEngine.processChannelPressure(channel);
-    } else if (data.length < 3) {
-      _debugLog(
-        'Short packet dropped: ${data.length} bytes from ${packet.device.name}',
-      );
-      return;
     } else if (messageType == 0xB0) {
       // CC message
-      result = _detectionEngine.processCc(channel, data[1], data[2]);
+      result = _detectionEngine.processCc(
+        channel,
+        message.data1,
+        message.data2!,
+      );
     } else if (messageType == 0x90) {
       // Note On (velocity 0 = Note Off)
-      final note = data[1];
-      final velocity = data[2];
+      final note = message.data1;
+      final velocity = message.data2!;
       result = velocity == 0
           ? _detectionEngine.processNoteOff(channel, note)
           : _detectionEngine.processNoteOn(channel, note);
     } else if (messageType == 0x80) {
       // Note Off
-      result = _detectionEngine.processNoteOff(channel, data[1]);
+      result = _detectionEngine.processNoteOff(channel, message.data1);
     } else if (messageType == 0xE0) {
       // Pitch Bend
       result = _detectionEngine.processPitchBend(channel);
@@ -293,7 +301,8 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
           result.type == MidiEventType.cc14BitLowFirst ||
           result.type == MidiEventType.cc14BitHighFirst ||
           result.type == MidiEventType.pitchBend ||
-          result.type == MidiEventType.channelPressure;
+          result.type == MidiEventType.channelPressure ||
+          result.type == MidiEventType.nrpn;
 
       emit(
         currentState.copyWith(

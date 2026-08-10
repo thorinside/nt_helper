@@ -24,6 +24,7 @@ String formatMidiDetectionMessage({
       '14-bit CC $eventNumber Ch ${channel + 1}',
     MidiEventType.pitchBend => 'Pitch bend Ch ${channel + 1}',
     MidiEventType.channelPressure => 'Channel pressure Ch ${channel + 1}',
+    MidiEventType.nrpn => 'NRPN $eventNumber Ch ${channel + 1}',
     _ => 'Detected $eventTypeStr $eventNumber on channel ${channel + 1}',
   };
 }
@@ -189,6 +190,17 @@ void main() {
       expect(message.split(' ').length, equals(7));
     });
 
+    test('NRPN uses concise format', () {
+      final message = formatMidiDetectionMessage(
+        type: MidiEventType.nrpn,
+        eventTypeStr: 'NRPN',
+        eventNumber: 42,
+        channel: 2,
+      );
+
+      expect(message, equals('NRPN 42 Ch 3'));
+    });
+
     test('14-bit format is significantly shorter than verbose', () {
       final bit14Message = formatMidiDetectionMessage(
         type: MidiEventType.cc14BitLowFirst,
@@ -218,6 +230,7 @@ void main() {
           MidiEventType.cc14BitHighFirst => '14-bit CC',
           MidiEventType.pitchBend => 'Pitch bend',
           MidiEventType.channelPressure => 'Channel pressure',
+          MidiEventType.nrpn => 'NRPN',
         };
 
         final message = formatMidiDetectionMessage(
