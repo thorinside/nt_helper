@@ -17,6 +17,15 @@ import 'package:nt_helper/utils/build_config.dart';
 
 /// GraphQL queries for the gallery
 const int _galleryPluginPageSize = 50;
+const Duration _defaultGraphqlRequestTimeout = Duration(seconds: 30);
+const List<Duration> _defaultGraphqlRetryDelays = [
+  Duration(seconds: 1),
+  Duration(seconds: 2),
+];
+const Set<int> _retryableGraphqlStatusCodes = {
+  HttpStatus.badGateway,
+  HttpStatus.serviceUnavailable,
+};
 
 const String _getPluginsQuery = r'''
   query GetPlugins(
@@ -134,6 +143,8 @@ typedef SampleInstallCallback =
 class GalleryService {
   final SettingsService _settingsService;
   final AppDatabase? _database;
+  final Duration _graphqlRequestTimeout;
+  final List<Duration> _graphqlRetryDelays;
   PluginUpdateChecker? _updateChecker;
   Gallery? _cachedGallery;
 
@@ -156,8 +167,12 @@ class GalleryService {
   GalleryService({
     required SettingsService settingsService,
     AppDatabase? database,
+    Duration graphqlRequestTimeout = _defaultGraphqlRequestTimeout,
+    List<Duration> graphqlRetryDelays = _defaultGraphqlRetryDelays,
   }) : _settingsService = settingsService,
-       _database = database {
+       _database = database,
+       _graphqlRequestTimeout = graphqlRequestTimeout,
+       _graphqlRetryDelays = List.unmodifiable(graphqlRetryDelays) {
     // Initialize update checker if database is available
     if (_database != null) {
       _updateChecker = PluginUpdateChecker(
@@ -386,30 +401,18 @@ class GalleryService {
 
   /// Fetch plugins via GraphQL API
   Future<List<dynamic>> _fetchPluginsViaGraphQL() async {
-    final endpoint = graphqlEndpoint;
     final plugins = <dynamic>[];
     var offset = 0;
 
     while (true) {
-      final response = await http
-          .post(
-            Uri.parse(endpoint),
-            headers: {
-              'Content-Type': 'application/json; charset=utf-8',
-              'Accept': 'application/json; charset=utf-8',
-              'Accept-Charset': 'utf-8',
-              'User-Agent': 'Disting-NT-Helper/1.0',
-            },
-            body: json.encode({
-              'query': _getPluginsQuery,
-              'variables': {
-                'filter': {'verified': true},
-                'limit': _galleryPluginPageSize,
-                'offset': offset,
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _postGraphQL(
+        query: _getPluginsQuery,
+        variables: {
+          'filter': {'verified': true},
+          'limit': _galleryPluginPageSize,
+          'offset': offset,
+        },
+      );
 
       if (response.statusCode != 200) {
         throw GalleryException(
@@ -439,20 +442,7 @@ class GalleryService {
 
   /// Fetch categories via GraphQL API
   Future<List<dynamic>> _fetchCategoriesViaGraphQL() async {
-    final endpoint = graphqlEndpoint;
-
-    final response = await http
-        .post(
-          Uri.parse(endpoint),
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Accept': 'application/json; charset=utf-8',
-            'Accept-Charset': 'utf-8',
-            'User-Agent': 'Disting-NT-Helper/1.0',
-          },
-          body: json.encode({'query': _getCategoriesQuery}),
-        )
-        .timeout(const Duration(seconds: 30));
+    final response = await _postGraphQL(query: _getCategoriesQuery);
 
     if (response.statusCode != 200) {
       throw GalleryException(
@@ -469,6 +459,44 @@ class GalleryService {
     }
 
     return jsonData['data']['categories'] as List<dynamic>;
+  }
+
+  Future<http.Response> _postGraphQL({
+    required String query,
+    Map<String, dynamic>? variables,
+  }) async {
+    final requestBody = <String, dynamic>{'query': query};
+    if (variables != null) {
+      requestBody['variables'] = variables;
+    }
+
+    for (var attempt = 0; ; attempt++) {
+      final hasRetryRemaining = attempt < _graphqlRetryDelays.length;
+
+      try {
+        final response = await http
+            .post(
+              Uri.parse(graphqlEndpoint),
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Accept': 'application/json; charset=utf-8',
+                'Accept-Charset': 'utf-8',
+                'User-Agent': 'Disting-NT-Helper/1.0',
+              },
+              body: json.encode(requestBody),
+            )
+            .timeout(_graphqlRequestTimeout);
+
+        if (!_retryableGraphqlStatusCodes.contains(response.statusCode) ||
+            !hasRetryRemaining) {
+          return response;
+        }
+      } on TimeoutException {
+        if (!hasRetryRemaining) rethrow;
+      }
+
+      await Future.delayed(_graphqlRetryDelays[attempt]);
+    }
   }
 
   /// Map GraphQL response to Gallery model

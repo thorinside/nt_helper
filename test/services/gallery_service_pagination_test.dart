@@ -18,9 +18,19 @@ void main() {
     late List<({int limit, int offset})> pluginPageRequests;
     late Directory tempRoot;
     late int totalPlugins;
+    late int transientPluginFailures;
+    late int transientPluginStatus;
+    late int transientCategoryFailures;
+    late int categoryRequestCount;
+    late Duration? nextPluginResponseDelay;
 
     setUp(() async {
       totalPlugins = 120;
+      transientPluginFailures = 0;
+      transientPluginStatus = HttpStatus.serviceUnavailable;
+      transientCategoryFailures = 0;
+      categoryRequestCount = 0;
+      nextPluginResponseDelay = null;
       resetAppDirectoryForTest();
       tempRoot = Directory.systemTemp.createTempSync(
         'gallery_service_pagination_test_',
@@ -44,6 +54,19 @@ void main() {
           final offset = variables['offset'] as int? ?? 0;
           pluginPageRequests.add((limit: limit, offset: offset));
 
+          if (transientPluginFailures > 0) {
+            transientPluginFailures--;
+            request.response.statusCode = transientPluginStatus;
+            await request.response.close();
+            return;
+          }
+
+          final responseDelay = nextPluginResponseDelay;
+          nextPluginResponseDelay = null;
+          if (responseDelay != null) {
+            await Future.delayed(responseDelay);
+          }
+
           final end = offset + limit < totalPlugins
               ? offset + limit
               : totalPlugins;
@@ -63,6 +86,14 @@ void main() {
             'data': {'plugins': plugins},
           };
         } else {
+          categoryRequestCount++;
+          if (transientCategoryFailures > 0) {
+            transientCategoryFailures--;
+            request.response.statusCode = HttpStatus.serviceUnavailable;
+            await request.response.close();
+            return;
+          }
+
           responseBody = {
             'data': {'categories': <Map<String, dynamic>>[]},
           };
@@ -103,6 +134,88 @@ void main() {
         (limit: 50, offset: 100),
       ]);
     });
+
+    for (final status in [
+      HttpStatus.badGateway,
+      HttpStatus.serviceUnavailable,
+    ]) {
+      test(
+        'retries a plugin page after a transient $status response',
+        () async {
+          totalPlugins = 1;
+          transientPluginFailures = 1;
+          transientPluginStatus = status;
+          final service = GalleryService(
+            settingsService: settingsService,
+            graphqlRetryDelays: const [Duration.zero, Duration.zero],
+          );
+
+          final gallery = await service.fetchGallery(forceRefresh: true);
+
+          expect(gallery.plugins, hasLength(1));
+          expect(pluginPageRequests, [
+            (limit: 50, offset: 0),
+            (limit: 50, offset: 0),
+          ]);
+        },
+      );
+    }
+
+    test('retries categories after a transient 503 response', () async {
+      totalPlugins = 1;
+      transientCategoryFailures = 1;
+      final service = GalleryService(
+        settingsService: settingsService,
+        graphqlRetryDelays: const [Duration.zero, Duration.zero],
+      );
+
+      final gallery = await service.fetchGallery(forceRefresh: true);
+
+      expect(gallery.plugins, hasLength(1));
+      expect(categoryRequestCount, 2);
+    });
+
+    test('retries a plugin page after a request timeout', () async {
+      totalPlugins = 1;
+      nextPluginResponseDelay = const Duration(milliseconds: 50);
+      final service = GalleryService(
+        settingsService: settingsService,
+        graphqlRequestTimeout: const Duration(milliseconds: 5),
+        graphqlRetryDelays: const [Duration.zero],
+      );
+
+      final gallery = await service.fetchGallery(forceRefresh: true);
+
+      expect(gallery.plugins, hasLength(1));
+      expect(pluginPageRequests, [
+        (limit: 50, offset: 0),
+        (limit: 50, offset: 0),
+      ]);
+      await Future.delayed(const Duration(milliseconds: 60));
+    });
+
+    test(
+      'stops retrying after the configured attempts are exhausted',
+      () async {
+        transientPluginFailures = 3;
+        final service = GalleryService(
+          settingsService: settingsService,
+          graphqlRetryDelays: const [Duration.zero, Duration.zero],
+        );
+
+        await expectLater(
+          service.fetchGallery(forceRefresh: true),
+          throwsA(
+            isA<GalleryException>().having(
+              (error) => error.message,
+              'message',
+              contains('HTTP 503'),
+            ),
+          ),
+        );
+        expect(pluginPageRequests, hasLength(3));
+      },
+    );
 
     test(
       'stops after an empty page when the total is a multiple of 50',
