@@ -1066,6 +1066,12 @@ class DistingCubit extends _DistingCubitBase
     MidiDevice outputDevice,
   ) {
     _ccNotificationDelegate.stop();
+    _monitoringDelegate.pauseCpuMonitoring();
+    _parameterQueue?.dispose();
+    _parameterQueue = null;
+    if (identical(disting(), manager)) {
+      _emitState(const DistingState.initial());
+    }
     try {
       _midiCommand.disconnectDevice(inputDevice);
     } catch (_) {}

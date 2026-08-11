@@ -655,6 +655,9 @@ class _ConnectionDelegate {
 
       final syncSucceeded =
           await performSyncAndEmit(); // Sync with the new connection
+      if (syncSucceeded) {
+        _cubit._monitoringDelegate.resumeCpuMonitoring();
+      }
       StartupLogService.log(
         'DistingCubit.connectToDevices: connection flow completed; '
         'syncSucceeded=$syncSucceeded',
