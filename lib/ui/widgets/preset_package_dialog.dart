@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -136,27 +135,25 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           .split('/')
           .last
           .replaceAll('.json', '');
+      final packageCreator = PackageCreator(widget.fileSystem);
+      final packageResult = await packageCreator.createPackage(
+        presetFilePath: widget.presetFilePath,
+        config: config,
+        onProgress: (status) => setState(() => _status = status),
+        onFileProgress: (update) => setState(() => _fileProgress = update),
+        estimatedFileCount: estimate?.fileCount,
+        estimatedTotalBytes: estimate?.totalBytes,
+        pluginPaths: widget.pluginPaths,
+      );
       final outputPath = await FilePicker.saveFile(
         dialogTitle: 'Save Preset Package',
         fileName: '${presetName}_package.zip',
         type: FileType.custom,
         allowedExtensions: ['zip'],
+        bytes: packageResult.zipBytes,
       );
 
       if (outputPath != null) {
-        final packageCreator = PackageCreator(widget.fileSystem);
-        final packageResult = await packageCreator.createPackage(
-          presetFilePath: widget.presetFilePath,
-          config: config,
-          onProgress: (status) => setState(() => _status = status),
-          onFileProgress: (update) => setState(() => _fileProgress = update),
-          estimatedFileCount: estimate?.fileCount,
-          estimatedTotalBytes: estimate?.totalBytes,
-          pluginPaths: widget.pluginPaths,
-        );
-
-        await File(outputPath).writeAsBytes(packageResult.zipBytes);
-
         navigator.pop();
 
         if (packageResult.hasWarnings && rootNavigator.mounted) {

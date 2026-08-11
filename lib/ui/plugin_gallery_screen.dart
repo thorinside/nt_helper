@@ -1217,29 +1217,15 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           (defaultTargetPlatform == TargetPlatform.windows ||
               defaultTargetPlatform == TargetPlatform.macOS ||
               defaultTargetPlatform == TargetPlatform.linux)) {
-        final result = await FilePicker.pickFiles(
+        final file = await FilePicker.pickFile(
           type: FileType.custom,
           allowedExtensions: ['lua', '3pot', 'o'],
-          allowMultiple: false,
         );
 
-        if (result != null && result.files.isNotEmpty) {
-          final file = result.files.first;
+        if (file != null) {
           final fileName = file.name;
 
-          Uint8List? fileBytes = file.bytes;
-          if (fileBytes == null && file.path != null) {
-            try {
-              final fileData = await File(file.path!).readAsBytes();
-              fileBytes = Uint8List.fromList(fileData);
-            } catch (e) {
-              throw Exception('Failed to read file from path: $e');
-            }
-          }
-
-          if (fileBytes == null) {
-            throw Exception('Failed to read file data');
-          }
+          final fileBytes = await file.readAsBytes();
 
           if (mounted) {
             showDialog(

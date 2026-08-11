@@ -129,10 +129,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 
   Future<void> _attachFiles() async {
-    final result = await FilePicker.pickFiles(
-      allowMultiple: true,
-      withData: false,
-    );
+    final result = await FilePicker.pickFiles();
     if (result == null || !mounted) return;
     for (final file in result.files) {
       if (!_canAddAttachment()) break;
@@ -142,8 +139,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
           _showAttachmentError('${file.name} is larger than 10 MB.');
           continue;
         }
-        final bytes = file.bytes ?? await _readFileBytes(file.path);
-        if (bytes == null) continue;
+        final bytes = await file.readAsBytes();
         if (!mounted) return;
         _addImage(bytes, name: file.name);
         continue;
@@ -161,8 +157,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
         );
         continue;
       }
-      final bytes = file.bytes ?? await _readFileBytes(file.path);
-      if (bytes == null) continue;
+      final bytes = await file.readAsBytes();
       if (!mounted) return;
       _addFile(bytes, name: file.name, mimeType: mimeType);
     }
@@ -230,11 +225,6 @@ class _ChatInputBarState extends State<ChatInputBar> {
       }
       _addFile(await file.readAsBytes(), name: fileName, mimeType: mimeType);
     }
-  }
-
-  Future<List<int>?> _readFileBytes(String? filePath) async {
-    if (filePath == null) return null;
-    return File(filePath).readAsBytes();
   }
 
   void _addImage(List<int> bytes, {String? name}) {

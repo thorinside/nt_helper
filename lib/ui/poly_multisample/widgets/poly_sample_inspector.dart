@@ -939,15 +939,18 @@ class _WaveformSection extends StatelessWidget {
           children: [
             OutlinedButton(
               onPressed: () async {
+                final bytes = await cubit.renderDestructiveWav(region.path);
+                if (bytes == null) return;
                 final target = await FilePicker.saveFile(
                   dialogTitle: 'Save edited WAV as',
                   fileName: p.basename(region.path),
                   initialDirectory: state.lastWavExportFolder,
                   type: FileType.custom,
                   allowedExtensions: const ['wav'],
+                  bytes: bytes,
                 );
                 if (target == null) return;
-                await cubit.saveDestructiveWav(region.path, target, true);
+                await cubit.completeDestructiveWavSave(region.path, target);
               },
               child: const Text('Save as...'),
             ),

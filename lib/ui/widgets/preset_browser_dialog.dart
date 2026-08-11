@@ -736,19 +736,10 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
   Future<void> _uploadFileAction(String targetDirectory) async {
     final cubit = context.read<PresetBrowserCubit>();
-    final result = await FilePicker.pickFiles();
-    if (result == null || result.files.isEmpty) return;
+    final file = await FilePicker.pickFile();
+    if (file == null) return;
 
-    final file = result.files.first;
-    if (file.bytes == null && file.path == null) return;
-
-    final Uint8List bytes;
-    if (file.bytes != null) {
-      bytes = file.bytes!;
-    } else {
-      final xfile = XFile(file.path!);
-      bytes = await xfile.readAsBytes();
-    }
+    final bytes = await file.readAsBytes();
 
     try {
       setState(() => _uploadProgress = 0);

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
@@ -92,12 +93,12 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
 
   Future<void> _loadTemplateFromFile() async {
     if (_isApplying || _isImporting) return;
-    final result = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       dialogTitle: 'Import Template JSON',
       type: FileType.custom,
       allowedExtensions: ['json'],
     );
-    final path = result?.files.single.path;
+    final path = file?.path;
     if (path == null) return;
 
     await _importTemplateJson(await File(path).readAsString());
@@ -107,17 +108,16 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
     final template = _selected;
     if (_isApplying || _isImporting || template == null) return;
 
+    final jsonText = TemplateShareService(_database).encodeTemplate(template);
     final path = await FilePicker.saveFile(
       dialogTitle: 'Export Template JSON',
       fileName: '${_safeFileName(template.preset.name)}.json',
       type: FileType.custom,
       allowedExtensions: ['json'],
+      bytes: Uint8List.fromList(utf8.encode(jsonText)),
     );
     if (path == null) return;
 
-    final jsonText = TemplateShareService(_database).encodeTemplate(template);
-    _announce('Exporting ${template.preset.name} template.');
-    await File(path).writeAsString(jsonText);
     if (!mounted) return;
     _announce('Exported ${template.preset.name} template.');
   }

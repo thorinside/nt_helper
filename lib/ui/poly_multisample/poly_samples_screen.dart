@@ -211,7 +211,6 @@ class PolySamplesView extends StatelessWidget {
     final result = await FilePicker.pickFiles(
       dialogTitle: 'Import samples',
       initialDirectory: cubit.state.lastSourceFolder,
-      allowMultiple: true,
       type: FileType.custom,
       allowedExtensions: const [
         'wav',
@@ -257,7 +256,6 @@ class PolySamplesView extends StatelessWidget {
     final cubit = context.read<PolyMultisampleBuilderCubit>();
     final result = await FilePicker.pickFiles(
       dialogTitle: 'Add samples',
-      allowMultiple: true,
       type: FileType.custom,
       allowedExtensions: const ['wav', 'aif', 'aiff'],
     );

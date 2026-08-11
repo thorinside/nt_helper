@@ -1653,26 +1653,53 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
     bool overwriteConfirmed,
   ) async {
     try {
-      final draft = state.wavEditDrafts[path] ?? const PolyWaveformDraft();
-      final overview =
-          state.waveformSummaries[path] ?? await _wavService.loadWaveform(path);
       await _wavService.saveDestructiveWav(
         path,
         targetPath,
-        WavRenderOptions(
-          trimStartFrame: draft.trimStart ?? 0,
-          trimEndFrame: draft.trimEnd ?? overview.frameCount - 1,
-          fadeInFrames: draft.fadeInFrames,
-          fadeOutFrames: draft.fadeOutFrames,
-          fadeInCurve: draft.fadeInCurve,
-          fadeOutCurve: draft.fadeOutCurve,
-          fadeInStrength: draft.fadeInStrength,
-          fadeOutStrength: draft.fadeOutStrength,
-          gainDb: draft.gainDb,
-          normalizePeakDb: draft.normalizePeakDb,
-        ),
+        await _destructiveWavOptions(path),
         overwriteConfirmed: overwriteConfirmed,
       );
+      await completeDestructiveWavSave(path, targetPath);
+    } catch (error) {
+      _reportDestructiveWavError(error);
+    }
+  }
+
+  Future<Uint8List?> renderDestructiveWav(String path) async {
+    try {
+      return await _wavService.renderDestructiveWav(
+        path,
+        await _destructiveWavOptions(path),
+      );
+    } catch (error) {
+      _reportDestructiveWavError(error);
+      return null;
+    }
+  }
+
+  Future<WavRenderOptions> _destructiveWavOptions(String path) async {
+    final draft = state.wavEditDrafts[path] ?? const PolyWaveformDraft();
+    final overview =
+        state.waveformSummaries[path] ?? await _wavService.loadWaveform(path);
+    return WavRenderOptions(
+      trimStartFrame: draft.trimStart ?? 0,
+      trimEndFrame: draft.trimEnd ?? overview.frameCount - 1,
+      fadeInFrames: draft.fadeInFrames,
+      fadeOutFrames: draft.fadeOutFrames,
+      fadeInCurve: draft.fadeInCurve,
+      fadeOutCurve: draft.fadeOutCurve,
+      fadeInStrength: draft.fadeInStrength,
+      fadeOutStrength: draft.fadeOutStrength,
+      gainDb: draft.gainDb,
+      normalizePeakDb: draft.normalizePeakDb,
+    );
+  }
+
+  Future<void> completeDestructiveWavSave(
+    String path,
+    String targetPath,
+  ) async {
+    try {
       final wavExportFolder = p.dirname(targetPath);
       unawaited(
         _prefs().then(
@@ -1697,13 +1724,17 @@ class PolyMultisampleBuilderCubit extends Cubit<PolyMultisampleBuilderState> {
         await loadWaveform(path, force: true);
       }
     } catch (error) {
-      emit(
-        state.copyWith(
-          activeOperation: PolyMultisampleActiveOperation.none,
-          error: error.toString(),
-        ),
-      );
+      _reportDestructiveWavError(error);
     }
+  }
+
+  void _reportDestructiveWavError(Object error) {
+    emit(
+      state.copyWith(
+        activeOperation: PolyMultisampleActiveOperation.none,
+        error: error.toString(),
+      ),
+    );
   }
 
   Future<void> playOrStopPreview(

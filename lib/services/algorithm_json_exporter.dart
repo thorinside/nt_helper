@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/algorithm_guid_utils.dart';
@@ -11,6 +12,11 @@ class AlgorithmJsonExporter {
 
   /// Exports all algorithm details with parameters to a JSON file
   Future<void> exportAlgorithmDetails(String filePath) async {
+    await File(filePath).writeAsBytes(await buildAlgorithmDetailsBytes());
+  }
+
+  /// Builds the algorithm-details export for APIs that write supplied bytes.
+  Future<Uint8List> buildAlgorithmDetailsBytes() async {
     try {
       final dao = database.metadataDao;
       final algorithms = await dao.getAllAlgorithms();
@@ -64,11 +70,8 @@ class AlgorithmJsonExporter {
         'algorithms': exportData,
       };
 
-      // Write to file
-      final file = File(filePath);
-      await file.writeAsString(
-        const JsonEncoder.withIndent('  ').convert(exportJson),
-        encoding: utf8,
+      return Uint8List.fromList(
+        utf8.encode(const JsonEncoder.withIndent('  ').convert(exportJson)),
       );
     } catch (e) {
       rethrow;
@@ -110,6 +113,11 @@ class AlgorithmJsonExporter {
   /// DEBUG ONLY: Exports ALL metadata tables to a JSON file for bundling as an asset
   /// This enables offline mode without device sync on first launch
   Future<void> exportFullMetadata(String filePath) async {
+    await File(filePath).writeAsBytes(await buildFullMetadataBytes());
+  }
+
+  /// Builds the full metadata export for APIs that write supplied bytes.
+  Future<Uint8List> buildFullMetadataBytes() async {
     if (!kDebugMode) {
       throw Exception('exportFullMetadata is only available in debug mode');
     }
@@ -291,14 +299,9 @@ class AlgorithmJsonExporter {
         },
       };
 
-      // Write to file with pretty printing
-      final file = File(filePath);
-      await file.writeAsString(
-        const JsonEncoder.withIndent('  ').convert(exportJson),
-        encoding: utf8,
+      return Uint8List.fromList(
+        utf8.encode(const JsonEncoder.withIndent('  ').convert(exportJson)),
       );
-
-      await file.length();
     } catch (e) {
       rethrow;
     }

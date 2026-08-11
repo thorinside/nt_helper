@@ -186,12 +186,12 @@ class _CreateTemplateFromPresetDialogState
 
   Future<void> _loadFromFile() async {
     if (_creating || _loadingFromFile) return;
-    final result = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       dialogTitle: 'Import Template JSON',
       type: FileType.custom,
       allowedExtensions: ['json'],
     );
-    final path = result?.files.single.path;
+    final path = file?.path;
     if (path == null) return;
 
     setState(() {

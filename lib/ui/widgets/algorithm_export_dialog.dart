@@ -16,7 +16,6 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
   bool _isLoading = false;
   bool _isExporting = false;
   Map<String, dynamic>? _previewData;
-  String? _selectedPath;
   String? _errorMessage;
 
   @override
@@ -51,39 +50,7 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
     }
   }
 
-  Future<void> _selectSaveLocation() async {
-    try {
-      final result = await FilePicker.saveFile(
-        dialogTitle: 'Save Algorithm Details Export',
-        fileName:
-            'nt_algorithm_details_${DateTime.now().millisecondsSinceEpoch ~/ 1000}.json',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
-
-      if (result != null && mounted) {
-        setState(() {
-          _selectedPath = result;
-          _errorMessage = null;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Failed to select save location: $e';
-        });
-      }
-    }
-  }
-
   Future<void> _performExport() async {
-    if (_selectedPath == null) {
-      setState(() {
-        _errorMessage = 'Please select a save location first';
-      });
-      return;
-    }
-
     setState(() {
       _isExporting = true;
       _errorMessage = null;
@@ -91,7 +58,18 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
 
     try {
       final exporter = AlgorithmJsonExporter(widget.database);
-      await exporter.exportAlgorithmDetails(_selectedPath!);
+      final result = await FilePicker.saveFile(
+        dialogTitle: 'Save Algorithm Details Export',
+        fileName:
+            'nt_algorithm_details_${DateTime.now().millisecondsSinceEpoch ~/ 1000}.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: await exporter.buildAlgorithmDetailsBytes(),
+      );
+      if (result == null) {
+        if (mounted) setState(() => _isExporting = false);
+        return;
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true); // Return success
@@ -187,71 +165,6 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
               const SizedBox(height: 16),
             ],
 
-            // File selection section
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.outline.withValues(alpha: 0.5),
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const ExcludeSemantics(
-                        child: Icon(Icons.folder_open, size: 20),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Save Location:',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (_selectedPath != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        _selectedPath!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _isExporting ? null : _selectSaveLocation,
-                      icon: const Icon(Icons.folder_open, size: 18),
-                      label: Text(
-                        _selectedPath == null
-                            ? 'Choose Save Location'
-                            : 'Change Location',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // Error message
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
@@ -292,8 +205,7 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton.icon(
-          onPressed:
-              (_isExporting || _selectedPath == null || _previewData == null)
+          onPressed: (_isExporting || _previewData == null)
               ? null
               : _performExport,
           icon: _isExporting

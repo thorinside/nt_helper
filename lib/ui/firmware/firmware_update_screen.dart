@@ -308,15 +308,15 @@ class _FirmwareUpdateScaffold extends StatelessWidget {
     final prefs = await SharedPreferences.getInstance();
     final lastDirectory = prefs.getString(_kLastFirmwareDirectoryKey);
 
-    final result = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['zip'],
       dialogTitle: 'Select Firmware Package',
       initialDirectory: lastDirectory,
     );
 
-    if (result != null && result.files.isNotEmpty) {
-      final filePath = result.files.first.path;
+    if (file != null) {
+      final filePath = file.path;
       if (filePath != null) {
         // Save the directory for next time
         final directory = path.dirname(filePath);

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'wav_metadata.dart';
 
@@ -55,9 +56,16 @@ class PolyWavService {
     if (await target.exists() && !overwriteConfirmed) {
       throw PolyWavServiceException('$targetPath already exists.');
     }
-    final sourceBytes = await File(sourcePath).readAsBytes();
-    final rendered = WavAudioRenderer.render(sourceBytes, options);
+    final rendered = await renderDestructiveWav(sourcePath, options);
     await target.parent.create(recursive: true);
     await target.writeAsBytes(rendered, flush: true);
+  }
+
+  Future<Uint8List> renderDestructiveWav(
+    String sourcePath,
+    WavRenderOptions options,
+  ) async {
+    final sourceBytes = await File(sourcePath).readAsBytes();
+    return WavAudioRenderer.render(sourceBytes, options);
   }
 }
