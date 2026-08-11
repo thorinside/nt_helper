@@ -61,9 +61,6 @@ dependencies:
   # Drift dependencies
   drift: ^2.33.0
   sqlite3: ^3.3.1
-  # Keep the pre-EOL Flutter library plugin pinned: 0.6.0+eol is a no-op,
-  # while 0.5.41 still bundles sqlite3.dll for Windows startup fallback.
-  sqlite3_flutter_libs: 0.5.41
   path_provider: ^2.1.5
   path: ^1.9.1
   intl: ^0.20.2
@@ -83,7 +80,7 @@ dependencies:
   archive: ^4.0.7
   provider: ^6.1.5+1
   get_it: ^9.2.0
-  dart_elf: ^1.0.1
+  dart_elf: ^2.0.0
   http: ^1.6.0
   pub_semver: ^2.2.0
   url_launcher: ^6.3.2

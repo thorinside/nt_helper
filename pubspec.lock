@@ -333,10 +333,10 @@ packages:
     dependency: "direct main"
     description:
       name: dart_elf
-      sha256: "079f378935d334f5f244a31b985f8203809c8d4f6b72bf0caa84122d8dca3685"
+      sha256: "41a935eec52e7f858f619344553ce53e6721f0368f42be72decf1a3c2a8b0b30"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "2.0.0"
   dart_style:
     dependency: transitive
     description:
@@ -1304,14 +1304,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.5.1"
-  sqlite3_flutter_libs:
-    dependency: "direct main"
-    description:
-      name: sqlite3_flutter_libs
-      sha256: "1e800ebe7f85a80a66adacaa6febe4d5f4d8b75f244e9838a27cb2ffc7aec08d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.41"
   sqlparser:
     dependency: transitive
     description:
