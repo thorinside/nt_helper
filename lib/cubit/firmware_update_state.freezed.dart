@@ -55,7 +55,7 @@ extension FirmwareUpdateStatePatterns on FirmwareUpdateState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FirmwareUpdateStateInitial value)?  initial,TResult Function( FirmwareUpdateStateDownloading value)?  downloading,TResult Function( FirmwareUpdateStateWaitingForBootloader value)?  waitingForBootloader,TResult Function( FirmwareUpdateStateEnteringBootloader value)?  enteringBootloader,TResult Function( FirmwareUpdateStateFlashing value)?  flashing,TResult Function( FirmwareUpdateStateSuccess value)?  success,TResult Function( FirmwareUpdateStateError value)?  error,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FirmwareUpdateStateInitial value)?  initial,TResult Function( FirmwareUpdateStateDownloading value)?  downloading,TResult Function( FirmwareUpdateStateWaitingForBootloader value)?  waitingForBootloader,TResult Function( FirmwareUpdateStateEnteringBootloader value)?  enteringBootloader,TResult Function( FirmwareUpdateStateFlashing value)?  flashing,TResult Function( FirmwareUpdateStateVerifyingMidi value)?  verifyingMidi,TResult Function( FirmwareUpdateStateMidiRecoveryRequired value)?  midiRecoveryRequired,TResult Function( FirmwareUpdateStateSuccess value)?  success,TResult Function( FirmwareUpdateStateError value)?  error,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
@@ -63,7 +63,9 @@ return initial(_that);case FirmwareUpdateStateDownloading() when downloading != 
 return downloading(_that);case FirmwareUpdateStateWaitingForBootloader() when waitingForBootloader != null:
 return waitingForBootloader(_that);case FirmwareUpdateStateEnteringBootloader() when enteringBootloader != null:
 return enteringBootloader(_that);case FirmwareUpdateStateFlashing() when flashing != null:
-return flashing(_that);case FirmwareUpdateStateSuccess() when success != null:
+return flashing(_that);case FirmwareUpdateStateVerifyingMidi() when verifyingMidi != null:
+return verifyingMidi(_that);case FirmwareUpdateStateMidiRecoveryRequired() when midiRecoveryRequired != null:
+return midiRecoveryRequired(_that);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that);case FirmwareUpdateStateError() when error != null:
 return error(_that);case _:
   return orElse();
@@ -83,7 +85,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FirmwareUpdateStateInitial value)  initial,required TResult Function( FirmwareUpdateStateDownloading value)  downloading,required TResult Function( FirmwareUpdateStateWaitingForBootloader value)  waitingForBootloader,required TResult Function( FirmwareUpdateStateEnteringBootloader value)  enteringBootloader,required TResult Function( FirmwareUpdateStateFlashing value)  flashing,required TResult Function( FirmwareUpdateStateSuccess value)  success,required TResult Function( FirmwareUpdateStateError value)  error,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FirmwareUpdateStateInitial value)  initial,required TResult Function( FirmwareUpdateStateDownloading value)  downloading,required TResult Function( FirmwareUpdateStateWaitingForBootloader value)  waitingForBootloader,required TResult Function( FirmwareUpdateStateEnteringBootloader value)  enteringBootloader,required TResult Function( FirmwareUpdateStateFlashing value)  flashing,required TResult Function( FirmwareUpdateStateVerifyingMidi value)  verifyingMidi,required TResult Function( FirmwareUpdateStateMidiRecoveryRequired value)  midiRecoveryRequired,required TResult Function( FirmwareUpdateStateSuccess value)  success,required TResult Function( FirmwareUpdateStateError value)  error,}){
 final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial():
@@ -91,7 +93,9 @@ return initial(_that);case FirmwareUpdateStateDownloading():
 return downloading(_that);case FirmwareUpdateStateWaitingForBootloader():
 return waitingForBootloader(_that);case FirmwareUpdateStateEnteringBootloader():
 return enteringBootloader(_that);case FirmwareUpdateStateFlashing():
-return flashing(_that);case FirmwareUpdateStateSuccess():
+return flashing(_that);case FirmwareUpdateStateVerifyingMidi():
+return verifyingMidi(_that);case FirmwareUpdateStateMidiRecoveryRequired():
+return midiRecoveryRequired(_that);case FirmwareUpdateStateSuccess():
 return success(_that);case FirmwareUpdateStateError():
 return error(_that);}
 }
@@ -107,7 +111,7 @@ return error(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FirmwareUpdateStateInitial value)?  initial,TResult? Function( FirmwareUpdateStateDownloading value)?  downloading,TResult? Function( FirmwareUpdateStateWaitingForBootloader value)?  waitingForBootloader,TResult? Function( FirmwareUpdateStateEnteringBootloader value)?  enteringBootloader,TResult? Function( FirmwareUpdateStateFlashing value)?  flashing,TResult? Function( FirmwareUpdateStateSuccess value)?  success,TResult? Function( FirmwareUpdateStateError value)?  error,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FirmwareUpdateStateInitial value)?  initial,TResult? Function( FirmwareUpdateStateDownloading value)?  downloading,TResult? Function( FirmwareUpdateStateWaitingForBootloader value)?  waitingForBootloader,TResult? Function( FirmwareUpdateStateEnteringBootloader value)?  enteringBootloader,TResult? Function( FirmwareUpdateStateFlashing value)?  flashing,TResult? Function( FirmwareUpdateStateVerifyingMidi value)?  verifyingMidi,TResult? Function( FirmwareUpdateStateMidiRecoveryRequired value)?  midiRecoveryRequired,TResult? Function( FirmwareUpdateStateSuccess value)?  success,TResult? Function( FirmwareUpdateStateError value)?  error,}){
 final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
@@ -115,7 +119,9 @@ return initial(_that);case FirmwareUpdateStateDownloading() when downloading != 
 return downloading(_that);case FirmwareUpdateStateWaitingForBootloader() when waitingForBootloader != null:
 return waitingForBootloader(_that);case FirmwareUpdateStateEnteringBootloader() when enteringBootloader != null:
 return enteringBootloader(_that);case FirmwareUpdateStateFlashing() when flashing != null:
-return flashing(_that);case FirmwareUpdateStateSuccess() when success != null:
+return flashing(_that);case FirmwareUpdateStateVerifyingMidi() when verifyingMidi != null:
+return verifyingMidi(_that);case FirmwareUpdateStateMidiRecoveryRequired() when midiRecoveryRequired != null:
+return midiRecoveryRequired(_that);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that);case FirmwareUpdateStateError() when error != null:
 return error(_that);case _:
   return null;
@@ -134,14 +140,16 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult Function( FirmwareRelease version,  double progress)?  downloading,TResult Function( String firmwarePath,  String targetVersion,  bool canAutoEnter)?  waitingForBootloader,TResult Function( String firmwarePath,  String targetVersion,  double progress)?  enteringBootloader,TResult Function( String targetVersion,  FlashProgress progress)?  flashing,TResult Function( String newVersion)?  success,TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult Function( FirmwareRelease version,  double progress)?  downloading,TResult Function( String firmwarePath,  String targetVersion,  bool canAutoEnter)?  waitingForBootloader,TResult Function( String firmwarePath,  String targetVersion,  double progress)?  enteringBootloader,TResult Function( String targetVersion,  FlashProgress progress)?  flashing,TResult Function( String newVersion,  int completedAttempts,  int totalAttempts)?  verifyingMidi,TResult Function( String newVersion,  bool isWindows)?  midiRecoveryRequired,TResult Function( String newVersion)?  success,TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading() when downloading != null:
 return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaitingForBootloader() when waitingForBootloader != null:
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion,_that.canAutoEnter);case FirmwareUpdateStateEnteringBootloader() when enteringBootloader != null:
 return enteringBootloader(_that.firmwarePath,_that.targetVersion,_that.progress);case FirmwareUpdateStateFlashing() when flashing != null:
-return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess() when success != null:
+return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateVerifyingMidi() when verifyingMidi != null:
+return verifyingMidi(_that.newVersion,_that.completedAttempts,_that.totalAttempts);case FirmwareUpdateStateMidiRecoveryRequired() when midiRecoveryRequired != null:
+return midiRecoveryRequired(_that.newVersion,_that.isWindows);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that.newVersion);case FirmwareUpdateStateError() when error != null:
 return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case _:
   return orElse();
@@ -161,14 +169,16 @@ return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)  initial,required TResult Function( FirmwareRelease version,  double progress)  downloading,required TResult Function( String firmwarePath,  String targetVersion,  bool canAutoEnter)  waitingForBootloader,required TResult Function( String firmwarePath,  String targetVersion,  double progress)  enteringBootloader,required TResult Function( String targetVersion,  FlashProgress progress)  flashing,required TResult Function( String newVersion)  success,required TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)  initial,required TResult Function( FirmwareRelease version,  double progress)  downloading,required TResult Function( String firmwarePath,  String targetVersion,  bool canAutoEnter)  waitingForBootloader,required TResult Function( String firmwarePath,  String targetVersion,  double progress)  enteringBootloader,required TResult Function( String targetVersion,  FlashProgress progress)  flashing,required TResult Function( String newVersion,  int completedAttempts,  int totalAttempts)  verifyingMidi,required TResult Function( String newVersion,  bool isWindows)  midiRecoveryRequired,required TResult Function( String newVersion)  success,required TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)  error,}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial():
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading():
 return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaitingForBootloader():
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion,_that.canAutoEnter);case FirmwareUpdateStateEnteringBootloader():
 return enteringBootloader(_that.firmwarePath,_that.targetVersion,_that.progress);case FirmwareUpdateStateFlashing():
-return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess():
+return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateVerifyingMidi():
+return verifyingMidi(_that.newVersion,_that.completedAttempts,_that.totalAttempts);case FirmwareUpdateStateMidiRecoveryRequired():
+return midiRecoveryRequired(_that.newVersion,_that.isWindows);case FirmwareUpdateStateSuccess():
 return success(_that.newVersion);case FirmwareUpdateStateError():
 return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);}
 }
@@ -184,14 +194,16 @@ return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult? Function( FirmwareRelease version,  double progress)?  downloading,TResult? Function( String firmwarePath,  String targetVersion,  bool canAutoEnter)?  waitingForBootloader,TResult? Function( String firmwarePath,  String targetVersion,  double progress)?  enteringBootloader,TResult? Function( String targetVersion,  FlashProgress progress)?  flashing,TResult? Function( String newVersion)?  success,TResult? Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult? Function( FirmwareRelease version,  double progress)?  downloading,TResult? Function( String firmwarePath,  String targetVersion,  bool canAutoEnter)?  waitingForBootloader,TResult? Function( String firmwarePath,  String targetVersion,  double progress)?  enteringBootloader,TResult? Function( String targetVersion,  FlashProgress progress)?  flashing,TResult? Function( String newVersion,  int completedAttempts,  int totalAttempts)?  verifyingMidi,TResult? Function( String newVersion,  bool isWindows)?  midiRecoveryRequired,TResult? Function( String newVersion)?  success,TResult? Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading() when downloading != null:
 return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaitingForBootloader() when waitingForBootloader != null:
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion,_that.canAutoEnter);case FirmwareUpdateStateEnteringBootloader() when enteringBootloader != null:
 return enteringBootloader(_that.firmwarePath,_that.targetVersion,_that.progress);case FirmwareUpdateStateFlashing() when flashing != null:
-return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess() when success != null:
+return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateVerifyingMidi() when verifyingMidi != null:
+return verifyingMidi(_that.newVersion,_that.completedAttempts,_that.totalAttempts);case FirmwareUpdateStateMidiRecoveryRequired() when midiRecoveryRequired != null:
+return midiRecoveryRequired(_that.newVersion,_that.isWindows);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that.newVersion);case FirmwareUpdateStateError() when error != null:
 return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case _:
   return null;
@@ -206,7 +218,7 @@ return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,
 
 class FirmwareUpdateStateInitial implements FirmwareUpdateState {
   const FirmwareUpdateStateInitial({required this.currentVersion, final  List<FirmwareRelease>? availableVersions = null, this.isLoadingVersions = false, this.fetchError = null}): _availableVersions = availableVersions;
-  
+
 
 /// Currently installed firmware version string
  final  String currentVersion;
@@ -291,7 +303,7 @@ as String?,
 
 class FirmwareUpdateStateDownloading implements FirmwareUpdateState {
   const FirmwareUpdateStateDownloading({required this.version, required this.progress});
-  
+
 
  final  FirmwareRelease version;
  final  double progress;
@@ -580,6 +592,144 @@ $FlashProgressCopyWith<$Res> get progress {
     return _then(_self.copyWith(progress: value));
   });
 }
+}
+
+/// @nodoc
+
+
+class FirmwareUpdateStateVerifyingMidi implements FirmwareUpdateState {
+  const FirmwareUpdateStateVerifyingMidi({required this.newVersion, this.completedAttempts = 0, this.totalAttempts = 12});
+
+
+ final  String newVersion;
+@JsonKey() final  int completedAttempts;
+@JsonKey() final  int totalAttempts;
+
+/// Create a copy of FirmwareUpdateState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FirmwareUpdateStateVerifyingMidiCopyWith<FirmwareUpdateStateVerifyingMidi> get copyWith => _$FirmwareUpdateStateVerifyingMidiCopyWithImpl<FirmwareUpdateStateVerifyingMidi>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FirmwareUpdateStateVerifyingMidi&&(identical(other.newVersion, newVersion) || other.newVersion == newVersion)&&(identical(other.completedAttempts, completedAttempts) || other.completedAttempts == completedAttempts)&&(identical(other.totalAttempts, totalAttempts) || other.totalAttempts == totalAttempts));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,newVersion,completedAttempts,totalAttempts);
+
+@override
+String toString() {
+  return 'FirmwareUpdateState.verifyingMidi(newVersion: $newVersion, completedAttempts: $completedAttempts, totalAttempts: $totalAttempts)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FirmwareUpdateStateVerifyingMidiCopyWith<$Res> implements $FirmwareUpdateStateCopyWith<$Res> {
+  factory $FirmwareUpdateStateVerifyingMidiCopyWith(FirmwareUpdateStateVerifyingMidi value, $Res Function(FirmwareUpdateStateVerifyingMidi) _then) = _$FirmwareUpdateStateVerifyingMidiCopyWithImpl;
+@useResult
+$Res call({
+ String newVersion, int completedAttempts, int totalAttempts
+});
+
+
+
+
+}
+/// @nodoc
+class _$FirmwareUpdateStateVerifyingMidiCopyWithImpl<$Res>
+    implements $FirmwareUpdateStateVerifyingMidiCopyWith<$Res> {
+  _$FirmwareUpdateStateVerifyingMidiCopyWithImpl(this._self, this._then);
+
+  final FirmwareUpdateStateVerifyingMidi _self;
+  final $Res Function(FirmwareUpdateStateVerifyingMidi) _then;
+
+/// Create a copy of FirmwareUpdateState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? newVersion = null,Object? completedAttempts = null,Object? totalAttempts = null,}) {
+  return _then(FirmwareUpdateStateVerifyingMidi(
+newVersion: null == newVersion ? _self.newVersion : newVersion // ignore: cast_nullable_to_non_nullable
+as String,completedAttempts: null == completedAttempts ? _self.completedAttempts : completedAttempts // ignore: cast_nullable_to_non_nullable
+as int,totalAttempts: null == totalAttempts ? _self.totalAttempts : totalAttempts // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FirmwareUpdateStateMidiRecoveryRequired implements FirmwareUpdateState {
+  const FirmwareUpdateStateMidiRecoveryRequired({required this.newVersion, required this.isWindows});
+
+
+ final  String newVersion;
+ final  bool isWindows;
+
+/// Create a copy of FirmwareUpdateState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FirmwareUpdateStateMidiRecoveryRequiredCopyWith<FirmwareUpdateStateMidiRecoveryRequired> get copyWith => _$FirmwareUpdateStateMidiRecoveryRequiredCopyWithImpl<FirmwareUpdateStateMidiRecoveryRequired>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FirmwareUpdateStateMidiRecoveryRequired&&(identical(other.newVersion, newVersion) || other.newVersion == newVersion)&&(identical(other.isWindows, isWindows) || other.isWindows == isWindows));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,newVersion,isWindows);
+
+@override
+String toString() {
+  return 'FirmwareUpdateState.midiRecoveryRequired(newVersion: $newVersion, isWindows: $isWindows)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FirmwareUpdateStateMidiRecoveryRequiredCopyWith<$Res> implements $FirmwareUpdateStateCopyWith<$Res> {
+  factory $FirmwareUpdateStateMidiRecoveryRequiredCopyWith(FirmwareUpdateStateMidiRecoveryRequired value, $Res Function(FirmwareUpdateStateMidiRecoveryRequired) _then) = _$FirmwareUpdateStateMidiRecoveryRequiredCopyWithImpl;
+@useResult
+$Res call({
+ String newVersion, bool isWindows
+});
+
+
+
+
+}
+/// @nodoc
+class _$FirmwareUpdateStateMidiRecoveryRequiredCopyWithImpl<$Res>
+    implements $FirmwareUpdateStateMidiRecoveryRequiredCopyWith<$Res> {
+  _$FirmwareUpdateStateMidiRecoveryRequiredCopyWithImpl(this._self, this._then);
+
+  final FirmwareUpdateStateMidiRecoveryRequired _self;
+  final $Res Function(FirmwareUpdateStateMidiRecoveryRequired) _then;
+
+/// Create a copy of FirmwareUpdateState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? newVersion = null,Object? isWindows = null,}) {
+  return _then(FirmwareUpdateStateMidiRecoveryRequired(
+newVersion: null == newVersion ? _self.newVersion : newVersion // ignore: cast_nullable_to_non_nullable
+as String,isWindows: null == isWindows ? _self.isWindows : isWindows // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
 }
 
 /// @nodoc

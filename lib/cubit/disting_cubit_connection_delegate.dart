@@ -1,5 +1,38 @@
 part of 'disting_cubit.dart';
 
+/// Whether a MIDI snapshot contains the expected NT input and output.
+///
+/// Expected names are matched case-insensitively. The Disting-name fallback is
+/// used only when that endpoint's pre-flash name was unavailable.
+@visibleForTesting
+bool firmwareMidiEndpointsAvailable(
+  List<MidiDevice> devices,
+  String? expectedInputName,
+  String? expectedOutputName,
+) {
+  bool matches(MidiDevice device, String? expectedName, {required bool input}) {
+    final hasDirection = input
+        ? device.inputPorts.isNotEmpty
+        : device.outputPorts.isNotEmpty;
+    if (!hasDirection) return false;
+
+    final normalizedExpected = expectedName?.trim().toLowerCase();
+    final normalizedActual = device.name.trim().toLowerCase();
+    if (normalizedExpected != null && normalizedExpected.isNotEmpty) {
+      return normalizedActual == normalizedExpected;
+    }
+    return normalizedActual.contains('disting');
+  }
+
+  final hasInput = devices.any(
+    (device) => matches(device, expectedInputName, input: true),
+  );
+  final hasOutput = devices.any(
+    (device) => matches(device, expectedOutputName, input: false),
+  );
+  return hasInput && hasOutput;
+}
+
 class _ConnectionDelegate {
   _ConnectionDelegate(this._cubit);
 
@@ -675,6 +708,20 @@ class _ConnectionDelegate {
       );
     }
     return {'input': inputDevices, 'output': outputDevices};
+  }
+
+  /// Takes a fresh platform MIDI snapshot and checks that both expected NT
+  /// endpoint directions have returned after a firmware reset.
+  Future<bool> firmwareMidiDevicesAvailable(
+    String? expectedInputName,
+    String? expectedOutputName,
+  ) async {
+    final devices = await _cubit._midiCommand.devices ?? [];
+    return firmwareMidiEndpointsAvailable(
+      devices,
+      expectedInputName,
+      expectedOutputName,
+    );
   }
 
   String _describeDevices(List<MidiDevice>? devices) {

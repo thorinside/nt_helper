@@ -1065,35 +1065,38 @@ class DistingCubit extends _DistingCubitBase
     MidiDevice inputDevice,
     MidiDevice outputDevice,
   ) {
-    try {
-      manager.dispose();
-    } catch (_) {}
+    _ccNotificationDelegate.stop();
     try {
       _midiCommand.disconnectDevice(inputDevice);
-      if (inputDevice.id != outputDevice.id) {
+    } catch (_) {}
+    if (inputDevice.id != outputDevice.id) {
+      try {
         _midiCommand.disconnectDevice(outputDevice);
-      }
+      } catch (_) {}
+    }
+    try {
+      manager.dispose();
     } catch (_) {}
     _midiSetupSubscription?.resume();
   }
 
-  /// Called after a successful firmware update to refresh device version.
-  ///
-  /// When called from the synchronized state, disconnects and re-syncs to
-  /// pick up the new firmware version. When called from the device selection
-  /// state (firmware installed before connecting), just clears the cache and
-  /// refreshes the device list.
+  /// Checks a fresh native MIDI snapshot for both expected NT directions.
+  Future<bool> firmwareMidiDevicesAvailable(
+    String? expectedInputName,
+    String? expectedOutputName,
+  ) {
+    return _connectionDelegate.firmwareMidiDevicesAvailable(
+      expectedInputName,
+      expectedOutputName,
+    );
+  }
+
+  /// Called after firmware installation and MIDI reacquisition complete.
+  /// Clears cached version data and returns to a fresh device-selection list.
   Future<void> onFirmwareUpdateComplete() async {
     _firmwareVersionService.clearCache();
 
-    final currentState = state;
-    if (currentState is DistingStateSynchronized) {
-      _emitState(currentState.copyWith(availableFirmwareUpdate: null));
-      await cancelSync();
-      await refresh(fullRefresh: true);
-    } else {
-      await _connectionDelegate.loadDevices();
-    }
+    await _connectionDelegate.loadDevices();
   }
 }
 

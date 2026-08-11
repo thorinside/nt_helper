@@ -4,7 +4,10 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_midi_command/flutter_midi_command.dart';
+import 'package:flutter_midi_command_platform_interface/midi_port.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_state.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
@@ -54,6 +57,11 @@ void main() {
     bool isOffline = false,
     FirmwareVersion? firmwareVersion,
     IDistingMidiManager? midiManager,
+    void Function(IDistingMidiManager)? disposeMidiManager,
+    Future<bool> Function()? checkMidiDevices,
+    Duration midiPollInterval = const Duration(seconds: 5),
+    int midiPollAttempts = 12,
+    bool? isWindowsOverride,
   }) {
     return FirmwareUpdateCubit(
       firmwareVersionService: mockFirmwareVersionService,
@@ -64,6 +72,11 @@ void main() {
       isOffline: isOffline,
       firmwareVersion: firmwareVersion,
       midiManager: midiManager,
+      disposeMidiManager: disposeMidiManager,
+      checkMidiDevices: checkMidiDevices,
+      midiPollInterval: midiPollInterval,
+      midiPollAttempts: midiPollAttempts,
+      isWindowsOverride: isWindowsOverride,
     );
   }
 
@@ -670,6 +683,53 @@ void main() {
         },
       );
 
+      test(
+        'releases the MIDI manager after bootloader entry and before flashing',
+        () async {
+          final events = <String>[];
+
+          when(() => mockMidiManager.requestEnterBootloader()).thenAnswer((
+            _,
+          ) async {
+            events.add('bootloader');
+          });
+          when(() => mockMidiManager.dispose()).thenAnswer((_) {
+            events.add('release');
+          });
+          when(
+            () => mockFirmwareVersionService.downloadFirmware(
+              any(),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => '/tmp/firmware.zip');
+          when(
+            () => mockFlashToolManager.getToolPath(),
+          ).thenAnswer((_) async => '/path/to/tool');
+          when(() => mockFlashToolBridge.flash(any())).thenAnswer((_) {
+            events.add('flash');
+            return Stream.fromIterable([
+              const FlashProgress(
+                stage: FlashStage.complete,
+                percent: 100,
+                message: 'Done',
+              ),
+            ]);
+          });
+
+          final cubit = createCubit(
+            currentVersion: '1.15.0',
+            firmwareVersion: FirmwareVersion('1.15.0'),
+            midiManager: mockMidiManager,
+          );
+          addTearDown(cubit.close);
+
+          await cubit.startUpdate(testVersion);
+          await cubit.confirmAndFlash();
+
+          expect(events, ['bootloader', 'release', 'flash']);
+        },
+      );
+
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'firmware < 1.15 still shows waitingForBootloader',
         build: () {
@@ -721,6 +781,321 @@ void main() {
           isA<FirmwareUpdateStateDownloading>(),
           isA<FirmwareUpdateStateWaitingForBootloader>(),
         ],
+      );
+    });
+
+    group('post-flash MIDI reacquisition', () {
+      Future<FirmwareUpdateCubit> launchSuccessfulFlash({
+        required Future<bool> Function() checkMidiDevices,
+        int attempts = 12,
+        bool isWindows = false,
+      }) async {
+        when(
+          () => mockFirmwareVersionService.downloadFirmware(
+            any(),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((_) async => '/tmp/firmware.zip');
+        when(
+          () => mockFlashToolManager.getToolPath(),
+        ).thenAnswer((_) async => '/path/to/tool');
+        when(() => mockFlashToolBridge.flash(any())).thenAnswer(
+          (_) => Stream.value(
+            const FlashProgress(
+              stage: FlashStage.complete,
+              percent: 100,
+              message: 'Done',
+            ),
+          ),
+        );
+
+        final cubit = createCubit(
+          checkMidiDevices: checkMidiDevices,
+          midiPollInterval: Duration.zero,
+          midiPollAttempts: attempts,
+          isWindowsOverride: isWindows,
+        );
+        final release = FirmwareRelease(
+          version: '1.16.0',
+          releaseDate: DateTime(2026),
+          changelog: const [],
+          downloadUrl: 'https://example.com/firmware.zip',
+        );
+        await cubit.startUpdate(release);
+        await cubit.confirmAndFlash();
+        return cubit;
+      }
+
+      Future<T> waitForState<T extends FirmwareUpdateState>(
+        FirmwareUpdateCubit cubit,
+      ) async {
+        if (cubit.state is T) return cubit.state as T;
+        return cubit.stream.where((state) => state is T).cast<T>().first;
+      }
+
+      for (final returningAttempt in [1, 6, 12]) {
+        test(
+          'succeeds when both endpoints return on check $returningAttempt',
+          () async {
+            var checks = 0;
+            final cubit = await launchSuccessfulFlash(
+              checkMidiDevices: () async => ++checks >= returningAttempt,
+            );
+            addTearDown(cubit.close);
+
+            await waitForState<FirmwareUpdateStateSuccess>(cubit);
+
+            expect(checks, returningAttempt);
+          },
+        );
+      }
+
+      for (final platform in const [
+        ('Windows', true),
+        ('macOS', false),
+        ('Linux', false),
+      ]) {
+        test(
+          'uses the same successful detection cycle on ${platform.$1}',
+          () async {
+            var checks = 0;
+            final cubit = await launchSuccessfulFlash(
+              checkMidiDevices: () async => ++checks == 3,
+              isWindows: platform.$2,
+            );
+            addTearDown(cubit.close);
+
+            await waitForState<FirmwareUpdateStateSuccess>(cubit);
+
+            expect(checks, 3);
+          },
+        );
+      }
+
+      test('continues after enumeration exceptions and times out', () async {
+        var checks = 0;
+        final cubit = await launchSuccessfulFlash(
+          checkMidiDevices: () async {
+            checks++;
+            throw StateError('enumeration failed');
+          },
+          attempts: 4,
+          isWindows: true,
+        );
+        addTearDown(cubit.close);
+
+        final recovery =
+            await waitForState<FirmwareUpdateStateMidiRecoveryRequired>(cubit);
+
+        expect(checks, 4);
+        expect(recovery.isWindows, isTrue);
+        expect(recovery.newVersion, '1.16.0');
+      });
+
+      test('Check Again repeats the full cycle and exits on success', () async {
+        var checks = 0;
+        var recovered = false;
+        final cubit = await launchSuccessfulFlash(
+          checkMidiDevices: () async {
+            checks++;
+            return recovered;
+          },
+          attempts: 2,
+        );
+        addTearDown(cubit.close);
+        await waitForState<FirmwareUpdateStateMidiRecoveryRequired>(cubit);
+
+        recovered = true;
+        await cubit.checkMidiAgain();
+
+        expect(cubit.state, isA<FirmwareUpdateStateSuccess>());
+        expect(checks, 3);
+      });
+    });
+
+    group('MIDI release lifecycle', () {
+      test(
+        'manual flow releases once before launch, cancel, and close',
+        () async {
+          final manager = MockDistingMidiManager();
+          final events = <String>[];
+          var releases = 0;
+          when(
+            () => mockFirmwareVersionService.downloadFirmware(
+              any(),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => '/tmp/firmware.zip');
+          when(
+            () => mockFlashToolManager.getToolPath(),
+          ).thenAnswer((_) async => '/path/to/tool');
+          when(() => mockFlashToolBridge.flash(any())).thenAnswer((_) {
+            events.add('flash');
+            return Stream.value(
+              const FlashProgress(
+                stage: FlashStage.complete,
+                percent: 100,
+                message: 'Done',
+              ),
+            );
+          });
+          when(() => mockFlashToolBridge.cancel()).thenAnswer((_) async {});
+          final cubit = createCubit(
+            firmwareVersion: FirmwareVersion('1.14.0'),
+            midiManager: manager,
+            disposeMidiManager: (_) {
+              releases++;
+              events.add('release');
+            },
+          );
+          final release = FirmwareRelease(
+            version: '1.16.0',
+            releaseDate: DateTime(2026),
+            changelog: const [],
+            downloadUrl: 'https://example.com/firmware.zip',
+          );
+
+          await cubit.startUpdate(release);
+          await cubit.confirmAndFlash();
+          await Future<void>.delayed(Duration.zero);
+          await cubit.cancel();
+          await cubit.close();
+
+          expect(events.take(2), ['release', 'flash']);
+          expect(releases, 1);
+        },
+      );
+
+      test(
+        'cancellation and disposal release an unflashed manager once',
+        () async {
+          final manager = MockDistingMidiManager();
+          var releases = 0;
+          when(() => mockFlashToolBridge.cancel()).thenAnswer((_) async {});
+          final cubit = createCubit(
+            midiManager: manager,
+            disposeMidiManager: (_) => releases++,
+          );
+
+          await cubit.cancel();
+          await cubit.close();
+
+          expect(releases, 1);
+        },
+      );
+
+      test(
+        'a flash retry does not release the manager a second time',
+        () async {
+          final manager = MockDistingMidiManager();
+          var releases = 0;
+          var flashCalls = 0;
+          when(
+            () => mockFirmwareVersionService.downloadFirmware(
+              any(),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => '/tmp/firmware.zip');
+          when(
+            () => mockFlashToolManager.getToolPath(),
+          ).thenAnswer((_) async => '/path/to/tool');
+          when(() => mockFlashToolBridge.flash(any())).thenAnswer((_) {
+            flashCalls++;
+            if (flashCalls == 1) {
+              return Stream.value(
+                const FlashProgress(
+                  stage: FlashStage.write,
+                  percent: 50,
+                  message: 'Write failed',
+                  isError: true,
+                ),
+              );
+            }
+            return Stream.value(
+              const FlashProgress(
+                stage: FlashStage.complete,
+                percent: 100,
+                message: 'Done',
+              ),
+            );
+          });
+          final cubit = createCubit(
+            firmwareVersion: FirmwareVersion('1.14.0'),
+            midiManager: manager,
+            disposeMidiManager: (_) => releases++,
+          );
+          final release = FirmwareRelease(
+            version: '1.16.0',
+            releaseDate: DateTime(2026),
+            changelog: const [],
+            downloadUrl: 'https://example.com/firmware.zip',
+          );
+
+          await cubit.startUpdate(release);
+          await cubit.confirmAndFlash();
+          await Future<void>.delayed(Duration.zero);
+          expect(cubit.state, isA<FirmwareUpdateStateError>());
+
+          await cubit.retryFlash();
+          await cubit.confirmAndFlash();
+          await Future<void>.delayed(Duration.zero);
+          await cubit.close();
+
+          expect(flashCalls, 2);
+          expect(releases, 1);
+        },
+      );
+    });
+  });
+
+  group('firmware MIDI endpoint matching', () {
+    MidiDevice device({
+      required String name,
+      required bool input,
+      required bool output,
+    }) {
+      final device = MidiDevice(name, name, MidiDeviceType.serial, false);
+      if (input) device.inputPorts.add(MidiPort(0, MidiPortType.IN));
+      if (output) device.outputPorts.add(MidiPort(0, MidiPortType.OUT));
+      return device;
+    }
+
+    test(
+      'requires expected input and output with their respective directions',
+      () {
+        final input = device(name: 'Disting NT', input: true, output: false);
+        final output = device(name: 'Disting NT', input: false, output: true);
+
+        expect(
+          firmwareMidiEndpointsAvailable(
+            [input, output],
+            'disting nt',
+            'DISTING NT',
+          ),
+          isTrue,
+        );
+        expect(
+          firmwareMidiEndpointsAvailable([input], 'Disting NT', 'Disting NT'),
+          isFalse,
+        );
+        expect(
+          firmwareMidiEndpointsAvailable([output], 'Disting NT', 'Disting NT'),
+          isFalse,
+        );
+      },
+    );
+
+    test('uses Disting fallback only when an expected name is unavailable', () {
+      final both = device(
+        name: 'Expert Sleepers Disting NT',
+        input: true,
+        output: true,
+      );
+
+      expect(firmwareMidiEndpointsAvailable([both], null, null), isTrue);
+      expect(
+        firmwareMidiEndpointsAvailable([both], 'Old NT Name', 'Old NT Name'),
+        isFalse,
       );
     });
   });
@@ -802,6 +1177,8 @@ void main() {
           waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
+          verifyingMidi: (_, _, _) => 'verifying',
+          midiRecoveryRequired: (_, _) => 'recovery',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
         ),
@@ -815,6 +1192,8 @@ void main() {
           waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
+          verifyingMidi: (_, _, _) => 'verifying',
+          midiRecoveryRequired: (_, _) => 'recovery',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
         ),
@@ -828,6 +1207,8 @@ void main() {
           waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
+          verifyingMidi: (_, _, _) => 'verifying',
+          midiRecoveryRequired: (_, _) => 'recovery',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
         ),
@@ -841,6 +1222,8 @@ void main() {
           waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
+          verifyingMidi: (_, _, _) => 'verifying',
+          midiRecoveryRequired: (_, _) => 'recovery',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
         ),
@@ -854,6 +1237,8 @@ void main() {
           waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
+          verifyingMidi: (_, _, _) => 'verifying',
+          midiRecoveryRequired: (_, _) => 'recovery',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
         ),
@@ -867,6 +1252,8 @@ void main() {
           waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
+          verifyingMidi: (_, _, _) => 'verifying',
+          midiRecoveryRequired: (_, _) => 'recovery',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
         ),

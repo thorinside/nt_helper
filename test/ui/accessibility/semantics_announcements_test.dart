@@ -110,6 +110,19 @@ void main() {
       await tester.pump();
 
       wrapper.push(
+        const FirmwareUpdateState.verifyingMidi(newVersion: '1.2.0'),
+      );
+      await tester.pump();
+
+      wrapper.push(
+        const FirmwareUpdateState.midiRecoveryRequired(
+          newVersion: '1.2.0',
+          isWindows: true,
+        ),
+      );
+      await tester.pump();
+
+      wrapper.push(
         const FirmwareUpdateState.error(message: 'Checksum mismatch'),
       );
       await tester.pump();
@@ -117,6 +130,8 @@ void main() {
       final payload = accessibilityMessages.map((m) => m.toString()).join('\n');
       expect(payload, contains('Downloading firmware: 42%'));
       expect(payload, contains('Firmware update complete'));
+      expect(payload, contains('Waiting for Disting NT'));
+      expect(payload, contains('did not return to MIDI'));
       expect(payload, contains('Firmware update error: Checksum mismatch'));
 
       await wrapper.close();

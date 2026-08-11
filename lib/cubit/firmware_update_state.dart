@@ -74,6 +74,19 @@ sealed class FirmwareUpdateState with _$FirmwareUpdateState {
     required FlashProgress progress,
   }) = FirmwareUpdateStateFlashing;
 
+  /// Firmware was installed and the app is waiting for the NT MIDI ports.
+  const factory FirmwareUpdateState.verifyingMidi({
+    required String newVersion,
+    @Default(0) int completedAttempts,
+    @Default(12) int totalAttempts,
+  }) = FirmwareUpdateStateVerifyingMidi;
+
+  /// Firmware was installed, but the NT MIDI ports did not return in time.
+  const factory FirmwareUpdateState.midiRecoveryRequired({
+    required String newVersion,
+    required bool isWindows,
+  }) = FirmwareUpdateStateMidiRecoveryRequired;
+
   /// Firmware update completed successfully
   const factory FirmwareUpdateState.success({required String newVersion}) =
       FirmwareUpdateStateSuccess;

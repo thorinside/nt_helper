@@ -25,7 +25,12 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
   IDistingMidiManager? _midiManager;
   final Future<IDistingMidiManager> Function()? _createMidiManager;
   final void Function(IDistingMidiManager)? _disposeMidiManager;
-  bool _ownsMidiManager = false;
+  final Future<bool> Function()? _checkMidiDevices;
+  final Duration _midiPollInterval;
+  final int _midiPollAttempts;
+  final bool _isWindows;
+  bool _midiReleased = false;
+  int _midiReacquisitionGeneration = 0;
 
   StreamSubscription<FlashProgress>? _flashSubscription;
   String? _currentFirmwarePath;
@@ -42,6 +47,10 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     IDistingMidiManager? midiManager,
     Future<IDistingMidiManager> Function()? createMidiManager,
     void Function(IDistingMidiManager)? disposeMidiManager,
+    Future<bool> Function()? checkMidiDevices,
+    Duration midiPollInterval = const Duration(seconds: 5),
+    int midiPollAttempts = 12,
+    bool? isWindowsOverride,
   }) : _firmwareVersionService = firmwareVersionService,
        _flashToolManager = flashToolManager,
        _flashToolBridge = flashToolBridge,
@@ -52,6 +61,10 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
        _midiManager = midiManager,
        _createMidiManager = createMidiManager,
        _disposeMidiManager = disposeMidiManager,
+       _checkMidiDevices = checkMidiDevices,
+       _midiPollInterval = midiPollInterval,
+       _midiPollAttempts = midiPollAttempts,
+       _isWindows = isWindowsOverride ?? Platform.isWindows,
        super(FirmwareUpdateState.initial(currentVersion: currentVersion));
 
   bool get _canAutoEnterBootloader =>
@@ -291,6 +304,10 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
       return;
     }
 
+    // The desktop MIDI backends must release the selected ports before the
+    // standalone flasher resets and re-enumerates the NT.
+    _releaseMidiConnection();
+
     FlashStage? currentStage;
 
     emit(
@@ -324,8 +341,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
             );
           } else if (progress.stage == FlashStage.complete &&
               progress.percent == 100) {
-            _cleanupTempFiles();
-            emit(FirmwareUpdateState.success(newVersion: targetVersion));
+            unawaited(_cleanupTempFiles());
+            _startMidiReacquisition(targetVersion);
           } else {
             emit(
               FirmwareUpdateState.flashing(
@@ -391,10 +408,16 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
 
     if (_midiManager == null && _createMidiManager != null) {
       _midiManager = await _createMidiManager();
-      _ownsMidiManager = true;
+      _midiReleased = false;
     }
 
-    await _midiManager!.requestEnterBootloader();
+    try {
+      await _midiManager!.requestEnterBootloader();
+    } finally {
+      // Close both MIDI directions immediately after the bootloader command,
+      // before the flasher process is launched.
+      _releaseMidiConnection();
+    }
 
     // Wait for the device to switch to bootloader mode, updating progress.
     final totalTicks =
@@ -417,6 +440,115 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     }
   }
 
+  void _releaseMidiConnection() {
+    final manager = _midiManager;
+    if (_midiReleased || manager == null) return;
+
+    _midiReleased = true;
+    _midiManager = null;
+    try {
+      final dispose = _disposeMidiManager;
+      if (dispose != null) {
+        dispose(manager);
+      } else {
+        manager.dispose();
+      }
+    } catch (_) {
+      // The NT may disappear while its handles are being closed. The release
+      // remains complete from this cubit's perspective and must not be retried.
+    }
+  }
+
+  void _startMidiReacquisition(String newVersion) {
+    final checkMidiDevices = _checkMidiDevices;
+    if (checkMidiDevices == null) {
+      // Keep direct Cubit users backwards compatible. The firmware screen
+      // always supplies a fresh platform-enumeration callback.
+      emit(FirmwareUpdateState.success(newVersion: newVersion));
+      return;
+    }
+
+    final generation = ++_midiReacquisitionGeneration;
+    emit(
+      FirmwareUpdateState.verifyingMidi(
+        newVersion: newVersion,
+        totalAttempts: _midiPollAttempts,
+      ),
+    );
+    unawaited(
+      _pollForMidiDevices(
+        newVersion: newVersion,
+        generation: generation,
+        checkMidiDevices: checkMidiDevices,
+      ),
+    );
+  }
+
+  Future<void> _pollForMidiDevices({
+    required String newVersion,
+    required int generation,
+    required Future<bool> Function() checkMidiDevices,
+  }) async {
+    for (var attempt = 1; attempt <= _midiPollAttempts; attempt++) {
+      await Future<void>.delayed(_midiPollInterval);
+      if (isClosed || generation != _midiReacquisitionGeneration) return;
+
+      var found = false;
+      try {
+        found = await checkMidiDevices();
+      } catch (_) {
+        // A transient enumeration error is equivalent to the NT not being in
+        // this snapshot. Keep checking through the full timeout.
+      }
+
+      if (isClosed || generation != _midiReacquisitionGeneration) return;
+      if (found) {
+        emit(FirmwareUpdateState.success(newVersion: newVersion));
+        return;
+      }
+
+      if (attempt < _midiPollAttempts) {
+        emit(
+          FirmwareUpdateState.verifyingMidi(
+            newVersion: newVersion,
+            completedAttempts: attempt,
+            totalAttempts: _midiPollAttempts,
+          ),
+        );
+      }
+    }
+
+    emit(
+      FirmwareUpdateState.midiRecoveryRequired(
+        newVersion: newVersion,
+        isWindows: _isWindows,
+      ),
+    );
+  }
+
+  /// Retry the complete five-second/one-minute MIDI detection cycle.
+  Future<void> checkMidiAgain() async {
+    final currentState = state;
+    final checkMidiDevices = _checkMidiDevices;
+    if (currentState is! FirmwareUpdateStateMidiRecoveryRequired ||
+        checkMidiDevices == null) {
+      return;
+    }
+
+    final generation = ++_midiReacquisitionGeneration;
+    emit(
+      FirmwareUpdateState.verifyingMidi(
+        newVersion: currentState.newVersion,
+        totalAttempts: _midiPollAttempts,
+      ),
+    );
+    await _pollForMidiDevices(
+      newVersion: currentState.newVersion,
+      generation: generation,
+      checkMidiDevices: checkMidiDevices,
+    );
+  }
+
   /// Get the error type based on which stage failed
   FirmwareErrorType _getErrorTypeForStage(FlashStage? stage) {
     if (stage == null) return FirmwareErrorType.general;
@@ -436,10 +568,12 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
 
   /// Cancel the current operation
   Future<void> cancel() async {
+    _midiReacquisitionGeneration++;
     await _flashSubscription?.cancel();
     _flashSubscription = null;
 
     await _flashToolBridge.cancel();
+    _releaseMidiConnection();
     await _cleanupTempFiles();
 
     final currentState = state;
@@ -653,13 +787,10 @@ SUBSYSTEM=="usb", ATTR{idVendor}=="15a2", ATTR{idProduct}=="0073", MODE="0666"
 
   @override
   Future<void> close() async {
+    _midiReacquisitionGeneration++;
     await _flashSubscription?.cancel();
     await _cleanupTempFiles();
-    if (_ownsMidiManager && _midiManager != null) {
-      _disposeMidiManager?.call(_midiManager!);
-      _midiManager = null;
-      _ownsMidiManager = false;
-    }
+    _releaseMidiConnection();
     return super.close();
   }
 }

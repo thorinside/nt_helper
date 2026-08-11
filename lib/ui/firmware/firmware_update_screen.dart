@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -80,6 +81,10 @@ class FirmwareUpdateScreen extends StatelessWidget {
 
     final hasDeviceInfo =
         inputDevice != null && outputDevice != null && sysExId != null;
+    final selectedInputDevice = inputDevice ?? syncState?.inputDevice;
+    final selectedOutputDevice = outputDevice ?? syncState?.outputDevice;
+    final hasSelectedDevices =
+        selectedInputDevice != null && selectedOutputDevice != null;
 
     return BlocProvider.value(
       value: distingCubit,
@@ -100,13 +105,17 @@ class FirmwareUpdateScreen extends StatelessWidget {
                   sysExId!,
                 )
               : null,
-          disposeMidiManager: hasDeviceInfo
+          disposeMidiManager: hasSelectedDevices
               ? (manager) => distingCubit.disposeFirmwareMidiManager(
                   manager,
-                  inputDevice!,
-                  outputDevice!,
+                  selectedInputDevice,
+                  selectedOutputDevice,
                 )
               : null,
+          checkMidiDevices: () => distingCubit.firmwareMidiDevicesAvailable(
+            selectedInputDevice?.name,
+            selectedOutputDevice?.name,
+          ),
         )..loadAvailableVersions(),
         child: const _FirmwareUpdateView(),
       ),
@@ -119,8 +128,40 @@ class _FirmwareUpdateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const FirmwareUpdateAnnouncementListener(
-      child: _FirmwareUpdateScaffold(),
+    return const FirmwareUpdateCompletionListener(
+      child: FirmwareUpdateAnnouncementListener(
+        child: _FirmwareUpdateScaffold(),
+      ),
+    );
+  }
+}
+
+/// Refreshes device selection and closes the firmware route after the NT's
+/// input and output endpoints have both returned.
+class FirmwareUpdateCompletionListener extends StatelessWidget {
+  final Widget child;
+  final FirmwareUpdateCubit? bloc;
+
+  const FirmwareUpdateCompletionListener({
+    super.key,
+    required this.child,
+    this.bloc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<FirmwareUpdateCubit, FirmwareUpdateState>(
+      bloc: bloc,
+      listenWhen: (previous, current) =>
+          previous is! FirmwareUpdateStateSuccess &&
+          current is FirmwareUpdateStateSuccess,
+      listener: (context, state) async {
+        await context.read<DistingCubit>().onFirmwareUpdateComplete();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: child,
     );
   }
 }
@@ -176,6 +217,18 @@ class FirmwareUpdateAnnouncementListener extends StatelessWidget {
             'Waiting for bootloader mode',
             TextDirection.ltr,
           );
+        } else if (state is FirmwareUpdateStateVerifyingMidi) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Waiting for Disting NT to return to MIDI',
+            TextDirection.ltr,
+          );
+        } else if (state is FirmwareUpdateStateMidiRecoveryRequired) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Firmware installation completed, but the Disting NT did not return to MIDI',
+            TextDirection.ltr,
+          );
         }
       },
       child: child,
@@ -202,7 +255,7 @@ class _FirmwareUpdateScaffold extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
-                  child: _buildStateContent(context, state),
+                  child: FirmwareUpdateStateContent(state: state),
                 ),
               ),
             ),
@@ -231,9 +284,11 @@ class _FirmwareUpdateScaffold extends StatelessWidget {
   }
 
   Widget? _buildBackButton(BuildContext context, FirmwareUpdateState state) {
-    // During bootloader entry or flashing, show a disabled back button
+    // Do not interrupt bootloader entry, flashing, or the automatic return
+    // check. Recovery help remains dismissible after the check times out.
     if (state is FirmwareUpdateStateEnteringBootloader ||
-        state is FirmwareUpdateStateFlashing) {
+        state is FirmwareUpdateStateFlashing ||
+        state is FirmwareUpdateStateVerifyingMidi) {
       return IconButton(
         icon: const Icon(
           Icons.arrow_back,
@@ -244,18 +299,6 @@ class _FirmwareUpdateScaffold extends StatelessWidget {
       );
     }
     return null; // Use default back button
-  }
-
-  Widget _buildStateContent(BuildContext context, FirmwareUpdateState state) {
-    return state.map(
-      initial: (s) => _InitialStateView(state: s),
-      downloading: (s) => _DownloadingStateView(state: s),
-      waitingForBootloader: (s) => _BootloaderInstructionsView(state: s),
-      enteringBootloader: (s) => _EnteringBootloaderView(state: s),
-      flashing: (s) => _FlashingStateView(state: s),
-      success: (s) => _SuccessStateView(state: s),
-      error: (s) => _ErrorView(state: s),
-    );
   }
 
   Future<void> _selectLocalFile(BuildContext context) async {
@@ -282,6 +325,29 @@ class _FirmwareUpdateScaffold extends StatelessWidget {
         cubit.useLocalFile(filePath);
       }
     }
+  }
+}
+
+/// Shared firmware state body, exposed for focused widget and accessibility
+/// testing without constructing platform flash services.
+class FirmwareUpdateStateContent extends StatelessWidget {
+  final FirmwareUpdateState state;
+
+  const FirmwareUpdateStateContent({super.key, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    return state.map(
+      initial: (s) => _InitialStateView(state: s),
+      downloading: (s) => _DownloadingStateView(state: s),
+      waitingForBootloader: (s) => _BootloaderInstructionsView(state: s),
+      enteringBootloader: (s) => _EnteringBootloaderView(state: s),
+      flashing: (s) => _FlashingStateView(state: s),
+      verifyingMidi: (s) => _VerifyingMidiView(state: s),
+      midiRecoveryRequired: (s) => _MidiRecoveryView(state: s),
+      success: (_) => const SizedBox.shrink(),
+      error: (s) => _ErrorView(state: s),
+    );
   }
 }
 
@@ -848,43 +914,144 @@ class _FlashingStateView extends StatelessWidget {
   }
 }
 
-/// Success state - firmware update completed
-class _SuccessStateView extends StatelessWidget {
-  final FirmwareUpdateStateSuccess state;
+class _VerifyingMidiView extends StatelessWidget {
+  final FirmwareUpdateStateVerifyingMidi state;
 
-  const _SuccessStateView({required this.state});
+  const _VerifyingMidiView({required this.state});
 
   @override
   Widget build(BuildContext context) {
-    final distingCubit = context.read<DistingCubit>();
     final theme = Theme.of(context);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.check_circle, size: 96, color: theme.colorScheme.primary),
-        const SizedBox(height: 24),
-        Text('Update Complete!', style: theme.textTheme.headlineMedium),
-        const SizedBox(height: 8),
-        Text(
-          state.newVersion == 'local'
-              ? 'Firmware updated from local file'
-              : 'Updated to v${state.newVersion}',
-          style: theme.textTheme.titleMedium,
+        const SizedBox(
+          width: 64,
+          height: 64,
+          child: CircularProgressIndicator(),
         ),
-        const SizedBox(height: 32),
-        FilledButton(
-          onPressed: () {
-            // Pop first — BlocProvider.close() handles firmware cubit cleanup
-            // (temp files, MIDI manager disposal) automatically
-            Navigator.of(context).pop();
-            // Then notify DistingCubit to disconnect and return to device selection
-            // (distingCubit lives in a parent provider, still valid after pop)
-            distingCubit.onFirmwareUpdateComplete();
-          },
-          child: const Text('Done'),
+        const SizedBox(height: 24),
+        Text('Waiting for Disting NT', style: theme.textTheme.headlineSmall),
+        const SizedBox(height: 8),
+        const Text(
+          'Firmware installation completed successfully. Waiting for the NT '
+          'MIDI input and output to return.',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Check ${state.completedAttempts + 1} of ${state.totalAttempts}',
+          style: theme.textTheme.bodySmall,
         ),
       ],
+    );
+  }
+}
+
+class _MidiRecoveryView extends StatelessWidget {
+  static const restartMidiServiceCommand = 'Restart-Service MidiSrv';
+
+  final FirmwareUpdateStateMidiRecoveryRequired state;
+
+  const _MidiRecoveryView({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<FirmwareUpdateCubit>();
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(
+            Icons.usb_off,
+            size: 72,
+            color: theme.colorScheme.error,
+            semanticLabel: 'Disting NT MIDI connection not found',
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Firmware Installed',
+            style: theme.textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'The firmware update completed successfully, but the Disting NT '
+            'did not return to MIDI within one minute.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          if (state.isWindows)
+            _buildWindowsRecovery(context, theme)
+          else
+            const Text(
+              'Check the NT\'s USB connection and power, then power-cycle the '
+              'NT. If it still does not appear, restart the computer.',
+              textAlign: TextAlign.center,
+            ),
+          const SizedBox(height: 28),
+          FilledButton.icon(
+            onPressed: () => cubit.checkMidiAgain(),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Check Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWindowsRecovery(BuildContext context, ThemeData theme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Windows MIDI service recovery',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'The Windows MIDI service may be stuck. Open PowerShell as '
+              'Administrator and run:',
+            ),
+            const SizedBox(height: 12),
+            Semantics(
+              label: 'PowerShell command: $restartMidiServiceCommand',
+              child: SelectableText(
+                restartMidiServiceCommand,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(
+                  const ClipboardData(text: restartMidiServiceCommand),
+                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('PowerShell command copied')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.copy),
+              label: const Text('Copy Command'),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Then choose Check Again. Restart Windows if the NT still does '
+              'not return.',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
