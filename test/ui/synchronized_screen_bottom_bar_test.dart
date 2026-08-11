@@ -99,6 +99,22 @@ void main() {
       );
     }
 
+    testWidgets(
+      'uses a geometry-independent bottom bar alongside the FAB',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(isMobile: false, isOffline: false),
+        );
+
+        expect(
+          find.byKey(const ValueKey('main-bottom-action-bar')),
+          findsOneWidget,
+        );
+        expect(find.byType(BottomAppBar), findsNothing);
+        expect(find.byType(FloatingActionButton), findsOneWidget);
+      },
+    );
+
     testWidgets('Display mode buttons are not in bottom bar when online', (
       tester,
     ) async {

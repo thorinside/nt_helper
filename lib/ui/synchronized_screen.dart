@@ -1687,14 +1687,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
   }
 
-  BottomAppBar _buildBottomAppBar() {
+  Widget _buildBottomAppBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     bool isWideScreen = screenWidth > 900;
     final showModeLabels = screenWidth > 1250;
     bool isMobile = _platformService.isMobilePlatform();
+    final theme = Theme.of(context);
+    final bottomBarTheme = BottomAppBarTheme.of(context);
 
-    return BottomAppBar(
-      child: Row(
+    Widget buildBarContents() {
+      return Row(
         children: [
           // Left side - Mode switcher
           Padding(
@@ -1982,6 +1984,30 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           // Spacer for FAB so it doesn't cover the version/CPU info
           const SizedBox(width: 80),
         ],
+      );
+    }
+
+    // Do not use BottomAppBar here. Its Material 3 default notched shape reads
+    // ScaffoldGeometry while hit-testing. During a route-pop transition that
+    // can happen outside paint, poisoning Flutter's MouseTracker in debug mode
+    // and leaving the desktop UI unable to receive any more mouse clicks.
+    return Material(
+      key: const ValueKey('main-bottom-action-bar'),
+      color: bottomBarTheme.color ?? theme.colorScheme.surfaceContainer,
+      elevation: bottomBarTheme.elevation ?? 3,
+      shadowColor: bottomBarTheme.shadowColor ?? Colors.transparent,
+      surfaceTintColor: bottomBarTheme.surfaceTintColor ?? Colors.transparent,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: bottomBarTheme.height ?? 80,
+          child: Padding(
+            padding:
+                bottomBarTheme.padding ??
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            child: buildBarContents(),
+          ),
+        ),
       ),
     );
   }
