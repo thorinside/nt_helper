@@ -497,8 +497,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
       try {
         found = await checkMidiDevices();
       } catch (_) {
-        // A transient enumeration error is equivalent to the NT not being in
-        // this snapshot. Keep checking through the full timeout.
+        // Enumeration can fail transiently while the NT is rebooting. Keep
+        // retrying through the full timeout.
       }
 
       if (isClosed || generation != _midiReacquisitionGeneration) return;

@@ -152,18 +152,23 @@ class DistingCubit extends _DistingCubitBase
   final FirmwareVersionService _firmwareVersionService =
       FirmwareVersionService();
 
-  // Modified constructor
-  DistingCubit(this.database, {MidiCommand? midiCommand})
-    : _prefs = SharedPreferences.getInstance(),
-      super(const DistingState.initial()) {
+  DistingCubit(
+    this.database, {
+    MidiCommand? midiCommand,
+    MidiCommand Function()? midiCommandFactory,
+    bool? isWindowsOverride,
+  }) : _prefs = SharedPreferences.getInstance(),
+       _midiCommandFactory = midiCommandFactory ?? createNativeMidiCommand,
+       _isWindows = isWindowsOverride ?? Platform.isWindows,
+       super(const DistingState.initial()) {
     _metadataDao =
         database.metadataDao; // Initialize DAO using public database field
-    if (midiCommand != null) {
-      _midiCommand = midiCommand;
-    }
+    _midiCommand = midiCommand ?? _midiCommandFactory();
   }
 
-  MidiCommand _midiCommand = createNativeMidiCommand();
+  final MidiCommand Function() _midiCommandFactory;
+  final bool _isWindows;
+  late MidiCommand _midiCommand;
 
   // MIDI setup change subscription for auto-detecting device connections
   StreamSubscription<MidiSetupChange>? _midiSetupSubscription;
@@ -1083,14 +1088,37 @@ class DistingCubit extends _DistingCubitBase
     try {
       manager.dispose();
     } catch (_) {}
-    _midiSetupSubscription?.resume();
+
+    if (_isWindows) {
+      // WinMM owns a process-wide NativeCallable. Recreating MidiCommand can
+      // leave the native callback pointing at a closed Dart address.
+      _midiSetupSubscription?.resume();
+    } else {
+      // CoreMIDI and ALSA can retain a stale native client after the NT drops
+      // off USB during flashing. Recreate the client before polling so every
+      // snapshot and reconnection uses fresh platform state.
+      _midiSetupSubscription?.cancel();
+      _midiSetupSubscription = null;
+      try {
+        _midiCommand.dispose();
+      } catch (_) {}
+      _midiCommand = _midiCommandFactory();
+      _connectionDelegate.startMidiSetupListener();
+    }
   }
 
-  /// Checks a fresh native MIDI snapshot for both expected NT directions.
+  /// Checks a fresh MIDI snapshot for the exact names from the last successful
+  /// connection, falling back to the firmware screen's current selection when
+  /// no preferences have been saved yet.
   Future<bool> firmwareMidiDevicesAvailable(
-    String? expectedInputName,
-    String? expectedOutputName,
-  ) {
+    String? fallbackInputName,
+    String? fallbackOutputName,
+  ) async {
+    final prefs = await _prefs;
+    final expectedInputName =
+        prefs.getString('selectedInputMidiDevice') ?? fallbackInputName;
+    final expectedOutputName =
+        prefs.getString('selectedOutputMidiDevice') ?? fallbackOutputName;
     return _connectionDelegate.firmwareMidiDevicesAvailable(
       expectedInputName,
       expectedOutputName,

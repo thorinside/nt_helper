@@ -83,12 +83,19 @@ class _ConnectionDelegate {
         'DistingCubit.initialize: MIDI devices visible for autoconnect: '
         '${_describeDevices(devices)}',
       );
-      final MidiDevice? savedInputDevice = devices
-          ?.where((device) => device.name == savedInputDeviceName)
+      final savedInputDevice = devices
+          ?.where(
+            (device) =>
+                device.name == savedInputDeviceName &&
+                device.inputPorts.isNotEmpty,
+          )
           .firstOrNull;
-
-      final MidiDevice? savedOutputDevice = devices
-          ?.where((device) => device.name == savedOutputDeviceName)
+      final savedOutputDevice = devices
+          ?.where(
+            (device) =>
+                device.name == savedOutputDeviceName &&
+                device.outputPorts.isNotEmpty,
+          )
           .firstOrNull;
 
       if (savedInputDevice != null && savedOutputDevice != null) {
@@ -261,9 +268,9 @@ class _ConnectionDelegate {
     // The Windows plugin owns a process-wide NativeCallable for WinMM input.
     // Tearing MidiCommand down closes it, and later discovery reuses the closed
     // callback address, leaving the device list empty until process restart.
-    if (!Platform.isWindows) {
+    if (!_cubit._isWindows) {
       _cubit._midiCommand.dispose();
-      _cubit._midiCommand = createNativeMidiCommand();
+      _cubit._midiCommand = _cubit._midiCommandFactory();
     }
   }
 
@@ -713,18 +720,24 @@ class _ConnectionDelegate {
     return {'input': inputDevices, 'output': outputDevices};
   }
 
-  /// Takes a fresh platform MIDI snapshot and checks that both expected NT
-  /// endpoint directions have returned after a firmware reset.
+  /// Takes a fresh platform MIDI snapshot and checks the expected directions.
   Future<bool> firmwareMidiDevicesAvailable(
     String? expectedInputName,
     String? expectedOutputName,
   ) async {
     final devices = await _cubit._midiCommand.devices ?? [];
-    return firmwareMidiEndpointsAvailable(
+    final available = firmwareMidiEndpointsAvailable(
       devices,
       expectedInputName,
       expectedOutputName,
     );
+    StartupLogService.log(
+      'DistingCubit.firmwareMidiDevicesAvailable: '
+      'expectedInput="$expectedInputName", '
+      'expectedOutput="$expectedOutputName", available=$available; '
+      'snapshot=${_describeDevices(devices)}',
+    );
+    return available;
   }
 
   String _describeDevices(List<MidiDevice>? devices) {

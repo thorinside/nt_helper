@@ -36,7 +36,11 @@ void main() {
     when(
       () => metadataDao.hasCachedAlgorithms(),
     ).thenAnswer((_) async => false);
-    cubit = DistingCubit(database, midiCommand: midiCommand);
+    cubit = DistingCubit(
+      database,
+      midiCommand: midiCommand,
+      isWindowsOverride: true,
+    );
   });
 
   tearDown(() async {
@@ -141,6 +145,67 @@ void main() {
       expect(state.inputDevices, [input]);
       expect(state.outputDevices, [output]);
       verifyNever(() => midiCommand.dispose());
+    },
+  );
+
+  test(
+    'recreates the native MIDI client after firmware release off Windows',
+    () async {
+      final input = device('input', 'Disting NT', MidiPortType.IN);
+      final output = device('output', 'Disting NT', MidiPortType.OUT);
+      final manager = _MockDistingMidiManager();
+      final originalCommand = MockMidiCommand();
+      final replacementCommand = MockMidiCommand();
+      when(() => originalCommand.disconnectDevice(input)).thenAnswer((_) {});
+      when(() => originalCommand.disconnectDevice(output)).thenAnswer((_) {});
+      when(() => originalCommand.dispose()).thenAnswer((_) {});
+      when(() => manager.dispose()).thenAnswer((_) {});
+      when(
+        () => replacementCommand.devices,
+      ).thenAnswer((_) async => [input, output]);
+      when(() => replacementCommand.onMidiSetupChanged).thenReturn(null);
+
+      final nonWindowsCubit = DistingCubit(
+        database,
+        midiCommand: originalCommand,
+        midiCommandFactory: () => replacementCommand,
+        isWindowsOverride: false,
+      );
+      addTearDown(nonWindowsCubit.close);
+
+      nonWindowsCubit.disposeFirmwareMidiManager(manager, input, output);
+
+      expect(
+        await nonWindowsCubit.firmwareMidiDevicesAvailable(
+          'Disting NT',
+          'Disting NT',
+        ),
+        isTrue,
+      );
+      verify(() => originalCommand.dispose()).called(1);
+      verify(() => replacementCommand.devices).called(1);
+      verifyNever(() => originalCommand.devices);
+    },
+  );
+
+  test(
+    'reacquires the exact MIDI names saved by the last connection',
+    () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selectedInputMidiDevice', 'Saved NT Input');
+      await prefs.setString('selectedOutputMidiDevice', 'Saved NT Output');
+      await prefs.setInt('selectedSysExId', 7);
+      final input = device('input', 'Saved NT Input', MidiPortType.IN);
+      final output = device('output', 'Saved NT Output', MidiPortType.OUT);
+      when(() => midiCommand.devices).thenAnswer((_) async => [input, output]);
+
+      expect(
+        await cubit.firmwareMidiDevicesAvailable(
+          'Wrong Fallback Input',
+          'Wrong Fallback Output',
+        ),
+        isTrue,
+      );
     },
   );
 }
