@@ -417,7 +417,7 @@ void main() {
         );
       });
 
-      test('accepts reversed parameter select order and Data Entry LSB', () {
+      test('learns the address when a value LSB precedes its MSB', () {
         expect(engine.processCc(5, 98, 17), isNull);
         expect(engine.processCc(5, 99, 0), isNull);
         expect(engine.processCc(5, 38, 127), isNull);

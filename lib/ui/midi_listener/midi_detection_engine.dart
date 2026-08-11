@@ -163,7 +163,8 @@ class MidiDetectionEngine {
       return null;
     }
 
-    // The 1.18 beta responds to Data Entry MSB and ignores Data Entry LSB.
+    // Data Entry MSB is sufficient to identify the selected NRPN for Learn.
+    // A following LSB may still provide the value's lower 7 bits.
     if (ccNumber != 6) return null;
 
     final selector = _nrpnSelectors[channel];

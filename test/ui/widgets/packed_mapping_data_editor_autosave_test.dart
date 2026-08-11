@@ -187,7 +187,7 @@ void main() {
       expect(detectedData?.isMidiEnabled, isTrue);
     });
 
-    testWidgets('NRPN detection saves the firmware-compatible CC mapping', (
+    testWidgets('NRPN detection keeps the default 7-bit mapping type', (
       tester,
     ) async {
       PackedMappingData? detectedData;
@@ -220,6 +220,78 @@ void main() {
       expect(detectedData?.midiCC, 42);
       expect(detectedData?.midiMin, -25);
       expect(detectedData?.midiMax, 75);
+      expect(detectedData?.isMidiEnabled, isTrue);
+    });
+
+    testWidgets('NRPN detection preserves a selected 14-bit mapping type', (
+      tester,
+    ) async {
+      PackedMappingData? detectedData;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (_) async {},
+          onSaveImmediately: (data) async {
+            detectedData = data;
+          },
+          initialData: testData.copyWith(
+            midiMappingType: MidiMappingType.cc14BitLow,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      final detector = tester.widget<MidiDetectorWidget>(
+        find.byType(MidiDetectorWidget),
+      );
+      detector.onMidiEventFound!(
+        type: MidiEventType.nrpn,
+        channel: 4,
+        number: 42,
+      );
+      await tester.pump();
+
+      expect(detectedData?.midiMappingType, MidiMappingType.cc14BitLow);
+      expect(detectedData?.midiChannel, 4);
+      expect(detectedData?.midiCC, 42);
+      expect(detectedData?.isMidiEnabled, isTrue);
+    });
+
+    testWidgets('NRPN detection preserves the high-first 14-bit type', (
+      tester,
+    ) async {
+      PackedMappingData? detectedData;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (_) async {},
+          onSaveImmediately: (data) async {
+            detectedData = data;
+          },
+          initialData: testData.copyWith(
+            midiMappingType: MidiMappingType.cc14BitHigh,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      final detector = tester.widget<MidiDetectorWidget>(
+        find.byType(MidiDetectorWidget),
+      );
+      detector.onMidiEventFound!(
+        type: MidiEventType.nrpn,
+        channel: 4,
+        number: 42,
+      );
+      await tester.pump();
+
+      expect(detectedData?.midiMappingType, MidiMappingType.cc14BitHigh);
+      expect(detectedData?.midiChannel, 4);
+      expect(detectedData?.midiCC, 42);
       expect(detectedData?.isMidiEnabled, isTrue);
     });
 

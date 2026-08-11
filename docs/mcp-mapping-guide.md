@@ -169,15 +169,15 @@ This example maps the filter cutoff to MIDI CC 74 (filter cutoff on most synths)
 ### NRPN Control (Firmware 1.18+)
 
 The disting NT uses NRPN numbers 0-127 as alternate addresses for ordinary CC
-mappings. There is no separate preset mapping type: configure `midi_type` as
-`"cc"` and set `midi_cc` to the same number as the controller's NRPN. MIDI
-Learn in nt_helper recognizes the NRPN select and Data Entry sequence and does
-this conversion automatically.
+mappings. There is no separate preset mapping type. Set `midi_cc` to the same
+number as the controller's NRPN, and choose the value resolution with
+`midi_type`: use `"cc"` for 7-bit values or `"cc_14bit_low"`/
+`"cc_14bit_high"` for 14-bit values.
 
 The mapping's `midi_min` and `midi_max` still define the destination parameter
-range. In the tested 1.18 beta, Data Entry LSB (CC 38) did not add value
-resolution, so this NRPN path remained 7-bit; use a 14-bit CC mapping when the
-controller and parameter need finer steps.
+range. MIDI Learn recognizes the NRPN select and Data Entry sequence, records
+the NRPN number and channel, and preserves a selected 14-bit mapping type. If
+the mapping is not already set to a 14-bit type, Learn uses `"cc"`.
 
 ---
 

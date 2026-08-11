@@ -736,9 +736,12 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   } else if (type == MidiEventType.cc14BitHighFirst) {
                     detectedMappingType = MidiMappingType.cc14BitHigh;
                   } else if (type == MidiEventType.nrpn) {
-                    // Firmware 1.18 addresses ordinary CC mappings by NRPN
-                    // number; there is no new preset mapping type.
-                    detectedMappingType = MidiMappingType.cc;
+                    // NRPN supplies the mapping address, while the selected
+                    // CC type determines whether its value is 7- or 14-bit.
+                    if (_data.midiMappingType == MidiMappingType.cc14BitLow ||
+                        _data.midiMappingType == MidiMappingType.cc14BitHigh) {
+                      detectedMappingType = _data.midiMappingType;
+                    }
                   } else if (type == MidiEventType.pitchBend) {
                     if (!supportsExpressiveMidiMapping) {
                       _announceUnsupportedExpressiveMidiMapping();
