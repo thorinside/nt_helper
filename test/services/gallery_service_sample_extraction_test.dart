@@ -119,6 +119,38 @@ void main() {
     });
 
     group('extractArchiveForTesting', () {
+      test('C++ plugin archives skip non-.o files before upload', () async {
+        final plugin = createTestPlugin();
+        final zipBytes = createTestZip({
+          'programs/plug-ins/nt_marbles.o': [0x01, 0x02, 0x03],
+          'licenses/THIRD_PARTY_NOTICES.md': [0x04],
+          'licenses/nt_marbles-LICENSE.txt': [0x05],
+          'BUILD_COMMIT.txt': [0x06],
+          'PLUGIN_SHA256.txt': [0x07],
+        });
+        final installedFiles = <String>[];
+
+        await galleryService.installPlugin(
+          plugin,
+          cachedArchiveBytes: zipBytes,
+          distingInstallPlugin:
+              (
+                fileName,
+                fileData, {
+                onProgress,
+                galleryPluginId,
+                galleryPluginVersion,
+              }) async {
+                if (!fileName.toLowerCase().endsWith('.o')) {
+                  throw StateError('Unexpected non-plugin file: $fileName');
+                }
+                installedFiles.add(fileName);
+              },
+        );
+
+        expect(installedFiles, ['programs/plug-ins/nt_marbles.o']);
+      });
+
       test('extracts plugin files from zip without samples', () async {
         final plugin = createTestPlugin(extractPattern: r'\.o$');
 

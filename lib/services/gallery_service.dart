@@ -1403,6 +1403,13 @@ class GalleryService {
       // Skip empty paths
       if (filePath.isEmpty) continue;
 
+      // C++ release archives can contain licenses, checksums, and other
+      // supporting files that do not belong in /programs/plug-ins.
+      if (plugin.type == GalleryPluginType.cpp &&
+          path.extension(filePath).toLowerCase() != '.o') {
+        continue;
+      }
+
       // Apply extract pattern filtering if specified
       if (extractRegex != null) {
         // Check both the processed filePath and original file.name against the pattern
