@@ -22,7 +22,7 @@ const int _reboot = 0x7F;
 /// This intentionally does not reuse the disting NT parser: an NTX-8CV frame
 /// carries product byte [kNtx8cvProductByte], not the disting NT's `0x6D`.
 /// Protocol framing was audited against `expertsleepersltd/NTX-8CV` main at
-/// commit `717b288fe487ea7d700f30d327a9c79a85568d1d`.
+/// commit `6addf424c454aac20b26661d00384e6292401b18`.
 class Ntx8cvSysExCodec {
   const Ntx8cvSysExCodec();
 

@@ -149,8 +149,8 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                                     state: settingsState,
                                     onUsbHostChanged:
                                         _settingsCubit.setUsbHostEnabled,
-                                    onAudioChannelChanged:
-                                        _settingsCubit.setAudioChannelEnabled,
+                                    onUsbAudioChannelChanged: _settingsCubit
+                                        .setUsbAudioChannelEnabled,
                                   ),
                             ),
                             const SizedBox(height: 16),
@@ -175,6 +175,9 @@ class _Ntx8cvScreenState extends State<Ntx8cvScreen> {
                                         _settingsCubit.setExpansionMode,
                                     onRetryModeChange:
                                         _settingsCubit.retryModeChange,
+                                    onExpanderAudioChannelChanged:
+                                        _settingsCubit
+                                            .setExpanderAudioChannelEnabled,
                                     onReboot: _settingsCubit.reboot,
                                   ),
                             ),
@@ -198,7 +201,7 @@ bool _usbAudioPresentationChanged(
   Ntx8cvSettingsState current,
 ) =>
     previous.usbHost != current.usbHost ||
-    previous.audioChannels != current.audioChannels ||
+    previous.usbAudioChannels != current.usbAudioChannels ||
     previous.isRefreshing != current.isRefreshing ||
     previous.isRebooting != current.isRebooting;
 
@@ -209,6 +212,7 @@ bool _expanderSettingsPresentationChanged(
     previous.channelGroup != current.channelGroup ||
     previous.es5 != current.es5 ||
     previous.mode != current.mode ||
+    previous.expanderAudioChannels != current.expanderAudioChannels ||
     previous.modeCapabilityEvidenced != current.modeCapabilityEvidenced ||
     previous.modeRebootRequired != current.modeRebootRequired ||
     previous.isRefreshing != current.isRefreshing ||
@@ -307,16 +311,19 @@ class _Ntx8cvSyncIndicatorState extends State<_Ntx8cvSyncIndicator> {
         !settings.isBusy &&
         !settings.hasPendingChannelGroupChange &&
         !settings.hasPendingEs5Change &&
-        !settings.hasPendingUsbAudioChange &&
+        !settings.hasPendingUsbSettingsChange &&
+        !settings.hasPendingExpanderAudioChange &&
         !settings.hasPendingModeChange &&
         settings.confirmedChannelGroup != null &&
         settings.confirmedEs5Enabled != null &&
-        settings.hasConfirmedUsbAudioSnapshot &&
+        settings.hasConfirmedUsbSettingsSnapshot &&
+        settings.hasConfirmedExpanderAudioSnapshot &&
         settings.confirmedMode != null &&
         settings.modeCapabilityEvidenced &&
         settings.channelGroupMessage == null &&
         settings.es5Message == null &&
-        !settings.hasUsbAudioError &&
+        !settings.hasUsbSettingsError &&
+        !settings.hasExpanderAudioError &&
         settings.modeMessage == null &&
         settings.rebootMessage == null;
   }
@@ -394,13 +401,13 @@ class Ntx8cvUsbAudioSection extends StatelessWidget {
     required this.isConnected,
     required this.state,
     required this.onUsbHostChanged,
-    required this.onAudioChannelChanged,
+    required this.onUsbAudioChannelChanged,
   });
 
   final bool isConnected;
   final Ntx8cvSettingsState state;
   final Future<void> Function(bool) onUsbHostChanged;
-  final Future<void> Function(int, bool) onAudioChannelChanged;
+  final Future<void> Function(int, bool) onUsbAudioChannelChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -442,7 +449,7 @@ class Ntx8cvUsbAudioSection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Audio channels',
+              'Enable audio channel',
               style: Theme.of(context).textTheme.labelLarge,
             ),
             const SizedBox(height: 8),
@@ -453,13 +460,15 @@ class Ntx8cvUsbAudioSection extends StatelessWidget {
                 for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
                   _Ntx8cvAudioChannelCheckbox(
                     index: index,
-                    state: state,
+                    change: state.usbAudioChannels[index],
+                    semanticContext: 'USB',
+                    keyPrefix: 'ntx8cv-usb-audio-channel',
                     enabled:
                         !isGloballyUnavailable &&
-                        state.confirmedAudioChannelEnabled(index) != null &&
-                        !state.isLoadingAudioChannel(index),
+                        state.confirmedUsbAudioChannelEnabled(index) != null &&
+                        !state.isLoadingUsbAudioChannel(index),
                     onChanged: (enabled) {
-                      unawaited(onAudioChannelChanged(index, enabled));
+                      unawaited(onUsbAudioChannelChanged(index, enabled));
                     },
                   ),
               ],
@@ -482,12 +491,12 @@ class Ntx8cvUsbAudioSection extends StatelessWidget {
       return 'USB host setting not confirmed.';
     }
     for (var index = 0; index < kNtx8cvAudioChannelCount; index++) {
-      if (state.audioChannelMessage(index) != null &&
-          !state.isWritingAudioChannel(index)) {
-        return 'Audio channel ${index + 1} setting not confirmed.';
+      if (state.usbAudioChannelMessage(index) != null &&
+          !state.isWritingUsbAudioChannel(index)) {
+        return 'USB audio channel ${index + 1} setting not confirmed.';
       }
     }
-    if (!state.hasConfirmedUsbAudioSnapshot) {
+    if (!state.hasConfirmedUsbSettingsSnapshot) {
       return 'USB audio settings unavailable.';
     }
     return null;
@@ -497,23 +506,27 @@ class Ntx8cvUsbAudioSection extends StatelessWidget {
 class _Ntx8cvAudioChannelCheckbox extends StatelessWidget {
   const _Ntx8cvAudioChannelCheckbox({
     required this.index,
-    required this.state,
+    required this.change,
+    required this.semanticContext,
+    required this.keyPrefix,
     required this.enabled,
     required this.onChanged,
   });
 
   final int index;
-  final Ntx8cvSettingsState state;
+  final Ntx8cvSettingChange change;
+  final String semanticContext;
+  final String keyPrefix;
   final bool enabled;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final confirmed = state.confirmedAudioChannelEnabled(index);
-    final selected = state.isWritingAudioChannel(index)
-        ? state.attemptedAudioChannelEnabled(index) ?? confirmed ?? false
+    final confirmed = _boolValue(change.confirmedValue);
+    final selected = change.isWriting
+        ? _boolValue(change.attemptedValue) ?? confirmed ?? false
         : confirmed ?? false;
-    final label = 'Audio channel ${index + 1}';
+    final label = '$semanticContext audio channel ${index + 1}';
     return Tooltip(
       message: label,
       child: MergeSemantics(
@@ -529,7 +542,7 @@ class _Ntx8cvAudioChannelCheckbox extends StatelessWidget {
                 ),
               ),
               Checkbox(
-                key: Key('ntx8cv-audio-channel-${index + 1}'),
+                key: Key('$keyPrefix-${index + 1}'),
                 value: selected,
                 onChanged: enabled
                     ? (value) {
@@ -543,6 +556,12 @@ class _Ntx8cvAudioChannelCheckbox extends StatelessWidget {
       ),
     );
   }
+
+  static bool? _boolValue(int? value) => switch (value) {
+    0 => false,
+    1 => true,
+    _ => null,
+  };
 }
 
 class _ConnectionSection extends StatelessWidget {
@@ -959,6 +978,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
     required this.onRetryEs5Change,
     required this.onModeChanged,
     required this.onRetryModeChange,
+    required this.onExpanderAudioChannelChanged,
     required this.onReboot,
   });
 
@@ -970,6 +990,7 @@ class Ntx8cvSettingsSection extends StatelessWidget {
   final Future<void> Function() onRetryEs5Change;
   final Future<void> Function(Ntx8cvExpansionMode) onModeChanged;
   final Future<void> Function() onRetryModeChange;
+  final Future<void> Function(int, bool) onExpanderAudioChannelChanged;
   final Future<void> Function() onReboot;
 
   @override
@@ -1134,6 +1155,39 @@ class Ntx8cvSettingsSection extends StatelessWidget {
                     }
                   : null,
             ),
+            const SizedBox(height: 12),
+            Text(
+              'Enable audio channel',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
+                  _Ntx8cvAudioChannelCheckbox(
+                    index: index,
+                    change: state.expanderAudioChannels[index],
+                    semanticContext: 'NT expander',
+                    keyPrefix: 'ntx8cv-expander-audio-channel',
+                    enabled:
+                        !isGloballyUnavailable &&
+                        state.confirmedExpanderAudioChannelEnabled(index) !=
+                            null &&
+                        !state.isLoadingExpanderAudioChannel(index),
+                    onChanged: (enabled) {
+                      unawaited(onExpanderAudioChannelChanged(index, enabled));
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            _StableMessageSlot(
+              message: _expanderAudioMessage(),
+              isError: true,
+              height: 20,
+            ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
@@ -1200,5 +1254,19 @@ class Ntx8cvSettingsSection extends StatelessWidget {
     }
     if (state.confirmedMode == null) return 'Expansion mode unavailable.';
     return state.modeRebootRequired ? 'Reboot to apply.' : null;
+  }
+
+  String? _expanderAudioMessage() {
+    if (!isConnected || state.isRefreshing) return null;
+    for (var index = 0; index < kNtx8cvAudioChannelCount; index++) {
+      if (state.expanderAudioChannelMessage(index) != null &&
+          !state.isWritingExpanderAudioChannel(index)) {
+        return 'NT expander audio channel ${index + 1} setting not confirmed.';
+      }
+    }
+    if (!state.hasConfirmedExpanderAudioSnapshot) {
+      return 'NT expander audio settings unavailable.';
+    }
+    return null;
   }
 }

@@ -11,7 +11,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(420, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       bool? requestedUsbHost;
-      (int, bool)? requestedAudioChannel;
+      (int, bool)? requestedUsbAudioChannel;
 
       Widget buildSection({
         required bool isConnected,
@@ -24,8 +24,8 @@ void main() {
             onUsbHostChanged: (enabled) async {
               requestedUsbHost = enabled;
             },
-            onAudioChannelChanged: (index, enabled) async {
-              requestedAudioChannel = (index, enabled);
+            onUsbAudioChannelChanged: (index, enabled) async {
+              requestedUsbAudioChannel = (index, enabled);
             },
           ),
         ),
@@ -36,7 +36,7 @@ void main() {
         'host': tester.getRect(find.byKey(const Key('ntx8cv-usb-host'))),
         for (var channel = 1; channel <= kNtx8cvAudioChannelCount; channel++)
           'channel$channel': tester.getRect(
-            find.byKey(Key('ntx8cv-audio-channel-$channel')),
+            find.byKey(Key('ntx8cv-usb-audio-channel-$channel')),
           ),
       };
 
@@ -46,12 +46,12 @@ void main() {
       final confirmedGeometry = geometry();
       expect(find.text('USB Settings'), findsOneWidget);
       expect(find.text('USB host'), findsOneWidget);
-      expect(find.text('Audio channels'), findsOneWidget);
+      expect(find.text('Enable audio channel'), findsOneWidget);
       expect(find.byType(Checkbox), findsNWidgets(8));
       for (var channel = 1; channel <= kNtx8cvAudioChannelCount; channel++) {
         expect(find.text('$channel'), findsOneWidget);
       }
-      expect(find.bySemanticsLabel('Audio channel 4'), findsOneWidget);
+      expect(find.bySemanticsLabel('USB audio channel 4'), findsOneWidget);
       expect(
         tester
             .widget<SwitchListTile>(find.byKey(const Key('ntx8cv-usb-host')))
@@ -60,9 +60,9 @@ void main() {
       );
 
       await tester.tap(find.byKey(const Key('ntx8cv-usb-host')));
-      await tester.tap(find.byKey(const Key('ntx8cv-audio-channel-4')));
+      await tester.tap(find.byKey(const Key('ntx8cv-usb-audio-channel-4')));
       expect(requestedUsbHost, isTrue);
-      expect(requestedAudioChannel, (3, false));
+      expect(requestedUsbAudioChannel, (3, false));
 
       await tester.pumpWidget(
         buildSection(
@@ -73,7 +73,7 @@ void main() {
               attemptedValue: 1,
               isWriting: true,
             ),
-            audioChannels: const [
+            usbAudioChannels: const [
               Ntx8cvSettingChange(confirmedValue: 1),
               Ntx8cvSettingChange(confirmedValue: 1),
               Ntx8cvSettingChange(confirmedValue: 1),
@@ -99,7 +99,9 @@ void main() {
       );
       expect(
         tester
-            .widget<Checkbox>(find.byKey(const Key('ntx8cv-audio-channel-4')))
+            .widget<Checkbox>(
+              find.byKey(const Key('ntx8cv-usb-audio-channel-4')),
+            )
             .value,
         isFalse,
       );
@@ -110,6 +112,66 @@ void main() {
         buildSection(isConnected: false, state: _confirmedUsbAudioState),
       );
       expect(geometry(), confirmedGeometry);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'disting NT Expander Settings toggles its independent audio channel row',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      (int, bool)? requestedExpanderAudioChannel;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Ntx8cvSettingsSection(
+              isConnected: true,
+              state: const Ntx8cvSettingsState(
+                channelGroup: Ntx8cvSettingChange(confirmedValue: 0),
+                es5: Ntx8cvSettingChange(confirmedValue: 0),
+                mode: Ntx8cvSettingChange(confirmedValue: 0),
+                modeCapabilityEvidenced: true,
+                expanderAudioChannels: [
+                  Ntx8cvSettingChange(confirmedValue: 1),
+                  Ntx8cvSettingChange(confirmedValue: 1),
+                  Ntx8cvSettingChange(confirmedValue: 1),
+                  Ntx8cvSettingChange(confirmedValue: 1),
+                  Ntx8cvSettingChange(confirmedValue: 1),
+                  Ntx8cvSettingChange(confirmedValue: 1),
+                  Ntx8cvSettingChange(confirmedValue: 1),
+                  Ntx8cvSettingChange(confirmedValue: 1),
+                ],
+              ),
+              onChannelGroupChanged: (_) async {},
+              onRetryChannelGroupChange: () async {},
+              onEs5Changed: (_) async {},
+              onRetryEs5Change: () async {},
+              onModeChanged: (_) async {},
+              onRetryModeChange: () async {},
+              onExpanderAudioChannelChanged: (index, enabled) async {
+                requestedExpanderAudioChannel = (index, enabled);
+              },
+              onReboot: () async {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('disting NT Expander Settings'), findsOneWidget);
+      expect(find.text('Enable audio channel'), findsOneWidget);
+      expect(find.byType(Checkbox), findsNWidgets(8));
+      expect(
+        find.bySemanticsLabel('NT expander audio channel 5'),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const Key('ntx8cv-expander-audio-channel-5')),
+      );
+      expect(requestedExpanderAudioChannel, (4, false));
       semantics.dispose();
     },
   );
@@ -143,6 +205,7 @@ void main() {
             },
             onModeChanged: (_) async {},
             onRetryModeChange: () async {},
+            onExpanderAudioChannelChanged: (_, _) async {},
             onReboot: () async {},
           ),
         ),
@@ -183,6 +246,7 @@ void main() {
             onRetryEs5Change: () async {},
             onModeChanged: (_) async {},
             onRetryModeChange: () async {},
+            onExpanderAudioChannelChanged: (_, _) async {},
             onReboot: () async {},
           ),
         ),
@@ -233,6 +297,7 @@ void main() {
             onRetryEs5Change: () async {},
             onModeChanged: (_) async {},
             onRetryModeChange: () async {},
+            onExpanderAudioChannelChanged: (_, _) async {},
             onReboot: () async {},
           ),
         ),
@@ -317,6 +382,7 @@ void main() {
               onRetryEs5Change: () async {},
               onModeChanged: (_) async {},
               onRetryModeChange: () async {},
+              onExpanderAudioChannelChanged: (_, _) async {},
               onReboot: () async {},
             ),
           ),
@@ -412,6 +478,7 @@ void main() {
             onRetryEs5Change: () async {},
             onModeChanged: (_) async {},
             onRetryModeChange: () async {},
+            onExpanderAudioChannelChanged: (_, _) async {},
             onReboot: () async {},
           ),
         ),
@@ -465,6 +532,7 @@ void main() {
             onRetryEs5Change: () async {},
             onModeChanged: (_) async {},
             onRetryModeChange: () async {},
+            onExpanderAudioChannelChanged: (_, _) async {},
             onReboot: () async {},
           ),
         ),
@@ -522,6 +590,7 @@ void main() {
             onRetryModeChange: () async {
               retryCount += 1;
             },
+            onExpanderAudioChannelChanged: (_, _) async {},
             onReboot: () async {},
           ),
         ),
@@ -580,6 +649,7 @@ void main() {
               onRetryEs5Change: () async {},
               onModeChanged: (_) async {},
               onRetryModeChange: () async {},
+              onExpanderAudioChannelChanged: (_, _) async {},
               onReboot: () async {
                 rebootCount += 1;
               },
@@ -602,7 +672,7 @@ void main() {
 
 const _confirmedUsbAudioState = Ntx8cvSettingsState(
   usbHost: Ntx8cvSettingChange(confirmedValue: 0),
-  audioChannels: [
+  usbAudioChannels: [
     Ntx8cvSettingChange(confirmedValue: 1),
     Ntx8cvSettingChange(confirmedValue: 1),
     Ntx8cvSettingChange(confirmedValue: 1),

@@ -3,7 +3,7 @@ import 'package:nt_helper/cubit/ntx_8cv_settings_cubit.dart';
 import 'package:nt_helper/domain/ntx_8cv/ntx_8cv_sysex.dart';
 
 /// Protocol source:
-/// `expertsleepersltd/NTX-8CV@717b288fe487ea7d700f30d327a9c79a85568d1d`
+/// `expertsleepersltd/NTX-8CV@6addf424c454aac20b26661d00384e6292401b18`
 /// `tools/ntx8cv_config_tool.html`.
 void main() {
   const codec = Ntx8cvSysExCodec();
@@ -12,16 +12,24 @@ void main() {
     const contract = <Ntx8cvSetting, ({int id, List<int> values})>{
       Ntx8cvSetting.channelGroup: (id: 0x00, values: [0, 1, 2, 3, 4, 5, 6, 7]),
       Ntx8cvSetting.es5Enabled: (id: 0x01, values: [0, 1]),
-      Ntx8cvSetting.audioChannel1: (id: 0x04, values: [0, 1]),
-      Ntx8cvSetting.audioChannel2: (id: 0x05, values: [0, 1]),
-      Ntx8cvSetting.audioChannel3: (id: 0x06, values: [0, 1]),
-      Ntx8cvSetting.audioChannel4: (id: 0x07, values: [0, 1]),
-      Ntx8cvSetting.audioChannel5: (id: 0x08, values: [0, 1]),
-      Ntx8cvSetting.audioChannel6: (id: 0x09, values: [0, 1]),
-      Ntx8cvSetting.audioChannel7: (id: 0x0A, values: [0, 1]),
-      Ntx8cvSetting.audioChannel8: (id: 0x0B, values: [0, 1]),
+      Ntx8cvSetting.usbAudioChannel1: (id: 0x04, values: [0, 1]),
+      Ntx8cvSetting.usbAudioChannel2: (id: 0x05, values: [0, 1]),
+      Ntx8cvSetting.usbAudioChannel3: (id: 0x06, values: [0, 1]),
+      Ntx8cvSetting.usbAudioChannel4: (id: 0x07, values: [0, 1]),
+      Ntx8cvSetting.usbAudioChannel5: (id: 0x08, values: [0, 1]),
+      Ntx8cvSetting.usbAudioChannel6: (id: 0x09, values: [0, 1]),
+      Ntx8cvSetting.usbAudioChannel7: (id: 0x0A, values: [0, 1]),
+      Ntx8cvSetting.usbAudioChannel8: (id: 0x0B, values: [0, 1]),
       Ntx8cvSetting.usbHostEnabled: (id: 0x17, values: [0, 1]),
       Ntx8cvSetting.expansionMode: (id: 0x1B, values: [0, 1, 2]),
+      Ntx8cvSetting.expanderAudioChannel1: (id: 0x1C, values: [0, 1]),
+      Ntx8cvSetting.expanderAudioChannel2: (id: 0x1D, values: [0, 1]),
+      Ntx8cvSetting.expanderAudioChannel3: (id: 0x1E, values: [0, 1]),
+      Ntx8cvSetting.expanderAudioChannel4: (id: 0x1F, values: [0, 1]),
+      Ntx8cvSetting.expanderAudioChannel5: (id: 0x20, values: [0, 1]),
+      Ntx8cvSetting.expanderAudioChannel6: (id: 0x21, values: [0, 1]),
+      Ntx8cvSetting.expanderAudioChannel7: (id: 0x22, values: [0, 1]),
+      Ntx8cvSetting.expanderAudioChannel8: (id: 0x23, values: [0, 1]),
     };
 
     expect(contract.keys, orderedEquals(Ntx8cvSetting.values));

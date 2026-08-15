@@ -421,9 +421,15 @@ class _FakeNtx8cvMidiTransport implements Ntx8cvMidiTransport {
         0,
       ),
       (0x31, final settingId)
-          when settingId >= kNtx8cvFirstAudioChannelSettingId &&
+          when settingId >= kNtx8cvFirstUsbAudioChannelSettingId &&
               settingId <
-                  kNtx8cvFirstAudioChannelSettingId +
+                  kNtx8cvFirstUsbAudioChannelSettingId +
+                      kNtx8cvAudioChannelCount =>
+        _settingResponse(settingId, 1),
+      (0x31, final settingId)
+          when settingId >= kNtx8cvFirstExpanderAudioChannelSettingId &&
+              settingId <
+                  kNtx8cvFirstExpanderAudioChannelSettingId +
                       kNtx8cvAudioChannelCount =>
         _settingResponse(settingId, 1),
       _ => null,

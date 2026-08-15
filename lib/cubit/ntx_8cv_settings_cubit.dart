@@ -10,10 +10,10 @@ const int kNtx8cvChannelGroupSettingId = 0x00;
 /// The released NTX-8CV setting that enables its ES-5 output use.
 const int kNtx8cvEs5EnabledSettingId = 0x01;
 
-/// The first of eight released per-channel USB audio enable settings.
-const int kNtx8cvFirstAudioChannelSettingId = 0x04;
+/// The first of eight per-channel USB audio enable settings.
+const int kNtx8cvFirstUsbAudioChannelSettingId = 0x04;
 
-/// The number of independently enabled NTX-8CV USB audio channels.
+/// The number of independently enabled channels in each audio route.
 const int kNtx8cvAudioChannelCount = 8;
 
 /// The released setting that lets the NTX-8CV act as a USB host.
@@ -21,6 +21,9 @@ const int kNtx8cvUsbHostEnabledSettingId = 0x17;
 
 /// The upstream NT expansion-mode setting. It is probed before it is writable.
 const int kNtx8cvExpansionModeSettingId = 0x1B;
+
+/// The first of eight per-channel disting NT expander audio enable settings.
+const int kNtx8cvFirstExpanderAudioChannelSettingId = 0x1C;
 
 /// The three owner-supported NT expansion modes and their protocol values.
 enum Ntx8cvExpansionMode {
@@ -68,37 +71,106 @@ enum Ntx8cvChannelGroup {
 enum Ntx8cvSetting {
   channelGroup(kNtx8cvChannelGroupSettingId, 'Channel Group'),
   es5Enabled(kNtx8cvEs5EnabledSettingId, 'ES-5'),
-  audioChannel1(kNtx8cvFirstAudioChannelSettingId, 'audio channel 1'),
-  audioChannel2(kNtx8cvFirstAudioChannelSettingId + 1, 'audio channel 2'),
-  audioChannel3(kNtx8cvFirstAudioChannelSettingId + 2, 'audio channel 3'),
-  audioChannel4(kNtx8cvFirstAudioChannelSettingId + 3, 'audio channel 4'),
-  audioChannel5(kNtx8cvFirstAudioChannelSettingId + 4, 'audio channel 5'),
-  audioChannel6(kNtx8cvFirstAudioChannelSettingId + 5, 'audio channel 6'),
-  audioChannel7(kNtx8cvFirstAudioChannelSettingId + 6, 'audio channel 7'),
-  audioChannel8(kNtx8cvFirstAudioChannelSettingId + 7, 'audio channel 8'),
+  usbAudioChannel1(kNtx8cvFirstUsbAudioChannelSettingId, 'USB audio channel 1'),
+  usbAudioChannel2(
+    kNtx8cvFirstUsbAudioChannelSettingId + 1,
+    'USB audio channel 2',
+  ),
+  usbAudioChannel3(
+    kNtx8cvFirstUsbAudioChannelSettingId + 2,
+    'USB audio channel 3',
+  ),
+  usbAudioChannel4(
+    kNtx8cvFirstUsbAudioChannelSettingId + 3,
+    'USB audio channel 4',
+  ),
+  usbAudioChannel5(
+    kNtx8cvFirstUsbAudioChannelSettingId + 4,
+    'USB audio channel 5',
+  ),
+  usbAudioChannel6(
+    kNtx8cvFirstUsbAudioChannelSettingId + 5,
+    'USB audio channel 6',
+  ),
+  usbAudioChannel7(
+    kNtx8cvFirstUsbAudioChannelSettingId + 6,
+    'USB audio channel 7',
+  ),
+  usbAudioChannel8(
+    kNtx8cvFirstUsbAudioChannelSettingId + 7,
+    'USB audio channel 8',
+  ),
   usbHostEnabled(kNtx8cvUsbHostEnabledSettingId, 'USB host'),
-  expansionMode(kNtx8cvExpansionModeSettingId, 'NT expansion mode');
+  expansionMode(kNtx8cvExpansionModeSettingId, 'NT expansion mode'),
+  expanderAudioChannel1(
+    kNtx8cvFirstExpanderAudioChannelSettingId,
+    'NT expander audio channel 1',
+  ),
+  expanderAudioChannel2(
+    kNtx8cvFirstExpanderAudioChannelSettingId + 1,
+    'NT expander audio channel 2',
+  ),
+  expanderAudioChannel3(
+    kNtx8cvFirstExpanderAudioChannelSettingId + 2,
+    'NT expander audio channel 3',
+  ),
+  expanderAudioChannel4(
+    kNtx8cvFirstExpanderAudioChannelSettingId + 3,
+    'NT expander audio channel 4',
+  ),
+  expanderAudioChannel5(
+    kNtx8cvFirstExpanderAudioChannelSettingId + 4,
+    'NT expander audio channel 5',
+  ),
+  expanderAudioChannel6(
+    kNtx8cvFirstExpanderAudioChannelSettingId + 5,
+    'NT expander audio channel 6',
+  ),
+  expanderAudioChannel7(
+    kNtx8cvFirstExpanderAudioChannelSettingId + 6,
+    'NT expander audio channel 7',
+  ),
+  expanderAudioChannel8(
+    kNtx8cvFirstExpanderAudioChannelSettingId + 7,
+    'NT expander audio channel 8',
+  );
 
   const Ntx8cvSetting(this.id, this.label);
 
   final int id;
   final String label;
 
-  int? get audioChannelIndex {
-    final index = id - kNtx8cvFirstAudioChannelSettingId;
+  int? get usbAudioChannelIndex {
+    final index = id - kNtx8cvFirstUsbAudioChannelSettingId;
+    return index >= 0 && index < kNtx8cvAudioChannelCount ? index : null;
+  }
+
+  int? get expanderAudioChannelIndex {
+    final index = id - kNtx8cvFirstExpanderAudioChannelSettingId;
     return index >= 0 && index < kNtx8cvAudioChannelCount ? index : null;
   }
 }
 
-const List<Ntx8cvSetting> _audioChannelSettings = [
-  Ntx8cvSetting.audioChannel1,
-  Ntx8cvSetting.audioChannel2,
-  Ntx8cvSetting.audioChannel3,
-  Ntx8cvSetting.audioChannel4,
-  Ntx8cvSetting.audioChannel5,
-  Ntx8cvSetting.audioChannel6,
-  Ntx8cvSetting.audioChannel7,
-  Ntx8cvSetting.audioChannel8,
+const List<Ntx8cvSetting> _usbAudioChannelSettings = [
+  Ntx8cvSetting.usbAudioChannel1,
+  Ntx8cvSetting.usbAudioChannel2,
+  Ntx8cvSetting.usbAudioChannel3,
+  Ntx8cvSetting.usbAudioChannel4,
+  Ntx8cvSetting.usbAudioChannel5,
+  Ntx8cvSetting.usbAudioChannel6,
+  Ntx8cvSetting.usbAudioChannel7,
+  Ntx8cvSetting.usbAudioChannel8,
+];
+
+const List<Ntx8cvSetting> _expanderAudioChannelSettings = [
+  Ntx8cvSetting.expanderAudioChannel1,
+  Ntx8cvSetting.expanderAudioChannel2,
+  Ntx8cvSetting.expanderAudioChannel3,
+  Ntx8cvSetting.expanderAudioChannel4,
+  Ntx8cvSetting.expanderAudioChannel5,
+  Ntx8cvSetting.expanderAudioChannel6,
+  Ntx8cvSetting.expanderAudioChannel7,
+  Ntx8cvSetting.expanderAudioChannel8,
 ];
 
 /// The confirmed and attempted state of one NTX-8CV setting.
@@ -152,7 +224,17 @@ class Ntx8cvSettingsState {
     this.channelGroup = const Ntx8cvSettingChange(),
     this.es5 = const Ntx8cvSettingChange(),
     this.usbHost = const Ntx8cvSettingChange(),
-    this.audioChannels = const [
+    this.usbAudioChannels = const [
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+      Ntx8cvSettingChange(),
+    ],
+    this.expanderAudioChannels = const [
       Ntx8cvSettingChange(),
       Ntx8cvSettingChange(),
       Ntx8cvSettingChange(),
@@ -173,7 +255,8 @@ class Ntx8cvSettingsState {
   final Ntx8cvSettingChange channelGroup;
   final Ntx8cvSettingChange es5;
   final Ntx8cvSettingChange usbHost;
-  final List<Ntx8cvSettingChange> audioChannels;
+  final List<Ntx8cvSettingChange> usbAudioChannels;
+  final List<Ntx8cvSettingChange> expanderAudioChannels;
   final Ntx8cvSettingChange mode;
 
   /// True only after the current session read setting `0x1B` with a value in
@@ -232,31 +315,56 @@ class Ntx8cvSettingsState {
   String? get usbHostMessage => usbHost.message;
   bool get hasPendingUsbHostChange => usbHost.hasPendingChange;
 
-  bool? confirmedAudioChannelEnabled(int index) =>
-      _boolValue(audioChannels[index].confirmedValue);
+  bool? confirmedUsbAudioChannelEnabled(int index) =>
+      _boolValue(usbAudioChannels[index].confirmedValue);
 
-  bool? attemptedAudioChannelEnabled(int index) =>
-      _boolValue(audioChannels[index].attemptedValue);
+  bool? attemptedUsbAudioChannelEnabled(int index) =>
+      _boolValue(usbAudioChannels[index].attemptedValue);
 
-  bool isLoadingAudioChannel(int index) => audioChannels[index].isLoading;
-  bool isWritingAudioChannel(int index) => audioChannels[index].isWriting;
-  String? audioChannelMessage(int index) => audioChannels[index].message;
-  bool hasPendingAudioChannelChange(int index) =>
-      audioChannels[index].hasPendingChange;
+  bool isLoadingUsbAudioChannel(int index) => usbAudioChannels[index].isLoading;
+  bool isWritingUsbAudioChannel(int index) => usbAudioChannels[index].isWriting;
+  String? usbAudioChannelMessage(int index) => usbAudioChannels[index].message;
+  bool hasPendingUsbAudioChannelChange(int index) =>
+      usbAudioChannels[index].hasPendingChange;
 
-  bool get hasPendingUsbAudioChange =>
+  bool? confirmedExpanderAudioChannelEnabled(int index) =>
+      _boolValue(expanderAudioChannels[index].confirmedValue);
+
+  bool? attemptedExpanderAudioChannelEnabled(int index) =>
+      _boolValue(expanderAudioChannels[index].attemptedValue);
+
+  bool isLoadingExpanderAudioChannel(int index) =>
+      expanderAudioChannels[index].isLoading;
+  bool isWritingExpanderAudioChannel(int index) =>
+      expanderAudioChannels[index].isWriting;
+  String? expanderAudioChannelMessage(int index) =>
+      expanderAudioChannels[index].message;
+  bool hasPendingExpanderAudioChannelChange(int index) =>
+      expanderAudioChannels[index].hasPendingChange;
+
+  bool get hasPendingUsbSettingsChange =>
       hasPendingUsbHostChange ||
-      audioChannels.any((change) => change.hasPendingChange);
+      usbAudioChannels.any((change) => change.hasPendingChange);
 
-  bool get hasUsbAudioError =>
+  bool get hasPendingExpanderAudioChange =>
+      expanderAudioChannels.any((change) => change.hasPendingChange);
+
+  bool get hasUsbSettingsError =>
       usbHost.message != null ||
-      audioChannels.any((change) => change.message != null);
+      usbAudioChannels.any((change) => change.message != null);
 
-  bool get hasConfirmedUsbAudioSnapshot =>
+  bool get hasExpanderAudioError =>
+      expanderAudioChannels.any((change) => change.message != null);
+
+  bool get hasConfirmedUsbSettingsSnapshot =>
       confirmedUsbHostEnabled != null &&
-      audioChannels.every(
+      usbAudioChannels.every(
         (change) => _boolValue(change.confirmedValue) != null,
       );
+
+  bool get hasConfirmedExpanderAudioSnapshot => expanderAudioChannels.every(
+    (change) => _boolValue(change.confirmedValue) != null,
+  );
 
   Ntx8cvExpansionMode? get confirmedMode => mode.confirmedValue == null
       ? null
@@ -280,7 +388,10 @@ class Ntx8cvSettingsState {
       es5.isWriting ||
       usbHost.isLoading ||
       usbHost.isWriting ||
-      audioChannels.any((change) => change.isLoading || change.isWriting) ||
+      usbAudioChannels.any((change) => change.isLoading || change.isWriting) ||
+      expanderAudioChannels.any(
+        (change) => change.isLoading || change.isWriting,
+      ) ||
       mode.isLoading ||
       mode.isWriting;
 
@@ -292,7 +403,10 @@ class Ntx8cvSettingsState {
       es5.isWriting ||
       usbHost.isLoading ||
       usbHost.isWriting ||
-      audioChannels.any((change) => change.isLoading || change.isWriting) ||
+      usbAudioChannels.any((change) => change.isLoading || change.isWriting) ||
+      expanderAudioChannels.any(
+        (change) => change.isLoading || change.isWriting,
+      ) ||
       mode.isLoading ||
       mode.isWriting;
 
@@ -300,7 +414,8 @@ class Ntx8cvSettingsState {
     Ntx8cvSettingChange? channelGroup,
     Ntx8cvSettingChange? es5,
     Ntx8cvSettingChange? usbHost,
-    List<Ntx8cvSettingChange>? audioChannels,
+    List<Ntx8cvSettingChange>? usbAudioChannels,
+    List<Ntx8cvSettingChange>? expanderAudioChannels,
     Ntx8cvSettingChange? mode,
     bool? modeCapabilityEvidenced,
     bool? modeRebootRequired,
@@ -313,7 +428,9 @@ class Ntx8cvSettingsState {
       channelGroup: channelGroup ?? this.channelGroup,
       es5: es5 ?? this.es5,
       usbHost: usbHost ?? this.usbHost,
-      audioChannels: audioChannels ?? this.audioChannels,
+      usbAudioChannels: usbAudioChannels ?? this.usbAudioChannels,
+      expanderAudioChannels:
+          expanderAudioChannels ?? this.expanderAudioChannels,
       mode: mode ?? this.mode,
       modeCapabilityEvidenced:
           modeCapabilityEvidenced ?? this.modeCapabilityEvidenced,
@@ -327,8 +444,14 @@ class Ntx8cvSettingsState {
   }
 
   Ntx8cvSettingChange changeFor(Ntx8cvSetting setting) {
-    final audioChannelIndex = setting.audioChannelIndex;
-    if (audioChannelIndex != null) return audioChannels[audioChannelIndex];
+    final usbAudioChannelIndex = setting.usbAudioChannelIndex;
+    if (usbAudioChannelIndex != null) {
+      return usbAudioChannels[usbAudioChannelIndex];
+    }
+    final expanderAudioChannelIndex = setting.expanderAudioChannelIndex;
+    if (expanderAudioChannelIndex != null) {
+      return expanderAudioChannels[expanderAudioChannelIndex];
+    }
     return switch (setting) {
       Ntx8cvSetting.channelGroup => channelGroup,
       Ntx8cvSetting.es5Enabled => es5,
@@ -344,12 +467,24 @@ class Ntx8cvSettingsState {
     bool? modeCapabilityEvidenced,
     bool? modeRebootRequired,
   }) {
-    final audioChannelIndex = setting.audioChannelIndex;
-    if (audioChannelIndex != null) {
-      final updatedChannels = List<Ntx8cvSettingChange>.of(audioChannels);
-      updatedChannels[audioChannelIndex] = change;
+    final usbAudioChannelIndex = setting.usbAudioChannelIndex;
+    if (usbAudioChannelIndex != null) {
+      final updatedChannels = List<Ntx8cvSettingChange>.of(usbAudioChannels);
+      updatedChannels[usbAudioChannelIndex] = change;
       return copyWith(
-        audioChannels: List.unmodifiable(updatedChannels),
+        usbAudioChannels: List.unmodifiable(updatedChannels),
+        modeCapabilityEvidenced: modeCapabilityEvidenced,
+        modeRebootRequired: modeRebootRequired,
+      );
+    }
+    final expanderAudioChannelIndex = setting.expanderAudioChannelIndex;
+    if (expanderAudioChannelIndex != null) {
+      final updatedChannels = List<Ntx8cvSettingChange>.of(
+        expanderAudioChannels,
+      );
+      updatedChannels[expanderAudioChannelIndex] = change;
+      return copyWith(
+        expanderAudioChannels: List.unmodifiable(updatedChannels),
         modeCapabilityEvidenced: modeCapabilityEvidenced,
         modeRebootRequired: modeRebootRequired,
       );
@@ -424,11 +559,19 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       _setSetting(Ntx8cvSetting.usbHostEnabled, enabled ? 1 : 0);
 
   /// Enables or disables one of the eight USB audio channels.
-  Future<void> setAudioChannelEnabled(int index, bool enabled) {
+  Future<void> setUsbAudioChannelEnabled(int index, bool enabled) {
     if (index < 0 || index >= kNtx8cvAudioChannelCount) {
       throw RangeError.range(index, 0, kNtx8cvAudioChannelCount - 1, 'index');
     }
-    return _setSetting(_audioChannelSettings[index], enabled ? 1 : 0);
+    return _setSetting(_usbAudioChannelSettings[index], enabled ? 1 : 0);
+  }
+
+  /// Enables or disables one of the eight disting NT expander audio channels.
+  Future<void> setExpanderAudioChannelEnabled(int index, bool enabled) {
+    if (index < 0 || index >= kNtx8cvAudioChannelCount) {
+      throw RangeError.range(index, 0, kNtx8cvAudioChannelCount - 1, 'index');
+    }
+    return _setSetting(_expanderAudioChannelSettings[index], enabled ? 1 : 0);
   }
 
   /// Changes the NT expansion mode immediately after a successful capability
@@ -646,11 +789,18 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       channelGroup: retainedChange(state.channelGroup, 'Channel Group'),
       es5: retainedChange(state.es5, 'ES-5'),
       usbHost: retainedChange(state.usbHost, 'USB host'),
-      audioChannels: List.unmodifiable([
+      usbAudioChannels: List.unmodifiable([
         for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
           retainedChange(
-            state.audioChannels[index],
-            'audio channel ${index + 1}',
+            state.usbAudioChannels[index],
+            'USB audio channel ${index + 1}',
+          ),
+      ]),
+      expanderAudioChannels: List.unmodifiable([
+        for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
+          retainedChange(
+            state.expanderAudioChannels[index],
+            'NT expander audio channel ${index + 1}',
           ),
       ]),
       mode: retainedChange(state.mode, 'Mode'),
@@ -679,11 +829,18 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
       channelGroup: interruptedChange(state.channelGroup, 'Channel Group'),
       es5: interruptedChange(state.es5, 'ES-5'),
       usbHost: interruptedChange(state.usbHost, 'USB host'),
-      audioChannels: List.unmodifiable([
+      usbAudioChannels: List.unmodifiable([
         for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
           interruptedChange(
-            state.audioChannels[index],
-            'audio channel ${index + 1}',
+            state.usbAudioChannels[index],
+            'USB audio channel ${index + 1}',
+          ),
+      ]),
+      expanderAudioChannels: List.unmodifiable([
+        for (var index = 0; index < kNtx8cvAudioChannelCount; index++)
+          interruptedChange(
+            state.expanderAudioChannels[index],
+            'NT expander audio channel ${index + 1}',
           ),
       ]),
       mode: interruptedChange(state.mode, 'NT expansion mode'),
@@ -730,7 +887,12 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
 
     var es5 = state.es5;
     var usbHost = state.usbHost;
-    final audioChannels = List<Ntx8cvSettingChange>.of(state.audioChannels);
+    final usbAudioChannels = List<Ntx8cvSettingChange>.of(
+      state.usbAudioChannels,
+    );
+    final expanderAudioChannels = List<Ntx8cvSettingChange>.of(
+      state.expanderAudioChannels,
+    );
     var mode = state.mode;
     var channelGroup = state.channelGroup;
 
@@ -761,11 +923,23 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     if (!_isActiveSession(session)) return;
 
     for (var index = 0; index < kNtx8cvAudioChannelCount; index++) {
-      final current = audioChannels[index];
+      final current = usbAudioChannels[index];
       if (!current.hasPendingChange) {
-        audioChannels[index] = await _readSettingResult(
+        usbAudioChannels[index] = await _readSettingResult(
           session,
-          _audioChannelSettings[index],
+          _usbAudioChannelSettings[index],
+          current,
+        );
+      }
+      if (!_isActiveSession(session)) return;
+    }
+
+    for (var index = 0; index < kNtx8cvAudioChannelCount; index++) {
+      final current = expanderAudioChannels[index];
+      if (!current.hasPendingChange) {
+        expanderAudioChannels[index] = await _readSettingResult(
+          session,
+          _expanderAudioChannelSettings[index],
           current,
         );
       }
@@ -777,7 +951,8 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
         channelGroup: channelGroup,
         es5: es5,
         usbHost: usbHost,
-        audioChannels: List.unmodifiable(audioChannels),
+        usbAudioChannels: List.unmodifiable(usbAudioChannels),
+        expanderAudioChannels: List.unmodifiable(expanderAudioChannels),
         mode: mode,
         modeCapabilityEvidenced:
             mode.confirmedValue != null &&
@@ -824,7 +999,9 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
                 'the NTX-8CV connection and reconnect to try again.',
           Ntx8cvSetting.usbHostEnabled =>
             'Could not read the device-confirmed USB host setting.',
-          _ when setting.audioChannelIndex != null =>
+          _
+              when setting.usbAudioChannelIndex != null ||
+                  setting.expanderAudioChannelIndex != null =>
             'Could not read the device-confirmed ${setting.label} setting.',
           _ => 'Could not read the device-confirmed setting.',
         },
@@ -837,7 +1014,10 @@ class Ntx8cvSettingsCubit extends Cubit<Ntx8cvSettingsState> {
     Ntx8cvSetting.es5Enabled => value == 0 || value == 1,
     Ntx8cvSetting.usbHostEnabled => value == 0 || value == 1,
     Ntx8cvSetting.expansionMode => Ntx8cvExpansionMode.fromValue(value) != null,
-    _ when setting.audioChannelIndex != null => value == 0 || value == 1,
+    _
+        when setting.usbAudioChannelIndex != null ||
+            setting.expanderAudioChannelIndex != null =>
+      value == 0 || value == 1,
     _ => false,
   };
 
