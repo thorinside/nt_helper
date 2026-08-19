@@ -103,12 +103,14 @@ void main() {
     late DistingMessageScheduler scheduler;
     late StreamController<MidiPacket> incoming;
     late MidiDevice device;
+    late MockMidiCommand midi;
 
     setUp(() {
       final setup = _createScheduler();
       scheduler = setup.scheduler;
       incoming = setup.incoming;
       device = setup.device;
+      midi = setup.midi;
     });
 
     tearDown(() {
@@ -138,6 +140,118 @@ void main() {
 
       final result = await future;
       expect(result, isNotNull);
+    });
+
+    test(
+      'single stream error during split file download retries immediately',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respDirectoryListing,
+          sdCardOperation: SdCardOperation.fileDownload,
+        );
+        final request = _buildSysEx(
+          DistingNTRespMessageType.respDirectoryListing,
+          const [],
+        );
+        final response = _buildSysEx(
+          DistingNTRespMessageType.respDirectoryListing,
+          [0, SdCardOperation.fileDownload.code, 0x01, 0x02, 0x03, 0x04],
+        );
+
+        final future = scheduler.sendRequest<FileChunk>(
+          request,
+          key,
+          maxRetries: 1,
+          timeout: const Duration(milliseconds: 100),
+        );
+        await Future.microtask(() {});
+
+        incoming.add(
+          MidiPacket(
+            Uint8List.fromList(response.sublist(0, response.length ~/ 2)),
+            0,
+            device,
+          ),
+        );
+        await Future.microtask(() {});
+        incoming.addError(StateError('CoreMIDI transfer failed'));
+        await Future.microtask(() {});
+
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respDirectoryListing,
+          [0, SdCardOperation.fileDownload.code, 0x01, 0x02, 0x03, 0x04],
+        );
+
+        final result = await future;
+        expect(result?.data, [0x12, 0x34]);
+        verify(() => midi.sendData(any(), deviceId: device.id)).called(2);
+        expect(
+          scheduler.getDiagnostics(),
+          allOf(
+            containsPair('subscriptionActive', isTrue),
+            containsPair(
+              'lastSubscriptionError',
+              contains('CoreMIDI transfer failed'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('repeated split transfer errors do not replay indefinitely', () async {
+      final key = RequestKey(
+        sysExId: _testSysExId,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
+        sdCardOperation: SdCardOperation.fileDownload,
+      );
+      final response = _buildSysEx(
+        DistingNTRespMessageType.respDirectoryListing,
+        [0, SdCardOperation.fileDownload.code, 0x01, 0x02],
+      );
+      final partial = Uint8List.fromList(
+        response.sublist(0, response.length ~/ 2),
+      );
+
+      final future = scheduler.sendRequest<FileChunk>(
+        _buildSysEx(DistingNTRespMessageType.respDirectoryListing, const []),
+        key,
+        maxRetries: 1,
+        timeout: const Duration(milliseconds: 20),
+      );
+      await Future.microtask(() {});
+
+      incoming.add(MidiPacket(partial, 0, device));
+      await Future.microtask(() {});
+      incoming.addError(StateError('first transfer failure'));
+      await Future.microtask(() {});
+      incoming.add(MidiPacket(partial, 0, device));
+      await Future.microtask(() {});
+      incoming.addError(StateError('second transfer failure'));
+
+      await expectLater(future, throwsA(isA<TimeoutException>()));
+      verify(() => midi.sendData(any(), deviceId: device.id)).called(2);
+    });
+
+    test('stream error outside a split transfer does not replay', () async {
+      final key = RequestKey(
+        sysExId: _testSysExId,
+        messageType: DistingNTRespMessageType.respNumAlgorithms,
+      );
+
+      final future = scheduler.sendRequest(
+        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, const []),
+        key,
+        maxRetries: 1,
+        timeout: const Duration(milliseconds: 20),
+      );
+      await Future.microtask(() {});
+      incoming.addError(StateError('isolated stream warning'));
+
+      await expectLater(future, throwsA(isA<TimeoutException>()));
+      verify(() => midi.sendData(any(), deviceId: device.id)).called(1);
     });
 
     test(

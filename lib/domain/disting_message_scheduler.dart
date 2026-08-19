@@ -66,6 +66,7 @@ class _ScheduledRequest {
   final Duration retryDelay;
 
   int attemptCount = 0;
+  int transferErrorRecoveryCount = 0;
   Timer? timeoutTimer;
 
   /// Stopwatch to measure round-trip time from send to response
@@ -269,6 +270,7 @@ class DistingMessageScheduler {
 
   static const bool _diagnosticsEnabled = true;
   static int _nextRequestId = 0;
+  static const int _maxTransferErrorRecoveries = 1;
 
   // Timing configuration
   final Duration messageInterval;
@@ -574,8 +576,35 @@ class DistingMessageScheduler {
   }
 
   void _handleSubscriptionError(Object error, StackTrace stackTrace) {
-    _subscriptionActive = false;
     _lastSubscriptionError = error.toString();
+
+    // The listener uses cancelOnError: false, so a single stream error does
+    // not end the subscription. If it interrupted a split SysEx response,
+    // discard the unusable partial frame and replay the active request once.
+    // This recovery is deliberately separate from the normal timeout budget:
+    // SD requests retain their one-attempt timeout policy, while a confirmed
+    // receive-side transfer failure can recover immediately.
+    _subscriptionActive = _subscription != null;
+    final request = _currentRequest;
+    if (_state != _SchedulerState.waitingForResponse ||
+        !_isBufferingSysEx ||
+        request == null ||
+        request.completer.isCompleted ||
+        request.transferErrorRecoveryCount >= _maxTransferErrorRecoveries) {
+      return;
+    }
+
+    _sysExBuffer.clear();
+    _isBufferingSysEx = false;
+    request.timeoutTimer?.cancel();
+    request.stopwatch.stop();
+    request.transferErrorRecoveryCount++;
+    _state = _SchedulerState.sending;
+    if (request.retryDelay == Duration.zero) {
+      _sendCurrentRequest();
+    } else {
+      _retryTimer = Timer(request.retryDelay, _sendCurrentRequest);
+    }
   }
 
   void _handleSubscriptionDone() {
