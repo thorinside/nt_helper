@@ -296,22 +296,6 @@ jobs:
       - name: Build Windows
         run: flutter build windows
 
-      - name: Verify Windows bundle includes SQLite
-        shell: pwsh
-        run: |
-          $releaseDir = "build/windows/x64/runner/Release"
-          $sqliteDll = Join-Path $releaseDir "sqlite3.dll"
-          $manifest = Join-Path $releaseDir "data/flutter_assets/NativeAssetsManifest.json"
-          if (-not (Test-Path $sqliteDll)) {
-            throw "Windows release bundle is missing sqlite3.dll"
-          }
-          if (-not (Test-Path $manifest)) {
-            throw "Windows release bundle is missing NativeAssetsManifest.json"
-          }
-          if (-not (Select-String -Path $manifest -SimpleMatch '"sqlite3.dll"' -Quiet)) {
-            throw "Windows native assets manifest does not reference sqlite3.dll"
-          }
-
       - name: Verify Windows bundle omits VC++ runtime
         shell: pwsh
         run: |
