@@ -1,5 +1,10 @@
 import 'dart:ui'
-    show ViewFocusEvent, ViewFocusState, ViewFocusDirection, Tristate;
+    show
+        PointerDeviceKind,
+        ViewFocusEvent,
+        ViewFocusState,
+        ViewFocusDirection,
+        Tristate;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -162,7 +167,15 @@ void main() {
   Future<void> wheel(WidgetTester tester, int pushIndex, double delta) async {
     await tester.sendEventToBinding(
       PointerScrollEvent(
-        position: tester.getCenter(control(pushIndex)),
+        kind: PointerDeviceKind.mouse,
+        position: tester.getCenter(
+          find
+              .descendant(
+                of: control(pushIndex),
+                matching: find.byType(CustomPaint),
+              )
+              .first,
+        ),
         scrollDelta: Offset(0, delta),
       ),
     );
@@ -181,7 +194,7 @@ void main() {
         'Button 3',
         'Button 4',
         'Left pot',
-        'Centre pot',
+        'Center pot',
         'Right pot',
         'Left encoder',
         'Right encoder',
@@ -199,7 +212,7 @@ void main() {
         );
         expect(
           find.descendant(of: control(i), matching: find.text('Pressed')),
-          findsOneWidget,
+          findsNothing,
         );
         await pointer.up();
         await flush(tester);
@@ -305,7 +318,7 @@ void main() {
             of: control(index),
             matching: find.text('Local 2048'),
           ),
-          findsOneWidget,
+          findsNothing,
         );
         await tester.tap(control(index));
         await flush(tester);
@@ -801,7 +814,7 @@ void main() {
       for (var i = 4; i < 7; i++) {
         expect(
           find.descendant(of: control(i), matching: find.text('Local 2048')),
-          findsOneWidget,
+          findsNothing,
         );
       }
       await close(tester);
@@ -1035,7 +1048,7 @@ void main() {
           .getSemantics(find.bySemanticsLabel('Left encoder'))
           .getSemanticsData();
       expect(encoder.value, 'Relative adjustment, Released');
-      expect(encoder.increasedValue, 'Relative +1 step');
+      expect(encoder.increasedValue, 'Increase');
       final foldSemantics = tester
           .getSemantics(find.byKey(const ValueKey('video-remote-fold')))
           .getSemanticsData();
@@ -1052,7 +1065,7 @@ void main() {
       );
       await flush(tester);
       expect(
-        find.text('Remote control is unavailable in offline mode.'),
+        find.bySemanticsLabel('Remote control is unavailable in offline mode.'),
         findsOneWidget,
       );
       final silentStart = payloads().length;

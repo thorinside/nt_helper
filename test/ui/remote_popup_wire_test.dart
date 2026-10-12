@@ -1,5 +1,10 @@
 import 'dart:ui'
-    show Tristate, ViewFocusEvent, ViewFocusState, ViewFocusDirection;
+    show
+        PointerDeviceKind,
+        Tristate,
+        ViewFocusEvent,
+        ViewFocusState,
+        ViewFocusDirection;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -86,6 +91,8 @@ void main() {
         List<List<int>> payloads() =>
             wire.remotePackets.map((p) => p.sublist(7, p.length - 1)).toList();
         Future<void> flush(WidgetTester tester, {bool poll = false}) async {
+          // Model the ongoing camera feed during long input/geometry scenarios.
+          await video.sendFrame();
           if (poll) await tester.pump(const Duration(milliseconds: 200));
           for (var i = 0; i < 30; i++) {
             await tester.pump(const Duration(milliseconds: 1));
@@ -122,12 +129,132 @@ void main() {
         Future<void> wheel(WidgetTester tester, int index, double dy) async {
           await tester.sendEventToBinding(
             PointerScrollEvent(
-              position: tester.getCenter(control(index)),
+              kind: PointerDeviceKind.mouse,
+              position: tester.getCenter(
+                find
+                    .descendant(
+                      of: control(index),
+                      matching: find.byType(CustomPaint),
+                    )
+                    .first,
+              ),
               scrollDelta: Offset(0, dy),
             ),
           );
           await flush(tester);
         }
+
+        if (!windows) {
+          testWidgets(
+            'mouse press routes outside popup bounds and releases once',
+            (tester) async {
+              await open(tester);
+              for (final index in [0, 7]) {
+                final before = payloads().length;
+                final start = tester.getCenter(control(index));
+                final held = await tester.startGesture(
+                  start,
+                  kind: PointerDeviceKind.mouse,
+                );
+                await flush(tester);
+                await held.moveTo(Offset(900, start.dy));
+                await flush(tester);
+                expect(cubit.remoteControlState.heldControls, {index});
+                await held.up();
+                await flush(tester);
+                expect(payloads().sublist(before), [
+                  [1, index],
+                  [2, index],
+                ]);
+                expect(cubit.remoteControlState.heldControls, isEmpty);
+              }
+            },
+          );
+
+          testWidgets(
+            'expanded native minimum width fits all controls at the boundary and survives reload',
+            (tester) async {
+              await open(tester);
+              final minimum =
+                  channels.calls
+                          .where((call) => call.method == 'setMinimumSize')
+                          .last
+                          .arguments
+                      as Map;
+              expect(minimum['width'], 356);
+              tester.view.physicalSize = const Size(356, 352);
+              await flush(tester);
+              final strip = tester.getRect(find.byType(RemoteControlCluster));
+              for (var index = 0; index < 9; index++) {
+                final target = tester.getRect(control(index));
+                expect(target.left, greaterThanOrEqualTo(strip.left + 8));
+                expect(target.right, lessThanOrEqualTo(strip.right - 8));
+              }
+              final callsBefore = channels.calls
+                  .where((call) => call.method == 'setMinimumSize')
+                  .length;
+              final reload = tester.binding.reassembleApplication();
+              await tester.pump();
+              await flush(tester);
+              await reload;
+              final minimumCalls = channels.calls
+                  .where((call) => call.method == 'setMinimumSize')
+                  .toList();
+              expect(minimumCalls.length, greaterThan(callsBefore));
+              expect((minimumCalls.last.arguments as Map)['width'], 356);
+            },
+          );
+        }
+
+        testWidgets(
+          'hover mouse wheel turns unfocused pots without push; held wheel preserves press and release',
+          (tester) async {
+            await open(tester);
+            tester.binding.handleViewFocusChanged(
+              ViewFocusEvent(
+                viewId: tester.view.viewId,
+                state: ViewFocusState.unfocused,
+                direction: ViewFocusDirection.undefined,
+              ),
+            );
+            await flush(tester, poll: true);
+            expect(cubit.remoteControlState.heldControls, isEmpty);
+            final before = payloads().length;
+            for (var index = 4; index < 7; index++) {
+              await wheel(tester, index, -12);
+            }
+            expect(payloads().sublist(before), [
+              [4, 0, 0x20, 0x10],
+              [4, 1, 0x20, 0x10],
+              [4, 2, 0x20, 0x10],
+            ]);
+            expect(cubit.remoteControlState.heldControls, isEmpty);
+            tester.binding.handleViewFocusChanged(
+              ViewFocusEvent(
+                viewId: tester.view.viewId,
+                state: ViewFocusState.focused,
+                direction: ViewFocusDirection.undefined,
+              ),
+            );
+            await flush(tester, poll: true);
+            final heldAt = payloads().length;
+            final held = await tester.startGesture(
+              tester.getCenter(control(4)),
+              kind: PointerDeviceKind.mouse,
+            );
+            await flush(tester);
+            await wheel(tester, 4, -12);
+            expect(cubit.remoteControlState.heldControls, {4});
+            await held.up();
+            await flush(tester);
+            expect(payloads().sublist(heldAt), [
+              [1, 4],
+              [4, 0, 0x40, 0x10],
+              [2, 4],
+            ]);
+            expect(cubit.remoteControlState.heldControls, isEmpty);
+          },
+        );
 
         testWidgets(
           'real UI actions/results, independent pot retention, host changes and reconnect isolation',
@@ -175,7 +302,7 @@ void main() {
                   of: control(i),
                   matching: find.text('Local 2048'),
                 ),
-                findsOneWidget,
+                findsNothing,
               );
             }
             await expectLater(
@@ -205,7 +332,7 @@ void main() {
                   of: control(index),
                   matching: find.text('Pressed'),
                 ),
-                findsOneWidget,
+                findsNothing,
               );
               await held.moveBy(const Offset(700, 0));
               await held.up();
@@ -419,7 +546,11 @@ void main() {
               ),
             );
             await open(tester);
-            for (final size in [const Size(600, 480), const Size(256, 180)]) {
+            for (final size in [
+              const Size(1200, 480),
+              const Size(600, 480),
+              const Size(256, 180),
+            ]) {
               tester.view.physicalSize = size;
               await tester.pump();
               for (final expanded in [true, false]) {
@@ -453,13 +584,43 @@ void main() {
                         .width,
                     36,
                   );
+                  final clusterBounds = tester.getRect(
+                    find.byType(RemoteControlCluster),
+                  );
+                  expect(clusterBounds.width, size.width);
+                  // Wider video windows must not enlarge or spread the group.
+                  expect(bounds[4].width, 76);
+                  expect(bounds[5].left - bounds[4].left, 76);
+                  expect(bounds[6].left - bounds[5].left, 76);
+                  if (size.width >= 356) {
+                    expect(
+                      (bounds[0].left + bounds[3].right) / 2,
+                      closeTo(clusterBounds.center.dx, 0.01),
+                    );
+                  }
+                  expect(clusterBounds.height, lessThanOrEqualTo(168));
+                  expect(bounds[4].top - clusterBounds.top, closeTo(12, 0.01));
+                  final face = tester.getRect(
+                    find
+                        .descendant(
+                          of: control(4),
+                          matching: find.byType(CustomPaint),
+                        )
+                        .first,
+                  );
+                  expect(face.width, closeTo(56, 0.01));
+                  expect(find.text('NT remote controls'), findsNothing);
+                  expect(
+                    find.text('Local inputs, not hardware positions'),
+                    findsNothing,
+                  );
                   const names = [
                     'Button 1',
                     'Button 2',
                     'Button 3',
                     'Button 4',
                     'Left pot',
-                    'Centre pot',
+                    'Center pot',
                     'Right pot',
                     'Left encoder',
                     'Right encoder',
@@ -472,7 +633,7 @@ void main() {
                         .getSemantics(find.bySemanticsLabel('Left pot'))
                         .getSemanticsData()
                         .value,
-                    contains('Local value'),
+                    'Released',
                   );
                   expect(
                     tester

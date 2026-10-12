@@ -15,12 +15,15 @@ class RemoteControlCluster extends StatefulWidget {
     required this.state,
     required this.onAction,
     required this.onPotAdjustment,
+    this.onWheelAdjustment,
   });
 
-  static const double height = 252;
+  static const double width = 356;
+  static const double height = 168;
   final RemoteControlState state;
   final ValueChanged<RemoteAction> onAction;
   final void Function(int index, int adjustment) onPotAdjustment;
+  final void Function(int pushIndex, int adjustment)? onWheelAdjustment;
 
   @override
   State<RemoteControlCluster> createState() => _RemoteControlClusterState();
@@ -50,19 +53,17 @@ class _RemoteControlClusterState extends State<RemoteControlCluster> {
       inputIdentity: (widget.state.sessionId, _inputGeneration),
       onAction: widget.onAction,
       onPotAdjustment: widget.onPotAdjustment,
+      wheelEnabled:
+          widget.state.available &&
+          (widget.state.sessionId != null || widget.onWheelAdjustment != null),
+      onWheelAdjustment: widget.onWheelAdjustment,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final feedback =
-        widget.state.error ??
-        widget.state.unavailableReason ??
-        (widget.state.pending
-            ? 'Sending remote input…'
-            : 'Local inputs, not hardware positions');
+    final feedback = widget.state.error ?? widget.state.unavailableReason;
     return FocusTraversalGroup(
-      // Keep traversal independent of scroll offsets at narrow host widths.
       policy: WidgetOrderTraversalPolicy(),
       child: Focus(
         canRequestFocus: false,
@@ -70,135 +71,107 @@ class _RemoteControlClusterState extends State<RemoteControlCluster> {
         onFocusChange: (focused) {
           if (!focused) _releaseFocusGroup();
         },
-        child: Material(
-          color: AppThemeColors.ntRemoteSurface,
-          child: SingleChildScrollView(
-            child: SizedBox(
-              height: RemoteControlCluster.height,
-              child: Column(
-                children: [
-                  Semantics(
-                    header: true,
-                    child: const Text(
-                      'NT remote controls',
-                      style: TextStyle(
-                        inherit: false,
-                        color: AppThemeColors.ntDisplayForeground,
-                        fontSize: 14,
-                        height: 1.2,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: 356,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              SizedBox(
-                                width: 48,
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    _control(0, 'Button 1'),
-                                    Transform.translate(
-                                      offset: const Offset(6, 0),
-                                      child: _control(1, 'Button 2'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(
-                                width: 228,
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        _control(4, 'Left pot', pot: 0),
-                                        _control(5, 'Centre pot', pot: 1),
-                                        _control(6, 'Right pot', pot: 2),
-                                      ],
-                                    ),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        _control(7, 'Left encoder', encoder: 0),
-                                        _control(
-                                          8,
-                                          'Right encoder',
-                                          encoder: 1,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(
-                                width: 48,
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    _control(3, 'Button 4'),
-                                    Transform.translate(
-                                      offset: const Offset(-6, 0),
-                                      child: _control(2, 'Button 3'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+        child: Semantics(
+          label: feedback,
+          liveRegion: feedback != null,
+          child: Material(
+            color: AppThemeColors.ntRemoteSurface,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = math.max(
+                  RemoteControlCluster.width,
+                  constraints.maxWidth,
+                );
+                return SingleChildScrollView(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: width,
+                      height: RemoteControlCluster.height,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
                         ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 32,
-                    child: Semantics(
-                      label:
-                          widget.state.error ??
-                          widget.state.unavailableReason ??
-                          'Local inputs, not hardware positions',
-                      liveRegion:
-                          widget.state.error != null ||
-                          widget.state.unavailableReason != null,
-                      child: ExcludeSemantics(
-                        child: Tooltip(
-                          message: feedback,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
-                              feedback,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                inherit: false,
-                                color: AppThemeColors.ntRemoteMutedForeground,
-                                fontSize: 11,
-                                height: 1.2,
-                              ),
+                        child: Align(
+                          child: SizedBox(
+                            width: RemoteControlCluster.width - 16,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 48,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _control(0, 'Button 1'),
+                                      const SizedBox(height: 8),
+                                      Transform.translate(
+                                        offset: const Offset(6, 0),
+                                        child: _control(1, 'Button 2'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 228,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          _control(4, 'Left pot', pot: 0),
+                                          _control(5, 'Center pot', pot: 1),
+                                          _control(6, 'Right pot', pot: 2),
+                                        ],
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          _control(
+                                            7,
+                                            'Left encoder',
+                                            encoder: 0,
+                                          ),
+                                          const SizedBox(width: 38),
+                                          _control(
+                                            8,
+                                            'Right encoder',
+                                            encoder: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 48,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _control(3, 'Button 4'),
+                                      const SizedBox(height: 8),
+                                      Transform.translate(
+                                        offset: const Offset(-6, 0),
+                                        child: _control(2, 'Button 3'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(
-                    height: 24,
-                  ), // Keep the host resize handle clear.
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),
@@ -220,6 +193,8 @@ class _RemoteControl extends StatefulWidget {
     required this.inputIdentity,
     required this.onAction,
     required this.onPotAdjustment,
+    required this.wheelEnabled,
+    this.onWheelAdjustment,
   });
 
   final String name;
@@ -232,6 +207,8 @@ class _RemoteControl extends StatefulWidget {
   final Object inputIdentity;
   final ValueChanged<RemoteAction> onAction;
   final void Function(int, int) onPotAdjustment;
+  final bool wheelEnabled;
+  final void Function(int pushIndex, int adjustment)? onWheelAdjustment;
 
   @override
   State<_RemoteControl> createState() => _RemoteControlState();
@@ -318,7 +295,6 @@ class _RemoteControlState extends State<_RemoteControl> {
   @override
   Widget build(BuildContext context) {
     final value = [
-      if (widget.potValue != null) 'Local value ${widget.potValue} of 4095',
       if (widget.encoderIndex != null) 'Relative adjustment',
       widget.pressed ? 'Pressed' : 'Released',
     ].join(', ');
@@ -334,16 +310,8 @@ class _RemoteControlState extends State<_RemoteControl> {
       child: Semantics(
         label: widget.name,
         value: value,
-        increasedValue: _rotary
-            ? (widget.potValue == null
-                  ? 'Relative +1 step'
-                  : 'Local value ${(widget.potValue! + 32).clamp(0, 4095)} of 4095')
-            : null,
-        decreasedValue: _rotary
-            ? (widget.potValue == null
-                  ? 'Relative -1 step'
-                  : 'Local value ${(widget.potValue! - 32).clamp(0, 4095)} of 4095')
-            : null,
+        increasedValue: _rotary ? 'Increase' : null,
+        decreasedValue: _rotary ? 'Decrease' : null,
         button: true,
         enabled: widget.enabled,
         focusable: true,
@@ -358,6 +326,7 @@ class _RemoteControlState extends State<_RemoteControl> {
         onIncrease: widget.enabled && _rotary ? () => _step(1) : null,
         onDecrease: widget.enabled && _rotary ? () => _step(-1) : null,
         child: Listener(
+          behavior: HitTestBehavior.opaque,
           onPointerDown: (event) {
             if (!widget.enabled ||
                 _pointer != null ||
@@ -384,9 +353,9 @@ class _RemoteControlState extends State<_RemoteControl> {
               return;
             }
             if (widget.potIndex != null) {
-              _turn((-event.localDelta.dy * 24).round());
+              _turn((-event.delta.dy * 24).round());
             } else if (widget.encoderIndex != null) {
-              _dragRemainder -= event.localDelta.dy;
+              _dragRemainder -= event.delta.dy;
               final steps = (_dragRemainder / 6).truncate();
               _dragRemainder -= steps * 6;
               _turn(steps);
@@ -395,14 +364,23 @@ class _RemoteControlState extends State<_RemoteControl> {
           onPointerUp: (event) => _endPointer(event.pointer),
           onPointerCancel: (event) => _endPointer(event.pointer),
           onPointerSignal: (event) {
-            if (widget.enabled &&
+            if (widget.wheelEnabled &&
                 _rotary &&
                 event is PointerScrollEvent &&
                 event.scrollDelta.dy != 0) {
-              GestureBinding.instance.pointerSignalResolver.register(
-                event,
-                (_) => _step(event.scrollDelta.dy < 0 ? 1 : -1),
-              );
+              GestureBinding.instance.pointerSignalResolver.register(event, (
+                _,
+              ) {
+                final direction = event.scrollDelta.dy < 0 ? 1 : -1;
+                if (widget.onWheelAdjustment case final callback?) {
+                  callback(
+                    widget.pushIndex,
+                    direction * (widget.potIndex == null ? 1 : 32),
+                  );
+                } else {
+                  _step(direction);
+                }
+              });
             }
           },
           child: GestureDetector(
@@ -414,7 +392,7 @@ class _RemoteControlState extends State<_RemoteControl> {
             child: ExcludeSemantics(
               child: SizedBox(
                 width: _rotary ? 76 : 48,
-                height: _rotary ? 84 : 64,
+                height: _rotary ? 72 : 64,
                 child: Column(
                   children: [
                     SizedBox(
@@ -436,21 +414,6 @@ class _RemoteControlState extends State<_RemoteControl> {
                       style: const TextStyle(
                         inherit: false,
                         color: AppThemeColors.ntDisplayForeground,
-                        fontSize: 10,
-                        height: 1.2,
-                      ),
-                    ),
-                    Text(
-                      widget.pressed
-                          ? 'Pressed'
-                          : (widget.potValue == null
-                                ? ''
-                                : 'Local ${widget.potValue}'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        inherit: false,
-                        color: AppThemeColors.ntRemoteMutedForeground,
                         fontSize: 10,
                         height: 1.2,
                       ),

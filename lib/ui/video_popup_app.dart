@@ -110,6 +110,7 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
   String? _windowId;
   WindowController? _controller;
   Timer? _remoteTimer;
+  Future<void> _wheelTail = Future<void>.value();
   RemoteControlState _remote = RemoteControlState(
     unavailableReason: 'Waiting for the main connection authority.',
   );
@@ -136,6 +137,12 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
     unawaited(_configureWindowController().catchError(_reportChannelError));
     _videoStartup = _startVideo();
     _startToolbarHideTimer();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    unawaited(_sizeForRemote().catchError(_reportChannelError));
   }
 
   Future<void> _configureWindow() async {
@@ -534,6 +541,48 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
     );
   }
 
+  void _wheelRemote(int pushIndex, int adjustment) {
+    final generation = _generation;
+    final connectionId = _remote.connectionId;
+    _wheelTail = _wheelTail
+        .then<void>((_) async {
+          bool current() =>
+              mounted &&
+              !_disposed &&
+              !_closing &&
+              _remoteExpanded &&
+              generation == _generation &&
+              connectionId == _remote.connectionId;
+          if (!current()) return;
+          if (_remote.sessionId == null) {
+            await _request(VideoPopupRemoteContract.read);
+            if (!current() || !_remote.available || _remote.error != null) {
+              return;
+            }
+            await _request(VideoPopupRemoteContract.open, {
+              'connectionId': _remote.connectionId,
+            });
+          }
+          if (!current() || !_remote.available || _remote.sessionId == null) {
+            return;
+          }
+          await _request(VideoPopupRemoteContract.action, {
+            'connectionId': _remote.connectionId,
+            'sessionId': _remote.sessionId,
+            'action': pushIndex < 7
+                ? {
+                    'type': 'potAdjustment',
+                    'index': pushIndex - 4,
+                    'value': adjustment,
+                  }
+                : VideoPopupRemoteContract.encodeAction(
+                    RemoteEncoderTurn(pushIndex - 7, adjustment),
+                  ),
+          });
+        })
+        .catchError(_reportChannelError);
+  }
+
   void _adjustPot(int index, int adjustment) {
     if (!_active || !_remoteExpanded || _remote.sessionId == null) return;
     unawaited(
@@ -583,13 +632,22 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
         _remoteExpanded,
       );
     } else {
-      await windowManager.setMinimumSize(
-        Size(256, _remoteExpanded ? 352 : 100),
+      final minimum = Size(
+        _remoteExpanded ? RemoteControlCluster.width : 256,
+        _remoteExpanded ? 352 : 100,
       );
+      await windowManager.setMinimumSize(minimum);
       if (!mounted || !_remoteExpanded) return;
       final size = await windowManager.getSize();
       if (!mounted || !_remoteExpanded) return;
-      if (size.height < 352) await windowManager.setSize(Size(size.width, 352));
+      if (size.width < minimum.width || size.height < minimum.height) {
+        await windowManager.setSize(
+          Size(
+            size.width < minimum.width ? minimum.width : size.width,
+            size.height < minimum.height ? minimum.height : size.height,
+          ),
+        );
+      }
     }
   }
 
@@ -687,6 +745,7 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
                               )
                             : 0.0;
                         return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(
                               child: SizedBox.expand(
@@ -721,6 +780,7 @@ class _VideoPopupWindowState extends State<VideoPopupWindow>
                                   state: _remote,
                                   onAction: _sendRemote,
                                   onPotAdjustment: _adjustPot,
+                                  onWheelAdjustment: _wheelRemote,
                                 ),
                               ),
                           ],

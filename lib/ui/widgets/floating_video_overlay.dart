@@ -183,6 +183,16 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay>
     );
   }
 
+  void _wheelRemote(int pushIndex, int adjustment) {
+    if (!_remoteExpanded || !widget.cubit.remoteControlState.available) return;
+    _openRemoteSession();
+    if (pushIndex < 7) {
+      _adjustPot(pushIndex - 4, adjustment);
+    } else {
+      _sendRemote(RemoteEncoderTurn(pushIndex - 7, adjustment));
+    }
+  }
+
   void _adjustPot(int index, int adjustment) {
     final session = _remoteSession;
     if (session == null) return;
@@ -339,6 +349,7 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay>
               ),
               onAction: _sendRemote,
               onPotAdjustment: _adjustPot,
+              onWheelAdjustment: _wheelRemote,
             )
           : null,
       child: FloatingVideoContent(
