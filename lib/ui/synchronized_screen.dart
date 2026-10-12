@@ -285,10 +285,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     final route = ModalRoute.of(context);
     if (route != null && !route.isCurrent) return;
 
-    // Don't steal focus from text fields (e.g. in non-route overlays)
+    // Don't steal focus from text fields or the interactive video overlay.
     final primaryFocus = FocusManager.instance.primaryFocus;
     if (primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() !=
-        null) {
+            null ||
+        primaryFocus?.context
+                ?.findAncestorWidgetOfExactType<FloatingVideoOverlay>() !=
+            null) {
       return;
     }
 

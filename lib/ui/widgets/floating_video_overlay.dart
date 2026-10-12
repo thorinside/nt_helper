@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' show ViewFocusEvent, ViewFocusState;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
@@ -9,6 +11,9 @@ import 'package:nt_helper/cubit/video_frame_cubit.dart';
 import 'package:nt_helper/cubit/video_frame_state.dart';
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/ui/widgets/draggable_resizable_overlay.dart';
+import 'package:nt_helper/ui/widgets/remote_control_cluster.dart';
+import 'package:nt_helper/models/remote_control_state.dart';
+import 'package:nt_helper/models/remote_action.dart';
 import 'package:pasteboard/pasteboard.dart';
 
 class FloatingVideoOverlay extends StatefulWidget {
@@ -27,7 +32,16 @@ class FloatingVideoOverlay extends StatefulWidget {
   State<FloatingVideoOverlay> createState() => _FloatingVideoOverlayState();
 }
 
-class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
+class _FloatingVideoOverlayState extends State<FloatingVideoOverlay>
+    with WidgetsBindingObserver {
+  bool _remoteExpanded = false;
+  bool _active = true;
+  bool _foreground = true;
+  bool _viewFocused = true;
+  String? _remoteSession;
+  late RemoteControlState _remoteState;
+  StreamSubscription<RemoteControlState>? _remoteSubscription;
+  Uint8List? _sourceFrame;
   Uint8List? _lastFrame;
   Uint8List? _displayFrame; // Stable frame buffer for display
   StreamSubscription<VideoStreamState?>? _videoStateSubscription;
@@ -36,6 +50,11 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _remoteState = widget.cubit.remoteControlState;
+    _remoteSubscription = widget.cubit.remoteControlStateStream.listen(
+      _onRemoteState,
+    );
     _videoStateSubscription = widget.cubit.videoStreamState.listen(
       _onVideoStateChanged,
     );
@@ -63,8 +82,130 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
     }
   }
 
+  void _onRemoteState(RemoteControlState _) {
+    if (!mounted) return;
+    // Several synchronous inputs can publish before the stream callback runs.
+    // Read the current snapshot rather than reopening an already replaced host.
+    final state = widget.cubit.remoteControlState;
+    final previous = _remoteState;
+    _remoteState = state;
+    if (_remoteSession != state.sessionId) _remoteSession = null;
+    if (_remoteExpanded &&
+        _active &&
+        _remoteSession == null &&
+        state.available &&
+        state.sessionId == null &&
+        state.error == null) {
+      _openRemoteSession();
+    }
+    setState(() {});
+    if (_remoteExpanded) {
+      if (state.error != null && state.error != previous.error) {
+        _announce(state.error!);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(state.error!)));
+      } else if (state.unavailableReason != null &&
+          state.unavailableReason != previous.unavailableReason) {
+        _announce(state.unavailableReason!);
+      }
+    }
+  }
+
+  void _announce(String message) {
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
+  void _openRemoteSession() {
+    _remoteState = widget.cubit.remoteControlState;
+    if (!_remoteState.available ||
+        (_remoteSession != null && _remoteSession == _remoteState.sessionId)) {
+      return;
+    }
+    _remoteSession = widget.cubit.openRemoteSession();
+    _remoteState = widget.cubit.remoteControlState;
+  }
+
+  void _closeRemoteSession() {
+    final session = _remoteSession;
+    _remoteSession = null;
+    if (session != null) {
+      // The authority publishes cleanup failures even after this host is gone.
+      unawaited(
+        widget.cubit.closeRemoteSession(session).catchError((Object _) {}),
+      );
+    }
+  }
+
+  void _toggleRemote() {
+    setState(() {
+      _remoteExpanded = !_remoteExpanded;
+      if (_remoteExpanded && _active) {
+        _openRemoteSession();
+      } else {
+        _closeRemoteSession();
+      }
+    });
+    _announce(
+      _remoteState.unavailableReason ??
+          (_remoteExpanded
+              ? 'Remote controls expanded'
+              : 'Remote controls folded'),
+    );
+  }
+
+  void _sendRemote(RemoteAction action) {
+    final session = _remoteSession;
+    if (session == null) return;
+    unawaited(
+      widget.cubit.sendRemoteAction(session, action).catchError((Object _) {}),
+    );
+  }
+
+  void _adjustPot(int index, int adjustment) {
+    final session = _remoteSession;
+    if (session == null) return;
+    unawaited(
+      widget.cubit
+          .adjustRemotePot(session, index, adjustment)
+          .catchError((Object _) {}),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    _updateActivity();
+  }
+
+  @override
+  void didChangeViewFocus(ViewFocusEvent event) {
+    if (event.viewId != View.of(context).viewId) return;
+    _viewFocused = event.state == ViewFocusState.focused;
+    _updateActivity();
+  }
+
+  void _updateActivity() {
+    final active = _foreground && _viewFocused;
+    if (active == _active) return;
+    _active = active;
+    if (_active && _remoteExpanded) {
+      _openRemoteSession();
+    } else {
+      _closeRemoteSession();
+    }
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _remoteSubscription?.cancel();
+    _closeRemoteSession();
     _videoStateSubscription?.cancel();
     _videoStateSubscription = null;
     _connectedStream = null;
@@ -95,6 +236,25 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
+          MergeSemantics(
+            child: Semantics(
+              expanded: _remoteExpanded,
+              child: TextButton.icon(
+                key: const ValueKey('video-remote-fold'),
+                onPressed: _toggleRemote,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(fontSize: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                ),
+                icon: Icon(
+                  _remoteExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 16,
+                ),
+                label: const Text('Remote'),
+              ),
+            ),
+          ),
           _displayModeButton(
             Icons.list_alt_rounded,
             'Parameter View',
@@ -126,6 +286,10 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
       icon: Icon(icon, size: 18, color: Colors.white),
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      style: IconButton.styleFrom(
+        fixedSize: const Size(32, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       onPressed: () => widget.cubit.setDisplayMode(mode),
     );
   }
@@ -135,6 +299,31 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
     return DraggableResizableOverlay(
       overlayEntry: widget.overlayEntry,
       topBar: _buildDisplayModeBar(),
+      initialWidth: 384,
+      initialHeight: 96,
+      minWidth: 280,
+      reserveTopBarSpace: true,
+      keepControlsVisible: true,
+      bottomContentHeight: RemoteControlCluster.height,
+      bottomContent: _remoteExpanded
+          ? RemoteControlCluster(
+              state: RemoteControlState(
+                connectionId: _remoteState.connectionId,
+                sessionId: _remoteSession == _remoteState.sessionId
+                    ? _remoteSession
+                    : null,
+                unavailableReason: _remoteState.unavailableReason,
+                heldControls: _remoteSession == _remoteState.sessionId
+                    ? _remoteState.heldControls
+                    : const {},
+                potValues: _remoteState.potValues,
+                pending: _remoteState.pending,
+                error: _remoteState.error,
+              ),
+              onAction: _sendRemote,
+              onPotAdjustment: _adjustPot,
+            )
+          : null,
       child: FloatingVideoContent(
         cubit: widget.cubit,
         videoFrameCubit: widget.videoFrameCubit,
@@ -142,7 +331,9 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
         displayFrame: _displayFrame,
         onCopyToClipboard: _copyToClipboard,
         onFrameUpdate: (frameData) {
-          // Callback to update frame data
+          // A host rebuild is not a new video frame.
+          if (identical(frameData, _sourceFrame)) return;
+          _sourceFrame = frameData;
           final stableBytes = Uint8List.fromList(frameData);
           final previousFrame = _displayFrame;
 
