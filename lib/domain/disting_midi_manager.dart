@@ -22,6 +22,8 @@ import 'package:nt_helper/domain/sysex/requests/move_algorithm.dart';
 import 'package:nt_helper/domain/sysex/requests/new_preset.dart';
 import 'package:nt_helper/domain/sysex/requests/remove_algorithm.dart';
 import 'package:nt_helper/domain/sysex/requests/respecify_algorithm.dart';
+import 'package:nt_helper/domain/sysex/requests/remote_command.dart';
+import 'package:nt_helper/models/remote_action.dart';
 import 'package:nt_helper/domain/sysex/requests/request_all_parameter_values.dart';
 import 'package:nt_helper/domain/sysex/requests/request_algorithm_guid.dart';
 import 'package:nt_helper/domain/sysex/requests/request_algorithm_info.dart';
@@ -88,6 +90,7 @@ class DistingMidiManager
         SlotCountInfoProvider,
         AlgorithmVisualStyleWriter,
         AlgorithmRespecificationWriter,
+        RemoteControlWriter,
         PatchMapTransport {
   @override
   Future<Uint8List> exchangePatchMessage(
@@ -962,6 +965,27 @@ class DistingMidiManager
       key,
       responseExpectation: ResponseExpectation.none,
     );
+  }
+
+  @override
+  Future<void> requestRemoteAction(
+    RemoteAction action, {
+    required DistingRequestCancellation cancellation,
+  }) {
+    action.validate();
+    // Enqueue every chunk synchronously so concurrent actions cannot interleave
+    // within one encoder movement. No remote reply or retransmission exists.
+    final requests = <Future<void>>[
+      for (final command in action.wireActions)
+        _scheduler.sendRequest<void>(
+          RemoteCommandMessage(sysExId: sysExId, action: command).encode(),
+          RequestKey(sysExId: sysExId),
+          responseExpectation: ResponseExpectation.none,
+          maxRetries: 1,
+          cancellation: cancellation,
+        ),
+    ];
+    return Future.wait(requests).then((_) {});
   }
 
   @override

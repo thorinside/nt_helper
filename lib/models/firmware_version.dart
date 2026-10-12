@@ -44,6 +44,18 @@ class FirmwareVersion {
     return isSupported('1.18.0');
   }
 
+  /// Remote input uses the supplied numeric 1.19 capability threshold.
+  /// Unlike permissive numeric parsing, this gate rejects unknown text that
+  /// merely contains digits. Recognized releases and beta forms use the same
+  /// existing numeric comparison, not a separately certified hardware claim.
+  bool get hasRemoteControl {
+    final recognized = RegExp(
+      r'^v?\d+\.\d+(?:\.\d+)?(?:-?beta(?:\.?\d+)?)?$',
+      caseSensitive: false,
+    ).hasMatch(versionString.trim());
+    return recognized && isSupported('1.19.0');
+  }
+
   /// Firmware 1.19+ supports device memory queries via SysEx 0x39.
   bool get hasMemoryUsage {
     return isSupported('1.19.0');
