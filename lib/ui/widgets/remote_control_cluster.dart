@@ -219,6 +219,8 @@ class _RemoteControlState extends State<_RemoteControl> {
   final Set<LogicalKeyboardKey> _keys = {};
   int? _pointer;
   double _dragRemainder = 0;
+  double _panZoomRemainder = 0;
+  bool _keyboardFocus = true;
   bool get _held => _pointer != null || _keys.isNotEmpty;
   bool get _rotary => widget.potIndex != null || widget.encoderIndex != null;
 
@@ -229,6 +231,10 @@ class _RemoteControlState extends State<_RemoteControl> {
       _pointer = null;
       _keys.clear();
       _dragRemainder = 0;
+    }
+    if (!widget.wheelEnabled ||
+        oldWidget.inputIdentity != widget.inputIdentity) {
+      _panZoomRemainder = 0;
     }
   }
 
@@ -266,7 +272,17 @@ class _RemoteControlState extends State<_RemoteControl> {
   void _step(int direction) =>
       _turn(direction * (widget.potIndex == null ? 1 : 32));
 
+  void _wheelAdjustment(int amount) {
+    if (!widget.wheelEnabled || !_rotary || amount == 0) return;
+    if (widget.onWheelAdjustment case final callback?) {
+      callback(widget.pushIndex, amount);
+    } else {
+      _turn(amount);
+    }
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (!_keyboardFocus) setState(() => _keyboardFocus = true);
     if (!widget.enabled) return KeyEventResult.ignored;
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.space || key == LogicalKeyboardKey.enter) {
@@ -303,7 +319,10 @@ class _RemoteControlState extends State<_RemoteControl> {
       onKeyEvent: _onKey,
       onFocusChange: (focused) {
         if (!mounted) return;
-        if (!focused) _changeHold(_keys.clear);
+        if (!focused) {
+          _changeHold(_keys.clear);
+          _keyboardFocus = true;
+        }
         setState(() {});
         if (focused) Scrollable.ensureVisible(context);
       },
@@ -333,6 +352,7 @@ class _RemoteControlState extends State<_RemoteControl> {
                 event.buttons != kPrimaryButton) {
               return;
             }
+            setState(() => _keyboardFocus = false);
             // Do not steal keyboard focus from a different held control: chords
             // must not release an unrelated push.
             if (FocusManager.instance.primaryFocus?.context == null ||
@@ -352,6 +372,8 @@ class _RemoteControlState extends State<_RemoteControl> {
               _endPointer(event.pointer); // Capture/button loss without an up.
               return;
             }
+            // Mouse movement while held remains a press; wheel/pan-zoom turns.
+            if (event.kind == PointerDeviceKind.mouse) return;
             if (widget.potIndex != null) {
               _turn((-event.delta.dy * 24).round());
             } else if (widget.encoderIndex != null) {
@@ -363,6 +385,25 @@ class _RemoteControlState extends State<_RemoteControl> {
           },
           onPointerUp: (event) => _endPointer(event.pointer),
           onPointerCancel: (event) => _endPointer(event.pointer),
+          onPointerPanZoomStart: (event) {
+            if (widget.potIndex != null) _panZoomRemainder = 0;
+          },
+          onPointerPanZoomUpdate: (event) {
+            if (widget.wheelEnabled && _rotary) {
+              // Quantize accumulated raw pixels, preserving sub-step movement.
+              _panZoomRemainder -= event.panDelta.dy;
+              final adjustment = widget.potIndex == null
+                  ? (_panZoomRemainder / 32).truncate()
+                  : (_panZoomRemainder * 24).truncate();
+              _panZoomRemainder -= widget.potIndex == null
+                  ? adjustment * 32
+                  : adjustment / 24;
+              _wheelAdjustment(adjustment);
+            }
+          },
+          onPointerPanZoomEnd: (event) {
+            if (widget.potIndex != null) _panZoomRemainder = 0;
+          },
           onPointerSignal: (event) {
             if (widget.wheelEnabled &&
                 _rotary &&
@@ -372,14 +413,9 @@ class _RemoteControlState extends State<_RemoteControl> {
                 _,
               ) {
                 final direction = event.scrollDelta.dy < 0 ? 1 : -1;
-                if (widget.onWheelAdjustment case final callback?) {
-                  callback(
-                    widget.pushIndex,
-                    direction * (widget.potIndex == null ? 1 : 32),
-                  );
-                } else {
-                  _step(direction);
-                }
+                _wheelAdjustment(
+                  direction * (widget.potIndex == null ? 1 : 32),
+                );
               });
             }
           },
@@ -388,7 +424,9 @@ class _RemoteControlState extends State<_RemoteControl> {
             // deltas above include motion before Flutter's drag threshold.
             onPanStart: (_) {},
             onPanUpdate: (_) {},
-            onPanCancel: _endPointer,
+            // Gesture-arena cancellation is not a physical mouse release.
+            // Raw pointer up/cancel and host lifecycle own hold cleanup.
+            onPanCancel: () {},
             child: ExcludeSemantics(
               child: SizedBox(
                 width: _rotary ? 76 : 48,
@@ -403,7 +441,7 @@ class _RemoteControlState extends State<_RemoteControl> {
                           rotary: _rotary,
                           potValue: widget.potValue,
                           pressed: widget.pressed,
-                          focused: _focus.hasFocus,
+                          focused: _focus.hasFocus && _keyboardFocus,
                         ),
                       ),
                     ),

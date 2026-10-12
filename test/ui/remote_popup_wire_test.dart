@@ -144,6 +144,134 @@ void main() {
           await flush(tester);
         }
 
+        testWidgets(
+          'Magic Mouse pan zoom hover and held scrolling send turns without synthetic press or release',
+          (tester) async {
+            await open(tester);
+            tester.binding.handleViewFocusChanged(
+              ViewFocusEvent(
+                viewId: tester.view.viewId,
+                state: ViewFocusState.unfocused,
+                direction: ViewFocusDirection.undefined,
+              ),
+            );
+            await flush(tester, poll: true);
+            Future<void> smooth(int index, List<double> deltas) async {
+              final position = tester.getCenter(
+                find
+                    .descendant(
+                      of: control(index),
+                      matching: find.byType(CustomPaint),
+                    )
+                    .first,
+              );
+              const pointer = 90;
+              await tester.sendEventToBinding(
+                PointerPanZoomStartEvent(
+                  pointer: pointer,
+                  device: 9,
+                  position: position,
+                ),
+              );
+              var pan = Offset.zero;
+              for (final dy in deltas) {
+                pan += Offset(0, dy);
+                await tester.sendEventToBinding(
+                  PointerPanZoomUpdateEvent(
+                    pointer: pointer,
+                    device: 9,
+                    position: position,
+                    pan: pan,
+                    panDelta: Offset(0, dy),
+                  ),
+                );
+                await flush(tester);
+              }
+              await tester.sendEventToBinding(
+                PointerPanZoomEndEvent(
+                  pointer: pointer,
+                  device: 9,
+                  position: position,
+                ),
+              );
+              await flush(tester);
+            }
+
+            final before = payloads().length;
+            await smooth(4, [-2, -1, -2, -1]);
+            expect(payloads().sublist(before), [
+              [4, 0, 48, 16],
+              [4, 0, 72, 16],
+              [4, 0, 120, 16],
+              [4, 0, 16, 17],
+            ]);
+            expect(cubit.remoteControlState.heldControls, isEmpty);
+            final encoderAt = payloads().length;
+            await smooth(7, [-2, -1, -2, -1]);
+            expect(payloads().length, encoderAt);
+            await smooth(7, [-2, -1, -2, -1]);
+            expect(payloads().length, encoderAt);
+            await smooth(7, [-2, -1, -2, -1]);
+            await smooth(7, [-2, -1, -2, -1]);
+            expect(payloads().length, encoderAt);
+            await smooth(7, [-2, -1, -2, -1]);
+            await smooth(7, [-2]);
+            expect(payloads().sublist(encoderAt), [
+              [3, 0, 1],
+            ]);
+            tester.binding.handleViewFocusChanged(
+              ViewFocusEvent(
+                viewId: tester.view.viewId,
+                state: ViewFocusState.focused,
+                direction: ViewFocusDirection.undefined,
+              ),
+            );
+            await flush(tester, poll: true);
+            final heldAt = payloads().length;
+            final held = await tester.startGesture(
+              tester.getCenter(control(7)),
+              kind: PointerDeviceKind.mouse,
+            );
+            await flush(tester);
+            await held.moveBy(const Offset(0, -12));
+            await flush(tester);
+            await smooth(7, [-2, -1, -2, -1]);
+            expect(payloads().sublist(heldAt), [
+              [1, 7],
+            ]);
+            await smooth(7, [-2, -1, -2, -1]);
+            expect(payloads().sublist(heldAt), [
+              [1, 7],
+            ]);
+            await smooth(7, [-2, -1, -2, -1]);
+            await smooth(7, [-2, -1, -2, -1]);
+            expect(payloads().sublist(heldAt), [
+              [1, 7],
+            ]);
+            await smooth(7, [-2, -1, -2, -1]);
+            await smooth(7, [-2]);
+            expect(cubit.remoteControlState.heldControls, {7});
+            await held.up();
+            await flush(tester);
+            expect(payloads().sublist(heldAt), [
+              [1, 7],
+              [3, 0, 1],
+              [2, 7],
+            ]);
+            // A below-threshold smooth gesture must not cancel a held mouse push.
+            final shortHeld = await tester.startGesture(
+              tester.getCenter(control(7)),
+              kind: PointerDeviceKind.mouse,
+            );
+            await flush(tester);
+            await smooth(7, [-0.25]);
+            expect(cubit.remoteControlState.heldControls, {7});
+            await shortHeld.up();
+            await flush(tester);
+            expect(cubit.remoteControlState.heldControls, isEmpty);
+          },
+        );
+
         if (!windows) {
           testWidgets(
             'mouse press routes outside popup bounds and releases once',
