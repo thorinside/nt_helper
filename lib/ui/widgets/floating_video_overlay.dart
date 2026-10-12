@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:ui' show ViewFocusEvent, ViewFocusState;
+import 'dart:ui' show FlutterView, ViewFocusEvent, ViewFocusState;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -41,6 +41,10 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay>
   String? _remoteSession;
   late RemoteControlState _remoteState;
   StreamSubscription<RemoteControlState>? _remoteSubscription;
+  late ScaffoldMessengerState _scaffoldMessenger;
+  late FlutterView _view;
+  late TextDirection _textDirection;
+  String? _reportedRemoteError;
   Uint8List? _sourceFrame;
   Uint8List? _lastFrame;
   Uint8List? _displayFrame; // Stable frame buffer for display
@@ -62,6 +66,15 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay>
     // Start video stream when widget is created
     widget.cubit.startVideoStream();
     _onVideoStateChanged(widget.cubit.currentVideoState);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Cleanup can finish after overlay removal; never look up its context then.
+    _scaffoldMessenger = ScaffoldMessenger.of(context);
+    _view = View.of(context);
+    _textDirection = Directionality.of(context);
   }
 
   void _onVideoStateChanged(VideoStreamState? videoState) {
@@ -99,25 +112,26 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay>
       _openRemoteSession();
     }
     setState(() {});
-    if (_remoteExpanded) {
-      if (state.error != null && state.error != previous.error) {
-        _announce(state.error!);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(state.error!)));
-      } else if (state.unavailableReason != null &&
-          state.unavailableReason != previous.unavailableReason) {
-        _announce(state.unavailableReason!);
-      }
+    if (state.error == null) _reportedRemoteError = null;
+    if (state.error != null && state.error != previous.error) {
+      _showRemoteError(state.error!);
+    } else if (_remoteExpanded &&
+        state.unavailableReason != null &&
+        state.unavailableReason != previous.unavailableReason) {
+      _announce(state.unavailableReason!);
     }
   }
 
+  void _showRemoteError(String message) {
+    if (!_scaffoldMessenger.mounted || _reportedRemoteError == message) return;
+    // The state stream and cleanup future can both report the same failure.
+    _reportedRemoteError = message;
+    _announce(message);
+    _scaffoldMessenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   void _announce(String message) {
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      message,
-      Directionality.of(context),
-    );
+    SemanticsService.sendAnnouncement(_view, message, _textDirection);
   }
 
   void _openRemoteSession() {
@@ -134,9 +148,12 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay>
     final session = _remoteSession;
     _remoteSession = null;
     if (session != null) {
-      // The authority publishes cleanup failures even after this host is gone.
+      final cubit = widget.cubit;
       unawaited(
-        widget.cubit.closeRemoteSession(session).catchError((Object _) {}),
+        cubit.closeRemoteSession(session).catchError((Object _) {
+          final error = cubit.remoteControlState.error;
+          if (error != null) _showRemoteError(error);
+        }),
       );
     }
   }

@@ -637,6 +637,104 @@ void main() {
     },
   );
 
+  for (final closeOverlay in [false, true]) {
+    testWidgets(
+      '${closeOverlay ? 'close' : 'fold'} reports failed cleanup after removing controls without duplicate releases',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final announcements = <Object?>[];
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        messenger.setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          (message) async {
+            announcements.add(message);
+            return null;
+          },
+        );
+        addTearDown(
+          () => messenger.setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            null,
+          ),
+        );
+        await open(tester);
+        final held = await tester.startGesture(
+          tester.getCenter(control(3)),
+          pointer: 400,
+        );
+        await flush(tester);
+        expect(payloads(), [
+          [1, 3],
+        ]);
+        expect(cubit.remoteControlState.heldControls, {3});
+
+        wire.failRemoteSend = true;
+        await tester.tap(
+          closeOverlay
+              ? find.byTooltip('Close overlay')
+              : find.byKey(const ValueKey('video-remote-fold')),
+        );
+        await flush(tester);
+        expect(find.byType(RemoteControlCluster), findsNothing);
+        expect(
+          find.byType(FloatingVideoOverlay),
+          closeOverlay ? findsNothing : findsOneWidget,
+        );
+        expect(cubit.remoteControlState.heldControls, isEmpty);
+        expect(cubit.remoteControlState.sessionId, isNull);
+        final error = cubit.remoteControlState.error!;
+        expect(error, contains('device release is unknown'));
+        expect(
+          find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.text(error),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          announcements.where((message) => message.toString().contains(error)),
+          hasLength(1),
+        );
+
+        await held.cancel();
+        await tester.sendEventToBinding(const PointerUpEvent(pointer: 400));
+        await flush(tester);
+        expect(payloads(), [
+          [1, 3],
+        ]);
+        verify(
+          () => wire.midi.sendData(
+            any(
+              that: predicate<Uint8List>(
+                (packet) =>
+                    packet.length > 8 && packet[6] == 0x78 && packet[7] == 2,
+              ),
+            ),
+            deviceId: any(named: 'deviceId'),
+          ),
+        ).called(1);
+        expect(
+          announcements.where((message) => message.toString().contains(error)),
+          hasLength(1),
+        );
+        ScaffoldMessenger.of(
+          tester.element(find.byType(SynchronizedScreen)),
+        ).hideCurrentSnackBar();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text(error), findsNothing);
+        expect(tester.takeException(), isNull);
+        if (closeOverlay) {
+          await tester.runAsync(() => cubit.stopVideoStream());
+        } else {
+          await close(tester);
+        }
+        semantics.dispose();
+      },
+    );
+  }
+
   testWidgets(
     'feedback and frames keep geometry stable; constrained controls remain keyboard-reachable',
     (tester) async {
