@@ -1135,17 +1135,29 @@ void main() {
         );
 
         await cubit.playOrStopPreview(source.path);
-        final before = _waveformPreviewRootCount();
 
         cubit.updateWavEditDraft(
           source.path,
           const PolyWaveformDraft(fadeInFrames: 4),
         );
-        await _waitForCondition(() => _waveformPreviewRootCount() > before);
+        // Root creation precedes render completion and cache registration.
+        await _waitForCondition(() => adapter.playedPaths.length == 2);
+        final editedPreview = File(adapter.playedPaths.last);
+        final editedRoot = editedPreview.parent;
+        expect(editedRoot.path, contains('nt_helper_poly_waveform_preview_'));
+        expect(editedPreview.existsSync(), isTrue);
 
         cubit.updateWavEditDraft(source.path, const PolyWaveformDraft());
 
-        await _waitForCondition(() => _waveformPreviewRootCount() == before);
+        await _waitForCondition(() => !editedRoot.existsSync());
+        // Reverting the playing sample creates a new, unedited preview root;
+        // a global temp-root count cannot distinguish it from a leaked draft.
+        await _waitForCondition(() => adapter.playedPaths.length == 3);
+        expect(editedRoot.existsSync(), isFalse);
+        expect(
+          File(adapter.playedPaths.last).readAsBytesSync(),
+          source.readAsBytesSync(),
+        );
         expect(cubit.state.wavEditDrafts, isEmpty);
       },
     );
