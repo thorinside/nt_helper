@@ -5,6 +5,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_midi_command/flutter_midi_command.dart';
+import 'package:nt_helper/models/remote_action.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
@@ -16,11 +18,14 @@ import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/video_popup_app.dart';
+import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:nt_helper/ui/widgets/floating_video_overlay.dart';
 import 'package:nt_helper/ui/widgets/remote_control_cluster.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_helpers/memory_wire_harness.dart';
+import '../test_helpers/popup_channel_harness.dart';
 import '../test_helpers/video_input_harness.dart';
 
 class _Database extends Mock implements AppDatabase {}
@@ -731,6 +736,261 @@ void main() {
           await close(tester);
         }
         semantics.dispose();
+      },
+    );
+  }
+
+  testWidgets(
+    'both production hosts retain independent pots; replacement rejects old UI work and resets locally',
+    (tester) async {
+      await open(tester);
+      final screenApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+      for (var i = 0; i < 3; i++) {
+        for (var j = 0; j <= i; j++) {
+          await wheel(tester, i + 4, -1);
+        }
+      }
+      expect(cubit.remoteControlState.potValues, [2080, 2112, 2144]);
+      final before = payloads().length;
+      await tester.tap(find.byTooltip('Close overlay'));
+      await flush(tester);
+      await tester.runAsync(() => cubit.stopVideoStream());
+      final channels = PopupChannelHarness(false);
+      await channels.install(cubit);
+      addTearDown(channels.dispose);
+      await tester.pumpWidget(
+        const MaterialApp(home: VideoPopupWindow(windowsNative: false)),
+      );
+      await flush(tester);
+      await tester.tap(find.byKey(const ValueKey('video-remote-fold')));
+      await flush(tester);
+      expect(cubit.remoteControlState.potValues, [2080, 2112, 2144]);
+      expect(payloads().length, before);
+      await wheel(tester, 5, 1);
+      expect(cubit.remoteControlState.potValues, [2080, 2080, 2144]);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await flush(tester);
+      await tester.pumpWidget(screenApp);
+      await tester.pump();
+      await tester.tap(find.byTooltip('Video'));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await video.sendFrame();
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('video-remote-fold')));
+      await flush(tester);
+      expect(cubit.remoteControlState.potValues, [2080, 2080, 2144]);
+      expect(payloads().length, before + 1);
+      final held = await tester.startGesture(tester.getCenter(control(7)));
+      await flush(tester);
+      final old = cubit.remoteControlState.sessionId!;
+      final replacedAt = payloads().length;
+      cubit.emit(
+        (cubit.state as DistingStateSynchronized).copyWith(
+          disting: wire.replaceManager(),
+        ),
+      );
+      await flush(tester);
+      expect(cubit.remoteControlState.potValues, [2048, 2048, 2048]);
+      await held.moveBy(const Offset(0, -6));
+      await held.up();
+      await flush(tester);
+      await expectLater(cubit.adjustRemotePot(old, 0, 32), throwsStateError);
+      expect(payloads().length, replacedAt);
+      for (var i = 4; i < 7; i++) {
+        expect(
+          find.descendant(of: control(i), matching: find.text('Local 2048')),
+          findsOneWidget,
+        );
+      }
+      await close(tester);
+    },
+  );
+
+  testWidgets(
+    'overlay open-host firmware and connection matrix is explanatory and silent when gated',
+    (tester) async {
+      await open(tester);
+      final live = cubit.state as DistingStateSynchronized;
+      for (final version in [
+        '1.19beta',
+        '1.19.0beta',
+        '1.19.0',
+        '1.20.0',
+        '2.0.0',
+      ]) {
+        cubit.emit(live.copyWith(firmwareVersion: FirmwareVersion(version)));
+        await flush(tester);
+        final before = payloads().length;
+        await wheel(tester, 7, -1);
+        expect(payloads().sublist(before), [
+          [3, 0, 1],
+        ], reason: version);
+      }
+      for (final state in [
+        live.copyWith(firmwareVersion: FirmwareVersion('1.18.9')),
+        live.copyWith(firmwareVersion: FirmwareVersion('')),
+        live.copyWith(firmwareVersion: FirmwareVersion('unknown')),
+        live.copyWith(demo: true),
+        live.copyWith(offline: true),
+        const DistingState.initial(),
+      ]) {
+        cubit.emit(state);
+        await flush(tester);
+        final cluster = tester.widget<RemoteControlCluster>(
+          find.byType(RemoteControlCluster),
+        );
+        expect(cluster.state.available, isFalse);
+        expect(cluster.state.unavailableReason, isNotEmpty);
+        final before = payloads().length;
+        await wheel(tester, 7, -1);
+        await tester.tap(control(0));
+        await flush(tester);
+        expect(payloads().length, before);
+      }
+      cubit.emit(live);
+      await flush(tester);
+      await close(tester);
+    },
+  );
+
+  testWidgets(
+    'both overlay fold states keep geometry through pending/frame/unavailable/error updates at constrained sizes',
+    (tester) async {
+      await open(tester);
+      final live = cubit.state as DistingStateSynchronized;
+      final fold = find.byKey(const ValueKey('video-remote-fold'));
+      for (final size in [const Size(1200, 800), const Size(320, 240)]) {
+        tester.view.physicalSize = size;
+        await tester.pump();
+        for (final expanded in [true, false]) {
+          if (!expanded) {
+            await tester.tap(fold);
+            await flush(tester);
+          }
+          final screen = tester.getRect(find.byType(FloatingVideoContent));
+          final toolbar = tester.getRect(fold);
+          final bounds = expanded
+              ? [for (var i = 0; i < 9; i++) tester.getRect(control(i))]
+              : <Rect>[];
+          void stable() {
+            expect(tester.getRect(find.byType(FloatingVideoContent)), screen);
+            expect(tester.getRect(fold), toolbar);
+            if (expanded) {
+              expect([
+                for (var i = 0; i < 9; i++) tester.getRect(control(i)),
+              ], bounds);
+            }
+          }
+
+          await video.sendFrame();
+          await tester.pump();
+          stable();
+          final session =
+              cubit.remoteControlState.sessionId ?? cubit.openRemoteSession();
+          final version = wire.manager.requestVersionString();
+          await tester.pump();
+          final queued = cubit.sendRemoteAction(
+            session,
+            const RemoteEncoderTurn(0, 1),
+          );
+          for (var i = 0; i < 10; i++) {
+            await tester.pump(const Duration(milliseconds: 1));
+          }
+          expect(cubit.remoteControlState.pending, isTrue);
+          stable();
+          wire.incoming.add(
+            MidiPacket(
+              Uint8List.fromList([
+                0xF0,
+                0,
+                0x21,
+                0x27,
+                0x6D,
+                memoryWireSysExId,
+                0x32,
+                ...'1.19.0'.codeUnits,
+                0,
+                0xF7,
+              ]),
+              0,
+              wire.device,
+            ),
+          );
+          await flush(tester);
+          await version;
+          await queued;
+          stable();
+          wire.failRemoteSend = true;
+          final failure = cubit
+              .sendRemoteAction(session, const RemoteEncoderTurn(0, 1))
+              .catchError((Object _) {});
+          await flush(tester);
+          await failure;
+          stable();
+          wire.failRemoteSend = false;
+          ScaffoldMessenger.of(
+            tester.element(find.byType(SynchronizedScreen)),
+          ).removeCurrentSnackBar();
+          cubit.emit(live.copyWith(offline: true));
+          await flush(tester);
+          stable();
+          cubit.emit(live);
+          await flush(tester);
+          stable();
+        }
+        await tester.tap(fold);
+        await flush(tester);
+      }
+      await close(tester);
+    },
+  );
+
+  for (final popupResult in ['success', 'throw', 'unsupported']) {
+    testWidgets(
+      'production Video prefers native popup and falls back on $popupResult',
+      (tester) async {
+        await open(tester);
+        await tester.tap(find.byTooltip('Close overlay'));
+        await flush(tester);
+        await tester.runAsync(() => cubit.stopVideoStream());
+        await SettingsService().setVideoPopupNativeWindowEnabled(true);
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        const channels = MethodChannel(
+          'mixin.one/desktop_multi_window/channels',
+        );
+        const desktop = MethodChannel('mixin.one/desktop_multi_window');
+        var created = 0;
+        messenger.setMockMethodCallHandler(channels, (_) async => null);
+        messenger.setMockMethodCallHandler(desktop, (call) async {
+          if (call.method == 'getAllWindows') return [];
+          if (call.method == 'createWindow') {
+            created++;
+            if (popupResult == 'throw') {
+              throw PlatformException(code: 'popup_failed');
+            }
+            if (popupResult == 'unsupported') throw MissingPluginException();
+            return 'popup-preferred';
+          }
+          return null;
+        });
+        addTearDown(() async {
+          await VideoPopupWindowService.instance.dispose();
+          messenger.setMockMethodCallHandler(channels, null);
+          messenger.setMockMethodCallHandler(desktop, null);
+        });
+        await tester.tap(find.byTooltip('Video'));
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(created, 1);
+        expect(
+          find.byType(FloatingVideoOverlay),
+          popupResult == 'success' ? findsNothing : findsOneWidget,
+        );
+        if (popupResult != 'success') await close(tester);
       },
     );
   }

@@ -26,6 +26,11 @@ class WindowsVideoPopupManager {
 
   bool OpenOrFocus(const std::string& window_arguments);
   void ForwardDisplayMode(const std::string& mode_name);
+  void ForwardRemote(
+      const std::string& method, const flutter::EncodableValue* arguments,
+      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result,
+      std::weak_ptr<bool> child_alive);
+  void EndRemoteHost(const flutter::EncodableValue& host, bool detach);
 
   friend class WindowsVideoPopupWindow;
 
