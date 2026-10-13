@@ -613,6 +613,7 @@ enum DistingNTRequestMessageType {
   requestNumAlgorithmsInPreset(0x60),
   requestRouting(0x61),
   requestCpuUsage(0x62),
+  remoteControl(0x78),
   sdCardOperation(0x7A),
   reboot(0x7F),
 

@@ -20,6 +20,9 @@ final class MemoryWireHarness {
       final packet = Uint8List.fromList(
         invocation.positionalArguments.single as Uint8List,
       );
+      if (packet[6] == 0x78 && failRemoteSend) {
+        throw StateError('Injected remote transport failure');
+      }
       sentPackets.add(List<int>.unmodifiable(packet));
       switch (packet[6]) {
         case 0x30:
@@ -36,6 +39,7 @@ final class MemoryWireHarness {
   }
 
   final int? autoMemoryStatus;
+  bool failRemoteSend = false;
   final MemoryWireMockMidiCommand midi = MemoryWireMockMidiCommand();
   final StreamController<MidiPacket> incoming =
       StreamController<MidiPacket>.broadcast();
@@ -67,6 +71,7 @@ final class MemoryWireHarness {
   }
 
   List<List<int>> get memoryRequests => packetsForCommand(0x39);
+  List<List<int>> get remotePackets => packetsForCommand(0x78);
 
   List<List<int>> packetsForCommand(int command) => sentPackets
       .where((packet) => packet.length > 6 && packet[6] == command)

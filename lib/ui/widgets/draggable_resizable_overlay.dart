@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -14,6 +15,10 @@ class DraggableResizableOverlay extends StatefulWidget {
   final double aspectRatio; // width / height
   final double topBarHeight;
   final Duration controlsHideDelay;
+  final Widget? bottomContent;
+  final double bottomContentHeight;
+  final bool reserveTopBarSpace;
+  final bool keepControlsVisible;
 
   const DraggableResizableOverlay({
     super.key,
@@ -27,6 +32,10 @@ class DraggableResizableOverlay extends StatefulWidget {
     this.aspectRatio = 4.0, // 4:1 aspect ratio for Disting NT display
     this.topBarHeight = 36.0,
     this.controlsHideDelay = const Duration(seconds: 10),
+    this.bottomContent,
+    this.bottomContentHeight = 0,
+    this.reserveTopBarSpace = false,
+    this.keepControlsVisible = false,
   });
 
   @override
@@ -119,12 +128,34 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     });
   }
 
-  double get _totalHeight => _height;
+  double get _reservedBarHeight =>
+      widget.reserveTopBarSpace && widget.topBar != null
+      ? widget.topBarHeight
+      : 0;
+  double get _bottomHeight => math.min(
+    widget.bottomContent == null ? 0 : widget.bottomContentHeight,
+    math.max(
+      0,
+      MediaQuery.sizeOf(context).height - _height - _reservedBarHeight,
+    ),
+  );
+  double get _totalHeight => _height + _reservedBarHeight + _bottomHeight;
 
   void _constrainToScreen() {
     final screenSize = MediaQuery.of(context).size;
-    _x = _x.clamp(0, screenSize.width - _width);
-    _y = _y.clamp(0, screenSize.height - _totalHeight);
+    _width = _width.clamp(
+      math.min(widget.minWidth, screenSize.width),
+      math.min(widget.maxWidth, screenSize.width),
+    );
+    _height = _width / widget.aspectRatio;
+    _x = _x.clamp(0, math.max(0, screenSize.width - _width));
+    _y = _y.clamp(0, math.max(0, screenSize.height - _totalHeight));
+  }
+
+  @override
+  void didUpdateWidget(covariant DraggableResizableOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _constrainToScreen();
   }
 
   void _saveSettings() {
@@ -193,6 +224,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
         final isAccessible = MediaQuery.of(context).accessibleNavigation;
         final showControls =
             alwaysShowToolbar ||
+            widget.keepControlsVisible ||
             _controlsVisible ||
             _isResizing ||
             _isDragging ||
@@ -201,6 +233,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
         final hasTopBar = widget.topBar != null;
         final barHeight = hasTopBar ? widget.topBarHeight : 0.0;
 
+        _constrainToScreen();
         return Positioned(
           left: _x,
           top: _y,
@@ -220,7 +253,11 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
                 clipBehavior: Clip.hardEdge,
                 children: [
                   // Main content
-                  Positioned.fill(
+                  Positioned(
+                    top: _reservedBarHeight,
+                    left: 0,
+                    right: 0,
+                    height: _height,
                     child: GestureDetector(
                       onTap: _showControls,
                       onPanStart: _onPanStart,
@@ -250,6 +287,15 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
                     ),
                   ),
 
+                  if (widget.bottomContent != null)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: _bottomHeight,
+                      child: widget.bottomContent!,
+                    ),
+
                   // Top action bar with integrated close button
                   if (hasTopBar)
                     Positioned(
@@ -269,27 +315,23 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
                             child: Row(
                               children: [
                                 Expanded(child: widget.topBar!),
-                                Semantics(
-                                  label: 'Close overlay',
-                                  button: true,
-                                  child: GestureDetector(
-                                    onTap: () => widget.overlayEntry.remove(),
-                                    child: Container(
-                                      width: barHeight,
-                                      height: barHeight,
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        borderRadius: const BorderRadius.only(
-                                          topRight: Radius.circular(6),
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: Colors.white,
-                                      ),
+                                Container(
+                                  width: barHeight,
+                                  height: barHeight,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.7),
+                                    borderRadius: const BorderRadius.only(
+                                      topRight: Radius.circular(6),
+                                    ),
+                                  ),
+                                  child: IconButton(
+                                    tooltip: 'Close overlay',
+                                    onPressed: () =>
+                                        widget.overlayEntry.remove(),
+                                    icon: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),

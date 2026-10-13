@@ -6,6 +6,7 @@ import 'package:nt_helper/db/daos/presets_dao.dart' show FullPresetDetails;
 import 'package:nt_helper/domain/memory_query_input.dart';
 import 'package:nt_helper/domain/disting_request_control.dart';
 import 'package:nt_helper/models/memory_usage.dart';
+import 'package:nt_helper/models/remote_action.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
@@ -35,6 +36,15 @@ abstract interface class AlgorithmRespecificationWriter {
     int algorithmIndex,
     List<int> specifications,
   );
+}
+
+/// Optional remote-write capability. Only the live manager implements this;
+/// demo and offline managers cannot send hardware gestures.
+abstract interface class RemoteControlWriter {
+  Future<void> requestRemoteAction(
+    RemoteAction action, {
+    required DistingRequestCancellation cancellation,
+  });
 }
 
 /// Abstract interface for Disting MIDI communication.

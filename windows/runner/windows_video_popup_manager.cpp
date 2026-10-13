@@ -1,4 +1,5 @@
 #include "windows_video_popup_manager.h"
+#include "windows_video_popup_remote.h"
 
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
@@ -442,6 +443,10 @@ class WindowsVideoPopupWindow : public Win32Window {
 
   void OnDestroy() override {
     PopupLog(L"OnDestroy hwnd=" + HwndString(GetHandle()));
+    *alive_ = false;
+    if (remote_host_) {
+      WindowsVideoPopupManager::Instance().EndRemoteHost(*remote_host_, true);
+    }
     channel_.reset();
     flutter_controller_.reset();
     Win32Window::OnDestroy();
@@ -451,6 +456,36 @@ class WindowsVideoPopupWindow : public Win32Window {
                          UINT const message,
                          WPARAM const wparam,
                          LPARAM const lparam) noexcept override {
+    if (message == WM_GETMINMAXINFO) {
+      auto* limits = reinterpret_cast<MINMAXINFO*>(lparam);
+      limits->ptMinTrackSize.x = LogicalToPhysical(hwnd, 256);
+      limits->ptMinTrackSize.y = LogicalToPhysical(hwnd, remote_expanded_ ? 352 : 100);
+      return 0;
+    }
+    if ((message == WM_ACTIVATE && LOWORD(wparam) == WA_INACTIVE) ||
+        (message == WM_SHOWWINDOW && !wparam) ||
+        (message == WM_SIZE && wparam == SIZE_MINIMIZED)) {
+      if (remote_host_) WindowsVideoPopupManager::Instance().EndRemoteHost(*remote_host_, false);
+      if (channel_) channel_->InvokeMethod("remoteLifecycle", std::make_unique<flutter::EncodableValue>("hide"));
+    } else if (message == WM_ACTIVATE && LOWORD(wparam) != WA_INACTIVE) {
+      if (channel_) channel_->InvokeMethod("remoteLifecycle", std::make_unique<flutter::EncodableValue>("focus"));
+    }
+    if (message == WM_CLOSE) {
+      if (closing_) return 0;
+      closing_ = true;
+      SendBoundsChanged();
+      // Keep the child alive until its cleanup has completed. OnDestroy also
+      // notifies the main engine if destruction bypasses this close path.
+      const auto finish = [hwnd, alive = std::weak_ptr<bool>(alive_)]() {
+        const auto token = alive.lock();
+        if (token && *token && IsWindow(hwnd)) DestroyWindow(hwnd);
+      };
+      channel_->InvokeMethod("remoteLifecycle", std::make_unique<flutter::EncodableValue>("close"),
+          std::make_unique<flutter::MethodResultFunctions<flutter::EncodableValue>>(
+              [finish](const auto*) { finish(); },
+              [finish](const auto&, const auto&, const auto*) { finish(); }, finish));
+      return 0;
+    }
     if (flutter_controller_) {
       std::optional<LRESULT> result =
           flutter_controller_->HandleTopLevelWindowProc(hwnd, message, wparam,
@@ -458,13 +493,6 @@ class WindowsVideoPopupWindow : public Win32Window {
       if (result) {
         return *result;
       }
-    }
-
-    if (message == WM_CLOSE) {
-      PopupLog(L"WM_CLOSE hwnd=" + HwndString(hwnd));
-      SendBoundsChanged();
-      DestroyWindow(hwnd);
-      return 0;
     }
 
     if (message == WM_FONTCHANGE && flutter_controller_ &&
@@ -486,6 +514,39 @@ class WindowsVideoPopupWindow : public Win32Window {
       const flutter::MethodCall<flutter::EncodableValue>& call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
     PopupLog(L"Child channel method=" + Utf8ToWide(call.method_name()));
+    if (call.method_name() == "remoteAcquire" || call.method_name() == "remoteRead" ||
+        call.method_name() == "remoteOpen" || call.method_name() == "remoteAction" ||
+        call.method_name() == "remoteClose" || call.method_name() == "remoteDetach") {
+      if (call.method_name() == "remoteAcquire") {
+        const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+        if (args != nullptr && MapString(*args, "hostId").has_value()) {
+          remote_host_ = std::make_unique<flutter::EncodableValue>(*args);
+        }
+      }
+      WindowsVideoPopupManager::Instance().ForwardRemote(
+          call.method_name(), call.arguments(), std::move(result), alive_);
+      return;
+    }
+    if (call.method_name() == "setRemoteExpanded") {
+      const auto* expanded = std::get_if<bool>(call.arguments());
+      if (expanded == nullptr) {
+        result->Error("bad_args", "setRemoteExpanded requires a boolean");
+        return;
+      }
+      remote_expanded_ = *expanded;
+      if (remote_expanded_) {
+        RECT bounds;
+        HWND hwnd = GetHandle();
+        if (GetWindowRect(hwnd, &bounds)) {
+          SetWindowPos(hwnd, nullptr, 0, 0,
+              std::max(bounds.right - bounds.left, static_cast<LONG>(LogicalToPhysical(hwnd, 256))),
+              std::max(bounds.bottom - bounds.top, static_cast<LONG>(LogicalToPhysical(hwnd, 352))),
+              SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+      }
+      result->Success(flutter::EncodableValue(true));
+      return;
+    }
     if (call.method_name() == "configureVideoPopup") {
       const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
       if (args == nullptr) {
@@ -537,6 +598,10 @@ class WindowsVideoPopupWindow : public Win32Window {
   bool always_on_top_ = false;
   bool configured_ = false;
   bool suppress_bounds_events_ = false;
+  bool remote_expanded_ = false;
+  bool closing_ = false;
+  std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
+  std::unique_ptr<flutter::EncodableValue> remote_host_;
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
 };
@@ -616,6 +681,22 @@ bool WindowsVideoPopupManager::OpenOrFocus(
            HwndString(popup_window_->GetHandle()) +
            L" waiting for Dart configure before first show");
   return true;
+}
+
+void WindowsVideoPopupManager::ForwardRemote(
+    const std::string& method, const flutter::EncodableValue* arguments,
+    std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result,
+    std::weak_ptr<bool> child_alive) {
+  ForwardVideoPopupRemote(main_channel_.get(), method, arguments,
+                         std::move(result), child_alive);
+}
+
+void WindowsVideoPopupManager::EndRemoteHost(
+    const flutter::EncodableValue& host, bool detach) {
+  if (main_channel_) {
+    main_channel_->InvokeMethod(detach ? "remoteDetach" : "remoteClose",
+        std::make_unique<flutter::EncodableValue>(host));
+  }
 }
 
 void WindowsVideoPopupManager::ForwardDisplayMode(

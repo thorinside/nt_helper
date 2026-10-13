@@ -134,6 +134,19 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
   static const Color ntDisplaySurface = Color(0xFF101010);
   static const Color ntDisplayForeground = Color(0xFFF5F5F5);
 
+  /// Fixed hardware-reference palette: remote knobs stay dark and pushes blue
+  /// independently of the application's chosen theme seed.
+  static const Color ntRemoteSurface = Color(0xFF191C21);
+  static const Color ntRemoteOutline = Color(0xFF101114);
+  static const Color ntRemoteRidgeDark = Color(0xFF17191E);
+  static const Color ntRemoteRidgeLight = Color(0xFF41444A);
+  static const Color ntRemoteFaceDark = Color(0xFF111317);
+  static const Color ntRemoteFaceLight = Color(0xFF45484F);
+  static const Color ntRemotePressed = Color(0xFF399FF4);
+  static const Color ntRemotePressedLight = Color(0xFF4EAFFF);
+  static const Color ntRemotePressedDark = Color(0xFF185482);
+  static const Color ntRemoteMutedForeground = Color(0xB3FFFFFF);
+
   static const Color _successSeed = Color(0xFF2E7D32);
   static const Color _warningSeed = Color(0xFFEF6C00);
   static const Color _infoSeed = Color(0xFF1565C0);

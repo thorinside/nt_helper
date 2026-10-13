@@ -35,6 +35,8 @@ import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/firmware_release.dart';
 import 'package:nt_helper/models/memory_display_state.dart';
 import 'package:nt_helper/models/memory_usage.dart';
+import 'package:nt_helper/models/remote_action.dart';
+import 'package:nt_helper/models/remote_control_state.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/models/slot_count_info.dart';
 import 'package:nt_helper/services/elf_guid_extractor.dart';
@@ -71,6 +73,7 @@ part 'disting_cubit_state_refresh_delegate.dart';
 part 'disting_cubit_slot_maintenance_delegate.dart';
 part 'disting_cubit_parameter_value_delegate.dart';
 part 'disting_cubit_hardware_commands_delegate.dart';
+part 'disting_cubit_remote_delegate.dart';
 part 'disting_cubit_state_helpers_delegate.dart';
 part 'disting_cubit_refresh_delegate.dart';
 part 'disting_cubit_perf_page_delegate.dart';
@@ -163,6 +166,7 @@ class DistingCubit extends _DistingCubitBase
       _ParameterValueDelegate(this);
   late final _HardwareCommandsDelegate _hardwareCommandsDelegate =
       _HardwareCommandsDelegate(this);
+  late final _RemoteDelegate _remoteDelegate = _RemoteDelegate(this);
   late final _StateHelpersDelegate _stateHelpersDelegate =
       _StateHelpersDelegate(this);
   late final _RefreshDelegate _refreshDelegate = _RefreshDelegate(this);
@@ -194,6 +198,7 @@ class DistingCubit extends _DistingCubitBase
   @override
   void onChange(Change<DistingState> change) {
     _invalidateRespecificationForState(change.nextState);
+    _remoteDelegate.onDistingStateWillChange(change.nextState);
     super.onChange(change);
   }
 
@@ -255,6 +260,7 @@ class DistingCubit extends _DistingCubitBase
   @override
   Future<void> close() async {
     _cancelRespecificationForConnectionChange();
+    await _remoteDelegate.dispose();
     _ccNotificationDelegate.stop();
     await _mappingDelegate.dispose();
     await _memoryDelegate.dispose();
@@ -323,6 +329,24 @@ class DistingCubit extends _DistingCubitBase
   Future<void> updateScreenshot() async {
     return _hardwareCommandsDelegate.updateScreenshot();
   }
+
+  RemoteControlState get remoteControlState => _remoteDelegate.state;
+  Stream<RemoteControlState> get remoteControlStateStream =>
+      _remoteDelegate.stateStream;
+
+  /// Acquires a connection-scoped host token without writing pot positions.
+  String openRemoteSession() => _remoteDelegate.openSession();
+
+  /// Completes on transport send only, never acknowledged hardware execution.
+  Future<void> sendRemoteAction(String sessionId, RemoteAction action) =>
+      _remoteDelegate.send(sessionId, action);
+
+  Future<void> adjustRemotePot(String sessionId, int index, int adjustment) =>
+      _remoteDelegate.adjustPot(sessionId, index, adjustment);
+
+  /// Use for fold, hide, close or lost host focus; stale callbacks are rejected.
+  Future<void> closeRemoteSession(String sessionId) =>
+      _remoteDelegate.closeSession(sessionId);
 
   /// Gets the current CPU usage information from the Disting device.
   /// Returns null if the device is not connected or if the request fails.
@@ -1208,6 +1232,7 @@ class DistingCubit extends _DistingCubitBase
     _ccNotificationDelegate.stop();
     _monitoringDelegate.pauseCpuMonitoring();
     if (identical(disting(), manager)) {
+      _remoteDelegate.clearConnection();
       _memoryDelegate.clearConnection();
     }
     _parameterQueue?.dispose();

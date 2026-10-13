@@ -284,6 +284,7 @@ class _ConnectionDelegate {
   }
 
   void disconnect() {
+    _cubit._remoteDelegate.clearConnection();
     _cubit._memoryDelegate.clearConnection();
 
     MidiDevice? inputDevice;
@@ -606,6 +607,7 @@ class _ConnectionDelegate {
     MidiDevice outputDevice,
     int sysExId,
   ) async {
+    _cubit._remoteDelegate.clearConnection();
     _cubit._memoryDelegate.clearConnection();
     StartupLogService.log(
       'DistingCubit.connectToDevices: attempting connection to '
