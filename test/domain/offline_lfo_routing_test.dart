@@ -107,7 +107,10 @@ void main() {
       final secondLfoOutput = routing.outputPorts.singleWhere(
         (port) => port.name == '2:Output',
       );
-      expect(secondLfoOutput.modeParameterNumber, 22);
+      // Firmware 1.19 adds trigger parameters before channel 2. The bundled
+      // metadata maps output 23 to its mode parameter 24 (22 is Trigger mode).
+      expect(secondLfoOutput.parameterNumber, 23);
+      expect(secondLfoOutput.modeParameterNumber, 24);
     });
   });
 }
