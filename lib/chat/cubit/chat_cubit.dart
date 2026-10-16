@@ -28,7 +28,9 @@ class ChatCubit extends Cubit<ChatState> {
   StreamSubscription<dynamic>? _loopSubscription;
   LlmProvider? _activeProvider;
   Future<void>? _summarizationFuture;
+  Completer<void>? _compactionCompletion;
   bool _compacting = false;
+  int _processingGeneration = 0;
 
   // Accumulated LLM message history for the agentic loop
   final List<LlmMessage> _llmHistory = [];
@@ -72,6 +74,7 @@ class ChatCubit extends Cubit<ChatState> {
 
     final currentState = state;
     if (currentState is! ChatReady || currentState.isProcessing) return;
+    final generation = _processingGeneration;
 
     // Handle /context command locally — no API call needed
     if (text.trim().toLowerCase() == '/context' &&
@@ -138,13 +141,16 @@ class ChatCubit extends Cubit<ChatState> {
         _summarizationFuture = null;
       }
 
+      if (generation != _processingGeneration || isClosed) return;
       await _resetActiveProvider(settings);
+      if (generation != _processingGeneration || isClosed) return;
       _recomputeCompactionNeedForCurrentWindow();
 
       // Handle compaction if needed
       if (_needsCompaction) {
         await _performCompaction(settings);
       }
+      if (generation != _processingGeneration || isClosed) return;
 
       // Add to LLM history
       _historyLengthBeforeLoop = _llmHistory.length;
@@ -186,11 +192,13 @@ class ChatCubit extends Cubit<ChatState> {
 
       // Run agentic loop
       await _loopSubscription?.cancel();
+      if (generation != _processingGeneration || isClosed) return;
       _loopSubscription = chatService
           .runAgenticLoop(_llmHistory)
           .listen(
             _handleLoopEvent,
             onError: (Object error) {
+              unawaited(_cancelRemoteControl());
               _truncateHistoryAfterCancellationPoint();
               final s = state;
               if (s is ChatReady) {
@@ -207,6 +215,7 @@ class ChatCubit extends Cubit<ChatState> {
               }
             },
             onDone: () {
+              unawaited(_cancelRemoteControl());
               final s = state;
               if (s is ChatReady && s.isProcessing) {
                 _truncateHistoryAfterCancellationPoint();
@@ -215,6 +224,9 @@ class ChatCubit extends Cubit<ChatState> {
             },
           );
     } catch (e) {
+      if (generation != _processingGeneration || isClosed) return;
+      await _cancelRemoteControl();
+      if (generation != _processingGeneration || isClosed) return;
       _truncateHistoryAfterCancellationPoint();
       final s = state;
       if (s is ChatReady) {
@@ -398,6 +410,7 @@ class ChatCubit extends Cubit<ChatState> {
         );
         emit(currentState.copyWith(messages: [...currentState.messages, msg]));
       case ChatLoopError(message: final message):
+        unawaited(_cancelRemoteControl());
         _truncateHistoryAfterCancellationPoint();
         final msg = ChatMessage.assistant('Error: $message');
         emit(
@@ -538,9 +551,14 @@ class ChatCubit extends Cubit<ChatState> {
             if (!completer.isCompleted) completer.complete();
           },
         );
-
+    _loopSubscription = sub;
+    _compactionCompletion = completer;
     await completer.future;
+    if (identical(_compactionCompletion, completer)) {
+      _compactionCompletion = null;
+    }
     await sub.cancel();
+    if (identical(_loopSubscription, sub)) _loopSubscription = null;
     if (!_compacting) return;
 
     if (!completed) {
@@ -649,8 +667,16 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> clearChat() async {
-    await _loopSubscription?.cancel();
+    _processingGeneration++;
+    _compacting = false;
+    if (_compactionCompletion?.isCompleted == false) {
+      _compactionCompletion!.complete();
+    }
+    final remoteCleanup = _cancelRemoteControl();
+    final loopCleanup = _loopSubscription?.cancel();
     _loopSubscription = null;
+    await remoteCleanup;
+    await loopCleanup;
     _compacting = false;
     if (_summarizationFuture != null) {
       await _summarizationFuture;
@@ -675,6 +701,7 @@ class ChatCubit extends Cubit<ChatState> {
         _llmHistory.isEmpty) {
       return;
     }
+    final generation = _processingGeneration;
 
     if (!settings.hasApiKey) {
       emit(
@@ -702,6 +729,7 @@ class ChatCubit extends Cubit<ChatState> {
         _summarizationFuture = null;
       }
       await _resetActiveProvider(settings);
+      if (generation != _processingGeneration || isClosed) return;
       await _performCompaction(settings);
       final doneState = state;
       if (doneState is ChatReady) {
@@ -726,7 +754,12 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void cancelProcessing() {
+    _processingGeneration++;
     _compacting = false;
+    if (_compactionCompletion?.isCompleted == false) {
+      _compactionCompletion!.complete();
+    }
+    unawaited(_cancelRemoteControl());
     _loopSubscription?.cancel();
     _truncateHistoryAfterCancellationPoint();
     final currentState = state;
@@ -824,6 +857,17 @@ class ChatCubit extends Cubit<ChatState> {
 
   @override
   Future<void> close() async {
+    _processingGeneration++;
+    _compacting = false;
+    if (_compactionCompletion?.isCompleted == false) {
+      _compactionCompletion!.complete();
+    }
+    try {
+      await _toolRegistry.dispose();
+    } on Object {
+      // Registry disposal invalidates gestures before attempting hold release.
+      // An uncertain hardware release must not prevent closing the chat.
+    }
     await _loopSubscription?.cancel();
     _compacting = false;
     if (_summarizationFuture != null) {
@@ -835,6 +879,14 @@ class ChatCubit extends Cubit<ChatState> {
     }
     _activeProvider?.dispose();
     return super.close();
+  }
+
+  Future<void> _cancelRemoteControl() async {
+    try {
+      await _toolRegistry.cancelRemoteControl();
+    } on Object {
+      // The remote tool preserves release uncertainty in its operation result.
+    }
   }
 
   void _truncateHistoryAfterCancellationPoint() {

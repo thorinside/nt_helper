@@ -7,7 +7,9 @@ final class _RemoteConnectionScope {
   final IDistingMidiManager manager;
   Future<void> tail = Future<void>.value();
   DistingRequestCancellation cancellation = DistingRequestCancellation();
+  // Includes pushes whose writer threw after delivery may have occurred.
   final Set<int> sentPushes = {};
+  bool releaseUnconfirmed = false;
   int pending = 0;
 }
 
@@ -55,6 +57,15 @@ final class _RemoteDelegate {
     }
     _synchronize(_cubit.state);
     if (_reason != null) throw StateError(_reason!);
+    final currentConnection = _connection!;
+    if (currentConnection.releaseUnconfirmed ||
+        (currentConnection.sentPushes.isNotEmpty &&
+            (_session == null || _session!.cancellation.isCancelled))) {
+      throw StateError(
+        'Remote device release is unknown; close the previous '
+        'session successfully or reconnect before sending more input.',
+      );
+    }
     final previous = _session;
     if (previous != null) {
       // Cleanup is serialized ahead of the replacement host's inputs. Its
@@ -92,22 +103,18 @@ final class _RemoteDelegate {
     try {
       await _serialize(connection, () async {
         _requireSession(session.id);
+        // Delivery can occur before the writer reports an error. Register a
+        // push before attempting it so cleanup also covers uncertain delivery.
+        if (action case RemotePush(:final index)) {
+          connection.sentPushes.add(index);
+        }
         await (connection.manager as RemoteControlWriter).requestRemoteAction(
           action,
           cancellation: session.cancellation,
         );
-        // A push may have been sent immediately before host closure. Record it
-        // on the original connection even when that host has been invalidated,
-        // so the queued cleanup can release it rather than losing the race.
-        if (_isCurrent(connection)) {
-          switch (action) {
-            case RemotePush(:final index):
-              connection.sentPushes.add(index);
-            case RemoteRelease(:final index):
-              connection.sentPushes.remove(index);
-            default:
-              break;
-          }
+        // Keep uncertain releases pending; only successful writes clear them.
+        if (_isCurrent(connection) && action is RemoteRelease) {
+          connection.sentPushes.remove(action.index);
         }
       });
     } catch (error) {
@@ -119,6 +126,15 @@ final class _RemoteDelegate {
             'Remote input could not be sent; device state is unknown. $error';
         session.held.clear();
         session.cancellation.cancel();
+        try {
+          await _serialize(connection, () => _releasePushes(connection));
+        } catch (cleanupError) {
+          if (_isCurrent(connection)) {
+            _error =
+                '$_error Remote cleanup could not be sent; '
+                'device release is unknown. $cleanupError';
+          }
+        }
       }
       rethrow;
     } finally {
@@ -146,31 +162,49 @@ final class _RemoteDelegate {
     session.held.clear();
     session.cancellation.cancel();
     final connection = session.connection;
-    final cancellation = connection.cancellation;
     connection.pending++;
     _publish();
     try {
-      await _serialize(connection, () async {
-        for (final index in connection.sentPushes.toList()) {
-          if (!_isCurrent(connection) || cancellation.isCancelled) return;
-          await (connection.manager as RemoteControlWriter).requestRemoteAction(
-            RemoteRelease(index),
-            cancellation: cancellation,
-          );
-          connection.sentPushes.remove(index);
-        }
-      });
+      await _serialize(connection, () => _releasePushes(connection));
     } catch (error) {
       if (_isCurrent(connection) &&
           error is! DistingRequestCancelledException) {
         _error =
-            'Remote cleanup could not be sent; device release is unknown. $error';
+            '${_error == null ? '' : '$_error '}Remote cleanup could not '
+            'be sent; device release is unknown. $error';
       }
       rethrow;
     } finally {
       connection.pending--;
       if (_isCurrent(connection)) _publish();
     }
+  }
+
+  /// Called only inside the original connection's serialized queue. Try each
+  /// possibly delivered push even when another release fails, retaining failed
+  /// indices for a later close attempt and preserving the first cleanup error.
+  Future<void> _releasePushes(_RemoteConnectionScope connection) async {
+    final cancellation = connection.cancellation;
+    Object? firstError;
+    StackTrace? firstStack;
+    for (final index in connection.sentPushes.toList()) {
+      if (!_isCurrent(connection) || cancellation.isCancelled) break;
+      try {
+        await (connection.manager as RemoteControlWriter).requestRemoteAction(
+          RemoteRelease(index),
+          cancellation: cancellation,
+        );
+        connection.sentPushes.remove(index);
+      } catch (error, stack) {
+        firstError ??= error;
+        firstStack ??= stack;
+      }
+    }
+    if (firstError != null) {
+      connection.releaseUnconfirmed = true;
+      Error.throwWithStackTrace(firstError, firstStack!);
+    }
+    if (connection.sentPushes.isEmpty) connection.releaseUnconfirmed = false;
   }
 
   void onDistingStateWillChange(DistingState next) => _synchronize(next);
@@ -221,6 +255,11 @@ final class _RemoteDelegate {
       _session?.cancellation.cancel();
       _session = null;
       connection?.cancellation.cancel();
+      if (connection?.sentPushes.isNotEmpty ?? false) {
+        _error =
+            'Remote capability became unavailable with potentially held '
+            'controls; device release is unknown.';
+      }
       connection?.sentPushes.clear();
     } else if (connection != null && connection.cancellation.isCancelled) {
       connection.cancellation = DistingRequestCancellation();
@@ -260,6 +299,11 @@ final class _RemoteDelegate {
     _synchronize(_cubit.state);
     final session = _session;
     if (_reason != null) throw StateError(_reason!);
+    if (_connection?.releaseUnconfirmed ?? false) {
+      throw StateError(
+        'Remote device release is unknown; reconnect before sending more input.',
+      );
+    }
     if (session == null ||
         session.id != id ||
         session.cancellation.isCancelled) {
@@ -283,6 +327,11 @@ final class _RemoteDelegate {
   void _detach() {
     final connection = _connection;
     final session = _session;
+    if (connection?.sentPushes.isNotEmpty ?? false) {
+      _error =
+          'Remote connection ended with potentially held controls; '
+          'device release is unknown.';
+    }
     _connection = null;
     _session = null;
     session?.cancellation.cancel();
@@ -297,8 +346,16 @@ final class _RemoteDelegate {
           : null,
       unavailableReason: _closing
           ? 'Remote control is unavailable during shutdown.'
+          : (_connection?.releaseUnconfirmed ?? false)
+          ? 'Remote device release is unknown; close the previous session '
+                'successfully or reconnect before sending more input.'
           : _reason,
       heldControls: _session?.held ?? const {},
+      pendingReleaseControls:
+          _session?.cancellation.isCancelled == false &&
+              !(_connection?.releaseUnconfirmed ?? false)
+          ? const {}
+          : _connection?.sentPushes ?? const {},
       potValues: _pots,
       pending: (_connection?.pending ?? 0) > 0,
       error: _error,
@@ -307,6 +364,7 @@ final class _RemoteDelegate {
         next.sessionId == _state.sessionId &&
         next.unavailableReason == _state.unavailableReason &&
         setEquals(next.heldControls, _state.heldControls) &&
+        setEquals(next.pendingReleaseControls, _state.pendingReleaseControls) &&
         listEquals(next.potValues, _state.potValues) &&
         next.pending == _state.pending &&
         next.error == _state.error) {

@@ -21,6 +21,42 @@ The Disting NT MCP (Model Context Protocol) API provides individual, well-named 
 
 ## Tool Reference
 
+### Remote Controls
+
+External MCP and built-in chat share these tools and the UI's remote-control
+transport. They require a synchronized live connection with recognized firmware
+1.19 or newer and a transport supporting remote input. Offline and demo modes
+cannot send remote commands.
+
+`remote_state` takes no arguments. It reports availability, control mappings, and
+local commanded pot/hold state. This is not hardware readback or confirmation of
+the hardware's current screen, parameter values, or audio.
+
+`remote_control` takes an ordered `actions` array. Pot indices are 0–2 (left,
+center, right), with values 0–4095. Encoder indices are 0–1 (left, right), with
+signed `delta` values. Push/release indices are 0–3 for Buttons 1–4, 4–6 for the
+three pots, and 7–8 for the two encoders.
+
+Set the left pot:
+
+```json
+{"tool":"remote_control","arguments":{"actions":[{"type":"pot_turn","index":0,"value":1024}]}}
+```
+
+Turn the left encoder while holding it:
+
+```json
+{"tool":"remote_control","arguments":{"actions":[{"type":"push","index":7},{"type":"encoder_turn","index":0,"delta":2},{"type":"release","index":7}]}}
+```
+
+Put a complete held combination in one call. Outstanding presses are released
+at the end, on cancellation, or after an error while the original transport is
+available; holds do not persist across calls. A disconnected device cannot
+acknowledge release, so an unknown release outcome must not be described as a
+confirmed hardware state. Gesture size, encoder movement, and waits are bounded,
+and the complete sequence is validated before any command is sent. An active UI
+remote session must finish before a tool can acquire the controls.
+
 ### Reference Tools
 
 Any tool can return a `tool_reference` instead of a large payload. Use these tools to read or search the referenced result.

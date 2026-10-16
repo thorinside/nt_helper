@@ -51,6 +51,8 @@ void main() {
     memoryService = MockMemoryService();
 
     when(() => toolRegistry.entries).thenReturn(const []);
+    when(() => toolRegistry.cancelRemoteControl()).thenAnswer((_) async {});
+    when(() => toolRegistry.dispose()).thenAnswer((_) async {});
     when(() => toolRegistry.findByName(any())).thenReturn(null);
     when(
       () => toolRegistry.executeTool(any(), any()),
@@ -66,6 +68,62 @@ void main() {
     when(
       () => memoryService.saveSessionSnapshot(any()),
     ).thenAnswer((_) async {});
+  });
+
+  test('cancelling chat invalidates active remote control', () async {
+    final cubit = ChatCubit(
+      toolRegistry: toolRegistry,
+      memoryService: memoryService,
+    );
+    cubit.cancelProcessing();
+    verify(() => toolRegistry.cancelRemoteControl()).called(1);
+    await cubit.close();
+    verify(() => toolRegistry.dispose()).called(1);
+  });
+
+  test(
+    'clearing chat cancels remote control without disposing its registry',
+    () async {
+      final cubit = ChatCubit(
+        toolRegistry: toolRegistry,
+        memoryService: memoryService,
+      );
+      await cubit.clearChat();
+      verify(() => toolRegistry.cancelRemoteControl()).called(1);
+      verifyNever(() => toolRegistry.dispose());
+      await cubit.close();
+    },
+  );
+
+  test('chat closes even if remote cleanup fails', () async {
+    when(() => toolRegistry.dispose()).thenThrow(StateError('release unknown'));
+    final cubit = ChatCubit(
+      toolRegistry: toolRegistry,
+      memoryService: memoryService,
+    );
+    await cubit.close();
+    expect(cubit.isClosed, isTrue);
+  });
+
+  test('cancelled bootstrap cannot start a new tool loop afterwards', () async {
+    final memory = Completer<String>();
+    when(() => memoryService.readMemory()).thenAnswer((_) => memory.future);
+    var createdProvider = false;
+    final cubit = ChatCubit(
+      toolRegistry: toolRegistry,
+      memoryService: memoryService,
+      providerFactory: (_) {
+        createdProvider = true;
+        throw StateError('Cancelled turn must not create a provider');
+      },
+    );
+    final pending = cubit.sendMessage('turn the encoder', _settings);
+    cubit.cancelProcessing();
+    memory.complete('');
+    await pending;
+    expect(createdProvider, isFalse);
+    verifyNever(() => toolRegistry.executeTool(any(), any()));
+    await cubit.close();
   });
 
   group('Attachment validation', () {

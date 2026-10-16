@@ -82,6 +82,7 @@ class McpServerService extends ChangeNotifier {
   // Map of session ID to server instance for multi-client support
   final Map<String, McpServer> _servers = {};
   final Map<String, StreamableHTTPServerTransport> _transports = {};
+  final Map<McpServer, ToolRegistry> _registries = {};
 
   HttpServer? _httpServer;
   StreamSubscription<HttpRequest>? _httpSubscription;
@@ -103,6 +104,7 @@ class McpServerService extends ChangeNotifier {
       'server_running': isRunning,
       'active_servers': _servers.length,
       'active_transports': _transports.length,
+      'active_registries': _registries.length,
       'server_implementation': 'nt-helper-flutter',
       'library_version': 'mcp_dart 1.2.2',
     };
@@ -133,7 +135,7 @@ class McpServerService extends ChangeNotifier {
         },
         onError: (error, stackTrace) {},
         onDone: () {
-          _cleanup();
+          unawaited(_cleanup());
         },
         cancelOnError: false,
       );
@@ -360,8 +362,21 @@ class McpServerService extends ChangeNotifier {
 
     try {
       if (_transports.containsKey(sessionId)) {
-        final transport = _transports[sessionId]!;
-        await transport.handleRequest(request);
+        final transport = _transports.remove(sessionId)!;
+        final server = _servers.remove(sessionId);
+        // Invalidate this client's tools before yielding to gesture cleanup.
+        // Let the transport write its DELETE response before closing the server.
+        final registry = _registries.remove(server);
+        try {
+          await registry?.dispose();
+        } on Object {
+          // The remote operation records an uncertain release result itself.
+        }
+        try {
+          await transport.handleRequest(request);
+        } finally {
+          await server?.close();
+        }
       } else {
         // Session doesn't exist - just return OK since it's already "terminated"
         request.response.statusCode = HttpStatus.ok;
@@ -411,22 +426,20 @@ class McpServerService extends ChangeNotifier {
   }
 
   Future<void> stop() async {
-    if (!isRunning && _lastError == null) {
+    if (!isRunning && _lastError == null && _registries.isEmpty) {
       return;
     }
 
-    await _httpSubscription?.cancel();
+    final subscription = _httpSubscription;
     _httpSubscription = null;
-
-    await _httpServer?.close(force: true);
+    final httpServer = _httpServer;
     _httpServer = null;
-
-    // Close all Streamable HTTP transports and servers
-    for (final transport in _transports.values) {
-      transport.close();
-    }
     _transports.clear();
     _servers.clear();
+    final closing = _registries.keys.toList().map(_disposeServer).toList();
+    await Future.wait(closing);
+    await subscription?.cancel();
+    await httpServer?.close(force: true);
 
     // Clear error when explicitly stopped
     _lastError = null;
@@ -441,11 +454,13 @@ class McpServerService extends ChangeNotifier {
     await start(port: port, bindAddress: bindAddress);
   }
 
-  void _cleanup() {
+  Future<void> _cleanup() async {
     _httpSubscription = null;
     _httpServer = null;
     _transports.clear();
     _servers.clear();
+    final closing = _registries.keys.toList().map(_disposeServer).toList();
+    await Future.wait(closing);
     notifyListeners();
   }
 
@@ -461,6 +476,7 @@ class McpServerService extends ChangeNotifier {
 
     // Register all tools from the shared registry
     registry.applyToMcpServer(server);
+    _registries[server] = registry;
 
     // Register and immediately disable a dummy resource to initialize the
     // resources/list handler. Without this, clients that call resources/list
@@ -482,6 +498,9 @@ class McpServerService extends ChangeNotifier {
   Future<StreamableHTTPServerTransport> _createNewTransport({
     String? sessionId,
   }) async {
+    if (!isRunning) {
+      throw StateError('The MCP server stopped before session initialization.');
+    }
     StreamableHTTPServerTransport? transport;
     McpServer? server;
 
@@ -498,6 +517,10 @@ class McpServerService extends ChangeNotifier {
             : () => generateUUID(),
         eventStore: InMemoryEventStore(),
         onsessioninitialized: (initializedSessionId) {
+          if (!_registries.containsKey(server)) return;
+          if (_servers.containsKey(initializedSessionId)) {
+            unawaited(_cleanupSession(initializedSessionId));
+          }
           // Store both transport and server by session ID when session is initialized
           _transports[initializedSessionId] = transport!;
           _servers[initializedSessionId] = server!;
@@ -508,19 +531,34 @@ class McpServerService extends ChangeNotifier {
       ),
     );
 
-    // Set up transport close handler with session cleanup
-    transport.onclose = () {
-      final sessionId = transport!.sessionId;
-      if (sessionId != null && _transports.containsKey(sessionId)) {
-        _cleanupSession(sessionId);
-      }
-    };
-
     // Wrap transport to log outgoing responses
     final loggingTransport = _LoggingTransport(transport);
 
     // Connect server to the logging wrapper so send() calls are intercepted
-    await server.connect(loggingTransport);
+    try {
+      await server.connect(loggingTransport);
+      if (!isRunning || !_registries.containsKey(server)) {
+        throw StateError(
+          'The MCP server stopped during session initialization.',
+        );
+      }
+    } on Object {
+      await _disposeServer(server);
+      rethrow;
+    }
+
+    // connect installs the protocol's close handler. Preserve it, and attach
+    // session cleanup afterwards so the SDK cannot overwrite our callback.
+    final protocolOnClose = transport.onclose;
+    transport.onclose = () {
+      protocolOnClose?.call();
+      final sessionId = transport!.sessionId;
+      if (sessionId != null && identical(_servers[sessionId], server)) {
+        unawaited(_cleanupSession(sessionId));
+      } else {
+        unawaited(_disposeServer(server!));
+      }
+    };
 
     // Forward onmessage from the real transport to the logging wrapper
     // so handleRequest triggers the server's handler
@@ -530,13 +568,34 @@ class McpServerService extends ChangeNotifier {
   }
 
   /// Clean up a specific session
-  void _cleanupSession(String sessionId) {
+  Future<void> _cleanupSession(String sessionId) async {
+    final transport = _transports.remove(sessionId);
+    final server = _servers.remove(sessionId);
+    if (transport == null && server == null) return;
     DebugService().addLocalMessage(
       'MCP client disconnected (session: $sessionId)',
     );
-    _transports[sessionId]?.close();
-    _transports.remove(sessionId);
-    _servers.remove(sessionId);
+    if (server != null) {
+      await _disposeServer(server);
+    } else {
+      await transport?.close();
+    }
+  }
+
+  Future<void> _disposeServer(McpServer server) async {
+    final registry = _registries.remove(server);
+    if (registry == null) return;
+    try {
+      await registry.dispose();
+    } on Object {
+      // Finish closing the client even when hardware release is uncertain.
+    } finally {
+      try {
+        await server.close();
+      } on Object {
+        // Registry ownership is already detached; other sessions still close.
+      }
+    }
   }
 }
 

@@ -8,6 +8,7 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/memory_usage.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
+import 'package:nt_helper/services/debug_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}
@@ -156,6 +157,82 @@ void main() {
       addTearDown(() => client.close(force: true));
 
       await _initializeSession(client, port!);
+    });
+
+    test(
+      'a deferred initialize body cannot create a session after stop',
+      () async {
+        await service.start(port: 0, bindAddress: InternetAddress.loopbackIPv4);
+        final client = HttpClient();
+        addTearDown(() => client.close(force: true));
+        final received = DebugService().debugStream.firstWhere(
+          (message) => message.contains('Request: POST /mcp'),
+        );
+        final request = await client.postUrl(
+          Uri.parse('http://127.0.0.1:${service.boundPort}/mcp'),
+        );
+        request.headers
+          ..set(HttpHeaders.acceptHeader, 'application/json, text/event-stream')
+          ..set(HttpHeaders.contentTypeHeader, 'application/json');
+        request.write('{"jsonrpc":"2.0",');
+        await request.flush();
+        await received.timeout(const Duration(seconds: 2));
+
+        final stopped = service.stop();
+        expect(service.isRunning, isFalse);
+        // Complete the body while stop is awaiting asynchronous resource cleanup.
+        request.write(
+          '"id":1,"method":"initialize","params":'
+          '{"protocolVersion":"2025-06-18","capabilities":{},'
+          '"clientInfo":{"name":"deferred-client","version":"1"}}}',
+        );
+        final finished = request.close().then<void>(
+          (response) => response.drain<void>(),
+          onError: (Object _) {},
+        );
+        await stopped;
+        await finished.timeout(const Duration(seconds: 2));
+        expect(service.connectionDiagnostics['active_registries'], 0);
+        expect(service.connectionDiagnostics['active_servers'], 0);
+        expect(service.connectionDiagnostics['active_transports'], 0);
+      },
+    );
+
+    test('DELETE disposes only the terminated session registry', () async {
+      await service.start(port: 0, bindAddress: InternetAddress.loopbackIPv4);
+      final port = service.boundPort!;
+      final client = HttpClient();
+      addTearDown(() => client.close(force: true));
+      final first = await _initializeSession(client, port);
+      final second = await _initializeSession(client, port, id: 2);
+      expect(service.connectionDiagnostics['active_registries'], 2);
+
+      final request = await client.openUrl(
+        'DELETE',
+        Uri.parse('http://127.0.0.1:$port/mcp'),
+      );
+      request.headers
+        ..set('mcp-session-id', first)
+        ..set('mcp-protocol-version', '2025-06-18');
+      final response = await request.close();
+      expect(response.statusCode, HttpStatus.ok);
+      await response.drain<void>();
+      expect(service.connectionDiagnostics['active_registries'], 1);
+      expect(service.connectionDiagnostics['active_servers'], 1);
+      expect(service.connectionDiagnostics['active_transports'], 1);
+
+      final listResponse = await _postJsonRpc(client, port, {
+        'jsonrpc': '2.0',
+        'id': 3,
+        'method': 'tools/list',
+        'params': <String, dynamic>{},
+      }, sessionId: second);
+      expect((await _readJsonRpcMessage(listResponse))['error'], isNull);
+
+      await service.stop();
+      expect(service.connectionDiagnostics['active_registries'], 0);
+      expect(service.connectionDiagnostics['active_servers'], 0);
+      expect(service.connectionDiagnostics['active_transports'], 0);
     });
 
     test(

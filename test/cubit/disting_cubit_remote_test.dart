@@ -435,19 +435,195 @@ void main() {
         contains('device state is unknown'),
       );
       expect(cubit.remoteControlState.sessionId, isNull);
+      expect(cubit.remoteControlState.pendingReleaseControls, {3});
       await expectLater(cubit.closeRemoteSession(session), throwsStateError);
+      expect(cubit.remoteControlState.pendingReleaseControls, {3});
+      expect(cubit.remoteControlState.available, isFalse);
+      expect(() => cubit.openRemoteSession(), throwsStateError);
+      await expectLater(
+        cubit.sendRemoteAction(session, const RemotePush(8)),
+        throwsStateError,
+      );
       expect(
         cubit.remoteControlState.error,
         contains('device release is unknown'),
       );
       await Future<void>.delayed(const Duration(milliseconds: 100));
-      expect(wire.remoteAttempts, hasLength(3));
+      expect(wire.remoteAttempts, hasLength(4));
       expect(wire.remotePackets, [
         remoteFrame([1, 3]),
       ]);
       expect(states.any((state) => state.pending), isTrue);
       expect(states.where((state) => state.error != null), isNotEmpty);
       expect(cubit.remoteControlState.pending, isFalse);
+    },
+  );
+
+  test(
+    'a push that throws after delivery releases both prior and uncertain holds',
+    () async {
+      final session = cubit.openRemoteSession();
+      await cubit.sendRemoteAction(session, const RemotePush(3));
+      final failure = StateError('Push delivery became uncertain');
+      wire.onSend = (packet) {
+        if (packet[6] == 0x78 && packet[7] == 1 && packet[8] == 6) {
+          throw failure;
+        }
+      };
+      await expectLater(
+        cubit.sendRemoteAction(session, const RemotePush(6)),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains(failure.message),
+          ),
+        ),
+      );
+      expect(wire.remotePackets, [
+        remoteFrame([1, 3]),
+        remoteFrame([1, 6]),
+        remoteFrame([2, 3]),
+        remoteFrame([2, 6]),
+      ]);
+      expect(cubit.remoteControlState.heldControls, isEmpty);
+      expect(cubit.remoteControlState.sessionId, isNull);
+      expect(
+        cubit.remoteControlState.error,
+        contains('device state is unknown'),
+      );
+      await cubit.closeRemoteSession(session);
+      expect(wire.remotePackets, hasLength(4));
+    },
+  );
+
+  test(
+    'failure cleanup tries every release and preserves the original send error',
+    () async {
+      final session = cubit.openRemoteSession();
+      await cubit.sendRemoteAction(session, const RemotePush(3));
+      await cubit.sendRemoteAction(session, const RemotePush(4));
+      final failure = StateError('Encoder transport failed');
+      var failRelease = true;
+      wire.onSend = (packet) {
+        if (packet[6] != 0x78) return;
+        if (packet[7] == 3) throw failure;
+        if (packet[7] == 2 && packet[8] == 3 && failRelease) {
+          throw StateError('Release transport failed');
+        }
+      };
+      await expectLater(
+        cubit.sendRemoteAction(session, const RemoteEncoderTurn(0, 5)),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains(failure.message),
+          ),
+        ),
+      );
+      expect(wire.remotePackets, [
+        remoteFrame([1, 3]),
+        remoteFrame([1, 4]),
+        remoteFrame([3, 0, 5]),
+        remoteFrame([2, 3]),
+        remoteFrame([2, 4]),
+      ]);
+      expect(
+        cubit.remoteControlState.error,
+        contains('Encoder transport failed'),
+      );
+      expect(cubit.remoteControlState.pendingReleaseControls, {3});
+      expect(
+        cubit.remoteControlState.error,
+        contains('device release is unknown'),
+      );
+      expect(cubit.remoteControlState.heldControls, isEmpty);
+      failRelease = false;
+      await cubit.closeRemoteSession(session);
+      expect(wire.remotePackets.last, remoteFrame([2, 3]));
+      expect(wire.remotePackets, hasLength(6));
+      expect(cubit.remoteControlState.pendingReleaseControls, isEmpty);
+      expect(cubit.remoteControlState.available, isTrue);
+      final recovered = cubit.openRemoteSession();
+      await cubit.closeRemoteSession(recovered);
+    },
+  );
+
+  test(
+    'failed replacement-host cleanup blocks its new host until release recovery',
+    () async {
+      final original = cubit.openRemoteSession();
+      await cubit.sendRemoteAction(original, const RemotePush(3));
+      wire.failRemoteSend = true;
+      final cleanupFailed = cubit.remoteControlStateStream.firstWhere(
+        (state) => state.pendingReleaseControls.isNotEmpty && !state.pending,
+      );
+      final replacement = cubit.openRemoteSession();
+      await cleanupFailed;
+      expect(cubit.remoteControlState.pendingReleaseControls, {3});
+      expect(cubit.remoteControlState.available, isFalse);
+      expect(() => cubit.openRemoteSession(), throwsStateError);
+      await expectLater(
+        cubit.sendRemoteAction(replacement, const RemoteEncoderTurn(0, 1)),
+        throwsStateError,
+      );
+      expect(wire.remotePackets, [
+        remoteFrame([1, 3]),
+      ]);
+      expect(wire.remoteAttempts, hasLength(2));
+      wire.failRemoteSend = false;
+      await cubit.closeRemoteSession(replacement);
+      expect(wire.remotePackets.last, remoteFrame([2, 3]));
+      expect(cubit.remoteControlState.pendingReleaseControls, isEmpty);
+      expect(cubit.remoteControlState.available, isTrue);
+    },
+  );
+
+  test('failed push cleanup never follows a replacement transport', () async {
+    final session = cubit.openRemoteSession();
+    final failure = StateError('Push failed while connection changed');
+    wire.onSend = (packet) {
+      if (packet[6] == 0x78 && packet[7] == 1 && packet[8] == 6) {
+        cubit.emit(synchronized(wire.replaceManager()));
+        throw failure;
+      }
+    };
+    await expectLater(
+      cubit.sendRemoteAction(session, const RemotePush(6)),
+      throwsA(isA<DistingRequestCancelledException>()),
+    );
+    await cubit.closeRemoteSession(session);
+    expect(wire.remotePackets, [
+      remoteFrame([1, 6]),
+    ]);
+    final replacement = cubit.openRemoteSession();
+    await cubit.sendRemoteAction(replacement, const RemoteEncoderTurn(1, 1));
+    expect(wire.remotePackets.last, remoteFrame([3, 1, 1]));
+    expect(wire.remotePackets, hasLength(2));
+  });
+
+  test(
+    'disconnect with possibly delivered pushes reports unknown release without replay',
+    () async {
+      final session = cubit.openRemoteSession();
+      await cubit.sendRemoteAction(session, const RemotePush(3));
+      cubit.disconnect();
+      expect(cubit.remoteControlState.available, isFalse);
+      expect(
+        cubit.remoteControlState.error,
+        contains('device release is unknown'),
+      );
+      expect(cubit.remoteControlState.heldControls, isEmpty);
+      await cubit.closeRemoteSession(session);
+      expect(wire.remotePackets, [
+        remoteFrame([1, 3]),
+      ]);
+      cubit.emit(synchronized(wire.replaceManager()));
+      final replacement = cubit.openRemoteSession();
+      await cubit.sendRemoteAction(replacement, const RemoteEncoderTurn(1, 1));
+      expect(wire.remotePackets.last, remoteFrame([3, 1, 1]));
+      expect(wire.remotePackets, hasLength(2));
     },
   );
 

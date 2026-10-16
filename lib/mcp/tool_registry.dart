@@ -11,6 +11,7 @@ import 'package:nt_helper/mcp/mcp_constants.dart';
 import 'package:nt_helper/mcp/tool_reference_store.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
+import 'package:nt_helper/mcp/tools/remote_tools.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
 
@@ -54,6 +55,7 @@ class ToolRegistry {
   late final DistingController _controller;
   late final MCPAlgorithmTools _algoTools;
   late final DistingTools _distingTools;
+  late final RemoteTools _remoteTools;
 
   ToolRegistry(
     DistingCubit distingCubit, {
@@ -64,6 +66,7 @@ class ToolRegistry {
     _controller = DistingControllerImpl(distingCubit);
     _algoTools = MCPAlgorithmTools(_controller, distingCubit);
     _distingTools = DistingTools(_controller, distingCubit);
+    _remoteTools = RemoteTools(distingCubit);
     _registerAll();
     _entries.addAll(extraEntries);
     if (memoryService != null) {
@@ -73,6 +76,10 @@ class ToolRegistry {
   }
 
   List<ToolRegistryEntry> get entries => List.unmodifiable(_entries);
+
+  Future<void> cancelRemoteControl() => _remoteTools.cancelRemoteControl();
+
+  Future<void> dispose() => _remoteTools.dispose();
 
   ToolRegistryEntry? findByName(String name) {
     for (final entry in _entries) {
@@ -182,11 +189,83 @@ class ToolRegistry {
   }
 
   void _registerAll() {
+    _registerRemoteTools();
     _registerReferenceTools();
     _registerSearchTools();
     _registerShowTools();
     _registerEditTools();
     _registerPresetTools();
+  }
+
+  void _registerRemoteTools() {
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'remote_state',
+        description:
+            'Read remote control capability, control indices, and local commanded state. No hardware readback or acknowledgement is available.',
+        inputSchema: {'properties': {}},
+        handler: _remoteTools.remoteState,
+      ),
+    );
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'remote_control',
+        description:
+            'Send one bounded ordered remote gesture through the same authority as the remote UI. Push multiple controls for held combinations, then turn/release; all remaining holds are released at the end. No holds persist across calls. Completes on transport send, never acknowledged hardware execution. Refuses an active UI host. Maximum 32 actions, 1024 ticks per encoder action and 2048 cumulative ticks, 1000 ms per wait and 2000 ms cumulative wait.',
+        inputSchema: {
+          'properties': {
+            'actions': {
+              'type': 'array',
+              'minItems': 1,
+              'maxItems': 32,
+              'items': {
+                'type': 'object',
+                'properties': {
+                  'type': {
+                    'type': 'string',
+                    'enum': [
+                      'push',
+                      'release',
+                      'encoder_turn',
+                      'pot_turn',
+                      'wait',
+                    ],
+                  },
+                  'index': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'maximum': 8,
+                    'description':
+                        'Push/release 0–8; encoder_turn 0–1; pot_turn 0–2. See remote_state control map.',
+                  },
+                  'delta': {
+                    'type': 'integer',
+                    'minimum': -1024,
+                    'maximum': 1024,
+                    'description': 'Required only for encoder_turn.',
+                  },
+                  'value': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'maximum': 4095,
+                    'description': 'Required only for pot_turn.',
+                  },
+                  'duration_ms': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'maximum': 1000,
+                    'description': 'Required only for wait.',
+                  },
+                },
+                'required': ['type'],
+              },
+            },
+          },
+          'required': ['actions'],
+        },
+        handler: _remoteTools.remoteControl,
+      ),
+    );
   }
 
   void _registerReferenceTools() {
