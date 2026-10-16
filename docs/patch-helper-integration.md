@@ -144,3 +144,27 @@ The Flutter header shows the current NT slot name beside the sync indicator,
 falling back to Patch Helper. It uses the existing 32-character NT name and
 updates on rename without recreating the editor or reloading its Lua. The label
 is read-only, single-line and ellipsized within the existing 48-pixel action bar.
+
+## AUX and declarative tables in development
+
+The updated plugin and companion add explicitly selected AUX 1–44 records, each
+with Description and Group. The matching Helper changes negotiate AUX support,
+merge field edits against device state and follow native AUX selection. Old
+plugins remain usable with physical socket editing; AUX is available only after
+all three components are updated. AUX presets require the new data version.
+
+Lua owns the ordered column declarations and additional record sections. Helper
+renders label, text, colour, integer and remove cells, inline choice actions and
+Lua-provided confirmation dialogs. Record-set validation and MIDI remain in the
+Patch Helper adapter. The renderer has no AUX-specific row widget.
+
+Column declarations include stable keys, default widths, bounds and flex weights.
+Users can drag column boundaries or focus them and use arrow keys. Widths are
+saved through SettingsService under companion GUID, table ID and column key.
+They survive editor reopening and Lua label or order changes, and clamp when
+Lua tightens width bounds. These preferences stay local and reset with settings.
+
+The canonical wire and companion contracts are in the Patch Helper repository's
+`docs/live-map-protocol.md` and `docs/companion-contract.md`. The shipped companion
+fixture here must match `helper/ThPh.lua` there. The AUX transcript is exercised
+byte-for-byte by both Dart and the native C++ factory tests.

@@ -53,7 +53,9 @@ void main() {
         companionCheckInterval: Duration.zero,
       );
       await cubit.load();
-      final action = cubit.state.document!.actions.single;
+      final action = cubit.state.document!.actions.firstWhere(
+        (action) => action.id == 'add_expander',
+      );
       expect(action.title, 'Choose hardware');
       expect(action.choices.values, PatchMap.expanderTypes);
       await cubit.chooseAction('set_title', 0);
@@ -88,7 +90,7 @@ void main() {
           {'value': -1, 'label': 'Bad'},
         ],
         [
-          {'value': 4, 'label': 'Bad'},
+          {'value': 128, 'label': 'Bad'},
         ],
         [
           {'value': 0, 'label': 'One'},
@@ -273,7 +275,7 @@ void main() {
         device.frames
             .where((f) => f.containsKey('request'))
             .map((f) => f['request']![7]),
-        everyElement(isIn([1, 2, 6, 9])),
+        everyElement(isIn([1, 2, 6, 9, 10, 11])),
       );
       final wire = File('test/fixtures/patch_map/live-session.json');
       if (Platform.environment['UPDATE_PATCH_FIXTURE'] == '1') {

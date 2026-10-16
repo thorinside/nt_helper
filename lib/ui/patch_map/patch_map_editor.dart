@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:math' as math;
+import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/algorithm_controller/companion_table.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -79,8 +82,10 @@ class _PatchMapEditorState extends State<PatchMapEditor>
   late final PatchMapEditorCubit _cubit;
   final _scroll = ScrollController();
   final _horizontal = ScrollController();
-  final _rows = <int, GlobalKey>{};
-  int? _selected;
+  final _rows = <Object, GlobalKey>{};
+  Object? _selected;
+  final _widths = SettingsService().companionColumnWidths;
+  String? _focusedColumn;
   bool _expanderDraftOpen = false;
   bool _compactMapOpen = false;
   String? _lastError;
@@ -123,13 +128,13 @@ class _PatchMapEditorState extends State<PatchMapEditor>
     super.dispose();
   }
 
-  void _jump(int socket) {
+  void _jump(Object socket) {
     setState(() => _selected = socket);
     // All rows are mounted; ensureVisible accounts for text scaling and headers.
     final row = _rows[socket]?.currentContext;
-    if (row != null) {
-      Scrollable.ensureVisible(
-        row,
+    if (row != null && _scroll.hasClients) {
+      _scroll.position.ensureVisible(
+        row.findRenderObject()!,
         alignment: .45,
         duration: MediaQuery.disableAnimationsOf(context)
             ? Duration.zero
@@ -154,7 +159,8 @@ class _PatchMapEditorState extends State<PatchMapEditor>
         _lastError = null;
       }
       if (!state.busy && state.error == null && state.map != null) {
-        final focus = state.document?.focusSocket;
+        final Object? focus =
+            state.document?.focusRecord ?? state.document?.focusSocket;
         if (state.fromDevice &&
             focus != null &&
             !state.pending &&
@@ -210,14 +216,17 @@ class _PatchMapEditorState extends State<PatchMapEditor>
                               ),
                             ),
                           ),
-                          for (final action in state.document!.actions)
+                          for (final action in state.document!.actions.where(
+                            (action) => !state.document!.recordSections.any(
+                              (section) => section.addAction == action.id,
+                            ),
+                          ))
                             IconButton(
                               tooltip: action.label,
                               onPressed:
                                   state.editable &&
                                       !state.pending &&
-                                      map.expanders.length <
-                                          PatchMap.maxNewExpanders
+                                      _cubit.canChooseAction(action.id)
                                   ? () => _chooseAction(action)
                                   : null,
                               icon: Icon(
@@ -349,8 +358,7 @@ class _PatchMapEditorState extends State<PatchMapEditor>
                             onPressed:
                                 state.editable &&
                                     !state.pending &&
-                                    state.map!.expanders.length <
-                                        PatchMap.maxNewExpanders
+                                    _cubit.canChooseAction(action.id)
                                 ? () {
                                     if (chosen) return;
                                     chosen = true;
@@ -443,138 +451,453 @@ class _PatchMapEditorState extends State<PatchMapEditor>
     }
   }
 
+  String _widthKey(String table, String column) =>
+      jsonEncode(['ThPh', table, column]);
+
+  Map<String, double> _resolveWidths(
+    String table,
+    List<CompanionColumn> columns,
+    double available,
+  ) {
+    final result = {
+      for (final column in columns)
+        column.key: (_widths[_widthKey(table, column.key)] ?? column.width)
+            .clamp(column.minWidth, column.maxWidth)
+            .toDouble(),
+    };
+    final extra = math.max(
+      0.0,
+      available - 16 - result.values.fold(0.0, (a, b) => a + b),
+    );
+    final flex = columns
+        .where((column) => !_widths.containsKey(_widthKey(table, column.key)))
+        .fold(0, (sum, column) => sum + column.flex);
+    if (flex > 0) {
+      for (final column in columns) {
+        if (!_widths.containsKey(_widthKey(table, column.key))) {
+          result[column.key] =
+              (result[column.key]! + extra * column.flex / flex)
+                  .clamp(column.minWidth, column.maxWidth)
+                  .toDouble();
+        }
+      }
+    }
+    return result;
+  }
+
+  void _resizeColumn(String table, CompanionColumn column, double value) {
+    setState(
+      () => _widths[_widthKey(table, column.key)] = value
+          .clamp(column.minWidth, column.maxWidth)
+          .toDouble(),
+    );
+  }
+
+  Future<void> _saveColumnWidth(String table, CompanionColumn column) async {
+    final value = _widths[_widthKey(table, column.key)];
+    if (value == null) return;
+    final saved = await SettingsService().setCompanionColumnWidth(
+      'ThPh',
+      table,
+      column.key,
+      value,
+    );
+    if (!saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not remember the column width.')),
+      );
+    }
+  }
+
+  Widget _columnHeader(
+    String table,
+    List<CompanionColumn> columns,
+    Map<String, double> widths,
+  ) => Container(
+    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    height: 48,
+    child: Row(
+      children: [
+        for (final column in columns)
+          SizedBox(
+            key: ValueKey('column-$table-${column.key}'),
+            width: widths[column.key],
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    column.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Semantics(
+                  label: 'Resize ${column.label} column',
+                  slider: true,
+                  value: '${widths[column.key]!.round()} pixels',
+                  increasedValue:
+                      '${(widths[column.key]! + 12).clamp(column.minWidth, column.maxWidth).round()} pixels',
+                  decreasedValue:
+                      '${(widths[column.key]! - 12).clamp(column.minWidth, column.maxWidth).round()} pixels',
+                  onIncrease: () {
+                    _resizeColumn(table, column, widths[column.key]! + 12);
+                    _saveColumnWidth(table, column);
+                  },
+                  onDecrease: () {
+                    _resizeColumn(table, column, widths[column.key]! - 12);
+                    _saveColumnWidth(table, column);
+                  },
+                  child: Focus(
+                    onFocusChange: (focused) => setState(
+                      () => _focusedColumn = focused
+                          ? _widthKey(table, column.key)
+                          : null,
+                    ),
+                    onKeyEvent: (node, event) {
+                      if (event is! KeyDownEvent ||
+                          (event.logicalKey != LogicalKeyboardKey.arrowLeft &&
+                              event.logicalKey !=
+                                  LogicalKeyboardKey.arrowRight)) {
+                        return KeyEventResult.ignored;
+                      }
+                      _resizeColumn(
+                        table,
+                        column,
+                        widths[column.key]! +
+                            (event.logicalKey == LogicalKeyboardKey.arrowRight
+                                ? 12
+                                : -12),
+                      );
+                      _saveColumnWidth(table, column);
+                      return KeyEventResult.handled;
+                    },
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.resizeColumn,
+                      child: GestureDetector(
+                        key: ValueKey('resize-$table-${column.key}'),
+                        behavior: HitTestBehavior.opaque,
+                        dragStartBehavior: DragStartBehavior.down,
+                        onHorizontalDragUpdate: (details) => _resizeColumn(
+                          table,
+                          column,
+                          (_widths[_widthKey(table, column.key)] ??
+                                  widths[column.key]!) +
+                              details.delta.dx,
+                        ),
+                        onHorizontalDragEnd: (_) =>
+                            _saveColumnWidth(table, column),
+                        child: SizedBox(
+                          width: 16,
+                          height: 48,
+                          child: Center(
+                            child: Container(
+                              width: 1,
+                              height: 20,
+                              color:
+                                  _focusedColumn == _widthKey(table, column.key)
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.outlineVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
+
   Widget _table(
     PatchMap map,
     PatchMapEditorState state,
     CompanionTable document,
   ) => LayoutBuilder(
-    builder: (context, constraints) => Scrollbar(
-      controller: _horizontal,
-      child: SingleChildScrollView(
+    builder: (context, constraints) {
+      final widths = _resolveWidths(
+        document.tableId,
+        document.columns,
+        constraints.maxWidth,
+      );
+      final recordWidths = {
+        for (final section in document.recordSections)
+          section.id: _resolveWidths(
+            section.id,
+            section.columns,
+            constraints.maxWidth,
+          ),
+      };
+      final contentWidth = [
+        widths.values.fold(16.0, (a, b) => a + b),
+        for (final values in recordWidths.values)
+          values.values.fold(16.0, (a, b) => a + b),
+      ].fold(constraints.maxWidth, math.max);
+      return Scrollbar(
         controller: _horizontal,
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: constraints.maxWidth < 810 ? 810 : constraints.maxWidth,
-          child: Column(
-            children: [
-              Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 96,
-                      child: Text(document.labels['socket']!),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text(document.labels['destination']!),
-                    ),
-                    SizedBox(
-                      width: 126,
-                      child: Text(document.labels['colour']!),
-                    ),
-                    SizedBox(width: 64, child: Text(document.labels['tag']!)),
-                    Expanded(flex: 2, child: Text(document.labels['group']!)),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scroll,
-                  child: Column(
-                    children: [
-                      for (final section in document.groups) ...[
-                        Container(
-                          width: double.infinity,
-                          color: Theme.of(context).colorScheme.surfaceContainer,
-                          padding: const EdgeInsets.all(8),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Semantics(
-                                  header: true,
-                                  child: Text(section.title),
-                                ),
-                              ),
-                              if (section.start >= 20) ...[
-                                IconButton(
-                                  tooltip: 'Rename ${section.title}',
-                                  onPressed: state.editable
-                                      ? () => _renameExpander(
-                                          (section.start - 20) ~/ 8,
-                                        )
-                                      : null,
-                                  icon: const Icon(Icons.edit, size: 18),
-                                ),
-                                IconButton(
-                                  tooltip: 'Move ${section.title} earlier',
-                                  onPressed:
-                                      state.editable &&
-                                          !state.pending &&
-                                          section.start > 20
-                                      ? () => _cubit.moveExpander(
-                                          (section.start - 20) ~/ 8,
-                                          (section.start - 20) ~/ 8 - 1,
-                                        )
-                                      : null,
-                                  icon: const Icon(
-                                    Icons.arrow_upward,
-                                    size: 18,
+        child: SingleChildScrollView(
+          controller: _horizontal,
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: contentWidth,
+            child: Column(
+              children: [
+                _columnHeader(document.tableId, document.columns, widths),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scroll,
+                    child: Column(
+                      children: [
+                        for (final section in document.groups) ...[
+                          Container(
+                            width: double.infinity,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainer,
+                            padding: const EdgeInsets.all(8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Semantics(
+                                    header: true,
+                                    child: Text(section.title),
                                   ),
                                 ),
-                                IconButton(
-                                  tooltip: 'Move ${section.title} later',
-                                  onPressed:
-                                      state.editable &&
-                                          !state.pending &&
-                                          section.start <
-                                              map.connections.length - 8
-                                      ? () => _cubit.moveExpander(
-                                          (section.start - 20) ~/ 8,
-                                          (section.start - 20) ~/ 8 + 1,
-                                        )
-                                      : null,
-                                  icon: const Icon(
-                                    Icons.arrow_downward,
-                                    size: 18,
+                                if (section.start >= 20) ...[
+                                  IconButton(
+                                    tooltip: 'Rename ${section.title}',
+                                    onPressed: state.editable
+                                        ? () => _renameExpander(
+                                            (section.start - 20) ~/ 8,
+                                          )
+                                        : null,
+                                    icon: const Icon(Icons.edit, size: 18),
                                   ),
-                                ),
+                                  IconButton(
+                                    tooltip: 'Move ${section.title} earlier',
+                                    onPressed:
+                                        state.editable &&
+                                            !state.pending &&
+                                            section.start > 20
+                                        ? () => _cubit.moveExpander(
+                                            (section.start - 20) ~/ 8,
+                                            (section.start - 20) ~/ 8 - 1,
+                                          )
+                                        : null,
+                                    icon: const Icon(
+                                      Icons.arrow_upward,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Move ${section.title} later',
+                                    onPressed:
+                                        state.editable &&
+                                            !state.pending &&
+                                            section.start <
+                                                map.connections.length - 8
+                                        ? () => _cubit.moveExpander(
+                                            (section.start - 20) ~/ 8,
+                                            (section.start - 20) ~/ 8 + 1,
+                                          )
+                                        : null,
+                                    icon: const Icon(
+                                      Icons.arrow_downward,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
-                        ),
-                        for (final row
-                            in map.connections
-                                .skip(section.start)
-                                .take(section.count))
-                          PatchMapRow(
-                            key: _rows.putIfAbsent(row.socket, GlobalKey.new),
-                            row: row,
-                            enabled: true,
-                            selected: _selected == row.socket,
-                            onSelected: () =>
-                                setState(() => _selected = row.socket),
-                            onEdit: (field, value) => _cubit.queueConnection(
-                              row.socket,
-                              field,
-                              value,
                             ),
                           ),
+                          for (final row
+                              in map.connections
+                                  .skip(section.start)
+                                  .take(section.count))
+                            PatchMapRow(
+                              key: _rows.putIfAbsent(row.socket, GlobalKey.new),
+                              row: row,
+                              columns: document.columns,
+                              widths: widths,
+                              enabled: true,
+                              selected: _selected == row.socket,
+                              onSelected: () =>
+                                  setState(() => _selected = row.socket),
+                              onEdit: (field, value) => _cubit.queueConnection(
+                                row.socket,
+                                field,
+                                value,
+                              ),
+                            ),
+                          for (final records in document.recordSections.where(
+                            (records) =>
+                                records.afterSocket ==
+                                section.start + section.count - 1,
+                          ))
+                            _recordTable(
+                              map,
+                              state,
+                              document,
+                              records,
+                              recordWidths[records.id]!,
+                            ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
+  Widget _recordTable(
+    PatchMap map,
+    PatchMapEditorState state,
+    CompanionTable document,
+    CompanionRecordSection section,
+    Map<String, double> widths,
+  ) {
+    final records = map.companionRecordSets[section.source]!;
+    final add = document.actions.where(
+      (action) => action.id == section.addAction,
+    );
+    return Column(
+      children: [
+        Container(
+          color: Theme.of(context).colorScheme.surfaceContainer,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          height: 48,
+          child: Row(
+            children: [
+              Expanded(
+                child: Semantics(header: true, child: Text(section.title)),
               ),
+              if (add.isNotEmpty)
+                TextButton.icon(
+                  key: ValueKey('add-${section.id}'),
+                  onPressed:
+                      state.editable &&
+                          !state.pending &&
+                          _cubit.canChooseAction(add.first.id)
+                      ? () => _chooseAction(add.first)
+                      : null,
+                  icon: const Icon(Icons.add),
+                  label: Text(add.first.label),
+                ),
             ],
           ),
         ),
-      ),
-    ),
-  );
+        if (records.isNotEmpty)
+          _columnHeader(section.id, section.columns, widths),
+        for (final record in records)
+          CompanionRecordRow(
+            key: _rows.putIfAbsent((
+              section.source,
+              record[section.identity] as int,
+            ), GlobalKey.new),
+            section: section,
+            record: record,
+            widths: widths,
+            selected: _selected == (section.source, record[section.identity]),
+            onSelected: () => setState(
+              () =>
+                  _selected = (section.source, record[section.identity] as int),
+            ),
+            onEdit: (field, value) => _cubit.queueRecord(
+              section.source,
+              record[section.identity] as int,
+              field,
+              value,
+            ),
+            onRemove: state.editable && !state.pending
+                ? () => _removeRecord(section, record)
+                : null,
+          ),
+      ],
+    );
+  }
+
+  Future<void> _removeRecord(
+    CompanionRecordSection section,
+    Map<String, dynamic> record,
+  ) async {
+    _expanderDraftOpen = true;
+    try {
+      if (record.values.whereType<String>().any((value) => value.isNotEmpty)) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Semantics(
+              header: true,
+              child: Text(
+                section.confirmation.title.replaceAll(
+                  '{record}',
+                  section.label(record),
+                ),
+              ),
+            ),
+            content: Text(section.confirmation.message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(section.confirmation.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(section.confirmation.confirm),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+      }
+      final identity = record[section.identity] as int;
+      await _cubit.removeRecord(section.removeEvent, section.source, identity);
+      if (mounted &&
+          !_cubit.state.map!.companionRecordSets[section.source]!.any(
+            (row) => row[section.identity] == identity,
+          )) {
+        setState(() {
+          if (_selected == (section.source, identity)) _selected = null;
+        });
+      }
+    } finally {
+      _expanderDraftOpen = false;
+      if (mounted) _updateWatching();
+    }
+  }
+
+  String _selectionLabel(PatchMap map) {
+    final selected = _selected;
+    if (selected is (String, int)) {
+      for (final section in _cubit.state.document!.recordSections.where(
+        (section) => section.source == selected.$1,
+      )) {
+        final records = map.companionRecordSets[section.source]!.where(
+          (row) => row[section.identity] == selected.$2,
+        );
+        if (records.isNotEmpty) {
+          return '${section.label(records.first)}: ${records.first[section.fields.first.key]}';
+        }
+      }
+    }
+    if (selected is! int ||
+        selected < 0 ||
+        selected >= map.connections.length) {
+      return '';
+    }
+    final row = map.connections[selected];
+    return '${row.socketLabel}: ${row.destination.isEmpty ? 'Unused' : row.destination}';
+  }
 
   Widget _minimap(
     PatchMap map,
@@ -607,19 +930,38 @@ class _PatchMapEditorState extends State<PatchMapEditor>
                   compact,
                 ),
                 const SizedBox(width: 8),
+                for (final records in document.recordSections.where(
+                  (records) =>
+                      records.afterSocket ==
+                          section.start + section.count - 1 &&
+                      map.companionRecordSets[records.source]!.isNotEmpty,
+                )) ...[
+                  Column(
+                    children: [
+                      Text(
+                        records.short,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      for (final record
+                          in map.companionRecordSets[records.source]!)
+                        _recordMarker(records, record),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ],
             ],
           ),
         ),
         SizedBox(
           height: 32,
-          child: _selected != null && _selected! < map.connections.length
+          child: _selectionLabel(map).isNotEmpty
               ? Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Semantics(
                     liveRegion: true,
                     child: Text(
-                      '${map.connections[_selected!].socketLabel}: ${map.connections[_selected!].destination.isEmpty ? 'Unused' : map.connections[_selected!].destination}',
+                      _selectionLabel(map),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -630,6 +972,32 @@ class _PatchMapEditorState extends State<PatchMapEditor>
       ],
     ),
   );
+
+  Widget _recordMarker(
+    CompanionRecordSection section,
+    Map<String, dynamic> record,
+  ) {
+    final identity = (section.source, record[section.identity] as int);
+    return Semantics(
+      button: true,
+      selected: _selected == identity,
+      label: '${section.label(record)}, ${record[section.fields.first.key]}',
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: TextButton(
+          key: ValueKey('${section.id}-dot-${identity.$2}'),
+          onPressed: () => _jump(identity),
+          style: TextButton.styleFrom(
+            backgroundColor: _selected == identity
+                ? Theme.of(context).colorScheme.secondaryContainer
+                : null,
+          ),
+          child: ExcludeSemantics(child: Text('${identity.$2}')),
+        ),
+      ),
+    );
+  }
 
   Widget _dotGroup(
     PatchMap map,
@@ -718,12 +1086,16 @@ class PatchMapRow extends StatefulWidget {
   const PatchMapRow({
     super.key,
     required this.row,
+    required this.columns,
+    required this.widths,
     required this.enabled,
     required this.selected,
     required this.onSelected,
     required this.onEdit,
   });
   final PatchConnection row;
+  final List<CompanionColumn> columns;
+  final Map<String, double> widths;
   final bool enabled, selected;
   final VoidCallback onSelected;
   final void Function(String field, Object value) onEdit;
@@ -806,6 +1178,98 @@ class _PatchMapRowState extends State<PatchMapRow> {
     }
   }
 
+  Widget _cell(CompanionColumn column) {
+    if (column.key == 'socket') return Text(widget.row.socketLabel);
+    if (column.type == 'colour') {
+      return Semantics(
+        label: '${widget.row.socketLabel} ${column.label.toLowerCase()}',
+        child: DropdownButton<int>(
+          underline: const SizedBox.shrink(),
+          isDense: true,
+          isExpanded: true,
+          value: _colour,
+          onChanged: widget.enabled
+              ? (value) {
+                  _colour = value!;
+                  _edit('colour', value);
+                }
+              : null,
+          items: [
+            for (var i = 0; i < PatchMap.colours.length; i++)
+              DropdownMenuItem(
+                value: i,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: patchCableColours[i],
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        PatchMap.colours[i],
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+    final controller = column.key == 'destination'
+        ? _destination
+        : column.key == 'group'
+        ? _group
+        : _tag;
+    return Semantics(
+      label: '${widget.row.socketLabel} ${column.label.toLowerCase()}',
+      child: TextField(
+        key: column.key == 'tag' ? ValueKey('tag-${widget.row.socket}') : null,
+        controller: controller,
+        enabled: widget.enabled,
+        keyboardType: column.type == 'integer'
+            ? TextInputType.number
+            : TextInputType.text,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: column.key == 'destination' ? 'Unused' : '—',
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        ),
+        onChanged: (value) {
+          if (column.type == 'text' &&
+              value.length > column.maxLength &&
+              value !=
+                  (column.key == 'destination'
+                      ? widget.row.destination
+                      : widget.row.group)) {
+            controller.text = column.key == 'destination'
+                ? widget.row.destination
+                : widget.row.group;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${column.label} must be at most ${column.maxLength} characters',
+                ),
+              ),
+            );
+            return;
+          }
+          _edit(column.key, value);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Focus(
     onFocusChange: (focus) {
@@ -825,113 +1289,157 @@ class _PatchMapRowState extends State<PatchMapRow> {
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              children: [
-                SizedBox(width: 96, child: Text(widget.row.socketLabel)),
-                Expanded(
-                  flex: 3,
-                  child: Semantics(
-                    label: '${widget.row.socketLabel} destination',
-                    child: TextField(
-                      controller: _destination,
-                      enabled: widget.enabled,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: 'Unused',
-
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      onChanged: (value) => _edit('destination', value),
-                    ),
-                  ),
+            for (final column in widget.columns)
+              SizedBox(
+                width: widget.widths[column.key],
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _cell(column),
                 ),
-                SizedBox(
-                  width: 126,
-                  child: Semantics(
-                    label: '${widget.row.socketLabel} cable colour',
-                    child: DropdownButton<int>(
-                      underline: const SizedBox.shrink(),
-                      isDense: true,
-                      isExpanded: true,
-                      value: _colour,
-                      onChanged: widget.enabled
-                          ? (v) {
-                              _colour = v!;
-                              _edit('colour', v);
-                            }
-                          : null,
-                      items: [
-                        for (var i = 0; i < PatchMap.colours.length; i++)
-                          DropdownMenuItem(
-                            value: i,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 9,
-                                  height: 9,
-                                  decoration: BoxDecoration(
-                                    color: patchCableColours[i],
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outline,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(PatchMap.colours[i]),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 64,
-                  child: Semantics(
-                    label: '${widget.row.socketLabel} tag',
-                    child: TextField(
-                      key: ValueKey('tag-${widget.row.socket}'),
-                      controller: _tag,
-                      enabled: widget.enabled,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        hintText: '—',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      onChanged: (value) => _edit('tag', value),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Semantics(
-                    label: '${widget.row.socketLabel} group',
-                    child: TextField(
-                      controller: _group,
-                      enabled: widget.enabled,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: '—',
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      onChanged: (value) => _edit('group', value),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
     ),
   );
+}
+
+/// A reusable text-record row. Domain operations stay in the algorithm adapter.
+class CompanionRecordRow extends StatefulWidget {
+  const CompanionRecordRow({
+    super.key,
+    required this.section,
+    required this.record,
+    required this.widths,
+    required this.selected,
+    required this.onSelected,
+    required this.onEdit,
+    this.onRemove,
+  });
+  final CompanionRecordSection section;
+  final Map<String, dynamic> record;
+  final Map<String, double> widths;
+  final bool selected;
+  final VoidCallback onSelected;
+  final void Function(String, String) onEdit;
+  final VoidCallback? onRemove;
+  @override
+  State<CompanionRecordRow> createState() => _CompanionRecordRowState();
+}
+
+class _CompanionRecordRowState extends State<CompanionRecordRow> {
+  final _controllers = <String, TextEditingController>{};
+  @override
+  void initState() {
+    super.initState();
+    _update();
+  }
+
+  void _update() {
+    final keys = widget.section.fields.map((field) => field.key).toSet();
+    for (final key
+        in _controllers.keys.where((key) => !keys.contains(key)).toList()) {
+      _controllers.remove(key)!.dispose();
+    }
+    for (final field in widget.section.fields) {
+      final controller = _controllers.putIfAbsent(
+        field.key,
+        TextEditingController.new,
+      );
+      final text = widget.record[field.key] as String;
+      if (controller.text != text) controller.text = text;
+    }
+  }
+
+  @override
+  void didUpdateWidget(CompanionRecordRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _update();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _edit(CompanionColumn field, String value) {
+    try {
+      if (value.length > field.maxLength) {
+        throw FormatException(
+          '${field.label} must be at most ${field.maxLength} characters',
+        );
+      }
+      widget.onEdit(field.key, value);
+    } on FormatException catch (error) {
+      _update();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = widget.section.label(widget.record);
+    return Focus(
+      onFocusChange: (focused) {
+        if (focused) widget.onSelected();
+      },
+      child: Semantics(
+        selected: widget.selected,
+        child: Container(
+          color: widget.selected
+              ? Theme.of(context).colorScheme.secondaryContainer
+              : null,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              for (final column in widget.section.columns)
+                SizedBox(
+                  width: widget.widths[column.key],
+                  child: column.type == 'label'
+                      ? Text(label)
+                      : column.type == 'remove'
+                      ? Semantics(
+                          button: true,
+                          enabled: widget.onRemove != null,
+                          label: '${widget.section.removeLabel} $label',
+                          child: ExcludeSemantics(
+                            child: IconButton(
+                              tooltip: '${widget.section.removeLabel} $label',
+                              onPressed: widget.onRemove,
+                              icon: const Icon(Icons.remove_circle_outline),
+                            ),
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Semantics(
+                            label: '$label ${column.label.toLowerCase()}',
+                            child: TextField(
+                              key: ValueKey(
+                                '${widget.section.source}-${column.key}-${widget.record[widget.section.identity]}',
+                              ),
+                              controller: _controllers[column.key],
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: column.label,
+                                border: InputBorder.none,
+                              ),
+                              onChanged: (value) => _edit(column, value),
+                            ),
+                          ),
+                        ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

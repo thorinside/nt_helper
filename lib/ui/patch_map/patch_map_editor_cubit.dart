@@ -39,6 +39,7 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
   final Duration? watchInterval;
   final String? companionCacheKey;
   final _pending = <int, Map<String, Object>>{};
+  final _pendingAux = <int, Map<String, Object>>{};
   final _pendingNames = <int, String>{};
   Timer? _editTimer;
   final Duration retryDelay;
@@ -120,6 +121,45 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
     _scheduleSync();
   }
 
+  // The algorithm adapter translates generic companion record bindings into
+  // its own validated domain operations. Rendering does not know these types.
+  void queueRecord(String source, int identity, String field, String value) {
+    if (source != 'aux') {
+      throw const FormatException('Unsupported record source');
+    }
+    queueAux(identity, field, value);
+  }
+
+  Future<void> removeRecord(String event, String source, int identity) {
+    if (source != 'aux' || event != 'remove_aux') {
+      throw const FormatException('Unsupported record action');
+    }
+    return removeAux(identity);
+  }
+
+  bool canChooseAction(String id) => switch (id) {
+    'add_expander' =>
+      state.map != null &&
+          state.map!.expanders.length < PatchMap.maxNewExpanders,
+    'add_aux' =>
+      client.supportsAux &&
+          state.map != null &&
+          state.map!.aux.length < PatchMap.auxCount,
+    _ => false,
+  };
+
+  void queueAux(int bus, String field, String value) {
+    if (isClosed || state.map == null) return;
+    if (!const {'description', 'group'}.contains(field)) {
+      throw ArgumentError.value(field, 'field');
+    }
+    final row = state.map!.aux.firstWhere((row) => row.bus == bus);
+    PatchAux.fromJson({...row.toJson(), field: value});
+    (_pendingAux[bus] ??= {})[field] = value;
+    _publish(state);
+    _scheduleSync();
+  }
+
   void queueExpanderName(int index, String name) {
     if (isClosed || state.map == null) return;
     PatchExpander(type: state.map!.expanders[index].type, name: name);
@@ -146,6 +186,14 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
           }),
         );
       }
+      for (final entry in _pendingAux.entries) {
+        final rows = current.aux.where((row) => row.bus == entry.key);
+        if (rows.isNotEmpty) {
+          current = current.withAux(
+            PatchAux.fromJson({...rows.first.toJson(), ...entry.value}),
+          );
+        }
+      }
       for (final entry in _pendingNames.entries) {
         if (entry.key < current.expanders.length) {
           current = current.renameExpander(entry.key, entry.value);
@@ -161,7 +209,10 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
         error: next.error,
         applied: next.applied,
         fromDevice: next.fromDevice,
-        pending: _pending.isNotEmpty || _pendingNames.isNotEmpty,
+        pending:
+            _pending.isNotEmpty ||
+            _pendingNames.isNotEmpty ||
+            _pendingAux.isNotEmpty,
       ),
     );
   }
@@ -188,6 +239,28 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
       if (_pending[socket]?.isEmpty ?? false) _pending.remove(socket);
       _publish(state);
     }
+    for (final bus in _pendingAux.keys.toList()) {
+      if (isClosed || !state.editable) return;
+      final fields = Map<String, Object>.of(_pendingAux[bus]!);
+      final rows = client.snapshot!.aux.where((row) => row.bus == bus);
+      if (rows.isEmpty) {
+        _pendingAux.remove(bus);
+        _publish(state);
+        continue;
+      }
+      final actual = rows.first.toJson();
+      if (fields.entries.any((field) => actual[field.key] != field.value)) {
+        await setAux(PatchAux.fromJson({...actual, ...fields}));
+      }
+      if (isClosed || state.error != null) return;
+      for (final field in fields.entries) {
+        if (_pendingAux[bus]?[field.key] == field.value) {
+          _pendingAux[bus]!.remove(field.key);
+        }
+      }
+      if (_pendingAux[bus]?.isEmpty ?? false) _pendingAux.remove(bus);
+      _publish(state);
+    }
     for (final index in _pendingNames.keys.toList()) {
       if (isClosed || !state.editable) return;
       final name = _pendingNames[index]!;
@@ -198,7 +271,11 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
       if (_pendingNames[index] == name) _pendingNames.remove(index);
       _publish(state);
     }
-    if (_pending.isNotEmpty || _pendingNames.isNotEmpty) _scheduleSync();
+    if (_pending.isNotEmpty ||
+        _pendingNames.isNotEmpty ||
+        _pendingAux.isNotEmpty) {
+      _scheduleSync();
+    }
   }
 
   Future<void> refresh() {
@@ -227,6 +304,7 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
       final checkCompanion =
           _pending.isEmpty &&
           _pendingNames.isEmpty &&
+          _pendingAux.isEmpty &&
           !DateTime.now().isBefore(_nextCompanionCheck);
       if (!mapChanged && changes.isEmpty && !checkCompanion) return;
       var companion = _companion!;
@@ -310,13 +388,33 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
     // Recheck the latest document after the dialog, including background Lua changes.
     if (!state.editable ||
         state.pending ||
-        state.map!.expanders.length >= PatchMap.maxNewExpanders) {
+        (id == 'add_expander' &&
+            state.map!.expanders.length >= PatchMap.maxNewExpanders)) {
       return;
     }
     final allowed = state.document!.actions.any(
       (action) => action.id == id && action.choices.containsKey(value),
     );
-    if (allowed && id == 'add_expander') await addExpander(value);
+    if (!allowed) return;
+    if (id == 'add_expander' &&
+        value >= 0 &&
+        value < PatchMap.expanderTypes.length) {
+      await addExpander(value);
+    }
+    if (id == 'add_aux' &&
+        value >= 1 &&
+        value <= PatchMap.auxCount &&
+        !state.map!.aux.any((row) => row.bus == value)) {
+      await _action({'type': 'add_aux', 'bus': value});
+    }
+  }
+
+  Future<void> setAux(PatchAux row) =>
+      _action({'type': 'set_aux', 'record': row.toJson()});
+  Future<void> removeAux(int bus) async {
+    // The UI offers deletion only after queued edits have acknowledged.
+    if (state.pending || !state.editable) return;
+    await _action({'type': 'remove_aux', 'bus': bus});
   }
 
   Future<void> addExpander(int type) =>
@@ -328,6 +426,8 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
 
   Map<String, Object?> _snapshot(PatchMap map) => {
     ...map.toJson(),
+    'aux': [for (final row in map.aux) row.toJson()],
+    'supports_aux': client.supportsAux,
     'properties': client.properties,
     'revision': client.revision,
     'expanders': [for (final e in map.expanders) e.toJson()],
@@ -349,12 +449,22 @@ class PatchMapEditorCubit extends Cubit<PatchMapEditorState> {
       // no transport object, file API, or unrestricted parameter-writing function.
       if (action['type'] != event['type'] ||
           (event['type'] == 'add_expander' &&
-              action['model'] != event['model'])) {
+              action['model'] != event['model']) ||
+          (const {'add_aux', 'remove_aux'}.contains(event['type']) &&
+              action['bus'] != event['bus']) ||
+          (event['type'] == 'set_aux' &&
+              _object(action['record'])['bus'] !=
+                  _object(event['record'])['bus'])) {
         throw const FormatException('Companion changed the action kind');
       }
       return switch (action['type']) {
         'set_connection' => client.setConnection(
           PatchConnection.fromJson(_object(action['connection'])),
+        ),
+        'add_aux' => client.addAux(_integer(action['bus'])),
+        'remove_aux' => client.removeAux(_integer(action['bus'])),
+        'set_aux' => client.setAux(
+          PatchAux.fromJson(_object(action['record'])),
         ),
         'add_expander' => client.addExpander(_integer(action['model'])),
         'rename_expander' => client.renameExpander(

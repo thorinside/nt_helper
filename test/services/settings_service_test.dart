@@ -38,6 +38,7 @@ const Map<String, Object> _nonDefaultSeeds = {
   'split_divider_position': 0.123,
   'mcp_remote_connections': true,
   'chat_enabled': true,
+  'companion_column_widths': '{"seed":420}',
   'chat_panel_width': 777.0,
   'chat_llm_provider': 'openai',
   'anthropic_api_key': 'sk-fake-anthropic',
@@ -58,6 +59,39 @@ const Map<String, Object> _nonDefaultSeeds = {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'companion widths are isolated by GUID, table and stable column key',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.init();
+      await settings.setCompanionColumnWidth(
+        'ThPh',
+        'sockets',
+        'destination',
+        420,
+      );
+      await settings.setCompanionColumnWidth('ThPh', 'aux', 'description', 360);
+      await settings.setCompanionColumnWidth(
+        'Other',
+        'sockets',
+        'destination',
+        240,
+      );
+      expect(settings.companionColumnWidths.length, 3);
+      await settings.init();
+      expect(
+        settings.companionColumnWidths.values,
+        containsAll([420.0, 360.0, 240.0]),
+      );
+      SharedPreferences.setMockInitialValues({
+        'companion_column_widths': 'bad JSON',
+      });
+      await settings.init();
+      expect(settings.companionColumnWidths, isEmpty);
+    },
+  );
 
   group('SettingsService.resetToDefaults', () {
     late SettingsService settings;
@@ -119,7 +153,9 @@ void main() {
         expect(settings.chatLocalDirectory, isNotNull);
         expect(settings.allowedFileRoots, isNotEmpty);
 
+        expect(settings.companionColumnWidths, isNotEmpty);
         await settings.resetToDefaults();
+        expect(settings.companionColumnWidths, isEmpty);
 
         expect(settings.requestTimeout, SettingsService.defaultRequestTimeout);
         expect(

@@ -35,3 +35,21 @@ to `/programs/helper/ThPh.lua` using the official 512-byte uploader, and the liv
 editor opened the four-model dialog. Escape returned to the editor without
 adding a bank. Existing preset records were retained. This live check covers
 opening/cancelling; the four successful additions are automated fixture tests.
+
+## AUX and resized-column development evidence
+
+`aux-desktop.png` and `aux-compact.png` render the Lua-declared AUX record section
+with the test device. The desktop capture shows the section immediately after
+Output 8. The compact capture follows an AUX minimap selection while preserving
+the horizontal column position. Records are illustrative; these do not establish
+hardware save/recall or physical control acceptance.
+
+Reproduce with:
+
+```sh
+CAPTURE_PATCH_AUX=1 flutter test --no-pub test/ui/patch_map/patch_map_editor_test.dart --plain-name 'AUX picker'
+```
+
+The same test file checks drag and keyboard resizing, matching header/cell widths,
+restoration after reopening, renamed and reordered Lua columns, and tighter width
+bounds. Settings tests verify preference isolation and reset behavior.

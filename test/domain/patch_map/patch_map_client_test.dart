@@ -91,7 +91,7 @@ void main() {
       ),
     );
     expect(updated.connections.first.destination, 'Echo');
-    expect(transport.index, 22);
+    expect(transport.index, 23);
     expect(client.ready, isTrue);
   });
   test('uncertain writes cannot be retried until a full reload', () async {
@@ -108,7 +108,7 @@ void main() {
       client.setTitle('New title'),
       throwsA(isA<PatchMapSyncException>()),
     );
-    expect(transport.index, 21);
+    expect(transport.index, 22);
   });
   for (final status in [2, 3]) {
     test(
