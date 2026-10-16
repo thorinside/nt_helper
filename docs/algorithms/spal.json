@@ -7,24 +7,20 @@
     "Analysis",
     "Visualization"
   ],
+  "use_cases": [
+    "Spectrum analysis",
+    "Audio visualization"
+  ],
+  "gui_description": "The display shows the frequency spectrum of the input signal, according to the display mode.",
   "parameters": [
-    {
-      "name": "FFT size",
-      "min": 8,
-      "max": 12,
-      "description": "The size of the analysis FFT."
-    },
     {
       "name": "Draw mode",
       "min": 0,
       "max": 2,
       "default": 0,
       "description": "Sets the draw mode – Lines (continuous), Lines (vertical), or Points.",
-      "enum_values": [
-        "Lines (continuous)",
-        "Lines (vertical)",
-        "Points"
-      ]
+      "type": "enum",
+      "is_common": true
     },
     {
       "name": "X axis",
@@ -32,26 +28,26 @@
       "max": 1,
       "default": 1,
       "description": "Sets whether the X axis is linear or logarithmic.",
-      "enum_values": [
-        "Linear",
-        "Logarithmic"
-      ]
+      "type": "enum",
+      "is_common": true
     },
     {
       "name": "Min dB",
       "min": -140,
       "max": 0,
       "default": -140,
-      "type": "scaled",
-      "is_bus": false
+      "description": "Sets the lower bound of the Y axis.",
+      "is_common": true,
+      "unit": "dB"
     },
     {
       "name": "Max dB",
       "min": -140,
       "max": 0,
       "default": -12,
-      "type": "scaled",
-      "is_bus": false
+      "description": "Sets the upper bound of the Y axis.",
+      "is_common": true,
+      "unit": "dB"
     }
   ],
   "input_ports": [
@@ -67,7 +63,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "Spectrum analyzer output (visualization)"
+      "description": "The processed audio output."
     }
   ]
 }

@@ -9,8 +9,8 @@
     "Signal Processing"
   ],
   "use_cases": [
-    "Converting between V/oct and Hz/V CV standards",
-    "Interfacing between different CV conventions"
+    "Converting between V/Octave and Hz/Volt CV standards",
+    "Interfacing between linear and exponential voltage signals"
   ],
   "gui_description": "The display shows the input and output voltages, and the internal calculated frequency, for each converter.",
   "parameters": [
@@ -19,16 +19,16 @@
       "min": 1,
       "max": 2000,
       "default": 1000,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The Hz/Volt scaling.",
+      "unit": "Hz"
     },
     {
       "name": "Offset",
       "min": -1000,
       "max": 1000,
       "default": 0,
-      "type": "folder",
       "is_common": true,
       "is_bus": false
     },
@@ -37,9 +37,36 @@
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "folder",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Hz/V",
+      "min": 1,
+      "max": 2000,
+      "default": 1000,
+      "is_common": true,
+      "is_bus": false,
+      "description": "The Hz/Volt scaling.",
+      "unit": "Hz"
+    },
+    {
+      "name": "Offset",
+      "min": -1000,
+      "max": 1000,
+      "default": 0,
       "is_common": true,
       "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "is_common": true,
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [

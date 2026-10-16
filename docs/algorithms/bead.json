@@ -1,0 +1,280 @@
+{
+  "guid": "bead",
+  "name": "Texture Synthesizer 2",
+  "short_description": "It's Beads!",
+  "description": "This algorithm is an implementation of the open source Beads module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is available at the Mutable Instruments documentation. The documentation below assumes some familiarity with this. The Beads hardware runs by default at 48kHz, but switches to 32kHz in its 'Cold digital' mode and 24kHz in its 'Scorched cassette' mode. For a genuine Beads experience, set the disting NT's engine to 48kHz, or to 32kHz for 'Cold digital'. The NT does not support running the hardware at 24kHz, but we use an option in the Beads source code to emulate 24kHz when the hardware is at 48kHz.",
+  "categories": [
+    "Granular Synthesis",
+    "Texture Synthesis",
+    "Audio Processing"
+  ],
+  "parameters": [
+    {
+      "name": "Freeze",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Freezes the audio; the same as the Freeze button on the Beads module."
+    },
+    {
+      "name": "Latch",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables Latched grain generation; enabled on the hardware Beads by pressing Freeze and Seed together."
+    },
+    {
+      "name": "Seed",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Generates grains; the same as the Seed button on the Beads module."
+    },
+    {
+      "name": "Density",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Recreates the function of the Density pot on Beads.",
+      "unit": "%"
+    },
+    {
+      "name": "Time",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Recreates the function of the Time pot on Beads.",
+      "unit": "%"
+    },
+    {
+      "name": "Time atten",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The attenurandomizer for Time.",
+      "unit": "%"
+    },
+    {
+      "name": "Size",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Recreates the function of the Size pot on Beads.",
+      "unit": "%"
+    },
+    {
+      "name": "Size atten",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The attenurandomizer for Size.",
+      "unit": "%"
+    },
+    {
+      "name": "Shape",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Recreates the function of the Shape pot on Beads.",
+      "unit": "%"
+    },
+    {
+      "name": "Shape atten",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The attenurandomizer for Shape.",
+      "unit": "%"
+    },
+    {
+      "name": "Pitch",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Recreates the function of the Pitch pot on Beads.",
+      "unit": "%"
+    },
+    {
+      "name": "Pitch atten",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The attenurandomizer for Pitch.",
+      "unit": "%"
+    },
+    {
+      "name": "Wet/dry",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "description": "The wet/dry mix.",
+      "unit": "%"
+    },
+    {
+      "name": "Feedback",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "description": "The amount of feedback.",
+      "unit": "%"
+    },
+    {
+      "name": "Reverb enable",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Enables the reverb processing. Disable it to save CPU if you prefer a different reverb."
+    },
+    {
+      "name": "Reverb",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "description": "The amount of reverb.",
+      "unit": "%"
+    },
+    {
+      "name": "Quality",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Sets the recording quality (and buffer length)."
+    },
+    {
+      "name": "Channels",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Sets mono or stereo operation."
+    },
+    {
+      "name": "Synth mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables synth mode (what Beads does when there are no input cables patched)."
+    },
+    {
+      "name": "Resolution",
+      "min": 0,
+      "max": 3,
+      "default": 3,
+      "description": "Sets the resolution for synth mode."
+    },
+    {
+      "name": "Input gain",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "Sets the input gain, or enables automatic gain control. The AGC is reset when entering or leaving synth mode, and when changing between mono and stereo operation."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector."
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left audio input",
+      "description": "Left audio input bus for granular synthesis source"
+    },
+    {
+      "name": "Right audio input",
+      "description": "Right audio input bus for granular synthesis source"
+    },
+    {
+      "name": "Freeze",
+      "description": "CV input for freeze control"
+    },
+    {
+      "name": "Seed",
+      "description": "CV input for seed/grain generation"
+    },
+    {
+      "name": "Density",
+      "description": "CV input for density control",
+      "unit": "%"
+    },
+    {
+      "name": "Time",
+      "description": "CV input for time control",
+      "unit": "%"
+    },
+    {
+      "name": "Size",
+      "description": "CV input for size control",
+      "unit": "%"
+    },
+    {
+      "name": "Shape",
+      "description": "CV input for shape control",
+      "unit": "%"
+    },
+    {
+      "name": "Pitch",
+      "description": "CV input for pitch control",
+      "unit": "%"
+    },
+    {
+      "name": "Left input",
+      "description": "The left audio input bus."
+    },
+    {
+      "name": "Right input",
+      "description": "The right audio input bus."
+    },
+    {
+      "name": "Freeze input",
+      "description": "The bus to use for freeze."
+    },
+    {
+      "name": "Seed input",
+      "description": "The bus to use for seed."
+    },
+    {
+      "name": "Density input",
+      "description": "The bus to use for density."
+    },
+    {
+      "name": "Time input",
+      "description": "The bus to use for time."
+    },
+    {
+      "name": "Size input",
+      "description": "The bus to use for size."
+    },
+    {
+      "name": "Shape input",
+      "description": "The bus to use for shape."
+    },
+    {
+      "name": "Pitch input",
+      "description": "The bus to use for pitch."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left audio output",
+      "description": "Left audio output"
+    },
+    {
+      "name": "Right audio output",
+      "description": "Right audio output (can be gate output)"
+    },
+    {
+      "name": "Gate output",
+      "description": "Makes the right output a gate. (Assign + Seed button combo on Beads.)"
+    },
+    {
+      "name": "Left output",
+      "description": "The left audio output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right audio output bus."
+    }
+  ]
+}

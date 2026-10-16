@@ -2,18 +2,11 @@
   "guid": "wavr",
   "name": "Audio recorder",
   "short_description": "Records audio to the MicroSD card",
-  "description": "This algorithm records WAV files to the MicroSD card. A typical use for this would be to record the module's inputs, but any bus can be the source for a recording, so you could also record the output of other algorithms – for example, you could run a mixer and record the stereo mix-down. The algorithm can also play back its recordings. It does so to the same bus channels as are chosen for recording. Since the module is fully DC-coupled, it can also record and play CVs. Up to 10 files can be recorded simultaneously, each mono or stereo. It goes without saying that the more files you record, and the larger the chosen bit depth, the more demands are placed on the MicroSD card. You would be advised to check your card performance before relying on the algorithm for any crucial recordings.",
+  "description": "This algorithm records WAV files to the MicroSD card. A typical use for this would be to record the module's inputs, but any bus can be the source for a recording, so you could also record the output of other algorithms – for example, you could run a mixer and record the stereo mix-down.\n\nThe algorithm can also play back its recordings. It does so to the same bus channels as are chosen for recording.\n\nSince the module is fully DC-coupled, it can also record and play CVs.\n\nUp to 10 files can be recorded simultaneously, each mono or stereo. It goes without saying that the more files you record, and the larger the chosen bit depth, the more demands are placed on the MicroSD card. You would be advised to check your card performance before relying on the algorithm for any crucial recordings.",
   "categories": [
     "Recording",
-    "Playback",
-    "Utility"
+    "Playback"
   ],
-  "use_cases": [
-    "Recording module inputs",
-    "Recording the output of other algorithms (e.g. stereo mix-down from a mixer)",
-    "Recording and playing back CVs"
-  ],
-  "gui_description": "The display shows a level meter for each file, grayed out if the file is disabled. Meters show input levels when idle or recording, and playback levels when playing. While recording, the display shows the name of the current recording, elapsed time, and a gauge of the pressure on the MicroSD card. When idle, the display shows the name of the last recording completed or played. During playback, the display shows the name of the recording being played and the elapsed time.",
   "parameters": [
     {
       "name": "Record",
@@ -50,9 +43,9 @@
       "default": 0,
       "description": "Chooses the bit depth for recording. The options are 16, 24, or 32 bit.",
       "enum_values": [
-        "16 bit",
-        "24 bit",
-        "32 bit"
+        "16",
+        "24",
+        "32"
       ]
     },
     {
@@ -76,25 +69,23 @@
       "max": 24,
       "default": 0,
       "type": "scaled",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the playback level.",
+      "unit": "dB"
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables the file for recording and playback.",
-      "type": "scaled",
-      "is_bus": false
+      "description": "Enables the file for recording and playback."
     },
     {
       "name": "Playback",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "Enables the file for playback. (Both 'Enable' and 'Playback' must be on for the file to be included in playback.)",
-      "type": "scaled",
-      "is_bus": false
+      "description": "Enables the file for playback. (Both 'Enable' and 'Playback' must be on for the file to be included in playback.)"
     }
   ],
   "input_ports": [
@@ -110,7 +101,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "Plays back recordings to the same bus channels as are chosen for recording."
+      "description": "Plays back recordings to the selected bus channels."
     }
   ]
 }

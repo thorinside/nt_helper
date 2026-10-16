@@ -5,7 +5,8 @@
   "description": "This algorithm is based on one mode of the Frequency Shifter algorithm on the disting EX. It modulates two signals with each other, and produces the upper and lower sidebands on separate outputs. If you use a pure sine wave for one of the inputs, you essentially have a frequency shifter, but one where you control the shift by controlling the frequency of your input oscillator.",
   "categories": [
     "Modulation",
-    "Frequency Shifting"
+    "Frequency Shifting",
+    "Sideband"
   ],
   "parameters": [
     {
@@ -13,39 +14,58 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The output wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The output gain applied to the modulated signal.",
+      "unit": "dB"
+    },
+    {
+      "name": "Input 1",
+      "min": 1,
+      "max": 64,
+      "default": 1,
+      "type": "bus",
+      "is_bus": true,
+      "description": "The first input bus to process for the first signal."
+    },
+    {
+      "name": "Input 2",
+      "min": 1,
+      "max": 64,
+      "default": 2,
+      "type": "bus",
+      "is_bus": true,
+      "description": "The first input bus to process for the second signal."
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
       "name": "Upper SB mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above for the upper side band."
     },
     {
       "name": "Lower SB mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
       "is_bus": false
     }
   ],

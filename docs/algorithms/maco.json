@@ -4,13 +4,15 @@
   "short_description": "It's Braids!",
   "description": "This algorithm is an implementation of the open source Braids module by Émilie Gillet. This implementation should behave and sound identical to the original, with the caveat that the original module runs at 96kHz – for a totally accurate recreation, you would need to run the disting NT at 96kHz. Any demos or tutorials you may find online should apply just as well to this version. The original Braids has a separate mode in which the FM CV controls the choice of synthesis model. The disting NT doesn't require a special mode for this since you can use Mappings to control the model parameter however you like.",
   "categories": [
-    "Synthesis",
-    "Oscillator"
+    "Oscillator",
+    "Synthesis"
   ],
   "use_cases": [
-    "Synthesis",
-    "Sound design",
-    "Melodic sequences"
+    "Polyphonic synthesis",
+    "FM synthesis",
+    "Wavetable synthesis",
+    "Granular synthesis",
+    "Chiptune synthesis"
   ],
   "specifications": [],
   "parameters": [
@@ -82,14 +84,16 @@
       "min": -48,
       "max": 48,
       "default": 0,
-      "description": "Coarse tuning control."
+      "description": "Coarse tuning control.",
+      "unit": "ST"
     },
     {
       "name": "Fine",
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "Fine tuning control."
+      "description": "Fine tuning control.",
+      "unit": "cents"
     },
     {
       "name": "Scale",
@@ -159,7 +163,8 @@
       "min": -40,
       "max": 12,
       "default": 0,
-      "description": "Sets an output gain."
+      "description": "Sets an output gain.",
+      "unit": "dB"
     },
     {
       "name": "Output mode",

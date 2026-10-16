@@ -5,7 +5,11 @@
   "description": "This algorithm implements a simple switch debouncer. It was added primarily so that simple passive guitar footswitches can be attached to the module's inputs (with a suitable voltage source) and used with, for example, the Looper algorithm.",
   "categories": [
     "Utility",
-    "CV"
+    "Switching"
+  ],
+  "use_cases": [
+    "Debouncing passive guitar footswitches",
+    "Cleaning up noisy switch signals for use with other algorithms like Looper"
   ],
   "parameters": [
     {
@@ -14,56 +18,64 @@
       "max": 100,
       "default": 10,
       "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "The hold-off time. Once the output has changed, it is not allowed to change again for the this duration.",
+      "unit": "ms"
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "scope": "per-channel",
+      "is_common": false,
+      "is_bus": false,
+      "description": "Enables debouncing on this channel."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "scope": "per-channel",
+      "is_common": false,
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Output Volts",
       "min": -10,
       "max": 10,
       "default": 5,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "scope": "per-channel",
+      "is_common": false,
+      "is_bus": false,
+      "description": "The output voltage when the input is ‘high’, in Volts.",
+      "unit": "V"
     },
     {
       "name": "Output semitones",
       "min": -60,
       "max": 60,
       "default": 0,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "scope": "per-channel",
+      "is_common": false,
+      "is_bus": false,
+      "description": "The output voltage when the input is ‘high’, in 12- TET semitones (one twelfth of a Volt).",
+      "unit": "ST"
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": ""
+      "description": "The input (and output) bus."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": ""
+      "description": "The output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace’."
     }
   ]
 }

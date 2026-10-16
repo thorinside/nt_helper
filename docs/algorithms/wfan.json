@@ -2,10 +2,10 @@
   "guid": "wfan",
   "name": "Waveform Animator",
   "short_description": "Embiggens simple waveforms",
-  "description": "This algorithm is version of the disting mk4 algorithm of the same name. From the disting mk4 manual: This algorithm recreates a popular analogue circuit variously known as a waveform animator or wave multiplier. Such a circuit, when given (typically) a sawtooth waveform as input, uses a comparator to generate a square wave of suitable phase and pulsewidth such that when the square and saw waves are added together the result is a phase shifted saw waveform. This is usually done a number of times and the results added with the overall effect of turning the original, rather plain, waveform into a much richer one which to all intents and purposes is the same as if you'd started with a number of VCOs rather than just one, and so sounds \"fatter\". In combination with LFOs varying the comparator thresholds, very rich textures can be generated. Here, four comparators and four LFOs are used. The comparator thresholds are set by a combination of the Threshold parameter and the Threshold CV input, and the Separation parameter which defines a 'spread' of the individual thresholds around the centre. The amplitude of the square waves can be determined automatically (by an envelope tracker) or manually, according to the 'Track' parameter. The recreation of phase shifted sawtooths works best when the square wave amplitude is matched to that of the saw. However, fixing the amplitude of the square waves and varying the input signal's amplitude is a useful effect in its own right.",
+  "description": "This algorithm is version of the disting mk4 algorithm of the same name. You may like to watch the video on that algorithm here. From the disting mk4 manual: \"This algorithm recreates a popular analogue circuit variously known as a waveform animator or wave multiplier. Such a circuit, when given (typically) a sawtooth waveform as input, uses a comparator to generate a square wave of suitable phase and pulsewidth such that when the square and saw waves are added together the result is a phase shifted saw waveform. This is usually done a number of times and the results added with the overall effect of turning the original, rather plain, waveform into a much richer one which to all intents and purposes is the same as if you'd started with a number of VCOs rather than just one, and so sounds \"fatter\". In combination with LFOs varying the comparator thresholds, very rich textures can be generated. Here, four comparators and four LFOs are used.\" The comparator thresholds are set by a combination of the Threshold parameter and the Threshold CV input, and the Separation parameter which defines a 'spread' of the individual thresholds around the centre. The amplitude of the square waves can be determined automatically (by an envelope tracker) or manually, according to the 'Track' parameter. The recreation of phase shifted sawtooths works best when the square wave amplitude is matched to that of the saw. However, fixing the amplitude of the square waves and varying the input signal's amplitude is a useful effect in its own right.",
   "categories": [
     "Waveform",
-    "Modulation",
+    "Oscillator",
     "Distortion"
   ],
   "parameters": [
@@ -14,110 +14,123 @@
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the comparator threshold.",
+      "unit": "V"
     },
     {
       "name": "Track",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Whether to track the input signal amplitude."
     },
     {
       "name": "Amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 5.0,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The square wave amplitude, if tracking is not being used.",
+      "unit": "V"
     },
     {
       "name": "Squares",
       "min": 1,
       "max": 4,
       "default": 4,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The number of square waves to generate."
     },
     {
       "name": "Separation",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The spread of the actual comparator thresholds around the value set by ‘Threshold’.",
+      "unit": "%"
     },
     {
       "name": "Mix",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The output mix, from -100% (only the input signal) to 100% (only the squares). At 0% both the input and squares are at full amplitude.",
+      "unit": "%"
     },
     {
       "name": "LFO rate",
       "min": 0,
       "max": 1000,
       "default": 699,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The LFO rate, scaled exponentially from 0.2Hz to 20Hz."
     },
     {
       "name": "LFO depth",
       "min": 0,
       "max": 100,
       "default": 10,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The LFO depth.",
+      "unit": "%"
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "The audio input signal, typically a sawtooth waveform"
+      "name": "Audio Input",
+      "description": "The audio signal to be processed (typically a sawtooth waveform)."
     },
     {
       "name": "Threshold CV",
-      "description": "The CV input for the comparator threshold"
+      "description": "CV input for modulating the comparator threshold."
+    },
+    {
+      "name": "Input",
+      "description": "The first input bus to process."
     },
     {
       "name": "Threshold input",
-      "description": ""
+      "description": "The CV input bus for the comparator threshold."
     }
   ],
   "output_ports": [
     {
+      "name": "Audio Output",
+      "description": "The processed output signal, a mix of the input and generated square waves."
+    },
+    {
       "name": "Output",
-      "description": "The processed audio output signal"
+      "description": "The first output bus."
     }
   ]
 }

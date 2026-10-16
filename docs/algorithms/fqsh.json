@@ -4,9 +4,9 @@
   "short_description": "Shifts frequency (not pitch)",
   "description": "This algorithm is based on the Frequency Shifter algorithm on the disting EX. The algorithm is a frequency shifter. Note that this is very different from a pitch shifter. A pitch shifter multiplies the frequencies of the constituent harmonics of a sound by the same amount, and so preserves their harmonic relationship. A frequency shifter adds a shift to the frequencies of the constituent harmonics of a sound, and so tends to break harmonic relationships, making sounds more 'clangorous' or 'bell-like'.",
   "categories": [
-    "Effect",
     "Frequency",
-    "Modulation"
+    "Modulation",
+    "Effect"
   ],
   "parameters": [
     {
@@ -14,62 +14,64 @@
       "min": -1.0,
       "max": 1.0,
       "default": 0.0,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the frequency shift.",
+      "unit": "Hz"
     },
     {
       "name": "Multiplier",
       "min": 0,
       "max": 3,
       "default": 2,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "Set a multiplier for the shift amount: x1, x10, x100, or x1000."
     },
     {
       "name": "Hz/V",
       "min": 0,
       "max": 3,
       "default": 1,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the scaling of the shift CV input, in Hz/Volt. One of: 1Hz/V, 10Hz/V, 100Hz/V, or 1kHz/V."
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "The output wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "The output gain applied to the effected signal.",
+      "unit": "dB"
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
       "name": "+ve shift mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -77,29 +79,28 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": false,
+      "is_common": true,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Shift input",
-      "description": ""
+      "name": "Input",
+      "description": "The first audio input bus."
     },
     {
-      "name": "Input",
-      "description": ""
+      "name": "Shift input",
+      "description": "The bus to use for the frequency shift CV."
     }
   ],
   "output_ports": [
     {
       "name": "+ve shift output",
-      "description": ""
+      "description": "The bus to use for the positive shifted output."
     },
     {
       "name": "-ve shift output",
-      "description": ""
+      "description": "The bus to use for the negative shifted output."
     }
   ]
 }

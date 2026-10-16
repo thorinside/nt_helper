@@ -5,7 +5,8 @@
   "description": "This simple algorithm computes the absolute value of the input voltage.",
   "categories": [
     "Signal Processing",
-    "Math"
+    "Math",
+    "Wave Shaping"
   ],
   "parameters": [
     {
@@ -25,19 +26,11 @@
   ],
   "input_ports": [
     {
-      "name": "Audio Input",
-      "description": "The input voltage to be rectified"
-    },
-    {
       "name": "Input",
       "description": "The input bus to process."
     }
   ],
   "output_ports": [
-    {
-      "name": "Audio Output",
-      "description": "The absolute value of the input voltage"
-    },
     {
       "name": "Output",
       "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."

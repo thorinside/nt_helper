@@ -5,8 +5,8 @@
   "description": "This algorithm plays samples, stretching or shrinking them to fit the tempo provided by a clock input, or MIDI. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm, but works somewhat differently. To use the algorithm, first give it a clock, either from an input bus, or by telling it to follow MIDI clock. You also need to trigger the sample – you can do this via a bus, or via MIDI, or manually, but it's also possible to have the algorithm continuously trigger the sample in a loop via the 'Auto trigger' parameter. The algorithm looks at the length of the chosen sample, and uses the current tempo and time signature to figure out a number of bars that best fits. It then adjusts the playback speed so that the sample will fit that number of bars. You can use the 'Speed tune' parameter to adjust the speed – this is particularly useful if the sample is not actually a full number of bars long.",
   "categories": [
     "Sample Player",
-    "Clock",
-    "Audio"
+    "Audio",
+    "Clock"
   ],
   "parameters": [
     {
@@ -14,83 +14,89 @@
       "min": 50.0,
       "max": 200.0,
       "default": 100.0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Adjusts the playback speed, relative to the one calculated by the algorithm.",
+      "unit": "%"
     },
     {
       "name": "Input clock div",
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the interpretation of the input clock pulse."
     },
     {
       "name": "Time sig num",
       "min": 1,
       "max": 99,
       "default": 4,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The time signature numerator."
     },
     {
       "name": "Time sig denom",
       "min": 0,
       "max": 4,
       "default": 2,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16."
     },
     {
       "name": "Auto trigger",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets whether the sample will automatically be triggered by the clock. This can be at a fixed interval, or set automatically by the length of the loop."
     },
     {
       "name": "Auto divisor",
       "min": 0,
       "max": 19,
       "default": 15,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets how often the sample will be triggered, if ‘Auto trigger’ is ‘Fixed’."
     },
     {
       "name": "Clock",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Whether to follow MIDI clock."
     },
     {
       "name": "Clock divisor",
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets how often the MIDI clock will cause an internal clock event. This should normally match the ‘Input clock div’ parameter."
     },
     {
       "name": "Reset mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the type of reset signal: ‘Trigger’ or ‘Run/stop’."
     }
   ],
   "input_ports": [
     {
       "name": "Clock input",
-      "description": ""
+      "description": "The bus to use as the clock input."
     },
     {
       "name": "Reset input",
-      "description": ""
+      "description": "The bus to use as the reset input."
     }
   ],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Audio out",
+      "description": "The audio output of the sample player."
+    }
+  ]
 }

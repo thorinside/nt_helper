@@ -4,9 +4,9 @@
   "short_description": "Generates a pitch reference tone",
   "description": "This algorithm simply generates a sine wave tone at a particular pitch or frequency. Note that if using a note to specify the pitch, it respects the global tuning setting.",
   "categories": [
-    "Tone Generator",
     "Oscillator",
-    "Utility"
+    "Utility",
+    "Reference"
   ],
   "parameters": [
     {
@@ -33,8 +33,7 @@
       "max": 880.0,
       "default": 440.0,
       "description": "Sets the frequency.",
-      "type": "string",
-      "is_bus": true
+      "unit": "Hz"
     },
     {
       "name": "Output mode",
@@ -53,8 +52,7 @@
       "max": 10.0,
       "default": 10.0,
       "description": "The amplitude of the signal (before the gain is applied).",
-      "type": "string",
-      "is_bus": true
+      "unit": "V"
     },
     {
       "name": "Gain",
@@ -62,14 +60,13 @@
       "max": 6,
       "default": -40,
       "description": "The level of the output signal.",
-      "type": "string",
-      "is_bus": true
+      "unit": "dB"
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus."
+      "description": "The output signal bus"
     }
   ]
 }

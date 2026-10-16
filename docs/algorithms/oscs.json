@@ -8,7 +8,6 @@
     "Analysis",
     "Utility"
   ],
-  "gui_description": "The display shows one or both waveforms according to the display mode.",
   "parameters": [
     {
       "name": "Input 1",
@@ -43,14 +42,16 @@
       "min": -11.0,
       "max": 11.0,
       "default": 0.0,
-      "description": "Set the trigger voltage – the voltage the input signal has to cross to trigger the oscilloscope."
+      "is_bus": false,
+      "description": "Set the trigger voltage – the voltage the input signal has to cross to trigger the oscilloscope.",
+      "unit": "V"
     },
     {
       "name": "Time range",
       "min": 0,
       "max": 16,
       "default": 7,
-      "description": "Sets the time range corresponding to the full width of the display. The special value \"Auto\" sets the time range to the time between consecutive triggers."
+      "description": "Sets the time range corresponding to the full width of the display. The special value 'Auto' sets the time range to the time between consecutive triggers."
     },
     {
       "name": "Display mode",
@@ -83,28 +84,51 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the vertical scale for channel 1. The options are 10V, 5V, 2V, and 1V."
+      "description": "Sets the vertical scale for channel 1. The options are 10V, 5V, 2V, and 1V.",
+      "enum_values": [
+        "10V",
+        "5V",
+        "2V",
+        "1V"
+      ]
     },
     {
       "name": "Vertical scale 2",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the vertical scale for channel 2."
+      "description": "Sets the vertical scale for channel 2.",
+      "enum_values": [
+        "10V",
+        "5V",
+        "2V",
+        "1V"
+      ]
     },
     {
       "name": "Vertical offset 1",
       "min": -11.0,
       "max": 11.0,
       "default": 0.0,
-      "description": "Sets an amount by which to move the display of channel 1 vertically."
+      "is_bus": false,
+      "description": "Sets an amount by which to move the display of channel 1 vertically.",
+      "unit": "V"
     },
     {
       "name": "Vertical offset 2",
       "min": -11.0,
       "max": 11.0,
       "default": 0.0,
-      "description": "Sets an amount by which to move the display of channel 2 vertically."
+      "is_bus": false,
+      "description": "Sets an amount by which to move the display of channel 2 vertically.",
+      "unit": "V"
+    },
+    {
+      "name": "Horizontal offset",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "Sets the horizontal position in the display of the trigger time."
     },
     {
       "name": "Disable screensaver",
@@ -112,8 +136,29 @@
       "max": 1,
       "default": 0,
       "description": "If set, and the oscilloscope custom UI is displayed, the screensaver is prevented from starting. The 0V line is also disabled, to prevent screen burn-in."
+    },
+    {
+      "name": "Show voltages",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether a numeric readout of the signal voltages is shown."
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "input_ports": [
+    {
+      "name": "Input 1",
+      "description": "Audio/CV input for channel 1"
+    },
+    {
+      "name": "Input 2",
+      "description": "Audio/CV input for channel 2"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "Audio output"
+    }
+  ]
 }

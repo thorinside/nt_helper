@@ -5,8 +5,7 @@
   "description": "This algorithm is a simple noise generator. Various standard \"colours\" of noise can be generated.",
   "categories": [
     "Noise",
-    "Generator",
-    "Audio"
+    "Generator"
   ],
   "parameters": [
     {
@@ -14,10 +13,7 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "folder",
-      "channelCountRef": "Channels",
-      "isPerChannel": false,
-      "isCommon": true,
+      "scope": "global",
       "is_bus": false
     },
     {
@@ -25,29 +21,26 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "bus",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_bus": true
+      "scope": "channel",
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "type": "folder",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_bus": false
+      "scope": "channel",
+      "is_bus": false,
+      "description": "The amplitude of the noise signal (before the gain is applied).",
+      "unit": "V"
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "folder",
-      "isPerChannel": true,
-      "isCommon": false,
+      "scope": "channel",
       "is_bus": false
     },
     {
@@ -55,20 +48,18 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "type": "folder",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_bus": false
+      "scope": "channel",
+      "is_bus": false,
+      "description": "The noise colour. The options are “Blended”, “Violet”, “White”, “Pink”, and “Red”."
     },
     {
       "name": "Blend",
       "min": 0,
       "max": 300,
       "default": 0,
-      "type": "folder",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_bus": false
+      "scope": "channel",
+      "is_bus": false,
+      "description": "If “Blended” is selected, sets the blend between noise colours."
     }
   ],
   "input_ports": [],

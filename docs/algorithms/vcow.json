@@ -8,165 +8,195 @@
     "VCO"
   ],
   "use_cases": [
-    "Voltage controlled oscillation",
+    "Oscillator synthesis",
     "Waveshaping",
-    "Oscillator sync",
-    "Linear FM modulation"
+    "FM synthesis",
+    "Oscillator sync"
   ],
   "gui_description": "The display shows a single cycle of the triangle/saw and square/pulse waveshapes, and the VCO's pitch as a MIDI note name plus cents and as a frequency in Hz.",
-  "specifications": [],
   "parameters": [
     {
       "name": "Waveshape",
       "min": -100,
       "max": 100,
       "default": 0,
+      "is_common": true,
+      "is_bus": false,
       "description": "Sets the wave shape/pulsewidth.",
-      "type": "folder"
+      "unit": "%"
     },
     {
       "name": "Octave",
       "min": -16,
       "max": 8,
       "default": 0,
-      "description": "Adjusts the VCO tuning in octaves.",
-      "type": "folder"
+      "is_common": true,
+      "is_bus": false,
+      "description": "Adjusts the VCO tuning in octaves."
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
+      "is_common": true,
+      "is_bus": false,
       "description": "Adjusts the VCO tuning in semitones.",
-      "type": "folder"
+      "unit": "ST"
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
+      "is_common": true,
+      "is_bus": false,
       "description": "Adjusts the VCO tuning in cents.",
-      "type": "folder"
+      "unit": "cents"
     },
     {
       "name": "Oversampling",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Enables oversampling, to reduce aliasing noise at higher frequencies. The options are \"None\", \"2x\", and \"4x\".",
-      "type": "folder"
+      "is_common": true,
+      "is_bus": false,
+      "description": "Enables oversampling, to reduce aliasing noise at higher frequencies. The options are “None”, “2x”, and “4x”."
     },
     {
       "name": "FM scale",
       "min": 1,
       "max": 1000,
       "default": 100,
+      "is_common": true,
+      "is_bus": false,
       "description": "Sets the Hz/V sensitivity of the linear FM input.",
-      "type": "folder"
+      "unit": "Hz"
     },
     {
       "name": "Triangle/saw amplitude",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 10.0,
-      "description": "Sets the amplitude of the triangle/saw output (before it's affected by the gain).",
-      "type": "folder"
+      "min": 0,
+      "max": 10,
+      "default": 10,
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the amplitude of the triangle/saw output (before it’s affected by the gain).",
+      "unit": "V"
     },
     {
       "name": "Square/pulse amplitude",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 10.0,
-      "description": "Sets the amplitude of the square/pulse output (before it's affected by the gain).",
-      "type": "folder"
+      "min": 0,
+      "max": 10,
+      "default": 10,
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the amplitude of the square/pulse output (before it’s affected by the gain).",
+      "unit": "V"
     },
     {
       "name": "Sub amplitude",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 10.0,
-      "description": "Sets the amplitude of the sub-octave output (before it's affected by the gain).",
-      "type": "folder"
+      "min": 0,
+      "max": 10,
+      "default": 10,
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the amplitude of the sub-octave output (before it’s affected by the gain).",
+      "unit": "V"
     },
     {
       "name": "Sine amplitude",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 10.0,
-      "description": "Sets the amplitude of the sine output (before it's affected by the gain).",
-      "type": "folder"
+      "min": 0,
+      "max": 10,
+      "default": 10,
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the amplitude of the sine output (before it’s affected by the gain).",
+      "unit": "V"
     },
     {
       "name": "Triangle/saw gain",
       "min": -40,
       "max": 6,
       "default": 0,
+      "is_common": true,
+      "is_bus": false,
       "description": "Sets the level of the triangle/saw output.",
-      "type": "folder"
+      "unit": "dB"
     },
     {
       "name": "Square/pulse gain",
       "min": -40,
       "max": 6,
       "default": 0,
+      "is_common": true,
+      "is_bus": false,
       "description": "Sets the level of the square/pulse output.",
-      "type": "folder"
+      "unit": "dB"
     },
     {
       "name": "Sub gain",
       "min": -40,
       "max": 6,
       "default": 0,
+      "is_common": true,
+      "is_bus": false,
       "description": "Sets the level of the sub-octave output.",
-      "type": "folder"
+      "unit": "dB"
     },
     {
       "name": "Sine gain",
       "min": -40,
       "max": 6,
       "default": 0,
+      "is_common": true,
+      "is_bus": false,
       "description": "Sets the level of the sine output.",
-      "type": "folder"
+      "unit": "dB"
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "description": "If enabled, MIDI notes on the specified channel will set the pitch of the VCO.",
-      "type": "folder"
+      "is_common": true,
+      "is_bus": false,
+      "description": "If enabled, MIDI notes on the specified channel will set the pitch of the VCO."
     },
     {
       "name": "Triangle/saw mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The add/replace mode for the triangle/saw signal.",
-      "type": "folder"
+      "is_common": true,
+      "is_bus": false,
+      "description": "The add/replace mode for the triangle/saw signal."
     },
     {
       "name": "Square/pulse mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The add/replace mode for the square/pulse signal.",
-      "type": "folder"
+      "is_common": true,
+      "is_bus": false,
+      "description": "The add/replace mode for the square/pulse signal."
     },
     {
       "name": "Sub output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The add/replace mode for the sub-octave signal.",
-      "type": "folder"
+      "is_common": true,
+      "is_bus": false,
+      "description": "The add/replace mode for the sub-octave signal."
     },
     {
       "name": "Sine output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The add/replace mode for the sine signal.",
-      "type": "folder"
+      "is_common": true,
+      "is_bus": false,
+      "description": "The add/replace mode for the sine signal."
     }
   ],
   "input_ports": [

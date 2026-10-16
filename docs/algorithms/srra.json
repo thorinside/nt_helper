@@ -6,33 +6,228 @@
   "categories": [
     "Random",
     "CV",
-    "Clock"
+    "Sequencer"
   ],
   "use_cases": [
-    "Generating random CVs",
-    "Creating evolving patterns with controllable randomness",
-    "Generating random melodies when combined with Quantizer"
+    "Generating random CV sequences",
+    "Creating random melodies when combined with a Quantizer",
+    "Generating random trigger patterns"
   ],
-  "gui_description": "The display shows a graphical representation of the shift register. If the unrandomness is ±100%, it also shows '<LOCKED>'.",
+  "gui_description": "The display shows a graphical representation of the shift register. If the unrandomness is ±100%, it also shows \"<LOCKED>\".",
   "specifications": [],
+  "parameters": [
+    {
+      "name": "Unrandomness",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the likelihood of the pattern not changing on each clock. At 0%, there is a 50:50 chance of a bit flip, which is the most random setting. At 100%, there will never be a fit flip, so the pattern is locked. At -100% there will always be a bit flip, which has the effect of locking the pattern with a repeat count of twice the length.",
+      "unit": "%"
+    },
+    {
+      "name": "Direction",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets whether the pattern moves forwards or in reverse when clocked."
+    },
+    {
+      "name": "Length",
+      "min": 1,
+      "max": 32,
+      "default": 8,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The trigger length, if percentage of clock is chosen.",
+      "unit": "%"
+    },
+    {
+      "name": "Scale",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 10.0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Scales the output CV.",
+      "unit": "V"
+    },
+    {
+      "name": "Offset",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Offsets the output CV.",
+      "unit": "V"
+    },
+    {
+      "name": "Cause",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Chooses what will cause a trigger to be generated: ● The new bit value is high. ● The new bit value is low. ● The bit changes. ● The bit goes from low to high. ● The bit goes from high to low."
+    },
+    {
+      "name": "Type",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Chooses whether the output trigger will be of a fixed length, or calculated as a percentage of the clock length."
+    },
+    {
+      "name": "Length (ms)",
+      "min": 1,
+      "max": 100,
+      "default": 10,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The trigger length, if fixed length is chosen.",
+      "unit": "ms"
+    },
+    {
+      "name": "Length (%)",
+      "min": 1,
+      "max": 100,
+      "default": 50,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The trigger length, if percentage of clock is chosen.",
+      "unit": "%"
+    },
+    {
+      "name": "CV output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The Add/Replace mode for the CV bus."
+    },
+    {
+      "name": "Trigger output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The Add/Replace mode for the trigger bus."
+    },
+    {
+      "name": "Follow MIDI clock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets whether the pattern generator follows MIDI clock."
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the clock divisor when following MIDI clock."
+    },
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Enables MIDI output to the breakout."
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Enables MIDI output to the Select Bus."
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Enables MIDI output to USB."
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The MIDI channel on which to send a note when a trigger fires."
+    },
+    {
+      "name": "MIDI note",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The MIDI note number to send."
+    }
+  ],
   "input_ports": [
     {
       "name": "Clock",
-      "description": "Clock input bus that drives the shift register rotation"
+      "description": "Clock input that drives the shift register rotation"
     },
     {
       "name": "Modify",
-      "description": "Gate input that forces pattern modification on each clock, even when locked"
+      "description": "Gate input that forces pattern modification on each clock when high, even if the pattern is locked"
+    },
+    {
+      "name": "Clock input",
+      "description": "Chooses the clock input bus."
+    },
+    {
+      "name": "Modify input",
+      "description": "Chooses the “modify” input bus. If this gate input is high, the pattern will always be modified on a clock, even if the pattern is locked."
     }
   ],
   "output_ports": [
     {
       "name": "CV",
-      "description": "Output bus for the generated CV"
+      "description": "Output CV generated from the shift register pattern"
     },
     {
       "name": "Trigger",
-      "description": "Output bus for the generated trigger"
+      "description": "Output trigger generated based on the selected cause condition"
+    },
+    {
+      "name": "CV output",
+      "description": "The output bus for the CV."
+    },
+    {
+      "name": "Trigger output",
+      "description": "The output bus for the trigger."
     }
   ]
 }

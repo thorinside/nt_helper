@@ -5,13 +5,13 @@
   "description": "This algorithm is a MIDI quantizer, but not a pitch quantizer – it quantizes the position of notes in time (much like applying quantization to the timing of a MIDI clip in your DAW). Timing can be derived from MIDI clock or from clock pulses on the algorithm's input bus. It only affects MIDI notes – other MIDI messages are not processed. Because there is no concept of 'replacing' or 'consuming' MIDI events in the disting NT, you will usually want to use different input and output MIDI channels e.g. receive MIDI notes from your keyboard on channel 1 and output quantized notes on channel 2, and then have your synth algorithm(s) respond on channel 2.",
   "categories": [
     "MIDI",
-    "Quantizer",
+    "Quantization",
     "Timing"
   ],
   "use_cases": [
-    "Quantizing MIDI note timing to a grid",
-    "Correcting timing of live MIDI performance",
-    "Synchronizing MIDI notes to external clock"
+    "Quantizing MIDI note timing",
+    "Tightening up MIDI performance timing",
+    "Syncing MIDI notes to a clock source"
   ],
   "specifications": [
     {
@@ -110,7 +110,7 @@
   "input_ports": [
     {
       "name": "Clock",
-      "description": "Clock pulse input for timing when Sync is set to Clock."
+      "description": "Clock pulses input for timing when Sync is set to Clock."
     },
     {
       "name": "Clock input",

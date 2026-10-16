@@ -2,17 +2,17 @@
   "guid": "lfo ",
   "name": "LFO",
   "short_description": "A low frequency oscillator",
-  "description": "This algorithm offers a number of flexible low frequency oscillators. The global 'Quality' parameter offers two options: 'Stepped' quality is extremely low CPU usage, and is appropriate for automating parameters of other algorithms (via mapping). 'Linear' quality should be selected if you plan to use the LFOs to output CVs to other modules. The LFOs can run freely, or be synced to external clocks or to MIDI clock. When there is more than one LFO channel, channels 2-4 can be locked to the phase of LFO 1. This allows you to, for example, create a quadrature LFO. Use the 'Phase' parameter of LFOs 2-4 to set the phase relationship in degrees to LFO 1. Note that in this case, the 'Speed' and 'Multiplier' parameters of the phase-locked LFO have no effect.",
+  "description": "This algorithm offers a number of flexible low frequency oscillators. The global 'Quality' parameter offers two options: 'Stepped' quality is extremely low CPU usage, and is appropriate for automating parameters of other algorithms (via mapping). 'Linear' quality should be selected if you plan to use the LFOs to output CVs to other modules. The LFOs can run freely, or be synced to external clocks or to MIDI clock. Various trigger modes allow free-running, triggered, or gated operation. When there is more than one LFO channel, channels 2-4 can be locked to the phase of LFO 1. This allows you to, for example, create a quadrature LFO. Use the 'Phase' parameter of LFOs 2-4 to set the phase relationship in degrees to LFO 1. Note that in this case, the 'Speed' and 'Multiplier' parameters of the phase-locked LFO have no effect.",
   "categories": [
-    "LFO",
-    "Modulation",
-    "Oscillator"
+    "modulation",
+    "oscillator",
+    "cv"
   ],
   "use_cases": [
     "Automating parameters of other algorithms via mapping",
     "Outputting CVs to other modules",
-    "Creating quadrature LFOs via phase-locking",
-    "Syncing to external clocks or MIDI clock"
+    "Creating quadrature LFOs",
+    "Free-running, triggered, or gated modulation"
   ],
   "gui_description": "The display shows the shape of the current channel's output, or if the 'Globals' page is active, the shape of all the channels.",
   "specifications": [
@@ -29,9 +29,11 @@
       "max": 1,
       "default": 1,
       "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the LFO output quality. The options are \"Stepped\" and \"Linear\".",
+      "enum_values": [
+        "Stepped",
+        "Linear"
+      ]
     },
     {
       "name": "Enable",
@@ -39,9 +41,21 @@
       "max": 1,
       "default": 0,
       "scope": "channel",
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Trigger mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "scope": "channel",
+      "description": "The trigger mode for the channel.",
+      "enum_values": [
+        "Free running",
+        "Retriggerable",
+        "Not retriggerable",
+        "Gated"
+      ]
     },
     {
       "name": "Speed",
@@ -49,9 +63,7 @@
       "max": 16383,
       "default": 8605,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the LFO speed, from 0.05Hz to 15Hz with an exponential scaling."
     },
     {
       "name": "Multiplier",
@@ -59,9 +71,13 @@
       "max": 3,
       "default": 1,
       "scope": "channel",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets a multiplier for the LFO speed. The options are \"x0.1\", \"x1\", \"x10\", & \"x100\".",
+      "enum_values": [
+        "x0.1",
+        "x1",
+        "x10",
+        "x100"
+      ]
     },
     {
       "name": "Sine",
@@ -69,9 +85,8 @@
       "max": 10.0,
       "default": 0.0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the amplitude of a sine wave to add into the LFO output.",
+      "unit": "V"
     },
     {
       "name": "Triangle",
@@ -79,9 +94,8 @@
       "max": 10.0,
       "default": 0.0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the amplitude of a triangle wave to add into the LFO output.",
+      "unit": "V"
     },
     {
       "name": "Saw",
@@ -89,9 +103,8 @@
       "max": 10.0,
       "default": 0.0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the amplitude of a saw wave to add into the LFO output.",
+      "unit": "V"
     },
     {
       "name": "Square",
@@ -99,9 +112,8 @@
       "max": 10.0,
       "default": 0.0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the amplitude of a square/pulse wave to add into the LFO output.",
+      "unit": "V"
     },
     {
       "name": "Pulse width",
@@ -109,9 +121,8 @@
       "max": 100.0,
       "default": 50.0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the pulse width of the square/pulse wave.",
+      "unit": "%"
     },
     {
       "name": "Offset",
@@ -119,9 +130,8 @@
       "max": 10.0,
       "default": 0.0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Adds a constant voltage to the LFO output.",
+      "unit": "V"
     },
     {
       "name": "Asymmetry",
@@ -129,9 +139,8 @@
       "max": 100.0,
       "default": 0.0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the asymmetry. This is somewhat like applying a pulse width variation to a square wave, but applies equally to all the waveforms.",
+      "unit": "%"
     },
     {
       "name": "Random",
@@ -139,9 +148,8 @@
       "max": 10.0,
       "default": 0.0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Adds a stepwise random voltage to the LFO output.",
+      "unit": "V"
     },
     {
       "name": "Phase",
@@ -149,9 +157,7 @@
       "max": 360,
       "default": 0,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Phase-locks LFOs. See above."
     },
     {
       "name": "Output mode",
@@ -159,9 +165,11 @@
       "max": 1,
       "default": 0,
       "scope": "channel",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     },
     {
       "name": "Sync",
@@ -169,9 +177,14 @@
       "max": 4,
       "default": 0,
       "scope": "channel",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Selects how the LFO will sync to external clocks or MIDI.",
+      "enum_values": [
+        "Clock",
+        "Clock is also reset",
+        "MIDI tempo",
+        "MIDI transport",
+        "Clock and reset"
+      ]
     },
     {
       "name": "Clock multiplier",
@@ -179,9 +192,7 @@
       "max": 23,
       "default": 15,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the clock multiplier, if syncing to external clocks."
     },
     {
       "name": "MIDI divisor",
@@ -189,9 +200,7 @@
       "max": 19,
       "default": 9,
       "scope": "channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Sets the MIDI clock divisor, if syncing to MIDI clock."
     }
   ],
   "input_ports": [
@@ -202,6 +211,10 @@
     {
       "name": "Reset input",
       "description": "The bus to use as the reset input."
+    },
+    {
+      "name": "Trigger input",
+      "description": "The trigger input bus."
     }
   ],
   "output_ports": [

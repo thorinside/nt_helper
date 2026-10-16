@@ -2,16 +2,18 @@
   "guid": "clck",
   "name": "Clock",
   "short_description": "Generates clocks",
-  "description": "This algorithm produces and/or receives analogue clock pulses and/or MIDI clock. It is designed to synchronise the module with others, or with other devices that it communicates with via MIDI, or simply to be a source of clock pulses for other algorithms within the module.\n\nIt can generate its own BPM-based clock, or sync to external clock pulses, or sync to MIDI.\n\nIt can output clock pulses, or send MIDI clock, or both.\n\nIf syncing to external clock, the algorithm expects a 24ppqn DINsync style clock. If you only have a slower clock available, use the Clock multiplier algorithm to get the clock up to the right speed before this algorithm sees it.",
+  "description": "This algorithm produces and/or receives analogue clock pulses and/or MIDI clock. It is designed to synchronise the module with others, or with other devices that it communicates with via MIDI, or simply to be a source of clock pulses for other algorithms within the module. It can generate its own BPM-based clock, or sync to external clock pulses, or sync to MIDI. It can output clock pulses, or send MIDI clock, or both. If syncing to external clock, the algorithm expects a 24ppqn DINsync style clock. If you only have a slower clock available, use the Clock multiplier algorithm to get the clock up to the right speed before this algorithm sees it.",
   "categories": [
     "Clock",
     "Timing",
-    "MIDI"
+    "MIDI",
+    "CV"
   ],
   "use_cases": [
-    "Synchronising the module with other modules",
-    "Synchronising with external devices via MIDI",
-    "Generating clock pulses for other algorithms within the module"
+    "Synchronising the module with other modules or devices",
+    "Generating clock pulses for other algorithms",
+    "MIDI clock synchronization",
+    "External clock source for the module"
   ],
   "gui_description": "The display shows the current tempo, and the transport location in bars, beats, and sixteenths. It also shows the clock source, and whether the transport is running or stopped. The GUI can also show information about the swing settings.",
   "parameters": [
@@ -20,26 +22,33 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The clock source. The options are \"Internal\", \"External\", and \"MIDI\".",
-      "enum_values": [
-        "Internal",
-        "External",
-        "MIDI"
-      ]
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "description": "The clock source. The options are “Internal”, “External”, and “MIDI”."
     },
     {
       "name": "Tempo",
       "min": 30.0,
       "max": 240.0,
       "default": 120.0,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "The internal clock tempo.",
-      "type": "bus"
+      "unit": "BPM"
     },
     {
       "name": "Run",
       "min": 0,
       "max": 1,
       "default": 0,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "Starts and stops the internal clock."
     },
     {
@@ -47,6 +56,10 @@
       "min": 1,
       "max": 99,
       "default": 4,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "The time signature numerator."
     },
     {
@@ -54,20 +67,21 @@
       "min": 0,
       "max": 4,
       "default": 2,
-      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16.",
-      "enum_values": [
-        "1",
-        "2",
-        "4",
-        "8",
-        "16"
-      ]
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16."
     },
     {
       "name": "Output to breakout",
       "min": 0,
       "max": 1,
       "default": 0,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "Enables MIDI output to the breakout."
     },
     {
@@ -75,6 +89,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "Enables MIDI output to the Select Bus."
     },
     {
@@ -82,6 +100,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "Enables MIDI output to USB."
     },
     {
@@ -89,6 +111,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
     },
     {
@@ -96,21 +122,33 @@
       "min": 0,
       "max": 7,
       "default": 0,
-      "description": "The type of swing to apply."
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "description": "The type of swing to apply. See below for more details."
     },
     {
       "name": "Swing",
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "The amount of swing to apply.",
-      "type": "bus"
+      "unit": "%"
     },
     {
       "name": "16th note 1",
       "min": 2,
       "max": 9,
       "default": 2,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "The position of the 1st 16th note, when using tuplet swing."
     },
     {
@@ -118,6 +156,10 @@
       "min": 2,
       "max": 9,
       "default": 4,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "The position of the 2nd 16th note, when using tuplet swing."
     },
     {
@@ -125,6 +167,10 @@
       "min": 2,
       "max": 9,
       "default": 5,
+      "type": "file",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
       "description": "The position of the 3rd 16th note, when using tuplet swing."
     },
     {
@@ -132,154 +178,156 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables the output.",
-      "type": "bus"
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Enables the output."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "The standard Add/Replace mode selector.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Type",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "The output type.",
-      "enum_values": [
-        "Clock",
-        "Run/stop",
-        "Reset",
-        "Trigger"
-      ]
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The output type, one of “Clock”, “Run/stop”, “Reset”, or “Trigger”."
     },
     {
       "name": "Divisor",
       "min": 0,
       "max": 19,
       "default": 9,
-      "description": "The clock division to generate.",
-      "enum_values": [
-        "1/64T",
-        "1/32T",
-        "1/32",
-        "1/16T",
-        "1/16",
-        "1/8T",
-        "1/8",
-        "1/4T",
-        "3/16",
-        "1/4",
-        "1/2T",
-        "3/8",
-        "1/2",
-        "1/1T",
-        "3/4",
-        "1/1",
-        "3/2",
-        "2/1",
-        "3/1",
-        "4/1"
-      ]
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The clock division to generate. See below."
     },
     {
       "name": "Low voltage",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
       "description": "The output voltage when the clock is low/inactive.",
-      "type": "bus"
+      "unit": "V"
     },
     {
       "name": "High voltage",
       "min": -10.0,
       "max": 10.0,
       "default": 5.0,
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
       "description": "The output voltage when the clock is high/active.",
-      "type": "bus"
+      "unit": "V"
     },
     {
       "name": "Ratchet mode",
       "min": 0,
       "max": 2,
       "default": 1,
-      "description": "The ratchet mode.",
-      "enum_values": [
-        "Off",
-        "Twos",
-        "Twos and threes"
-      ]
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The ratchet mode, one of “Off”, “Twos”, and “Twos and threes”."
     },
     {
       "name": "Ratchet",
       "min": 0,
       "max": 7,
       "default": 0,
-      "description": "The ratchet division for the clock. If mode is \"Twos\", selects from 1, 2, 4, 8, 16. If mode is \"Twos and threes\", selects from 1, 2, 3, 4, 6, 8, 12, 16."
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The ratchet division for the clock. If mode is “Twos”, selects from 1, 2, 4, 8, 16. If mode is “Twos and threes”, selects from 1, 2, 3, 4, 6, 8, 12, 16."
     },
     {
       "name": "Trigger length",
       "min": 1,
       "max": 100,
       "default": 10,
-      "description": "The length of the trigger pulse, if the type is \"Reset\" or \"Trigger\".",
-      "type": "bus"
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The length of the trigger pulse, if the type is “Reset” or “Trigger”.",
+      "unit": "ms"
     },
     {
       "name": "ES-5 Expander",
       "min": 0,
       "max": 6,
       "default": 0,
-      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. \"1\" means the ES-5 itself."
+      "type": "file",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false,
+      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. “1” means the ES-5 itself."
     }
   ],
   "input_ports": [
     {
       "name": "Clock input",
-      "description": "External clock signal input"
+      "description": "The external clock input."
     },
     {
       "name": "Run/stop input",
-      "description": "Run/stop signal input for the external clock"
+      "description": "The run/stop input for the external clock."
     }
   ],
   "output_ports": [
     {
-      "name": "Clock output 1",
+      "name": "Output 1",
       "description": "Clock output 1"
     },
     {
-      "name": "Clock output 2",
+      "name": "Output 2",
       "description": "Clock output 2"
     },
     {
-      "name": "Clock output 3",
+      "name": "Output 3",
       "description": "Clock output 3"
     },
     {
-      "name": "Clock output 4",
+      "name": "Output 4",
       "description": "Clock output 4"
     },
     {
-      "name": "Clock output 5",
+      "name": "Output 5",
       "description": "Clock output 5"
     },
     {
-      "name": "Clock output 6",
+      "name": "Output 6",
       "description": "Clock output 6"
     },
     {
-      "name": "Clock output 7",
+      "name": "Output 7",
       "description": "Clock output 7"
     },
     {
-      "name": "Clock output 8",
+      "name": "Output 8",
       "description": "Clock output 8"
     },
     {

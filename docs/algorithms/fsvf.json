@@ -2,10 +2,9 @@
   "guid": "fsvf",
   "name": "VCF (State Variable)",
   "short_description": "Second order LP/BP/HP filter",
-  "description": "This algorithm is a voltage controlled filter using the common 'State Variable' topology, which yields simultaneous low-, band-, and highpass filter responses. All three filter outputs are available individually, plus an output which can be blended from lowpass, through bandpass, to highpass. The input and the various outputs use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the 'Width' parameter. For example, to filter stereo signals, set the Width to 2.",
+  "description": "This algorithm is a voltage controlled filter using the common 'State Variable' topology, which yields simultaneous low-, band-, and highpass filter responses.\n\nAll three filter outputs are available individually, plus an output which can be blended from lowpass, through bandpass, to highpass.\n\nThe input and the various outputs use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the 'Width' parameter. For example, to filter stereo signals, set the Width to 2.",
   "categories": [
-    "Filter",
-    "VCF"
+    "Filter"
   ],
   "use_cases": [
     "Voltage controlled filtering",
@@ -27,8 +26,10 @@
       "min": -36.0,
       "max": 84.0,
       "default": 0.0,
-      "type": "string",
-      "is_bus": false
+      "description": "A manual frequency sweep control; offsets the frequency CV.",
+      "type": "scaled",
+      "is_common": true,
+      "unit": "ST"
     },
     {
       "name": "Resonance",
@@ -49,32 +50,40 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Level control for the blended output.",
+      "type": "scaled",
+      "is_common": true,
+      "unit": "dB"
     },
     {
       "name": "Lowpass gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Level control for the lowpass output.",
+      "type": "scaled",
+      "is_common": true,
+      "unit": "dB"
     },
     {
       "name": "Bandpass gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Level control for the bandpass output.",
+      "type": "scaled",
+      "is_common": true,
+      "unit": "dB"
     },
     {
       "name": "Highpass gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Level control for the highpass output.",
+      "type": "scaled",
+      "is_common": true,
+      "unit": "dB"
     },
     {
       "name": "Width",
@@ -123,40 +132,40 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "string",
-      "is_bus": false
+      "description": "Sets the amount by which the pitch of received MIDI notes affects the filter cutoff.",
+      "unit": "%"
     }
   ],
   "input_ports": [
     {
       "name": "Audio input",
-      "description": ""
+      "description": "The audio input bus."
     },
     {
       "name": "Frequency input",
-      "description": ""
+      "description": "The frequency CV input bus (1V/octave)."
     },
     {
       "name": "Resonance input",
-      "description": ""
+      "description": "The resonance CV input bus. Scaled such that 5V corresponds to the full range."
     }
   ],
   "output_ports": [
     {
       "name": "Blended output",
-      "description": ""
+      "description": "The output bus for the blended signal."
     },
     {
       "name": "Lowpass output",
-      "description": ""
+      "description": "The output bus for the lowpass signal."
     },
     {
       "name": "Bandpass output",
-      "description": ""
+      "description": "The output bus for the bandpass signal."
     },
     {
       "name": "Highpass output",
-      "description": ""
+      "description": "The output bus for the highpass signal."
     }
   ]
 }

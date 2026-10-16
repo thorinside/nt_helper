@@ -7,19 +7,12 @@
     "EQ",
     "Filter"
   ],
-  "use_cases": [
-    "Multi-channel bus EQ",
-    "Stereo signal EQ",
-    "Multi-bus processing with shared EQ settings"
-  ],
-  "gui_description": "The display shows a graphical representation of the EQ curve for the current channel. The frequency and gain of the current band within the channel is indicated with a small box.",
   "parameters": [
     {
       "name": "Width",
       "min": 1,
       "max": 12,
       "default": 1,
-      "scope": "per-channel",
       "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
@@ -27,24 +20,22 @@
       "min": 0,
       "max": 1,
       "default": 1,
-      "scope": "per-channel",
-      "description": "The standard Add/Replace mode selector."
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 1,
-      "scope": "per-channel",
-      "description": "Enables the EQ band."
+      "description": "Enables the EQ band.",
+      "type": "toggle"
     },
     {
       "name": "Type",
       "min": 0,
       "max": 6,
       "default": 6,
-      "scope": "per-channel",
-      "description": "Chooses the type of the EQ band. The options are \"Low pass (1st)\", \"High pass (1st)\", \"Low pass (2nd)\", \"High pass (2nd)\", \"Low shelf\", \"High shelf\", and \"Peak\".",
+      "description": "Chooses the type of the EQ band.",
       "enum_values": [
         "Low pass (1st)",
         "High pass (1st)",
@@ -60,7 +51,6 @@
       "min": 0,
       "max": 16383,
       "default": 8192,
-      "scope": "per-channel",
       "description": "Sets the EQ band centre frequency."
     },
     {
@@ -68,7 +58,6 @@
       "min": 0,
       "max": 127,
       "default": 48,
-      "scope": "per-channel",
       "description": "Sets the EQ band 'Q' or resonance. Note that some EQ types do not use this parameter."
     },
     {
@@ -76,10 +65,8 @@
       "min": -12.0,
       "max": 12.0,
       "default": 0.0,
-      "scope": "per-channel",
       "description": "Sets the EQ band gain. Note that some EQ types do not use this parameter.",
-      "type": "folder",
-      "is_bus": true
+      "unit": "dB"
     }
   ],
   "input_ports": [

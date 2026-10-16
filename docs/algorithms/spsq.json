@@ -2,20 +2,466 @@
   "guid": "spsq",
   "name": "Step Sequencer",
   "short_description": "A simple note sequencer",
-  "description": "This algorithm is a 16-step note sequencer, based on the sequencers in the Expert Sleepers FH-2 module. It can output CVs and/or MIDI.\n\nEach step has pitch, velocity, and a general-purpose \"modulation\" value. It also has a \"Division\", which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step fires a number of gates within the duration of one clock). Each substep (either repeat or ratchet) can be on or off – this is set by the \"Pattern\" parameter. Furthermore each step or substep can be a tie – this is set by the \"Ties\" parameter.\n\nA tie means a note which continues until just after the beginning of the next (sub)step. When outputting MIDI, this means the note off will follow the next note on i.e. the notes are played legato. When outputting CV, a tie means that the gate will not go low between the notes, and that the pitch CV will glide (if the glide time is non-zero).\n\nThe algorithm has a function for randomising the pitches, rhythm, or both.\n\nEach Step Sequencer has internal storage for 32 sequences, which you can use like 'snapshots' or 'patterns' to prepare a number of sequences and then switch between them (manually, or under CV control) to build up songs.\n\nRemember that every pitch etc. is a parameter and therefore mappable. Something as simple as an LFO modulating a sequence step's pitch can produce fascinating evolving patterns. If you need to constrain the sequencer to a scale/key, follow it with a Quantizer.",
+  "description": "This algorithm is a 16-step note sequencer, based on the sequencers in the Expert Sleepers FH-2 module. It can output CVs and/or MIDI. Each step has pitch, velocity, and a general-purpose \"modulation\" value. It also has a \"Division\", which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step fires a number of gates within the duration of one clock). Each substep (either repeat or ratchet) can be on or off – this is set by the \"Pattern\" parameter. Furthermore each step or substep can be a tie – this is set by the \"Ties\" parameter. A tie means a note which continues until just after the beginning of the next (sub)step. When outputting MIDI, this means the note off will follow the next note on i.e. the notes are played legato. When outputting CV, a tie means that the gate will not go low between the notes, and that the pitch CV will glide (if the glide time is non-zero). The algorithm has a function for randomising the pitches, rhythm, or both. Each Step Sequencer has internal storage for 32 sequences, which you can use like 'snapshots' or 'patterns' to prepare a number of sequences and then switch between them (manually, or under CV control) to build up songs. Remember that every pitch etc. is a parameter and therefore mappable. Something as simple as an LFO modulating a sequence step's pitch can produce fascinating evolving patterns. If you need to constrain the sequencer to a scale/key, follow it with a Quantizer.",
   "categories": [
     "Sequencer",
-    "MIDI",
-    "CV"
-  ],
-  "use_cases": [
-    "Step sequencing",
-    "Note pattern generation",
-    "CV and MIDI output",
-    "Sequence chaining",
-    "Randomised pattern generation"
+    "CV",
+    "MIDI"
   ],
   "gui_description": "The display shows an overview of the 16 steps. The step pitches are displayed across the top of the screen. The current step being played is indicated by a highlight on the pitch value. The start and end steps are indicated by solid bars between the pitches. The step whose parameter is being edited is shown highlighted. The steps' divisions, patterns, and ties are shown graphically. If the current parameter is a pitch, velocity, or modulation, these values are shown via the thin lines to the left of the steps. Divisions (repeats or ratchets) are shown as stacks of blocks. Ties are indicated by longer bars.",
+  "parameters": [
+    {
+      "name": "Sequence",
+      "min": 1,
+      "max": 32,
+      "default": 1,
+      "description": "Selects the current sequence."
+    },
+    {
+      "name": "Start",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "The first step to play. A reset will jump to this step."
+    },
+    {
+      "name": "End",
+      "min": 1,
+      "max": 16,
+      "default": 16,
+      "description": "The last step to play."
+    },
+    {
+      "name": "Direction",
+      "min": 0,
+      "max": 6,
+      "default": 0,
+      "description": "The sequencer direction.",
+      "enum_values": [
+        "Forwards",
+        "Reverse",
+        "Alt",
+        "Alt2",
+        "Random",
+        "Random2",
+        "Random3"
+      ]
+    },
+    {
+      "name": "Permutation",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "The sequencer permutation.",
+      "enum_values": [
+        "Straight",
+        "Odd/Even",
+        "Halves",
+        "Inwards"
+      ]
+    },
+    {
+      "name": "Gate type",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets the gate type.",
+      "enum_values": [
+        "% of clock",
+        "Trigger"
+      ]
+    },
+    {
+      "name": "Gate length",
+      "min": 1,
+      "max": 99,
+      "default": 50,
+      "defaultValue": 50,
+      "description": "Sets the length of the gate output if the type is \"% of clock\".",
+      "enum_values": [
+        "% of clock",
+        "Trigger"
+      ],
+      "unit": "%"
+    },
+    {
+      "name": "Trigger length",
+      "min": 1,
+      "max": 100,
+      "default": 10,
+      "defaultValue": 10,
+      "description": "Sets the length of the gate output if the type is \"Trigger\".",
+      "enum_values": [
+        "% of clock",
+        "Trigger"
+      ],
+      "unit": "ms"
+    },
+    {
+      "name": "Glide",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "defaultValue": 100,
+      "description": "Sets the glide time for tied notes.",
+      "enum_values": [
+        "% of clock",
+        "Trigger"
+      ],
+      "unit": "ms"
+    },
+    {
+      "name": "Next sequence",
+      "min": 0,
+      "max": 32,
+      "default": 0,
+      "description": "Selects a sequence that will automatically play after this one, or 'Off' to stay on the current sequence."
+    },
+    {
+      "name": "Reset sequence",
+      "min": 0,
+      "max": 32,
+      "default": 0,
+      "description": "Selects the sequence that will play when the sequencer receives a reset signal, or 'Off' to stay on the current sequence."
+    },
+    {
+      "name": "Pitch",
+      "min": 0,
+      "max": 127,
+      "default": 48,
+      "description": "Sets the step pitch, as a MIDI note number."
+    },
+    {
+      "name": "Division",
+      "min": 0,
+      "max": 14,
+      "default": 7,
+      "description": "Sets the step repeat or ratchet count."
+    },
+    {
+      "name": "Pattern",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "Sets the step pattern – which substeps are on or off."
+    },
+    {
+      "name": "Ties",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "Sets the step tie pattern – which substeps are ties."
+    },
+    {
+      "name": "Velocity",
+      "min": 1,
+      "max": 127,
+      "default": 64,
+      "description": "Sets the step velocity."
+    },
+    {
+      "name": "Mod",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "description": "Sets the step modulation value.",
+      "unit": "V"
+    },
+    {
+      "name": "Mute",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the probability that the step will be muted.",
+      "unit": "%"
+    },
+    {
+      "name": "Skip",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the probability that the step will be skipped.",
+      "unit": "%"
+    },
+    {
+      "name": "Reset",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the probability that the step causes a reset.",
+      "unit": "%"
+    },
+    {
+      "name": "Repeat",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the probability that the step will be repeated.",
+      "unit": "%"
+    },
+    {
+      "name": "Randomise",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes from 0 to 1, the sequence steps between the current start and end steps will be randomised according to the parameters that follow."
+    },
+    {
+      "name": "Randomise what",
+      "min": 0,
+      "max": 3,
+      "default": 3,
+      "description": "What will be randomised.",
+      "enum_values": [
+        "Nothing",
+        "Pitches",
+        "Rhythm",
+        "Both"
+      ]
+    },
+    {
+      "name": "Note distribution",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Chooses the probability distribution for the note pitches.",
+      "enum_values": [
+        "Uniform",
+        "Normal"
+      ]
+    },
+    {
+      "name": "Min note",
+      "min": 0,
+      "max": 127,
+      "default": 36,
+      "description": "The minimum note pitch, if the distribution is \"Uniform\"."
+    },
+    {
+      "name": "Max note",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "The maximum note pitch, if the distribution is \"Uniform\"."
+    },
+    {
+      "name": "Mean note",
+      "min": 0,
+      "max": 127,
+      "default": 48,
+      "description": "The mean note pitch, if the distribution is \"Normal\"."
+    },
+    {
+      "name": "Note deviation",
+      "min": 0,
+      "max": 127,
+      "default": 12,
+      "description": "The note pitch deviation, if the distribution is \"Normal\"."
+    },
+    {
+      "name": "Min repeat",
+      "min": 2,
+      "max": 8,
+      "default": 2,
+      "description": "The minimum repeat count, if a step is a repeat."
+    },
+    {
+      "name": "Max repeat",
+      "min": 2,
+      "max": 8,
+      "default": 8,
+      "description": "The maximum repeat count, if a step is a repeat."
+    },
+    {
+      "name": "Min ratchet",
+      "min": 2,
+      "max": 8,
+      "default": 2,
+      "description": "The minimum ratchet count, if a step is a ratchet."
+    },
+    {
+      "name": "Max ratchet",
+      "min": 2,
+      "max": 8,
+      "default": 8,
+      "description": "The maximum ratchet count, if a step is a ratchet."
+    },
+    {
+      "name": "Note probability",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "The probability that a note will be on.",
+      "unit": "%"
+    },
+    {
+      "name": "Tie probability",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The probability that a step will be a tie.",
+      "unit": "%"
+    },
+    {
+      "name": "Accent probability",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The probability that a step will be accented.",
+      "unit": "%"
+    },
+    {
+      "name": "Repeat probability",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The probability that a step will be a repeat.",
+      "unit": "%"
+    },
+    {
+      "name": "Ratchet probability",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The probability that a step will be a ratchet.",
+      "unit": "%"
+    },
+    {
+      "name": "Unaccented velocity",
+      "min": 1,
+      "max": 127,
+      "default": 1,
+      "description": "The velocity value to use for unaccented steps. Accented steps use velocity 127."
+    },
+    {
+      "name": "Reset mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets the mode for the reset input.",
+      "enum_values": [
+        "Reset trigger",
+        "Run/stop signal",
+        "One shot trigger"
+      ]
+    },
+    {
+      "name": "Pitch output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector for the pitch CV output."
+    },
+    {
+      "name": "Gate output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector for the gate output."
+    },
+    {
+      "name": "Velocity output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector for the velocity output."
+    },
+    {
+      "name": "Mod output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector for the modulation CV output."
+    },
+    {
+      "name": "Step output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector for the step CV output."
+    },
+    {
+      "name": "Sequence change mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "How the sequence CV will be used to change sequences.",
+      "enum_values": [
+        "Switch",
+        "Load"
+      ]
+    },
+    {
+      "name": "Follow MIDI clock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether the sequencer follows MIDI clock."
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "description": "Sets the clock divisor when following MIDI clock."
+    },
+    {
+      "name": "MIDI channel (out)",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Sets the output MIDI channel."
+    },
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to the breakout."
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to the Select Bus."
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to USB."
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
+    },
+    {
+      "name": "Mod CC",
+      "min": 0,
+      "max": 127,
+      "default": 1,
+      "description": "The MIDI CC to generate from the modulation lane."
+    },
+    {
+      "name": "MIDI channel (in)",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "description": "Sets the input MIDI channel for assigning step pitches from MIDI notes."
+    },
+    {
+      "name": "Record velocity",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "If on, record velocity from input MIDI notes as well as the note number."
+    }
+  ],
   "input_ports": [
     {
       "name": "Clock input",

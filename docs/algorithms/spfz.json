@@ -7,9 +7,17 @@
     "Spectral",
     "Freeze",
     "Time Stretching",
-    "Pitch Shifting",
-    "Effects"
+    "Pitch Shifting"
   ],
+  "use_cases": [
+    "Audio freezing and sustaining",
+    "Time stretching",
+    "Pitch shifting",
+    "Textural sustain",
+    "Etherization of transients",
+    "Live audio processing"
+  ],
+  "gui_description": "The display shows information about each of the voices. The vertical bar on the left shows the envelope level. The small vertical lines visualise the segment of the audio that is being used. The 'T' above the voice number indicates the 'Freeze target'; if there is no 'T', the target is set to 'Auto'.",
   "specifications": [
     {
       "name": "Voices",
@@ -60,14 +68,18 @@
       "min": 0,
       "max": 4,
       "default": 2,
-      "description": "Chooses the type of movement. The options are 'Forwards', 'Backwards', 'Alternating', 'Random walk', and 'Random skip'.",
       "enum_values": [
         "Forwards",
         "Backwards",
         "Alternating",
         "Random walk",
         "Random skip"
-      ]
+      ],
+      "type": "enum",
+      "isPerChannel": false,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Chooses the type of movement. The options are ‘Forwards’, ‘Backwards’, ‘Alternating’, ‘Random walk’, and ‘Random skip’."
     },
     {
       "name": "Rate",
@@ -80,6 +92,7 @@
       "name": "Depth",
       "min": 1,
       "max": 2,
+      "default": 2,
       "description": "Sets the maximum amount of movement."
     },
     {
@@ -93,7 +106,8 @@
       "min": 0.0,
       "max": 100.0,
       "default": 0.0,
-      "description": "Drops out transient elements of the sound."
+      "description": "Drops out transient elements of the sound.",
+      "unit": "%"
     },
     {
       "name": "Live process",
@@ -138,14 +152,14 @@
       "description": "Activates a new freeze on the corresponding voice when the parameter changes from '0' to '1', and releases the freeze when the parameter changes from '1' to '0'."
     },
     {
-      "name": "Coarse shift (per-voice)",
+      "name": "Coarse shift",
       "min": -48,
       "max": 24,
       "default": 0,
       "description": "Sets the coarse pitch shift amount."
     },
     {
-      "name": "Fine shift (per-voice)",
+      "name": "Fine shift",
       "min": -100,
       "max": 100,
       "default": 0,
@@ -156,7 +170,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector."
     }
   ],
   "input_ports": [

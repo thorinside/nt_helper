@@ -5,88 +5,96 @@
   "description": "This algorithm is an implementation of the disting mk4 algorithm of the same name. The algorithm is a 'bit crusher' – it applies sample rate and sample depth reduction to deliberately introduce quantisation and aliasing artefacts. It also optionally applies bitwise modification of the samples for non-linear distortion effects. The 'Bit reduce' parameter sets the bit depth reduction. There are two types of bit reduction available: Type I - the signal is quantised to a 16 bit word, and the low bits thrown away. The resulting signal uses a power of 2 bits. Changing between bit depths is therefore discontinuous. Type II - quantisation is achieved via the limited precision of integer maths when dividing the signal by a factor. Since the factor can be continuously varied, this offers a smooth variation between 'bit depths'. Furthermore, you may choose symmetric or asymmetric bit reduction via the 'Symmetric' parameter. Asymmetric bit reduction treats the whole signal range as one number to be quantised. Symmetric bit reduction treats positive and negative sections of the input signal differently. Negative sections are flipped positive, quantized, and flipped back. The 'Reduction' parameter selects the type of bit reduction. The positive and negative sections of the input signal can have different types of reduction applied. The 'Mangling' parameter selects the bit mangling mode.",
   "categories": [
     "Distortion",
-    "Bit Manipulation",
+    "Bit Crushing",
     "Sample Rate Reduction"
   ],
+  "use_cases": [
+    "Introducing quantisation and aliasing artefacts",
+    "Non-linear distortion via bitwise modification",
+    "Sample rate reduction effects"
+  ],
+  "specifications": [],
   "parameters": [
     {
       "name": "Bit reduce",
       "min": 0.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the amount of bit reduction.",
+      "unit": "%"
     },
     {
       "name": "Symmetric",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "Chooses symmetric or asymmetric bit reduction."
     },
     {
       "name": "Reduction",
       "min": 0,
       "max": 7,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the bit reduction type."
     },
     {
       "name": "Mangling",
       "min": 0,
       "max": 7,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the mangling mode."
     },
     {
       "name": "Downsample",
       "min": 0.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "Controls the downsampling (sample rate reduction), scaled at 0.8V/octave.",
+      "unit": "V"
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "folder",
       "is_common": false,
-      "is_bus": true
+      "is_bus": false,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
       "is_common": false,
-      "is_bus": true
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": ""
+      "description": "The first input bus to process."
     },
     {
       "name": "Downsample input",
-      "description": ""
+      "description": "The bus to use for the downsample CV, which is added to the Downsample parameter value. (This corresponds to the Y input on the disting mk4 algorithm.)"
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": ""
+      "description": "The first output bus."
     }
   ]
 }

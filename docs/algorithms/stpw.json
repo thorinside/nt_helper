@@ -59,5 +59,10 @@
     }
   ],
   "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "Outputs the current stopwatch time as a CV signal."
+    }
+  ]
 }

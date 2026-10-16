@@ -6,15 +6,8 @@
   "categories": [
     "Envelope",
     "Modulation",
-    "Signal Processing"
+    "Signal Generation"
   ],
-  "use_cases": [
-    "Generating attack/release envelopes for gating signals",
-    "Creating attack/decay envelopes for percussive modulation",
-    "Looped AD envelopes for continuous modulation",
-    "MIDI/I2C note-triggered envelope generation"
-  ],
-  "gui_description": "The display shows the envelope shape. If the visible parameter page is one of the Channel pages, it also shows the current envelope level.",
   "parameters": [
     {
       "name": "Trigger mode",
@@ -22,8 +15,10 @@
       "max": 2,
       "default": 0,
       "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "The trigger mode. The options are: ● Attack/release ● Attack/decay ● Looped AD"
     },
     {
       "name": "Time mode",
@@ -31,137 +26,170 @@
       "max": 2,
       "default": 0,
       "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "The envelope time mode. The options are: ● Macro (asymmetric) ● Macro (symmetric) ● Independent"
     },
     {
       "name": "Joint time",
       "min": 0,
       "max": 1023,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "Sets the attack and release times if the ‘Time mode’ is one of the two ‘Macro’ options."
     },
     {
       "name": "Attack time",
       "min": 0,
       "max": 1023,
       "default": 64,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "Sets the attack time if the ‘Time mode’ is ‘Independent’."
     },
     {
       "name": "Release time",
       "min": 0,
       "max": 1023,
       "default": 64,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "Sets the release time if the ‘Time mode’ is ‘Independent’."
     },
     {
       "name": "Attack shape",
       "min": 0,
       "max": 128,
       "default": 104,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "Sets the attack shape, from an exaggerated exponential curve at 0 to an almost linear shape at 128."
     },
     {
       "name": "Release shape",
       "min": 0,
       "max": 128,
       "default": 40,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "Sets the release shape, from an exaggerated exponential curve at 0 to an almost linear shape at 128."
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Enables the channel."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Amplitude",
       "min": -10.0,
       "max": 10.0,
       "default": 8.0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Sets the amplitude of the envelope. Note that negative values give an inverted envelope.",
+      "unit": "V"
     },
     {
       "name": "Offset",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Sets a constant voltage offset for the envelope.",
+      "unit": "V"
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The MIDI channel on which notes can trigger the envelope."
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The I2C channel on which notes can trigger the envelope."
     },
     {
       "name": "Note number",
       "min": -1,
       "max": 127,
       "default": -1,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The MIDI or I2C note number that will trigger the envelope, or ‘-1’ for ‘Any’."
     },
     {
       "name": "Velocity depth",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_bus": false
+      "type": "bus",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The amount by which the trigger velocity affects the envelope scale (applies only to MIDI and I2C).",
+      "unit": "%"
     }
   ],
   "input_ports": [
     {
       "name": "Trigger input",
-      "description": ""
+      "description": "Sets the trigger input bus.",
+      "isPerChannel": true
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": ""
+      "description": "Sets the envelope output bus.",
+      "isPerChannel": true
     }
   ]
 }

@@ -2,63 +2,89 @@
   "guid": "luae",
   "name": "Lua Expression",
   "short_description": "A single line of Lua",
-  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example \"a + b\" to add two signals together.\n\nIt is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you're out and about without a computer on which to write the script).\n\nFor more extensive discussion of Lua on the disting NT, see the Lua Script algorithm (below) and the UI Scripts (below).\n\nThe expressions are interpreted as Lua. All built-in language features (e.g. simple maths +, -, *, /) and the math library (e.g. math.floor()) are available.\n\nThe inputs to the algorithm are represented by the variables a-h.",
+  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example \"a + b\" to add two signals together. It is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you're out and about without a computer on which to write the script).",
   "categories": [
     "Scripting",
-    "Processing",
-    "CV",
-    "Audio"
+    "Expression",
+    "CV Processing"
   ],
   "parameters": [
     {
       "name": "Input A-H",
       "min": 1,
       "max": 64,
-      "description": "The bus to use for the correspondingly named expression variable.",
-      "type": "bus"
+      "description": "The bus to use for the correspondingly named expression variable."
     },
     {
       "name": "Input A-H mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression).",
-      "type": "toggle"
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "toggle"
+      "description": "The standard Add/Replace mode selector."
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
-      "description": "Enables evaluation of the expression.",
-      "type": "toggle"
+      "description": "Enables evaluation of the expression."
     },
     {
       "name": "Expression",
-      "description": "The expression text.",
-      "type": "string"
+      "description": "The expression text."
     },
     {
       "name": "Rate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Whether the expression is evaluated at control rate or audio rate.",
-      "type": "toggle"
+      "description": "Whether the expression is evaluated at control rate or audio rate."
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Input A",
+      "description": "First expression input variable"
+    },
+    {
+      "name": "Input B",
+      "description": "Second expression input variable"
+    },
+    {
+      "name": "Input C",
+      "description": "Third expression input variable"
+    },
+    {
+      "name": "Input D",
+      "description": "Fourth expression input variable"
+    },
+    {
+      "name": "Input E",
+      "description": "Fifth expression input variable"
+    },
+    {
+      "name": "Input F",
+      "description": "Sixth expression input variable"
+    },
+    {
+      "name": "Input G",
+      "description": "Seventh expression input variable"
+    },
+    {
+      "name": "Input H",
+      "description": "Eighth expression input variable"
+    }
+  ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The bus to use for the expression output."
+      "description": "The expression output signal"
     }
   ]
 }

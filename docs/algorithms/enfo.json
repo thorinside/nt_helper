@@ -4,9 +4,21 @@
   "short_description": "Tracks the volume envelope of a signal",
   "description": "This algorithm is a simple envelope follower. It outputs a CV according to the volume envelope of the input audio. When operating on stereo (or multichannel) signals, it tracks the maximum of the various signals and outputs a single CV. If you want to separately track the left and right sides of a stereo signal, use this algorithm configured as two mono channels.",
   "categories": [
+    "Envelope",
     "CV",
-    "Analysis",
-    "Envelope"
+    "Analysis"
+  ],
+  "use_cases": [
+    "Tracking audio volume envelope for CV control",
+    "Generating CV from audio signal dynamics",
+    "Stereo or multichannel envelope detection"
+  ],
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 12
+    }
   ],
   "parameters": [
     {
@@ -47,14 +59,18 @@
   ],
   "input_ports": [
     {
+      "name": "Audio Input",
+      "description": "The audio signal whose volume envelope is tracked."
+    },
+    {
       "name": "Input",
       "description": "The input bus to process."
     }
   ],
   "output_ports": [
     {
-      "name": "CV",
-      "description": "Outputs a CV according to the volume envelope of the input audio."
+      "name": "CV Output",
+      "description": "A CV signal representing the volume envelope of the input audio."
     },
     {
       "name": "Output",

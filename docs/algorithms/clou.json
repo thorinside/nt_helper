@@ -5,8 +5,14 @@
   "description": "This algorithm is an implementation of the open source Clouds module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is available online. The documentation below assumes some familiarity with this.",
   "categories": [
     "Granular",
-    "Synthesis",
-    "Effect"
+    "Effects",
+    "Synthesis"
+  ],
+  "use_cases": [
+    "Granular synthesis",
+    "Audio stretching",
+    "Looping delay",
+    "Spectral processing"
   ],
   "parameters": [
     {
@@ -21,13 +27,7 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "The effect mode: Granular, Stretch, Looping delay, or Spectral.",
-      "enum_values": [
-        "Granular",
-        "Stretch",
-        "Looping delay",
-        "Spectral"
-      ]
+      "description": "The effect mode: Granular, Stretch, Looping delay, or Spectral."
     },
     {
       "name": "Buffer channels",
@@ -63,7 +63,7 @@
       "max": 100,
       "default": 50,
       "description": "Selects from which part of the recording buffer the audio grains are played. Turn the knob clockwise to travel back in time.",
-      "type": "folder"
+      "unit": "%"
     },
     {
       "name": "Size",
@@ -71,7 +71,7 @@
       "max": 100,
       "default": 50,
       "description": "Sets the grain size.",
-      "type": "folder"
+      "unit": "%"
     },
     {
       "name": "Pitch",
@@ -79,7 +79,7 @@
       "max": 100,
       "default": 0,
       "description": "Sets the grain transposition.",
-      "type": "folder"
+      "unit": "%"
     },
     {
       "name": "Coarse tune",
@@ -87,7 +87,7 @@
       "max": 48,
       "default": 0,
       "description": "Sets the grain pitch in semitones.",
-      "type": "folder"
+      "unit": "ST"
     },
     {
       "name": "Fine tune",
@@ -95,7 +95,7 @@
       "max": 100,
       "default": 0,
       "description": "Sets the grain pitch in cents.",
-      "type": "folder"
+      "unit": "cents"
     },
     {
       "name": "Density",
@@ -103,7 +103,7 @@
       "max": 100,
       "default": 50,
       "description": "At 12 o'clock, no grains are generated. Turn clockwise and grains will be sown randomly, counter-clockwise and they will be played at a constant rate. The further you turn, the higher the overlap between grains.",
-      "type": "folder"
+      "unit": "%"
     },
     {
       "name": "Texture",
@@ -111,42 +111,47 @@
       "max": 100,
       "default": 50,
       "description": "Morphs through various shapes of grain envelopes: square (boxcar), triangle, and then Hann window. Past 2 o'clock, activates a diffuser which smears transients.",
-      "type": "folder"
+      "unit": "%"
     },
     {
       "name": "Wet/dry",
       "min": 0,
       "max": 100,
       "default": 50,
-      "description": "Wet/dry mix balance."
+      "description": "Wet/dry mix balance.",
+      "unit": "%"
     },
     {
       "name": "Spread",
       "min": 0,
       "max": 100,
       "default": 50,
-      "description": "Stereo spread (amount of random panning/balance applied to the grains)."
+      "description": "Stereo spread (amount of random panning/balance applied to the grains).",
+      "unit": "%"
     },
     {
       "name": "Feedback",
       "min": 0,
       "max": 100,
       "default": 50,
-      "description": "Sets the amount of feedback."
+      "description": "Sets the amount of feedback.",
+      "unit": "%"
     },
     {
       "name": "Reverb",
       "min": 0,
       "max": 100,
       "default": 50,
-      "description": "Sets the amount of reverb applied to the output."
+      "description": "Sets the amount of reverb applied to the output.",
+      "unit": "%"
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "bus"
     }
   ],
   "input_ports": [

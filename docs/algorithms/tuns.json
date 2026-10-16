@@ -2,11 +2,11 @@
   "guid": "tuns",
   "name": "Tuner (simple)",
   "short_description": "A basic tuner for simple tones",
-  "description": "This algorithm provides four simultaneous tuners.\n\nIt uses a simple pitch detection method which will only work reliably for simple tones, but happily \"simple tones\" covers most of those that you will get from an analogue VCO, which in a Eurorack environment you might find yourself tuning quite often.\n\nBeing simple, it consumes little CPU.\n\nMicrotuning via Scala or MTS is supported.\n\nFor a more sophisticated tuner, please see the \"Tuner (fancy)\" algorithm.",
+  "description": "This algorithm provides four simultaneous tuners. It uses a simple pitch detection method which will only work reliably for simple tones, but happily \"simple tones\" covers most of those that you will get from an analogue VCO, which in a Eurorack environment you might find yourself tuning quite often. Being simple, it consumes little CPU. Microtuning via Scala or MTS is supported. For a more sophisticated tuner, please see the \"Tuner (fancy)\" algorithm.",
   "categories": [
     "Tuning",
-    "Pitch Detection",
-    "Analysis"
+    "Analysis",
+    "Utility"
   ],
   "parameters": [
     {

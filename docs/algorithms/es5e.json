@@ -4,9 +4,9 @@
   "short_description": "Converts gates into ES-5 outputs",
   "description": "This algorithm allows you to drive the outputs of an attached ES-5 expansion module, or of an ESX-8GT expander attached to the ES-5.",
   "categories": [
-    "Routing",
-    "Conversion",
-    "MIDI"
+    "Encoding",
+    "Output",
+    "Gate"
   ],
   "parameters": [
     {

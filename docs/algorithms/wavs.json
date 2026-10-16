@@ -5,12 +5,13 @@
   "description": "This algorithm is based on the Dual Waveshaper algorithm on the disting mk4. Type 0 is what is usually termed a wavefolder. This increases the harmonic content of the sound in interesting ways, especially as the gain changes. Type 1 is a triangle-to-sine waveshaper. Used on most audio this is a relatively gentle form of overdrive/saturation. However, when fed with the right level of triangle wave, the output is exactly a sine wave, which is useful when you have a triangle wave VCO handy but really want a pure sine wave instead.",
   "categories": [
     "Distortion",
-    "Waveshaping"
+    "Waveshaping",
+    "Overdrive"
   ],
   "use_cases": [
-    "Wavefolding for harmonic content",
-    "Triangle-to-sine conversion",
-    "Gentle overdrive/saturation"
+    "Adding harmonic content to sounds via wavefolding",
+    "Converting triangle waves to pure sine waves",
+    "Gentle overdrive/saturation of audio signals"
   ],
   "gui_description": "The display shows how an input sine wave will be affected by the waveshaper. It is not an oscilloscope – it's not showing what your actual audio looks like (unless you happen to be feeding it a sine wave). It's just a graphical aid to get an idea of how much waveshaping is being applied.",
   "parameters": [
@@ -39,17 +40,15 @@
       "default": 100,
       "defaultValue": 100,
       "description": "The output wet/dry mix.",
-      "enum_values": [
-        "Dry",
-        "Wet"
-      ]
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "description": "The output gain applied to the shaped signal."
+      "description": "The output gain applied to the shaped signal.",
+      "unit": "dB"
     },
     {
       "name": "Width",

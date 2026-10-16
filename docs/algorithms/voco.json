@@ -5,9 +5,15 @@
   "description": "This algorithm implements a vocoder. The spectral characteristics of the modulator input are applied to the carrier input. In classic usage, the modulator might be a human voice, and the carrier might be a synth sound, or simply noise.\n\nThis version emulates an analogue vocoder inasmuch as it uses a number of bandpass filters to do the analysis and synthesis. There is also the Spectral Vocoder (above) which uses an FFT method.",
   "categories": [
     "Effects",
-    "Modulation",
-    "Analysis"
+    "Spectral",
+    "Modulation"
   ],
+  "use_cases": [
+    "Vocal processing",
+    "Speech synthesis",
+    "Spectral modulation"
+  ],
+  "gui_description": "The display shows the current level of the modulator bands.",
   "parameters": [
     {
       "name": "Bands",
@@ -21,31 +27,34 @@
       "min": 50,
       "max": 1000,
       "default": 200,
-      "defaultValue": 200,
-      "description": "The centre frequency of the lowest band."
+      "is_bus": false,
+      "description": "The centre frequency of the lowest band.",
+      "unit": "Hz"
     },
     {
       "name": "Max frequency",
       "min": 1000,
       "max": 10000,
       "default": 3200,
-      "defaultValue": 3200,
-      "description": "The centre frequency of the highest band."
+      "is_bus": false,
+      "description": "The centre frequency of the highest band.",
+      "unit": "Hz"
     },
     {
       "name": "Bandwidth",
       "min": 25,
       "max": 400,
       "default": 100,
-      "defaultValue": 100,
-      "description": "Applies a scaling to the width of the bandpass filters."
+      "is_bus": false,
+      "description": "Applies a scaling to the width of the bandpass filters.",
+      "unit": "%"
     },
     {
       "name": "Attack",
       "min": 0,
       "max": 1000,
       "default": 303,
-      "defaultValue": 303,
+      "is_bus": false,
       "description": "Sets the attack time of the band envelope trackers. Exponential scaling from 0.5ms to 1000ms."
     },
     {
@@ -53,7 +62,7 @@
       "min": 0,
       "max": 1000,
       "default": 394,
-      "defaultValue": 394,
+      "is_bus": false,
       "description": "Sets the decay time of the band envelope trackers. Exponential scaling from 0.5ms to 1000ms."
     },
     {
@@ -61,31 +70,32 @@
       "min": 10,
       "max": 1000,
       "default": 50,
-      "defaultValue": 50,
-      "description": "Sets the frequency of a high-pass filter applied to both the modulator and carrier."
+      "is_bus": false,
+      "description": "Sets the frequency of a high-pass filter applied to both the modulator and carrier.",
+      "unit": "Hz"
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 24,
       "default": 0,
-      "defaultValue": 0,
-      "description": "Applies an overall gain."
+      "is_bus": false
     },
     {
       "name": "Noise",
       "min": -40,
       "max": 24,
       "default": -40,
-      "defaultValue": -40,
-      "description": "Sets the level of noise added to the carrier input, which can improve speech intelligibility. The noise is high-pass filtered at the frequency of the highest vocoder band."
+      "is_bus": false,
+      "description": "Sets the level of noise added to the carrier input, which can improve speech intelligibility. The noise is high-pass filtered at the frequency of the highest vocoder band.",
+      "unit": "dB"
     },
     {
       "name": "Carrier width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "defaultValue": 1,
+      "is_bus": false,
       "description": "The number of carrier busses to process. For example, for a stereo signal, set this to 2."
     },
     {
@@ -93,12 +103,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "defaultValue": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [

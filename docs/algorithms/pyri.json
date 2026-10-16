@@ -2,18 +2,12 @@
   "guid": "pyri",
   "name": "Poly Resonator",
   "short_description": "It's lots of Rings!",
-  "description": "This algorithm is a polysynth where each voice is essentially a Rings (the open source Rings module by Émilie Gillet). Rings itself does support a kind of polyphony, but it's limited by having a single pitch and gate input - it's very much designed so that only one note is triggered at a time. This algorithm gives you a full Rings implementation for each voice, with the convenience of shared parameter control. Rings has a hidden internal parameter called 'resolution'. Essentially, it's the number of resonator building blocks that contribute to the overall sound. A Rings with no polyphony uses a resolution of 64; when you turn on polyphony, that 64 is divided by the number of voices e.g. if the polyphony is 4, each voice has a resolution of 16. This keeps the CPU load roughly constant. This algorithm allows you to control the resolution manually, so you can choose both the sound that you want and its CPU cost. It defaults to 16, so it sounds the same as a Rings set to 4 voice polyphony.",
+  "description": "This algorithm is a polysynth where each voice is essentially a Rings (the open source Rings module by Émilie Gillet). Rings itself does support a kind of polyphony, but it's limited by having a single pitch and gate input - it's very much designed so that only one note is triggered at a time. This algorithm gives you a full Rings implementation for each voice, with the convenience of shared parameter control.",
   "categories": [
     "Synth",
-    "Effect",
-    "Resonator"
+    "Resonator",
+    "Polysynth"
   ],
-  "use_cases": [
-    "Polyphonic resonator synthesis",
-    "Audio effect processing with resonators",
-    "MPE expressive performance"
-  ],
-  "gui_description": "The display shows the notes being played by the various voices. Note that Rings voices never really end – in theory they decay forever.",
   "specifications": [
     {
       "name": "Voices",
@@ -41,240 +35,286 @@
       "min": -36,
       "max": 24,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "Provides a coarse tuning control.",
+      "unit": "ST"
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "Provides a fine tuning control.",
+      "unit": "cents"
     },
     {
       "name": "Resolution",
       "min": 8,
       "max": 64,
       "default": 16,
-      "type": "toggle",
-      "is_bus": false
+      "description": "Sets the resolution of the resonators."
     },
     {
       "name": "Structure",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "toggle",
-      "is_bus": false
+      "description": "Controls the resonator 'structure'."
     },
     {
       "name": "Brightness",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "toggle",
-      "is_bus": false
+      "description": "Controls the resonator 'brightness'."
     },
     {
       "name": "Damping",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "toggle",
-      "is_bus": false
+      "description": "Controls the resonator 'damping'."
     },
     {
       "name": "Position",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "toggle",
-      "is_bus": false
+      "description": "Controls the resonator 'position'."
     },
     {
       "name": "Chord",
       "min": 0,
       "max": 10,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "description": "Chooses the chord to use for resonator modes that use one. In the original, set from the Structure knob."
     },
     {
       "name": "Noise gate",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "toggle",
-      "is_bus": false
+      "description": "Enables a noise gate on the audio input. Always enabled in the original Rings."
     },
     {
       "name": "Input gain",
       "min": -40,
       "max": 12,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "A gain applied to the input audio, before it hits the resonator.",
+      "unit": "dB"
     },
     {
       "name": "Odd output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The Add/Replace mode for the Odd output."
     },
     {
       "name": "Even output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The Add/Replace mode for the Even output."
     },
     {
       "name": "Output gain",
       "min": -40,
       "max": 12,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The output level (of both the Odd and Even outputs).",
+      "unit": "dB"
     },
     {
       "name": "Dry gain",
       "min": -40,
       "max": 12,
       "default": -40,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The level of the input audio mixed into the output(s).",
+      "unit": "dB"
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 1,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The MIDI channel to listen on."
     },
     {
       "name": "MPE channels",
       "min": 1,
       "max": 16,
       "default": 1,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "Controls how the algorithm will respond to MPE. See above."
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
       "default": 1,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the I2C channel."
     },
     {
       "name": "Bend range",
       "min": 0,
       "max": 48,
       "default": 2,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The MIDI pitch bend range."
     },
     {
       "name": "Sustain mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The standard polysynth sustain mode parameter. See above."
     },
     {
       "name": "Sustain",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
     },
     {
       "name": "Press -> volume",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which pressure (per note for MPE) affects the note volume.",
+      "unit": "%"
     },
     {
       "name": "Press -> structure",
       "min": -127,
       "max": 127,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which pressure (per note for MPE) affects the structure."
     },
     {
       "name": "Press -> brightness",
       "min": -127,
       "max": 127,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which pressure (per note for MPE) affects the brightness."
     },
     {
       "name": "Press -> damping",
       "min": -127,
       "max": 127,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which pressure (per note for MPE) affects the damping."
     },
     {
       "name": "Press -> position",
       "min": -127,
       "max": 127,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which pressure (per note for MPE) affects the position."
     },
     {
       "name": "MPE Y -> volume",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which the MPE Y dimension affects the note volume.",
+      "unit": "%"
     },
     {
       "name": "MPE Y -> structure",
       "min": -127,
       "max": 127,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which the MPE Y dimension affects the structure."
     },
     {
       "name": "MPE Y -> brightness",
       "min": -127,
       "max": 127,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which the MPE Y dimension affects the brightness."
     },
     {
       "name": "MPE Y -> damping",
       "min": -127,
       "max": 127,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which the MPE Y dimension affects the damping."
     },
     {
       "name": "MPE Y -> position",
       "min": -127,
       "max": 127,
       "default": 0,
-      "type": "toggle",
-      "is_bus": false
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The amount by which the MPE Y dimension affects the position."
     }
   ],
   "input_ports": [

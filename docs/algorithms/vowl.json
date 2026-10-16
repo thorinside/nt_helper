@@ -5,23 +5,43 @@
   "description": "This algorithm is based on the Dual Vowel Filter algorithm on the disting mk4. A set of three bandpass filters (BPFs) is used to mimic the response of the human vocal tract, resulting in vowel-like sounds when provided suitable source material. The available vowels are: /ow/ (bought), /oo/ (boot), /a/ (hot), /uh/ (but), /er/ (bird), /ae/ (bat), /e/ (bet), /i/ (bit), /iy/ (beet).",
   "categories": [
     "Filter",
-    "Voice",
-    "Effect"
+    "Formant"
   ],
+  "use_cases": [
+    "Simulating vowel sounds from arbitrary audio sources",
+    "Formant filtering to create vocal-like timbres",
+    "Creative sound design using bandpass filter combinations"
+  ],
+  "gui_description": "Displays vowel selection and BPF gain controls. Mode can be set to Switched (discrete vowel selection) or Blended (continuous vowel interpolation).",
   "parameters": [
     {
       "name": "Mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "One of 'Switched' or 'Blended'."
+      "description": "One of 'Switched' or 'Blended'.",
+      "enum_values": [
+        "Switched",
+        "Blended"
+      ]
     },
     {
       "name": "Vowel",
       "min": 0,
       "max": 8,
       "default": 0,
-      "description": "The chosen vowel, if the mode is Switched."
+      "description": "The chosen vowel, if the mode is Switched.",
+      "enum_values": [
+        "/ow/ (bought)",
+        "/oo/ (boot)",
+        "/a/ (hot)",
+        "/uh/ (but)",
+        "/er/ (bird)",
+        "/ae/ (bat)",
+        "/e/ (bet)",
+        "/i/ (bit)",
+        "/iy/ (beet)"
+      ]
     },
     {
       "name": "Vowel",
@@ -56,7 +76,11 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     }
   ],
   "input_ports": [
@@ -66,7 +90,7 @@
     },
     {
       "name": "Vowel input",
-      "description": "CV input to control the vowel. Scaled such that 0-5V covers the full range of vowels."
+      "description": "CV input to control the vowel selection. Scaled such that 0-5V covers the full range of vowels."
     }
   ],
   "output_ports": [

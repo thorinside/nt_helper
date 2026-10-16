@@ -2,16 +2,16 @@
   "guid": "drea",
   "name": "Dream Machine",
   "short_description": "Just intonation drone synth",
-  "description": "This algorithm is an implementation of the original Dream Machine algorithm on the disting EX. It is designed to generate drones, allowing the user to explore non-traditional harmonies based on prime ratios. It was inspired by the theories of composer La Monte Young. An interesting read is the pdf \"Notes on The Theatre of Eternal Music\" available in a number of places online. The output is a combination of five sounds – the fundamental and four harmonies. The prime ratios that define the frequency relationships are controlled by parameters. The algorithm uses wavetable synthesis to generate the tones. Additionally the fundamental may instead be a pure sine, triangle, or square wave. Each tone has a simple attack/release envelope, controlled by its own gate parameter. By default, little is mapped to the CV inputs, and it is perfectly possible to drive the algorithm entirely by hand. You may however like to map inputs as FM inputs, or to control the gates.",
+  "description": "This algorithm is an implementation of the original Dream Machine algorithm on the disting EX. It is designed to generate drones, allowing the user to explore non-traditional harmonies based on prime ratios. It was inspired by the theories of composer La Monte Young. The output is a combination of five sounds – the fundamental and four harmonies. The prime ratios that define the frequency relationships are controlled by parameters. The algorithm uses wavetable synthesis to generate the tones. Additionally the fundamental may instead be a pure sine, triangle, or square wave. Each tone has a simple attack/release envelope, controlled by its own gate parameter. By default, little is mapped to the CV inputs, and it is perfectly possible to drive the algorithm entirely by hand. You may however like to map inputs as FM inputs, or to control the gates.",
   "categories": [
     "Drone",
     "Just Intonation",
     "Wavetable"
   ],
   "use_cases": [
-    "Generating drones with just intonation harmonies",
+    "Generating just intonation drones",
     "Exploring non-traditional harmonies based on prime ratios",
-    "Creating ambient textures with prime-ratio-based tuning"
+    "Creating ambient soundscapes inspired by La Monte Young's theories"
   ],
   "gui_description": "The display shows the current waveform within the wavetable on the right of the screen. The rest of the screen shows the frequency, ratio, and gate level of the five tones (from left to right).",
   "specifications": [],
@@ -25,362 +25,359 @@
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the position within the wavetable.",
+      "unit": "%"
     },
     {
       "name": "Waveform 0",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "type": "enum",
+      "is_bus": false,
+      "description": "Chooses the waveform for the fundamental. The options are “Wavetable”, “Sine”, “Triangle”, and “Square”."
     },
     {
       "name": "Prime 1",
       "min": 2,
       "max": 32749,
       "default": 2,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets one of the four primes that may be multiplied to create the denominator and numerators of the frequency ratios."
     },
     {
       "name": "Prime 2",
       "min": 1,
       "max": 32749,
       "default": 3,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the second prime."
     },
     {
       "name": "Prime 3",
       "min": 1,
       "max": 32749,
       "default": 7,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the third prime."
     },
     {
       "name": "Prime 4",
       "min": 1,
       "max": 32749,
       "default": 11,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the fourth prime."
     },
     {
       "name": "Fundamental",
       "min": 0.001,
       "max": 32.767,
       "default": 29.135,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the fundamental frequency.",
+      "unit": "Hz"
     },
     {
       "name": "Octave",
       "min": -8,
       "max": 8,
       "default": 1,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets an octave shift for the fundamental."
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Adjusts the tuning of all frequencies in (12-TET) semitone steps.",
+      "unit": "ST"
     },
     {
       "name": "Denominator",
       "min": 1,
       "max": 256,
       "default": 32,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the denominator of the frequency ratios."
     },
     {
       "name": "Numerator 1",
       "min": 1,
       "max": 1024,
       "default": 42,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the numerator of the frequency ratio of tone 1."
     },
     {
       "name": "Numerator 2",
       "min": 1,
       "max": 1024,
       "default": 56,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the numerator of the frequency ratio of tone 2."
     },
     {
       "name": "Numerator 3",
       "min": 1,
       "max": 1024,
       "default": 62,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the numerator of the frequency ratio of tone 3."
     },
     {
       "name": "Numerator 4",
       "min": 1,
       "max": 1024,
       "default": 63,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the numerator of the frequency ratio of tone 4."
     },
     {
       "name": "Gate 0",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gate for tone 0."
     },
     {
       "name": "Gate 1",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gate for tone 1."
     },
     {
       "name": "Gate 2",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gate for tone 2."
     },
     {
       "name": "Gate 3",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gate for tone 3."
     },
     {
       "name": "Gate 4",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gate for tone 4."
     },
     {
       "name": "Gain 0",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gain for the fundamental. “-40” is treated as –∞dB.",
+      "unit": "dB"
     },
     {
       "name": "Gain 1",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gain for tone 1.",
+      "unit": "dB"
     },
     {
       "name": "Gain 2",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gain for tone 2.",
+      "unit": "dB"
     },
     {
       "name": "Gain 3",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gain for tone 3.",
+      "unit": "dB"
     },
     {
       "name": "Gain 4",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gain for tone 4.",
+      "unit": "dB"
     },
     {
       "name": "Pan 1",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Stereo pan position for tone 1.",
+      "unit": "%"
     },
     {
       "name": "Pan 2",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Stereo pan position for tone 2.",
+      "unit": "%"
     },
     {
       "name": "Pan 3",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Stereo pan position for tone 3.",
+      "unit": "%"
     },
     {
       "name": "Pan 4",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Stereo pan position for tone 4.",
+      "unit": "%"
     },
     {
       "name": "Attack time",
       "min": 0,
       "max": 127,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Attack time for the envelopes."
     },
     {
       "name": "Decay time",
       "min": 0,
       "max": 127,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Decay time for the envelopes."
     },
     {
       "name": "FM Range",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "type": "enum",
+      "is_bus": false,
+      "description": "Sets the scaling for the FM inputs. The options are 1Hz/V, 10Hz/V, 100Hz/V or 1kHz/V."
     },
     {
       "name": "Frequency slew",
       "min": 0,
       "max": 127,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets a slew rate for any change in voice frequency."
     },
     {
       "name": "Crossfade time",
       "min": 0,
       "max": 127,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets a crossfade time for any change in voice frequency."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false
+      "type": "enum",
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "FM input 1",
       "min": 0,
       "max": 64,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": true
+      "type": "bus",
+      "is_bus": true,
+      "description": "Which input bus to use to frequency modulate (FM) tone 1. The input is scaled according to the FM Range parameter."
     },
     {
       "name": "FM input 2",
       "min": 0,
       "max": 64,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": true
+      "type": "bus",
+      "is_bus": true,
+      "description": "As above for tone 2."
     },
     {
       "name": "FM input 3",
       "min": 0,
       "max": 64,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": true
+      "type": "bus",
+      "is_bus": true,
+      "description": "As above for tone 3."
     },
     {
       "name": "FM input 4",
       "min": 0,
       "max": 64,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": true
+      "type": "bus",
+      "is_bus": true,
+      "description": "As above for tone 4."
     }
   ],
   "input_ports": [
     {
-      "name": "Wave input",
-      "description": ""
+      "name": "FM input 1",
+      "description": "Which input bus to use to frequency modulate (FM) tone 1. The input is scaled according to the FM Range parameter."
+    },
+    {
+      "name": "FM input 2",
+      "description": "Which input bus to use to frequency modulate (FM) tone 2. The input is scaled according to the FM Range parameter."
+    },
+    {
+      "name": "FM input 3",
+      "description": "Which input bus to use to frequency modulate (FM) tone 3. The input is scaled according to the FM Range parameter."
+    },
+    {
+      "name": "FM input 4",
+      "description": "Which input bus to use to frequency modulate (FM) tone 4. The input is scaled according to the FM Range parameter."
     },
     {
       "name": "Transpose input",
-      "description": ""
+      "description": "Which input bus to use as a 1V/octave transpose CV for the whole instrument."
+    },
+    {
+      "name": "Wave input",
+      "description": "Sets an input bus to modulate the wave offset."
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": ""
+      "description": "The left output bus."
     },
     {
       "name": "Right output",
-      "description": ""
+      "description": "The right output bus."
     }
   ]
 }

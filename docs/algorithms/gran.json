@@ -6,21 +6,22 @@
   "categories": [
     "Synthesis",
     "Granular",
-    "Effect",
-    "Processing"
+    "Audio Processing",
+    "Effect"
   ],
   "use_cases": [
-    "Granular synthesis from live audio input",
-    "Granular synthesis from loaded audio samples",
-    "Audio processing effect using drone voices",
-    "Creative sound design with randomized grain properties"
+    "Granular synthesis",
+    "Live performance",
+    "Audio processing effect",
+    "Sound design",
+    "Texture generation"
   ],
   "gui_description": "The display shows a waveform representation of the audio buffer, on which are superimposed dots indicating the currently playing grains. The two dotted lines represent the 'Size mean' (by their separation) and the 'Delay mean' (by their position within the buffer). On the right of the screen you can see the current buffer size, the current delay, and the number of grains currently playing.",
   "specifications": [
     {
       "name": "Max buffer size",
       "value": "1-32 seconds",
-      "description": "The maximum size of the recording buffer"
+      "description": "The maximum size of the recording buffer."
     }
   ],
   "parameters": [
@@ -29,334 +30,414 @@
       "min": -34,
       "max": 12,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Gain applied to the audio being recorded (does not affect the dry signal).",
+      "unit": "dB"
     },
     {
       "name": "Dry gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Level of the input signal in the output mix.",
+      "unit": "dB"
     },
     {
       "name": "Granulator gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Level of the granulator signal in the output mix.",
+      "unit": "dB"
     },
     {
       "name": "Input feedback",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount of feedback to apply around the audio buffer itself when recording (resulting in an echo effect on the input material, with a delay time equal to the buffer size).",
+      "unit": "%"
     },
     {
       "name": "Main feedback",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount of the granulator output to feed back into the audio buffer when recording.",
+      "unit": "%"
     },
     {
       "name": "Normalize",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "If enabled, the overall volume of the grain cloud is lowered according to how many grains are active."
     },
     {
       "name": "Record",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Enables recording into the buffer."
     },
     {
       "name": "Buffer size",
       "min": 100,
-      "default": null,
-      "type": "folder",
-      "is_bus": false
+      "max": 32000,
+      "default": 1000,
+      "is_bus": false,
+      "description": "The audio buffer size in milliseconds.",
+      "unit": "ms"
     },
     {
       "name": "Record fade",
       "min": 0,
       "max": 1000,
       "default": 5,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The duration of the fade applied when starting and stopping recording, to avoid clicks.",
+      "unit": "ms"
     },
     {
       "name": "Shape",
       "min": 0,
       "max": 5,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The grain envelope/window shape. See below."
     },
     {
       "name": "Spawn mode",
       "min": 0,
       "max": 4,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "How grains are spawned. See below."
     },
     {
       "name": "Rate mean",
       "min": 1,
       "max": 1000,
       "default": 5,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The average time between new grains being spawned.",
+      "unit": "ms"
     },
     {
       "name": "Rate spread",
       "min": 0,
       "max": 200,
       "default": 10,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount of variation in the spawn rate, expressed as a percentage of 'Rate mean'.",
+      "unit": "%"
     },
     {
       "name": "Size mean",
       "min": 0,
       "max": 1000,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The average grain size. '0' has a special meaning – see below.",
+      "unit": "ms"
     },
     {
       "name": "Size spread",
       "min": 0,
       "max": 200,
       "default": 10,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount of variation in grain size, expressed as a percentage of 'Size mean'.",
+      "unit": "%"
     },
     {
       "name": "Pitch mean",
       "min": -24,
       "max": 24,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The average grain pitch shift (in semitones). This is added to the pitch shift determined by the note's pitch CV.",
+      "unit": "ST"
     },
     {
       "name": "Pitch spread",
       "min": 0,
       "max": 1200,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount of variation in grain pitch shift.",
+      "unit": "cents"
     },
     {
       "name": "Pan mean",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The average grain pan position.",
+      "unit": "%"
     },
     {
       "name": "Pan spread",
       "min": 0,
       "max": 100,
       "default": 10,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount of variation in grain pan.",
+      "unit": "%"
     },
     {
       "name": "Delay mean",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The average grain delay (equivalently, the position in the audio buffer), expressed as a percentage of the buffer size.",
+      "unit": "%"
     },
     {
       "name": "Delay spread",
       "min": 0,
       "max": 100,
       "default": 5,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount of variation in grain delay, expressed as a percentage of the buffer size.",
+      "unit": "%"
     },
     {
       "name": "Reverse",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the probability that a grain will be played backwards.",
+      "unit": "%"
     },
     {
       "name": "Grain limit",
       "min": 1,
       "max": 40,
       "default": 40,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Imposes an arbitrary limit on the number of simultaneous grains."
     },
     {
       "name": "Natural pitch",
       "min": 0,
       "max": 127,
       "default": 48,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the natural pitch of the audio i.e. the MIDI note number that will play back the audio at the same pitch at which it was recorded.",
+      "unit": "ST"
     },
     {
       "name": "Pitch quantize",
       "min": 0,
       "max": 5,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Quantizes the random pitch deviation (the sum of the 'Pitch mean' and 'Pitch spread') to musical intervals. See below."
     },
     {
       "name": "Opacity",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The 'opacity' of a note, which is the percentage of",
+      "unit": "%"
     },
     {
       "name": "Grain position",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets how the grain position is computed relative to the position set by the Delay mean/spread parameters. The options are ‘Centred on delay’ and ‘Start at delay’."
     },
     {
       "name": "LFO depth",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The depth of the LFO that affects the grain delay, expressed as a percentage of the buffer size.",
+      "unit": "%"
     },
     {
       "name": "LFO speed",
       "min": 0,
       "max": 255,
       "default": 196,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The speed of the grain delay LFO. This is scaled relative to the buffer size – at the default value of 196 the LFO will cause the 'play head' (to use a tape metaphor) to advance at 1x speed."
     },
     {
       "name": "LFO shape",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the LFO shape. The options are “Triangle”, “Ramp up”, and “Ramp down”."
     },
     {
       "name": "Attack time",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The envelope attack time, from 100ms to 30s with an exponential scaling."
     },
     {
       "name": "Release time",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The envelope release time, from 100ms to 30s with an exponential scaling."
     },
     {
       "name": "Env -> opacity",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount by which the note envelope affects the note opacity.",
+      "unit": "%"
     },
     {
       "name": "Env -> level",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount by which the note envelope affects the note level (volume).",
+      "unit": "%"
     },
     {
       "name": "Veloc -> level",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount by which the note velocity affects the note level (volume).",
+      "unit": "%"
     },
     {
       "name": "Veloc -> delay",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount by which the note velocity affects the grain delay.",
+      "unit": "%"
     },
     {
       "name": "Pitch -> pitch",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount by which the note pitch affects the grain pitch. Commonly this will either be 100% (normal pitch tracking) or 0% (the incoming pitch doesn't affect the grain pitch at all, but may still affect e.g. the grain delay).",
+      "unit": "%"
     },
     {
       "name": "Pitch -> delay",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The amount by which the note pitch affects the grain delay.",
+      "unit": "%"
     },
     {
-      "name": "Drone 1-3 pitch",
+      "name": "Drone 1 pitch",
       "min": 0,
       "max": 127,
       "default": 48,
-      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Drone 1-3 enable",
+      "name": "Drone 2 pitch",
+      "min": 0,
+      "max": 127,
+      "default": 36,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 3 pitch",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 1 enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Drone 1-3 opacity",
+      "name": "Drone 2 enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 3 enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 1 opacity",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Drone 1-3 level",
+      "name": "Drone 2 opacity",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 3 opacity",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 1 level",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Drone 2 level",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 3 level",
+      "min": -40,
+      "max": 6,
+      "default": 0,
       "is_bus": false
     },
     {
@@ -364,80 +445,85 @@
       "min": 0,
       "max": 16,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The MIDI channel to listen on."
     },
     {
       "name": "MPE channels",
       "min": 1,
       "max": 16,
       "default": 1,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Controls how the algorithm will respond to MPE. See above."
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
       "default": 1,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the I2C channel."
     },
     {
       "name": "Bend range",
       "min": 0,
       "max": 48,
       "default": 2,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The MIDI pitch bend range.",
+      "unit": "ST"
     },
     {
       "name": "Delay unit",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Determines whether the Delay mean and spread parameters work in terms of % or ms."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Delay mean sampled",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "If enabled, the Delay mean input is sampled once at the start of a note. Otherwise, it is sampled afresh as every grain spawns."
     }
   ],
   "input_ports": [
     {
       "name": "Left input",
-      "description": "The left audio input bus"
+      "description": "The left audio input bus."
     },
     {
       "name": "Right input",
-      "description": "The right audio input bus"
+      "description": "The right audio input bus."
+    },
+    {
+      "name": "CV/gate",
+      "description": "CV/gate pairs for note triggering. Notes control when grain clouds begin and end, and affect grain pitch."
     },
     {
       "name": "Delay mean input",
-      "description": "The input bus to use to control the grain delay. A CV of 5V corresponds to 100% of the buffer size"
+      "description": "CV input to control the grain delay. A CV of 5V corresponds to 100% of the buffer size."
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": "The left audio output bus"
+      "description": "The left audio output bus."
     },
     {
       "name": "Right output",
-      "description": "The right audio output bus"
+      "description": "The right audio output bus."
     }
   ]
 }

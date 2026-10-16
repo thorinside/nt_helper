@@ -4,8 +4,13 @@
   "short_description": "Classic phaser effect",
   "description": "This algorithm is based on the Phaser algorithm on the disting mk4. It's a classic phaser effect, using a number of all-pass filters to introduce notches into the audio's frequency spectrum. You may like to apply an LFO to the sweep CV input.",
   "categories": [
+    "Effect",
     "Modulation",
     "Filter"
+  ],
+  "use_cases": [
+    "Classic phaser effect on audio signals",
+    "Sweeping all-pass filters over the audio spectrum"
   ],
   "parameters": [
     {
@@ -28,7 +33,8 @@
       "max": 100.0,
       "default": 0.0,
       "defaultValue": 0.0,
-      "description": "Sets the amount of feedback around the effect. Negative values invert the signal."
+      "description": "Sets the amount of feedback around the effect. Negative values invert the signal.",
+      "unit": "%"
     },
     {
       "name": "Warp",
@@ -42,21 +48,24 @@
       "min": -100,
       "max": 100,
       "default": 20,
-      "description": "Sets the scaling of the sweep CV input."
+      "description": "Sets the scaling of the sweep CV input.",
+      "unit": "%"
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 50,
-      "description": "The output wet/dry mix."
+      "description": "The output wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "description": "The output gain applied to the effected signal."
+      "description": "The output gain applied to the effected signal.",
+      "unit": "dB"
     },
     {
       "name": "Width",
@@ -64,9 +73,28 @@
       "max": 8,
       "default": 1,
       "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "Output mode",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "enum",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
+    {
+      "name": "Sweep CV",
+      "description": "CV input that sweeps the all-pass filters over the audio spectrum."
+    },
+    {
+      "name": "Audio Input",
+      "description": "Audio input bus(es) to process."
+    },
     {
       "name": "Sweep input",
       "description": "The bus to use for the sweep CV."
@@ -77,6 +105,10 @@
     }
   ],
   "output_ports": [
+    {
+      "name": "Audio Output",
+      "description": "Processed audio output bus(es)."
+    },
     {
       "name": "Output",
       "description": "The first output bus."

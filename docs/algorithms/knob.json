@@ -6,7 +6,21 @@
   "categories": [
     "Performance",
     "Recording",
-    "UI"
+    "Clocking"
+  ],
+  "use_cases": [
+    "Recording knob movements over time",
+    "Remote page selection via MIDI CC",
+    "Clocking knob recorders from external sources"
+  ],
+  "specifications": [
+    {
+      "name": "Time",
+      "min": 1,
+      "max": 7200,
+      "description": "Scales the amount of time allocated to this item from the available total (as set in the specification).",
+      "unit": "%"
+    }
   ],
   "parameters": [
     {
@@ -39,10 +53,8 @@
       "max": 1000,
       "default": 100,
       "scope": "per-channel",
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "Scales the amount of time allocated to this item from the available total (as set in the specification).",
+      "unit": "%"
     },
     {
       "name": "Clock source",
@@ -50,12 +62,7 @@
       "max": 2,
       "default": 0,
       "scope": "per-channel",
-      "description": "Sets the clock source for this item: one of 'None', 'Clock input', or 'MIDI'.",
-      "enum_values": [
-        "None",
-        "Clock input",
-        "MIDI"
-      ]
+      "description": "Sets the clock source for this item: one of 'None', 'Clock input', or 'MIDI'."
     },
     {
       "name": "Divisor",
@@ -77,11 +84,11 @@
   "input_ports": [
     {
       "name": "Reset input",
-      "description": "The bus to use for a reset pulse, to reset the clock dividers to step 1."
+      "description": "Bus for a reset pulse to reset the clock dividers to step 1."
     },
     {
       "name": "Clock input",
-      "description": "The bus to use for the clock, if the 'Clock source' is 'Clock input'."
+      "description": "Bus for the clock signal when Clock source is set to 'Clock input'."
     }
   ],
   "output_ports": []

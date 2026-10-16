@@ -10,41 +10,59 @@
   ],
   "parameters": [
     {
+      "name": "Max tape length",
+      "min": 1,
+      "max": 30,
+      "default": 30,
+      "description": "The maximum length of the 'tape'.",
+      "type": "enum"
+    },
+    {
+      "name": "Stereo",
+      "description": "Whether the algorithm is mono or stereo.",
+      "type": "enum"
+    },
+    {
       "name": "Mix mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets how the delay and dry signals are mixed."
+      "description": "Sets how the delay and dry signals are mixed. 0: With feedback, 1: Crossfade, 2: Add delay.",
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "description": "Controls the wet/dry mix, unless the 'Mix mode' is 'With feedback'.",
+      "is_bus": false,
+      "unit": "%"
     },
     {
       "name": "Feedback",
       "min": 0,
       "max": 110,
       "default": 50,
-      "type": "folder",
-      "is_bus": false
+      "description": "The delay feedback.",
+      "is_bus": false,
+      "unit": "%"
     },
     {
       "name": "Tape length",
       "min": 1,
       "default": 250,
-      "type": "folder",
-      "is_bus": false
+      "description": "Sets the length of the tape i.e. the delay time at 1x speed.",
+      "is_bus": false,
+      "unit": "ms"
     },
     {
       "name": "Tape speed",
       "min": -500,
       "max": 1000,
       "default": 0,
-      "type": "folder",
+      "description": "Sets the tape speed (in conjunction with the CV input).",
       "is_bus": false
     },
     {
@@ -52,18 +70,19 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "bus",
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
       "name": "Left/mono input",
-      "description": "The left input bus."
+      "description": "The left audio input bus."
     },
     {
       "name": "Right input",
-      "description": "The right input bus."
+      "description": "The right audio input bus."
     },
     {
       "name": "Speed input",
@@ -73,11 +92,11 @@
   "output_ports": [
     {
       "name": "Left/mono output",
-      "description": "The left output bus."
+      "description": "The left audio output bus."
     },
     {
       "name": "Right output",
-      "description": "The right output bus."
+      "description": "The right audio output bus."
     }
   ]
 }

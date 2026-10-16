@@ -2,17 +2,16 @@
   "guid": "resn",
   "name": "Resonator",
   "short_description": "It's Rings!",
-  "description": "This algorithm is an implementation of the open source Rings module by Émilie Gillet. It can be played via MIDI or I2C, or simply via CV/gate as the original. Any demos or tutorials you may find online should apply just as well to this implementation. The Disting NT has no way of knowing whether its sockets are connected or not, so this algorithm relies on the various 'input' parameters being enabled or not. To take the same example, if the 'Strum input' parameter is set to 'None', the algorithm will generate its own strums; if the parameter is something else, the algorithm assumes you're going to supply strums on the input you choose.",
+  "description": "This algorithm is an implementation of the open source Rings module by Émilie Gillet. It can be played via MIDI or I2C, or simply via CV/gate as the original. Any demos or tutorials you may find online should apply just as well to this implementation. The Disting NT has no way of knowing whether its sockets are connected or not, so this algorithm relies on the various 'input' parameters being enabled or not.",
   "categories": [
-    "Resonator",
-    "Synth",
-    "Effects"
+    "Synthesis",
+    "Effects",
+    "Physical Modeling"
   ],
   "use_cases": [
-    "Resonator effects on audio input",
-    "Synth voice with resonator modes",
-    "MIDI or I2C controlled resonator",
-    "CV/gate controlled resonator"
+    "Physical modeling resonator synthesis",
+    "Audio input processing with resonator effects",
+    "MIDI/I2C controlled resonator"
   ],
   "specifications": [],
   "parameters": [
@@ -44,7 +43,9 @@
       "default": 0,
       "type": "string",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true,
+      "description": "Provides a coarse tuning control.",
+      "unit": "ST"
     },
     {
       "name": "Fine tune",
@@ -53,7 +54,9 @@
       "default": 0,
       "type": "string",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true,
+      "description": "Provides a fine tuning control.",
+      "unit": "cents"
     },
     {
       "name": "Structure",
@@ -104,7 +107,9 @@
       "default": 0,
       "type": "string",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true,
+      "description": "A gain applied to the input audio, before it hits the resonator.",
+      "unit": "dB"
     },
     {
       "name": "Odd output mode",
@@ -127,7 +132,9 @@
       "default": 0,
       "type": "string",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true,
+      "description": "The output level (of both the Odd and Even outputs).",
+      "unit": "dB"
     },
     {
       "name": "Dry gain",
@@ -136,21 +143,35 @@
       "default": -40,
       "type": "string",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true,
+      "description": "The level of the input audio mixed into the output(s).",
+      "unit": "dB"
     },
     {
       "name": "MIDI mode",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Controls the algorithm's response to MIDI. Options: Off, Pitch, Strum, Pitch & strum."
+      "description": "Controls the algorithm's response to MIDI.",
+      "enum_values": [
+        "Off",
+        "Pitch",
+        "Strum",
+        "Pitch & strum"
+      ]
     },
     {
       "name": "I2C mode",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Controls the algorithm's response to I2C. Options: Off, Pitch, Strum, Pitch & strum."
+      "description": "Controls the algorithm's response to I2C.",
+      "enum_values": [
+        "Off",
+        "Pitch",
+        "Strum",
+        "Pitch & strum"
+      ]
     },
     {
       "name": "MIDI channel",
@@ -170,11 +191,11 @@
   "input_ports": [
     {
       "name": "Strum",
-      "description": "CV input for strumming"
+      "description": "CV input for strum control"
     },
     {
       "name": "V/Oct",
-      "description": "CV input for pitch"
+      "description": "CV input for pitch control"
     },
     {
       "name": "Audio",
@@ -202,53 +223,53 @@
     },
     {
       "name": "Strum input",
-      "description": ""
+      "description": "Chooses which input bus to use for 'strum'."
     },
     {
       "name": "V/Oct input",
-      "description": ""
+      "description": "Chooses which input bus to use for the V/octave pitch CV."
     },
     {
       "name": "Audio input",
-      "description": ""
+      "description": "Chooses which input bus to use for the audio input."
     },
     {
       "name": "Brightness input",
-      "description": ""
+      "description": "Chooses which input bus to use for 'brightness'."
     },
     {
       "name": "Frequency input",
-      "description": ""
+      "description": "Chooses which input bus to use for 'frequency'."
     },
     {
       "name": "Damping input",
-      "description": ""
+      "description": "Chooses which input bus to use for 'damping'."
     },
     {
       "name": "Structure input",
-      "description": ""
+      "description": "Chooses which input bus to use for 'structure'."
     },
     {
       "name": "Position input",
-      "description": ""
+      "description": "Chooses which input bus to use for 'position'."
     }
   ],
   "output_ports": [
     {
       "name": "Odd",
-      "description": "Odd output of the resonator"
+      "description": "Odd output audio"
     },
     {
       "name": "Even",
-      "description": "Even output of the resonator"
+      "description": "Even output audio"
     },
     {
       "name": "Odd output",
-      "description": ""
+      "description": "The bus to use for the Odd output."
     },
     {
       "name": "Even output",
-      "description": ""
+      "description": "The bus to use for the Even output."
     }
   ]
 }

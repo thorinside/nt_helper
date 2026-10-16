@@ -5,6 +5,7 @@
   "description": "This algorithm implements a simple soft-saturation effect. It can be used simply for creative toneshaping, but it is particularly useful for avoiding harsh digital clipping when signals get loud. (It is the same processing that is built into many of the disting EX algorithms as a final \"output bus\" limiter.)",
   "categories": [
     "Distortion",
+    "Saturation",
     "Dynamics"
   ],
   "parameters": [
@@ -13,36 +14,34 @@
       "min": -40,
       "max": 24,
       "default": 0,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "A gain to apply before the saturation.",
+      "unit": "dB"
     },
     {
       "name": "Post gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_bus": false
+      "is_bus": false,
+      "description": "A gain to apply after the saturation.",
+      "unit": "dB"
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Enables saturation on this channel."
     },
     {
       "name": "Width",
       "min": 1,
       "max": 12,
       "default": 1,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     }
   ],
   "input_ports": [

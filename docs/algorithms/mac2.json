@@ -2,17 +2,17 @@
   "guid": "mac2",
   "name": "Macro Oscillator 2",
   "short_description": "It's Plaits!",
-  "description": "This algorithm is an implementation of the open source Plaits module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is available online. The documentation below assumes some familiarity with this. This version of the disting NT firmware is based on v1.2 of the Plaits code. The original Plaits module made extensive use of detecting which inputs had jacks plugged in and adjusting its behaviour accordingly. For example, if nothing is plugged into the Trigger input, the envelope is not used and the module constantly emits sound. The disting NT has no way of knowing whether its sockets are connected or not, so this algorithm relies on the various 'input' settings being enabled or not. To take the same example, if the 'Trigger input' setting is set to 'None', the algorithm will generate constant sound; if the setting is something else, the algorithm assumes you're going to supply triggers on the input you choose. As on the original Plaits, there are two outputs, 'Main' and 'Aux'. If you select the same bus for both outputs they are mixed.",
+  "description": "This algorithm is an implementation of the open source Plaits module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is available online. The documentation below assumes some familiarity with this. This version of the disting NT firmware is based on v1.2 of the Plaits code. The original Plaits module made extensive use of detecting which inputs had jacks plugged in and adjusting its behaviour accordingly. The disting NT has no way of knowing whether its sockets are connected or not, so this algorithm relies on the various 'input' settings being enabled or not. As on the original Plaits, there are two outputs, 'Main' and 'Aux'. If you select the same bus for both outputs they are mixed.",
   "categories": [
     "Oscillator",
-    "Synthesis"
+    "Synthesis",
+    "Wavetable"
   ],
   "use_cases": [
-    "General-purpose synthesis",
     "Wavetable synthesis",
     "FM synthesis",
     "Additive synthesis",
-    "Noise generation"
+    "Granular synthesis"
   ],
   "specifications": [],
   "parameters": [
@@ -28,18 +28,22 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "Coarse tuning control.",
+      "unit": "ST"
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "Fine tuning control.",
+      "unit": "cents"
     },
     {
       "name": "Harmonics",
@@ -53,9 +57,10 @@
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "Sets the timbre control."
     },
     {
       "name": "Morph",
@@ -69,27 +74,33 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "Sets the FM depth.",
+      "unit": "%"
     },
     {
       "name": "Timbre mod",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "Sets the timbre modulation depth.",
+      "unit": "%"
     },
     {
       "name": "Morph mod",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "Sets the morph modulation depth.",
+      "unit": "%"
     },
     {
       "name": "Low-pass gate",
@@ -110,111 +121,112 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Main gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "The level of the ‘Main’ output signal.",
+      "unit": "dB"
     },
     {
       "name": "Aux gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "The level of the ‘Aux’ output signal.",
+      "unit": "dB"
     },
     {
       "name": "MIDI mode",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "Controls the algorithm's response to MIDI. See below."
     },
     {
       "name": "I2C mode",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "Controls the algorithm's response to I2C. See below."
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 1,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "The MIDI channel to receive on."
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
       "default": 1,
-      "type": "string",
-      "is_common": true,
-      "is_bus": true
+      "type": "bus",
+      "isCommon": true,
+      "is_bus": true,
+      "description": "The I2C channel to receive on."
     }
   ],
   "input_ports": [
     {
       "name": "Trigger input",
-      "description": ""
+      "description": "Selects which bus is used as the trigger input."
     },
     {
       "name": "Level input",
-      "description": ""
+      "description": "Selects which bus is used as the level input."
     },
     {
       "name": "CV input",
-      "description": ""
+      "description": "Selects which bus is used as the pitch CV input."
     },
     {
       "name": "FM input",
-      "description": ""
+      "description": "Selects which bus is used as the FM input."
     },
     {
       "name": "Harmonics input",
-      "description": ""
+      "description": "Selects which bus is used as the harmonics input."
     },
     {
       "name": "Timbre input",
-      "description": ""
+      "description": "Selects which bus is used as the timbre input."
     },
     {
       "name": "Morph input",
-      "description": ""
+      "description": "Selects which bus is used as the morph input."
     }
   ],
   "output_ports": [
     {
-      "name": "Main",
-      "description": "The main output signal."
-    },
-    {
-      "name": "Aux",
-      "description": "The auxiliary output signal."
-    },
-    {
       "name": "Main output",
-      "description": ""
+      "description": "The bus for the ‘Main’ output."
     },
     {
       "name": "Aux output",
-      "description": ""
+      "description": "The bus for the ‘Aux’ output."
     }
   ]
 }

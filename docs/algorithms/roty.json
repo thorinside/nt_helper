@@ -2,88 +2,101 @@
   "guid": "roty",
   "name": "Rotary",
   "short_description": "Rotary speaker emulation",
-  "description": "This algorithm is based on the algorithm of the same name on the disting mk4. It provides an emulation of a rotary speaker effect.",
+  "description": "This algorithm is based on the algorithm of the same name on the disting mk4. You may like to watch the video on that algorithm here. It provides an emulation of a rotary speaker effect.",
   "categories": [
+    "Effect",
     "Modulation",
-    "Effect"
+    "Speaker Emulation"
   ],
   "use_cases": [
     "Rotary speaker effect emulation",
-    "Pitch modulation with amplitude modulation on bass"
+    "Pitch modulation with bass/treble separation"
   ],
-  "specifications": [],
   "parameters": [
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
+      "type": "scaled",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "folder",
+      "type": "scaled",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The gain applied to the effect/wet signal.",
+      "unit": "dB"
     },
     {
       "name": "Speed",
       "min": 0,
       "max": 1023,
       "default": 512,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "type": "scaled",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The rotation speed. The second half of the range corresponds to speeds from 0.8Hz to 6.7Hz. There is a dead zone from 414 to 512; below that, the speed gradually slows to a full stop at zero."
     },
     {
       "name": "Mod depth",
       "min": 0,
       "max": 100,
       "default": 38,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "type": "scaled",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The depth of the pitch modulation.",
+      "unit": "%"
     },
     {
       "name": "Speed slew",
       "min": 0,
       "max": 100,
       "default": 10,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "type": "scaled",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The slew rate for changes to the speed.",
+      "unit": "%"
     },
     {
       "name": "Crossover",
       "min": 0,
       "max": 1024,
       "default": 480,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "type": "scaled",
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the frequency of a (first order) crossover filter. The part of the signal above the filter frequency is fed into the rotary pitch modulation effect. The bass signal (below the crossover frequency) is not pitch modulated, but is amplitude modulated at a slightly slower rate than the treble modulation. If this is set to ‘Off’, the crossover is disabled and the separate bass modulation is not applied."
     },
     {
       "name": "Bass mod",
       "min": 0,
       "max": 100,
       "default": 23,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "type": "scaled",
+      "is_common": true,
+      "is_bus": false,
+      "description": "The depth of the bass modulation. If the crossover is used, but this parameter is zero, this essentially removes the effect entirely from the bass portion of the input, keeping it centre stereo and at unmodulated pitch.",
+      "unit": "%"
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
+      "type": "scaled",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [

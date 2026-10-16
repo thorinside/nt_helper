@@ -5,14 +5,12 @@
   "description": "This algorithm crossfades between two or more sets of signals (from mono up to sets of eight channels). When crossfading between more than two sets of signals, it behaves like a 'scanning' or 'morphing' mixer. Three different crossfade curves are available: Equal gain (appropriate for crossfading phase-coherent material), Equal power (appropriate for crossfading non-phase-coherent material), and Transition (DJ-style crossfade where both sources are at full gain at the 50% position). Inputs A to L, and the output, use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the 'Width' parameter. The crossfade can be controlled by both a parameter and a CV, which are simply summed if both are in use.",
   "categories": [
     "Mixing",
-    "Routing",
-    "Signal Processing"
+    "Routing"
   ],
   "use_cases": [
     "Crossfading between two audio sources",
-    "Morphing between multiple signal sets",
-    "DJ-style transitions",
-    "Scanning mixers"
+    "Morphing between multiple input sets",
+    "DJ-style transitions between signals"
   ],
   "gui_description": "The display shows a graphical representation of the crossfade curves, and the amount of the two signals that are combined in the output mix.",
   "specifications": [],
@@ -22,221 +20,172 @@
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "scope": "global",
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The crossfade position, from 0% (input A only) to 100% (input B only).",
+      "unit": "%"
     },
     {
       "name": "Curve",
       "min": 0,
       "max": 2,
       "default": 1,
-      "scope": "global",
-      "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The crossfade curve, as above."
     },
     {
       "name": "Input A",
       "min": 1,
       "max": 64,
       "default": 1,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input A."
     },
     {
       "name": "Input B",
       "min": 1,
       "max": 64,
       "default": 2,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input B."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The number of busses to process. For example for stereo signals, set this to 2."
     },
     {
       "name": "Number of inputs",
       "min": 2,
       "max": 12,
       "default": 2,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The number of inputs to use."
     },
     {
       "name": "Input C",
       "min": 1,
       "max": 64,
       "default": 3,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input C."
     },
     {
       "name": "Input D",
       "min": 1,
       "max": 64,
       "default": 4,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input D."
     },
     {
       "name": "Input E",
       "min": 1,
       "max": 64,
       "default": 5,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input E."
     },
     {
       "name": "Input F",
       "min": 1,
       "max": 64,
       "default": 6,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input F."
     },
     {
       "name": "Input G",
       "min": 1,
       "max": 64,
       "default": 7,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input G."
     },
     {
       "name": "Input H",
       "min": 1,
       "max": 64,
       "default": 8,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input H."
     },
     {
       "name": "Input I",
       "min": 1,
       "max": 64,
       "default": 9,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input I."
     },
     {
       "name": "Input J",
       "min": 1,
       "max": 64,
       "default": 10,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input J."
     },
     {
       "name": "Input K",
       "min": 1,
       "max": 64,
       "default": 11,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input K."
     },
     {
       "name": "Input L",
       "min": 1,
       "max": 64,
       "default": 12,
-      "scope": "global",
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "type": "bus",
+      "is_common": false,
+      "is_bus": true,
+      "description": "The first bus for input L."
     }
   ],
   "input_ports": [
-    {
-      "name": "Input A",
-      "description": "The first bus for input A."
-    },
-    {
-      "name": "Input B",
-      "description": "The first bus for input B."
-    },
-    {
-      "name": "Input C",
-      "description": "The first bus for input C."
-    },
-    {
-      "name": "Input D",
-      "description": "The first bus for input D."
-    },
-    {
-      "name": "Input E",
-      "description": "The first bus for input E."
-    },
-    {
-      "name": "Input F",
-      "description": "The first bus for input F."
-    },
-    {
-      "name": "Input G",
-      "description": "The first bus for input G."
-    },
-    {
-      "name": "Input H",
-      "description": "The first bus for input H."
-    },
-    {
-      "name": "Input I",
-      "description": "The first bus for input I."
-    },
-    {
-      "name": "Input J",
-      "description": "The first bus for input J."
-    },
-    {
-      "name": "Input K",
-      "description": "The first bus for input K."
-    },
-    {
-      "name": "Input L",
-      "description": "The first bus for input L."
-    },
     {
       "name": "Crossfade input",
       "description": "The CV input to drive the crossfade, scaled so that 5V covers the range 0-100%."
@@ -247,5 +196,6 @@
       "name": "Output",
       "description": "The first bus for the output."
     }
-  ]
+  ],
+  "unit": "%"
 }

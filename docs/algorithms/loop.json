@@ -11,11 +11,10 @@
   "use_cases": [
     "Ambient looping",
     "Rhythmic looping",
-    "Layered overdubbing",
-    "Clock-synchronised looping",
-    "MIDI pedalboard integration"
+    "Layered composition",
+    "Clock generation"
   ],
-  "gui_description": "The display shows a considerable amount of information about the loop(s). A special large version of the GUI is shown if there is only a single loop. The target loops are indicated with a box drawn around their section of the display. Each loop shows an icon to indicate its state: Square (Empty), Circle (Record), Triangle (Play), Triangle and circle (Overdub), Two vertical lines (Stop), Two vertical lines with downward triangle (Fade to stop/clear). 'M' instead of two vertical lines indicates 'mute' rather than 'pause'. The length of the loop, and the position within the loop, are shown top right (both in seconds). The loop's envelope level is indicated by the vertical bar at the right side.",
+  "gui_description": "The display shows a considerable amount of information about the loop(s). A special large version of the GUI is shown if there is only a single loop. The target loops are indicated with a box drawn around their section of the display. Each loop shows an icon to indicate its state: Square (Empty), Circle (Record), Triangle (Play), Triangle and circle (Overdub), Two vertical lines (Stop), Two vertical lines with downward triangle (Fade to stop/clear). The length of the loop and position within the loop are shown top right. The loop's envelope level is indicated by the vertical bar at the right side.",
   "specifications": [
     {
       "name": "Loops",
@@ -30,128 +29,132 @@
   ],
   "parameters": [
     {
-      "name": "Loops",
-      "min": 1,
-      "max": 4,
-      "description": "The number of simultaneous loops."
-    },
-    {
-      "name": "Max time",
-      "min": 1,
-      "max": 90,
-      "description": "The maximum total loop time."
-    },
-    {
       "name": "Target loop",
       "min": 0,
       "max": 1,
-      "default": 0,
-      "description": "Sets the target loop(s)."
+      "default": 1,
+      "description": "Sets the target loop(s).",
+      "type": "toggle"
     },
     {
       "name": "Record",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates record or overdub."
+      "description": "Activates record or overdub.",
+      "type": "toggle"
     },
     {
       "name": "Play",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates play or stop."
+      "description": "Activates play or stop.",
+      "type": "toggle"
     },
     {
       "name": "Reverse",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates 'reverse' (toggles the target loops between playing forwards and backwards)."
+      "description": "Activates 'reverse' (toggles the target loops between playing forwards and backwards).",
+      "type": "toggle"
     },
     {
       "name": "Octave down",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates 'octave down' (toggles the target loops between playing at normal speed and half speed)."
+      "description": "Activates 'octave down' (toggles the target loops between playing at normal speed and half speed).",
+      "type": "toggle"
     },
     {
       "name": "Retrigger",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates retrigger."
+      "description": "Activates retrigger.",
+      "type": "toggle"
     },
     {
       "name": "Stop all",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates 'stop all'."
+      "description": "Activates 'stop all'.",
+      "type": "toggle"
     },
     {
       "name": "Bypass clock",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "While this parameter is held, commands such as Record, Play, etc. behave as if the 'Clock source' parameters were 'None'."
+      "description": "While this parameter is held, commands such as Record, Play, etc. behave as if the 'Clock source' parameters were 'None'.",
+      "type": "toggle"
     },
     {
       "name": "Undo",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates 'Undo'. See Layers."
+      "description": "Activates 'Undo'. See Layers, above.",
+      "type": "toggle"
     },
     {
       "name": "Redo",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates 'Redo'. See Layers."
+      "description": "Activates 'Redo'. See Layers, above.",
+      "type": "toggle"
     },
     {
       "name": "Target 1",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates loop 1 as a target loop."
+      "description": "Activates loop 1 as a target loop.",
+      "type": "toggle"
     },
     {
       "name": "Target 2",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates loop 2 as a target loop."
+      "description": "Activates loop 2 as a target loop.",
+      "type": "toggle"
     },
     {
       "name": "Target 3",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates loop 3 as a target loop."
+      "description": "Activates loop 3 as a target loop.",
+      "type": "toggle"
     },
     {
       "name": "Target 4",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates loop 4 as a target loop."
+      "description": "Activates loop 4 as a target loop.",
+      "type": "toggle"
     },
     {
       "name": "Target next",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates the loop after the current target as the new target."
+      "description": "Activates the loop after the current target as the new target.",
+      "type": "toggle"
     },
     {
       "name": "Fade to clear",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates 'fade to clear' – the same as pressing Play to stop the loops, except that the loops will be automatically cleared when the fade out has completed."
+      "description": "Activates 'fade to clear' – the same as pressing Play to stop the loops, except that the loops will be automatically cleared when the fade out has completed.",
+      "type": "toggle"
     },
     {
       "name": "Pause/mute",
@@ -170,7 +173,8 @@
       "min": 0,
       "max": 1000,
       "default": 0,
-      "description": "The loop envelope attack time. The scale is exponential, from 1ms to 30s."
+      "description": "The loop envelope attack time. The scale is exponential, from 1ms to 30s.",
+      "type": "enum"
     },
     {
       "name": "Decay time",
@@ -185,10 +189,8 @@
       "max": 100,
       "default": 0,
       "description": "The loop envelope attack stage shape.",
-      "enum_values": [
-        "Linear",
-        "Exponential"
-      ]
+      "type": "enum",
+      "unit": "%"
     },
     {
       "name": "Decay shape",
@@ -196,10 +198,8 @@
       "max": 100,
       "default": 0,
       "description": "The loop envelope decay stage shape.",
-      "enum_values": [
-        "Linear",
-        "Exponential"
-      ]
+      "type": "enum",
+      "unit": "%"
     },
     {
       "name": "Overdub attack time",
@@ -220,56 +220,69 @@
       "min": -24.0,
       "max": 0.0,
       "default": 0.0,
-      "description": "Sets how much the previous loop content will fade out on each pass while overdubbing."
+      "description": "Sets how much the previous loop content will fade out on each pass while overdubbing.",
+      "type": "enum",
+      "unit": "dB"
     },
     {
       "name": "Retrigger fade",
       "min": 0.5,
       "max": 100.0,
       "default": 2.0,
-      "description": "Sets the duration of the crossfade applied when retriggering."
+      "description": "Sets the duration of the crossfade applied when retriggering.",
+      "type": "enum",
+      "unit": "ms"
     },
     {
       "name": "Layer fade",
       "min": 1,
       "max": 1000,
       "default": 10,
-      "description": "Sets the duration of the crossfade when changing layers."
+      "description": "Sets the duration of the crossfade when changing layers.",
+      "type": "enum",
+      "unit": "ms"
     },
     {
       "name": "Clear hold time",
       "min": 0.5,
       "max": 5.0,
       "default": 1.0,
-      "description": "Sets how long Record needs to be held before a Clear happens."
+      "description": "Sets how long Record needs to be held before a Clear happens.",
+      "type": "enum",
+      "unit": "s"
     },
     {
       "name": "Record hold time",
       "min": 0.5,
       "max": 5.0,
       "default": 1.0,
-      "description": "Sets how long Record needs to be held before releasing it is treated as pressing it again."
+      "description": "Sets how long Record needs to be held before releasing it is treated as pressing it again.",
+      "type": "enum",
+      "unit": "s"
     },
     {
       "name": "Next hold time",
       "min": 0.1,
       "max": 5.0,
       "default": 0.3,
-      "description": "Sets how long 'Target next' needs to be held before the target loop is set to None (or all loops, if it is already None)."
+      "description": "Sets how long 'Target next' needs to be held before the target loop is set to None (or all loops, if it is already None).",
+      "type": "enum",
+      "unit": "s"
     },
     {
       "name": "Next hold order",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If set, reverses the order of targetting none or all loops by holding 'Target next'."
+      "description": "If set, reverses the order of targetting none or all loops by holding 'Target next'.",
+      "type": "toggle"
     },
     {
       "name": "Mixed play/stop",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets what happens when you hit 'Play' and some targetted loops are playing while others are stopped.",
+      "description": "Sets what happens when you hit 'Play' and some targetted loops are playing while others are stopped. The default 'Toggle' applies the command to each loop individually – playing loops stop, while stopped loops play. 'All play' means that in such a situation, all the targetted loops will play; 'All stop' means all the targetted loops will stop.",
       "enum_values": [
         "Toggle",
         "All play",
@@ -281,14 +294,16 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If on, activating any looper control wakes the UI and dismisses the screensaver."
+      "description": "If on, activating any looper control wakes the UI and dismisses the screensaver, as if you'd moved an encoder/pot/button on the module itself.",
+      "type": "toggle"
     },
     {
       "name": "Only record targets",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If enabled, only loops set as targets are able to record. Other loops' inputs are muted."
+      "description": "If enabled, only loops set as targets are able to record. Other loops' inputs are muted.",
+      "type": "toggle"
     },
     {
       "name": "Clock source",
@@ -322,21 +337,25 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If enabled, MIDI clock start will start (or retrigger) loop playback, and MIDI clock stop will stop playback."
+      "description": "If enabled, MIDI clock start will start (or retrigger) loop playback, and MIDI clock stop will stop playback.",
+      "type": "toggle"
     },
     {
       "name": "Lock range",
       "min": 0,
       "max": 1000,
       "default": 0,
-      "description": "Activates automatic re-triggering of the loops to keep them locked to the clock. The parameter specifies a time window around the clock."
+      "description": "See 'Clocked operation', above. Specifies a time window around the clock – if a loop would naturally loop during this window, it is retriggered so that it begins exactly on the clock pulse.",
+      "type": "enum",
+      "unit": "ms"
     },
     {
       "name": "2nd press cancels",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If enabled, issuing a command a second time while the first command is still waiting for a clock will cancel the command."
+      "description": "If enabled, issuing a command a second time while the first command is still waiting for a clock will cancel the command.",
+      "type": "toggle"
     },
     {
       "name": "PPQN (out)",
@@ -350,28 +369,32 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables MIDI output to the breakout."
+      "description": "Enables MIDI output to the breakout.",
+      "type": "toggle"
     },
     {
       "name": "Output to Select Bus",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables MIDI output to the Select Bus."
+      "description": "Enables MIDI output to the Select Bus.",
+      "type": "toggle"
     },
     {
       "name": "Output to USB",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables MIDI output to USB."
+      "description": "Enables MIDI output to USB.",
+      "type": "toggle"
     },
     {
       "name": "Output to internal",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
+      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms.",
+      "type": "toggle"
     },
     {
       "name": "Channels",
@@ -382,14 +405,15 @@
       "enum_values": [
         "Mono",
         "Stereo"
-      ]
+      ],
+      "type": "toggle"
     },
     {
       "name": "Bit depth",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Selects the bit depth for the loop.",
+      "description": "Selects '32 bit (float)', '24 bit', or '16 bit'.",
       "enum_values": [
         "32 bit (float)",
         "24 bit",
@@ -457,22 +481,24 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector for the loop outputs.",
+      "description": "The standard Add/Replace mode selector, for the loop outputs.",
       "enum_values": [
         "Add",
         "Replace"
-      ]
+      ],
+      "type": "toggle"
     },
     {
       "name": "Trigger mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector for the trigger output.",
+      "description": "The standard Add/Replace mode selector, for the trigger output.",
       "enum_values": [
         "Add",
         "Replace"
-      ]
+      ],
+      "type": "toggle"
     },
     {
       "name": "MIDI channel",
@@ -589,27 +615,11 @@
   ],
   "input_ports": [
     {
-      "name": "Input left/mono",
-      "description": "The input bus for the left (if stereo) or mono signal."
-    },
-    {
-      "name": "Input right",
-      "description": "The input bus for the right signal, if stereo."
-    },
-    {
       "name": "Clock input",
       "description": "The input bus to use as clock if the 'Clock source' is 'Clock input'."
     }
   ],
   "output_ports": [
-    {
-      "name": "Output left/mono",
-      "description": "The output bus for the left (if stereo) or mono signal."
-    },
-    {
-      "name": "Output right",
-      "description": "The output bus for the right signal, if stereo."
-    },
     {
       "name": "Trigger output",
       "description": "The output bus for an end-of-loop trigger pulse or clock."

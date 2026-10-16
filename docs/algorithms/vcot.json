@@ -19,7 +19,8 @@
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "description": "Sets the position within the wavetable."
+      "description": "Sets the position within the wavetable.",
+      "unit": "%"
     },
     {
       "name": "Octave",
@@ -33,28 +34,32 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "description": "Adjusts the VCO tuning in semitones."
+      "description": "Adjusts the VCO tuning in semitones.",
+      "unit": "ST"
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "Adjusts the VCO tuning in cents."
+      "description": "Adjusts the VCO tuning in cents.",
+      "unit": "cents"
     },
     {
       "name": "Amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "description": "Sets the amplitude of the output (before it's affected by the gain)."
+      "description": "Sets the amplitude of the output (before it's affected by the gain).",
+      "unit": "V"
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "description": "Sets the level of the output."
+      "description": "Sets the level of the output.",
+      "unit": "dB"
     },
     {
       "name": "MIDI channel",

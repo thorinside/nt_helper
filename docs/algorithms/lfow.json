@@ -1,0 +1,162 @@
+{
+  "guid": "lfow",
+  "name": "LFO - Wavetable",
+  "short_description": "A wavetable LFO/envelope",
+  "description": "This algorithm is a version of the LFO algorithm which uses wavetables for its wave shapes. Please see the section above on how wavetables are formatted and arranged on the MicroSD card.",
+  "categories": [
+    "LFO",
+    "Envelope",
+    "Modulation"
+  ],
+  "use_cases": [
+    "Generating wavetable-based LFO modulation",
+    "Creating envelope shapes from wavetables",
+    "Modulating other parameters with wavetable LFOs"
+  ],
+  "gui_description": "The display shows the shape of the current channel's output, or if the 'Globals' page is active, the shape of all the channels.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "value": "1-4",
+      "description": "The number of LFO outputs."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Wavetable",
+      "min": 0,
+      "default": 0,
+      "scope": "global",
+      "description": "Chooses the wavetable."
+    },
+    {
+      "name": "Quality",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "scope": "global",
+      "description": "Sets the LFO output quality. The options are \"Stepped\" and \"Linear\".",
+      "enum_values": [
+        "Stepped",
+        "Linear"
+      ]
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "channel",
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Trigger mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "scope": "channel",
+      "description": "The trigger mode for the channel."
+    },
+    {
+      "name": "Wave offset",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "scope": "channel",
+      "description": "Sets the position within the wavetable.",
+      "unit": "%"
+    },
+    {
+      "name": "Speed",
+      "min": 0,
+      "max": 16383,
+      "default": 8605,
+      "scope": "channel",
+      "description": "Sets the LFO speed, from 0.05Hz to 15Hz with an exponential scaling."
+    },
+    {
+      "name": "Multiplier",
+      "min": 0,
+      "max": 3,
+      "default": 1,
+      "scope": "channel",
+      "description": "Sets a multiplier for the LFO speed.",
+      "enum_values": [
+        "x0.1",
+        "x1",
+        "x10",
+        "x100"
+      ]
+    },
+    {
+      "name": "Scale",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "channel",
+      "description": "Sets the amplitude of the LFO.",
+      "unit": "V"
+    },
+    {
+      "name": "Offset",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "channel",
+      "description": "Adds a constant voltage to the LFO output.",
+      "unit": "V"
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "scope": "channel",
+      "description": "The standard Add/Replace mode selector."
+    },
+    {
+      "name": "Sync",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "scope": "channel",
+      "description": "Selects how the LFO will sync to external clocks or MIDI."
+    },
+    {
+      "name": "Clock multiplier",
+      "min": 0,
+      "max": 23,
+      "default": 15,
+      "scope": "channel",
+      "description": "Sets the clock multiplier, if syncing to external clocks."
+    },
+    {
+      "name": "MIDI divisor",
+      "min": 0,
+      "max": 19,
+      "default": 9,
+      "scope": "channel",
+      "description": "Sets the MIDI clock divisor, if syncing to MIDI clock."
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Clock input",
+      "description": "The bus to use as the clock input."
+    },
+    {
+      "name": "Reset input",
+      "description": "The bus to use as the reset input."
+    },
+    {
+      "name": "Trigger input",
+      "description": "The trigger input bus."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The LFO output bus."
+    }
+  ]
+}

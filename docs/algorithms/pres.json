@@ -1,0 +1,57 @@
+{
+  "guid": "pres",
+  "name": "Preset Loader",
+  "short_description": "Mappable triggers for loading presets",
+  "description": "This algorithm provides parameters that can trigger loading of presets in various ways. Because the parameters are, like all parameters, mappable to MIDI, I2C etc. you can use this algorithm to set up a system for triggering preset changes from a MIDI controller or similar. (Another way is of course to simply use MIDI Program Change messages – see above.)\n\nYou may like to consider putting the algorithm in an End Of Chain preset, so it persists when the new preset loads.\n\nThe algorithm uses the same rules to determine the correspondence between a preset number and the preset filenames as does the handling of MIDI Program Change messages – see above.",
+  "categories": [
+    "Preset Management",
+    "Triggering",
+    "Utility"
+  ],
+  "parameters": [
+    {
+      "name": "Load preset",
+      "min": 1,
+      "max": 128,
+      "default": 1,
+      "description": "When this parameter changes, a new preset is loaded according to the parameter value."
+    },
+    {
+      "name": "Triggered preset",
+      "min": 1,
+      "max": 128,
+      "default": 1,
+      "description": "Sets the preset to load when the Trigger parameter changes to 1."
+    },
+    {
+      "name": "Trigger",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes from 0 to 1, a new preset is loaded according to the 'Triggered preset' parameter."
+    },
+    {
+      "name": "Load next",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes from 0 to 1, the next preset after the current one is loaded."
+    },
+    {
+      "name": "Load previous",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes from 0 to 1, the previous preset before the current one is loaded."
+    },
+    {
+      "name": "Reload preset",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes from 0 to 1, the current preset is reloaded."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

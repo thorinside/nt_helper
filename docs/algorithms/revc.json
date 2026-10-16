@@ -2,11 +2,11 @@
   "guid": "revc",
   "name": "Reverb (Clouds)",
   "short_description": "The reverb from Clouds",
-  "description": "This algorithm implements the reverb and diffuser parts of the Clouds module by Émilie Gillet. The diffuser is a simple network of all-pass filters which 'smears' the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
+  "description": "This algorithm implements the reverb and diffuser parts of the Clouds [111] module by Émilie Gillet.\n\nThe diffuser is a simple network of all-pass filters which 'smears' the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
   "categories": [
     "Reverb",
-    "Diffusion",
-    "Effect"
+    "Effect",
+    "Diffusion"
   ],
   "parameters": [
     {
@@ -14,64 +14,78 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The diffuser wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Reverb mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The reverb wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Reverb time",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The reverb time.",
+      "unit": "%"
     },
     {
       "name": "Reverb diffusion",
       "min": 0,
       "max": 100,
       "default": 70,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The reverb diffusion. (In Clouds this is fixed at 70%.)",
+      "unit": "%"
     },
     {
       "name": "Reverb low pass",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The cut-off frequency of a low-pass filter within the reverb.",
+      "unit": "%"
     },
     {
       "name": "Reverb input gain",
       "min": -40,
       "max": 0,
       "default": -14,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The input gain to the reveberator.",
+      "unit": "dB"
     },
     {
       "name": "Sample rate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "Allows you to run the algorithm at the disting NT’s own sample rate (‘Native’) or the sample rate of a real Clouds module (‘Authentic (32kHz)’)."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [

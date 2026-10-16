@@ -5,7 +5,7 @@
   "description": "This simple algorithm computes the minimum and maximum of two input voltages. Note that with one input disabled, or at 0V, this effectively performs half-wave rectification.",
   "categories": [
     "Math",
-    "Processing",
+    "Signal Processing",
     "Rectification"
   ],
   "parameters": [

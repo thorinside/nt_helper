@@ -8,10 +8,5 @@
   ],
   "parameters": [],
   "input_ports": [],
-  "output_ports": [
-    {
-      "name": "Output",
-      "description": "Passes through the input signal unchanged"
-    }
-  ]
+  "output_ports": []
 }

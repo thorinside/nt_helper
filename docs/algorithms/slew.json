@@ -11,7 +11,7 @@
   "use_cases": [
     "Smoothing CV signals",
     "Creating glissandos",
-    "Controlling attack and release of parameters"
+    "Rate limiting control signals"
   ],
   "specifications": [
     {
@@ -86,23 +86,26 @@
       "default": 0,
       "scope": "per-channel",
       "description": "The slew time for falling signals."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "scope": "common",
+      "description": "The standard Add/Replace mode selector."
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "The input bus.",
-      "channelCountRef": "Channels"
+      "description": "The input bus."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
       "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
-    },
-    {
-      "name": "Output mode",
-      "description": "The standard Add/Replace mode selector."
     }
   ]
 }

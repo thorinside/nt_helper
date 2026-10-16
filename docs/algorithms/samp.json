@@ -2,18 +2,17 @@
   "guid": "samp",
   "name": "Sample Player",
   "short_description": "A simple sample player",
-  "description": "This algorithm plays samples from the MicroSD card. It is loosely based on the \"SD 6 Triggers\" algorithm on the disting EX. Whereas the \"Poly Multisample\" algorithm is aimed more at playing pitched instruments, this algorithm is mainly designed for playing simple one-shot samples e.g. drums. It supports both velocity switches and round robins per sample. The trigger inputs are velocity sensitive – the voltage of the gate signal is used like the velocity of a MIDI note. 5V corresponds to maximum velocity.",
+  "description": "This algorithm plays samples from the MicroSD card. It is loosely based on the SD 6 Triggers algorithm on the disting EX. Whereas the Poly Multisample algorithm is aimed more at playing pitched instruments, this algorithm is mainly designed for playing simple one-shot samples e.g. drums. It supports both velocity switches and round robins per sample. The trigger inputs are velocity sensitive – the voltage of the gate signal is used like the velocity of a MIDI note. 5V corresponds to maximum velocity.",
   "categories": [
-    "sample",
-    "playback",
-    "drums",
-    "one-shot"
+    "Sample",
+    "Playback",
+    "Drums"
   ],
   "use_cases": [
-    "Playing simple one-shot samples such as drums",
+    "Playing one-shot samples such as drums",
     "Velocity-sensitive sample triggering",
     "Round-robin sample playback",
-    "Sample recording and sampling"
+    "Choke group management for drum kits"
   ],
   "gui_description": "The display shows the MIDI note names of the samples being played by the various triggers, superimposed on a bar indicating the trigger's envelope. The folder and filename of the most recently triggered sample is also shown.",
   "specifications": [
@@ -24,10 +23,406 @@
       "max": 8
     }
   ],
+  "parameters": [
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Round robin mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false,
+      "description": "The round-robin mode. See above."
+    },
+    {
+      "name": "Folder",
+      "min": 1,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the folder from which to choose a sample."
+    },
+    {
+      "name": "Sample",
+      "min": 1,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the sample within the folder."
+    },
+    {
+      "name": "Transpose",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the sample tuning in semitones.",
+      "unit": "ST"
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the sample fine tuning.",
+      "unit": "cents"
+    },
+    {
+      "name": "Pan",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The stereo pan position.",
+      "unit": "%"
+    },
+    {
+      "name": "Vel(ocity) depth",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the amount by which the velocity affects the playback level.",
+      "unit": "%"
+    },
+    {
+      "name": "Choke group",
+      "min": 0,
+      "max": 8,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The voice's “choke group”. When a voice in a choke group is triggered, it ends the playback of any other voices in the same choke group."
+    },
+    {
+      "name": "Play",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Manually triggers sample playback."
+    },
+    {
+      "name": "Velocity",
+      "min": 1,
+      "max": 127,
+      "default": 127,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The velocity to use when ‘Play’ triggers playback."
+    },
+    {
+      "name": "Loop",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets whether the sample will loop. ‘From WAV file’ will loop if the sample has loop points defined in the file – see above – and not otherwise. ‘Off’ and ‘On’ force the sample to loop or not."
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The MIDI channel to respond to."
+    },
+    {
+      "name": "MIDI note",
+      "min": -1,
+      "max": 127,
+      "default": 48,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The MIDI note to respond to, or “Any”."
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Envelope",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Enables an ADSR volume envelope. If the envelope is disabled, the sample simply plays once until the end."
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the envelope attack time."
+    },
+    {
+      "name": "Decay",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the envelope decay time."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the envelope sustain level.",
+      "unit": "%"
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 127,
+      "default": 77,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets the envelope release time."
+    },
+    {
+      "name": "Warp",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false,
+      "description": "The timestretch mode: ‘Re-Pitch’, ‘Stretch’, or ‘Phase vocoder’."
+    },
+    {
+      "name": "Shift",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false,
+      "description": "The pitch shift method, if Warp is Stretch: ‘2- phase’ or ‘3-phase’."
+    },
+    {
+      "name": "Grains",
+      "min": 1,
+      "max": 341,
+      "default": 50,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The maximum length of the delay line used by the pitch shifter.",
+      "unit": "ms"
+    },
+    {
+      "name": "Confirm change",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets whether the folder and/or sample changes immediately or requires confirmation."
+    },
+    {
+      "name": "Retrigger on change",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "If enabled, changing the sample selection while the sample is playing retriggers the sample."
+    },
+    {
+      "name": "Restart on change",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Start trim coarse",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets an amount to trim off the start, as a percentage of the sample length.",
+      "unit": "%"
+    },
+    {
+      "name": "Start trim fine",
+      "min": -500,
+      "max": 500,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Adjusts the amount to trim off the start, in sample frames."
+    },
+    {
+      "name": "End trim coarse",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets an amount to trim off the end, as a percentage of the sample length.",
+      "unit": "%"
+    },
+    {
+      "name": "End trim fine",
+      "min": -500,
+      "max": 500,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Adjusts the amount to trim off the end, in sample frames."
+    },
+    {
+      "name": "Offset type",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false,
+      "description": "Sets how the start offset will be determined."
+    },
+    {
+      "name": "Offset ms",
+      "min": 0,
+      "max": 32767,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The start offset, if the type is ‘Milliseconds’.",
+      "unit": "ms"
+    },
+    {
+      "name": "Offset %",
+      "min": 0.0,
+      "max": 99.9,
+      "default": 0.0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The start offset, if the type is ‘Percent’.",
+      "unit": "%"
+    },
+    {
+      "name": "Offset div",
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The start offset divisor, if the type is ‘Division’."
+    },
+    {
+      "name": "Offset mult",
+      "min": 0,
+      "max": 128,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "The start offset multiplier, if the type is ‘Division’."
+    },
+    {
+      "name": "Record",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Set to ‘On’ to activate recording and ‘Off’ to stop recording."
+    },
+    {
+      "name": "Record input L",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "is_common": false,
+      "is_bus": true,
+      "description": "The bus to use for the left, or mono, audio input."
+    },
+    {
+      "name": "Record input R",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "is_common": false,
+      "is_bus": true,
+      "description": "The bus to use for the right audio input."
+    },
+    {
+      "name": "Record gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "A gain to apply when recording.",
+      "unit": "dB"
+    },
+    {
+      "name": "Use recording",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "is_common": false,
+      "is_bus": false,
+      "description": "Set to ‘On’ to use the recording instead of a sample on the MicroSD card. Ignored if there is no recording."
+    },
+    {
+      "name": "Save to folder",
+      "type": "string",
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Save as",
+      "type": "string",
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
   "input_ports": [
     {
       "name": "Trigger input",
-      "description": "The input bus to use as the gate/trigger. Velocity sensitive – the voltage of the gate signal is used like the velocity of a MIDI note. 5V corresponds to maximum velocity."
+      "description": "The input bus to use as the gate/trigger signal. Velocity sensitive – the voltage of the gate signal is used like the velocity of a MIDI note. 5V corresponds to maximum velocity."
     },
     {
       "name": "Record input L",

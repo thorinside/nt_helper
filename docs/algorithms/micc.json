@@ -2,11 +2,14 @@
   "guid": "micc",
   "name": "MIDI CC Generator",
   "short_description": "Generates MIDI CCs",
-  "description": "This simple utility generates MIDI CCs. These can be sent to the various external MIDI destinations, and/or routed to other algorithms within the module. Some example uses include: CV to MIDI conversion: by mapping the Value parameter to a CV, you can generate a MIDI CC from a control voltage. Macro control: you can send the CCs from this algorithm to other algorithms, and map parameters in those algorithms to be controlled by the CC. Then, by changing the Value parameter in this algorithm, you can change many parameters in other algorithms at once. This is particularly useful in combination with the Performance Page.",
+  "description": "This simple utility generates MIDI CCs. These can be sent to the various external MIDI destinations, and/or routed to other algorithms within the module. Some example uses include: CV to MIDI conversion: by mapping the CC parameter to a CV, you can generate a MIDI CC from a control voltage. Macro control: you can send the CCs from this algorithm to other algorithms, and map parameters in those algorithms to be controlled by the CC. Then, by changing the CC parameter in this algorithm, you can change many parameters in other algorithms at once. This is particularly useful in combination with the Performance Page.",
   "categories": [
     "MIDI",
-    "Utility",
-    "Generator"
+    "Utility"
+  ],
+  "use_cases": [
+    "CV to MIDI conversion: by mapping the CC parameter to a CV, you can generate a MIDI CC from a control voltage.",
+    "Macro control: you can send the CCs from this algorithm to other algorithms, and map parameters in those algorithms to be controlled by the CC."
   ],
   "parameters": [
     {
@@ -76,7 +79,11 @@
     {
       "name": "Name",
       "scope": "channel",
-      "description": "A text name for the channel for identification."
+      "type": "string",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Mode",
@@ -93,10 +100,5 @@
     }
   ],
   "input_ports": [],
-  "output_ports": [
-    {
-      "name": "CCs",
-      "description": "The number of CCs to generate, 1-8."
-    }
-  ]
+  "output_ports": []
 }

@@ -5,14 +5,8 @@
   "description": "This algorithm shares the sequence of another Step Sequencer algorithm (above), and replicates the parameters that define how that sequence is played. This allows you to, for example, have the same sequence played in different directions simultaneously, or at different speeds, or with different transpositions.\n\nThe Step Sequencer Head refers to the nearest Step Sequencer above it in the algorithm list. You can have as many Step Sequencer Heads as you like for each Step Sequencer.",
   "categories": [
     "Sequencer",
-    "MIDI"
+    "Step Sequencer"
   ],
-  "use_cases": [
-    "Playing the same sequence in different directions simultaneously",
-    "Playing the same sequence at different speeds",
-    "Playing the same sequence with different transpositions"
-  ],
-  "specifications": [],
   "parameters": [
     {
       "name": "Sequence",
@@ -54,36 +48,35 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets the gate type: '% of clock' or 'Trigger'."
+      "description": "Sets the gate type: \"% of clock\" or \"Trigger\"."
     },
     {
       "name": "Gate length",
       "min": 1,
       "max": 99,
       "default": 50,
-      "description": "Sets the length of the gate output if the type is '% of clock'.",
+      "description": "Sets the length of the gate output if the type is \"% of clock\".",
       "enum_values": [
         "% of clock",
         "Trigger"
-      ]
+      ],
+      "unit": "%"
     },
     {
       "name": "Trigger length",
       "min": 1,
       "max": 100,
       "default": 10,
-      "description": "Sets the length of the gate output if the type is 'Trigger'.",
-      "enum_values": [
-        "% of clock",
-        "Trigger"
-      ]
+      "description": "Sets the length of the gate output if the type is \"Trigger\".",
+      "unit": "ms"
     },
     {
       "name": "Glide",
       "min": 0,
       "max": 1000,
       "default": 100,
-      "description": "Sets the glide time for tied notes."
+      "description": "Sets the glide time for tied notes.",
+      "unit": "ms"
     },
     {
       "name": "Octave",
@@ -97,7 +90,8 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "description": "Transposes the sequence in semitones."
+      "description": "Transposes the sequence in semitones.",
+      "unit": "ST"
     },
     {
       "name": "Reset mode",
@@ -200,22 +194,6 @@
   ],
   "input_ports": [
     {
-      "name": "Clock",
-      "description": "The clock input bus."
-    },
-    {
-      "name": "Reset",
-      "description": "The reset input bus."
-    },
-    {
-      "name": "Sequence CV",
-      "description": "The bus to use to select the sequence."
-    },
-    {
-      "name": "Sequence trigger",
-      "description": "The bus to use for the sequence select trigger."
-    },
-    {
       "name": "Clock input",
       "description": "The bus to use as the clock input."
     },
@@ -233,26 +211,6 @@
     }
   ],
   "output_ports": [
-    {
-      "name": "Pitch",
-      "description": "The pitch CV output bus."
-    },
-    {
-      "name": "Gate",
-      "description": "The gate output bus."
-    },
-    {
-      "name": "Velocity",
-      "description": "The velocity output bus."
-    },
-    {
-      "name": "Mod",
-      "description": "The modulation CV output bus."
-    },
-    {
-      "name": "Step",
-      "description": "The step CV output bus. Represents the current sequencer step number scaled as 1/12th of a Volt per step."
-    },
     {
       "name": "Pitch output",
       "description": "The bus to use for the pitch CV output."

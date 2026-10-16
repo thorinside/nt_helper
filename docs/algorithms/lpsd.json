@@ -2,10 +2,10 @@
   "guid": "lpsd",
   "name": "Looper (MicroSD)",
   "short_description": "A MicroSD-based looper",
-  "description": "This algorithm is a version of the Looper algorithm which uses the MicroSD card for storage instead of the module's memory. Consequently, the maximum loop times are much, much longer. Operation of the algorithm is identical to that of the Looper. When the algorithm is instantiated, it creates files on the MicroSD card, one for each layer of each loop, located in the 'looper' folder on card. Each file is 1GB in size, giving a maximum loop time of about 1.5 hours (using mono 32 bit float, 48kHz). To improve read/write performance, each file is allocated as contiguous space on the card. It is recommended to use 'exFAT' formatting for cards. Certain operations take effect after a small delay because data has to be read from the card: starting overdub into a new layer, changing layer (including undo/redo), and switching into/out of reverse. During these delays, 'Busy' is displayed in the UI, and for the overdub case, a percentage indicator is also shown.",
+  "description": "This algorithm is a version of the Looper algorithm which uses the MicroSD card for storage instead of the module's memory. Consequently, the maximum loop times are much, much longer. Operation of the algorithm is identical to that of the Looper. When the algorithm is instantiated, it creates files on the MicroSD card, one for each layer of each loop, located in the 'looper' folder on card. Each file is 1GB in size, giving a maximum loop time of about 1.5 hours (using mono 32 bit float, 48kHz). To improve read/write performance, each file is also allocated as contiguous space on the card. It is recommended to use 'exFAT' formatting for cards to be used with this algorithm. Certain operations that are instant when using the regular Looper take effect after a small delay when using this algorithm, because data has to be read from the card before the operation can proceed. These operations are: Starting overdub into a new layer, Changing layer (including undo/redo), and Switching into/out of reverse. During these delays, 'Busy' is displayed in the UI, and for the overdub case, a percentage indicator is also shown. Instead of 'Minimum layers', each loop has a 'Number of layers' parameter, which sets how many of the available layers it will actually use. Setting this to '1' effectively disables layers for this loop.",
   "categories": [
-    "Looper",
     "Recording",
+    "Looping",
     "Storage"
   ],
   "parameters": [
@@ -13,20 +13,32 @@
       "name": "Loops",
       "min": 1,
       "max": 4,
-      "description": "The number of simultaneous loops."
+      "description": "The number of simultaneous loops.",
+      "type": "enum",
+      "is_per_channel": false
     },
     {
       "name": "Layers",
       "min": 1,
       "max": 8,
-      "description": "The number of layers for each loop."
+      "description": "The number of layers for each loop.",
+      "type": "enum",
+      "is_per_channel": false
     },
     {
       "name": "Number of layers",
       "min": 1,
-      "description": "Sets how many of the available layers a loop will actually use. Setting this to 1 effectively disables layers for this loop, which might be preferred if it's important to avoid the delay associated with starting overdub into a new layer."
+      "max": 8,
+      "description": "Sets how many of the available layers this loop will actually use. Setting this to '1' effectively disables layers for this loop, which might be preferred if it's important to avoid the delay associated with starting overdub into a new layer.",
+      "type": "enum",
+      "is_per_channel": true
     }
   ],
   "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Audio",
+      "description": "Audio output from the looper"
+    }
+  ]
 }

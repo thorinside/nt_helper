@@ -4,8 +4,8 @@
   "short_description": "Chorus effect based on an 80s polysynth",
   "description": "This algorithm is a stereo chorus effect, modelled on that of the classic Juno-6 polysynth, based on measurements of the author's own unit.\n\nThose with keen ears may recognise it as the chorus that is built into the Poly Wavetable algorithm on the disting EX.",
   "categories": [
-    "Modulation",
-    "Effect"
+    "Effect",
+    "Chorus"
   ],
   "parameters": [
     {

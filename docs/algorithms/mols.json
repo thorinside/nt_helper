@@ -9,82 +9,82 @@
     "Flange",
     "Stereo"
   ],
-  "use_cases": [
-    "Chorus effect",
-    "Flange effect",
-    "Stereo widening"
-  ],
   "parameters": [
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The gain applied to the effect/wet signal.",
+      "unit": "dB"
     },
     {
       "name": "Delay",
       "min": 0.0,
       "max": 500.0,
       "default": 10.0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the minimum delay time.",
+      "unit": "ms"
     },
     {
       "name": "Sweep",
       "min": 0.0,
       "max": 50.0,
       "default": 1.0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the amount of modulation of the delay time by the LFO (added to the minimum).",
+      "unit": "ms"
     },
     {
       "name": "Rate",
       "min": 0,
       "max": 1000,
       "default": 500,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the LFO speed. Exponential scale from 0.05Hz to 20Hz."
     },
     {
       "name": "Feedback",
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Introduces feedback into the delay lines, for sustained echos or deeper flanging effects.",
+      "unit": "%"
     },
     {
       "name": "Spread",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "Controls the amount of phase variance between the LFOs of the voices. E.g. two voices with a spread of 50% gives the classic quadrature phase stereo chorus effect.",
+      "unit": "%"
     },
     {
       "name": "Voices",
       "min": 1,
       "max": 4,
       "default": 2,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The number of voices (delay lines)."
     },
     {
       "name": "Shape",
       "min": 0.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "folder",
       "is_bus": false
     },
     {
@@ -92,8 +92,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [

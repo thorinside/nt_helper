@@ -4,14 +4,9 @@
   "short_description": "CVs from the Lorenz equations",
   "description": "This algorithm generates chaotic CVs according to a variety of so-called 'attractors', including the well-known Lorenz equations. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation – 'Rho mod' affects 'r' (aka 'ρ'), and 'Beta mod' affects 'b' (aka 'β'). With the values at 0V, the parameters are the classic values as studied by Lorenz (64 and 8/3 respectively).",
   "categories": [
-    "Modulation",
-    "CV Generator",
-    "Chaos"
-  ],
-  "use_cases": [
-    "Generating chaotic CV modulation signals",
-    "Experimental sound design",
-    "Creating unpredictable control voltage patterns"
+    "CV",
+    "Generators",
+    "Modulation"
   ],
   "gui_description": "The display shows a graphical representation of the outputs, projected onto the X/Y, X/Z, and Y/Z planes.",
   "parameters": [
@@ -20,14 +15,7 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "description": "Chooses which equations to use: Lorenz, Rössler, Aizawa, Arneodo, or Thomas.",
-      "enum_values": [
-        "Lorenz",
-        "Rössler",
-        "Aizawa",
-        "Arneodo",
-        "Thomas"
-      ]
+      "description": "Chooses which equations to use: Lorenz, Rössler, Aizawa, Arneodo, or Thomas."
     },
     {
       "name": "Speed range",
@@ -48,18 +36,20 @@
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "folder",
       "is_common": true,
-      "is_bus": true
+      "is_bus": true,
+      "description": "Modulates the Lorenz ‘r’ parameter.",
+      "unit": "V"
     },
     {
       "name": "Beta mod",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "folder",
       "is_common": true,
-      "is_bus": true
+      "is_bus": true,
+      "description": "Modulates the Lorenz ‘b’ parameter.",
+      "unit": "V"
     },
     {
       "name": "Reset",
@@ -94,42 +84,48 @@
       "min": -20.0,
       "max": 20.0,
       "default": 10.0,
-      "description": "The scale of the X output."
+      "description": "The scale of the X output.",
+      "unit": "V"
     },
     {
       "name": "X offset",
       "min": -20.0,
       "max": 20.0,
       "default": 0.0,
-      "description": "An offset added to the X output."
+      "description": "An offset added to the X output.",
+      "unit": "V"
     },
     {
       "name": "Y scale",
       "min": -20.0,
       "max": 20.0,
       "default": 10.0,
-      "description": "The scale of the Y output."
+      "description": "The scale of the Y output.",
+      "unit": "V"
     },
     {
       "name": "Y offset",
       "min": -20.0,
       "max": 20.0,
       "default": 0.0,
-      "description": "An offset added to the Y output."
+      "description": "An offset added to the Y output.",
+      "unit": "V"
     },
     {
       "name": "Z scale",
       "min": -20.0,
       "max": 20.0,
       "default": 10.0,
-      "description": "The scale of the Z output."
+      "description": "The scale of the Z output.",
+      "unit": "V"
     },
     {
       "name": "Z offset",
       "min": -20.0,
       "max": 20.0,
       "default": -8.0,
-      "description": "An offset added to the Z output."
+      "description": "An offset added to the Z output.",
+      "unit": "V"
     },
     {
       "name": "X output mode",
@@ -155,27 +151,11 @@
   ],
   "input_ports": [
     {
-      "name": "Reset",
-      "description": "A positive-going edge resets the system to the values given by the Reset X/Y/Z parameters."
-    },
-    {
       "name": "Reset input",
       "description": "The bus to use for the reset input. A positive-going edge here resets the system to the values given by the Reset X/Y/Z parameters."
     }
   ],
   "output_ports": [
-    {
-      "name": "X",
-      "description": "The X output of the chaotic system."
-    },
-    {
-      "name": "Y",
-      "description": "The Y output of the chaotic system."
-    },
-    {
-      "name": "Z",
-      "description": "The Z output of the chaotic system."
-    },
     {
       "name": "X output",
       "description": "The bus to use for the X output."

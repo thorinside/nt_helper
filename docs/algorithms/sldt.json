@@ -2,30 +2,90 @@
   "guid": "sldt",
   "name": "Slope Detector",
   "short_description": "Detects slopes",
-  "description": "This algorithm provides slope detection, a classic modular synthesizer function that has been part of the synthesist's toolkit since the very early days of modular.\n\nIt takes a CV input, and provides three outputs – simple gates that tell you whether the signal is rising, falling, or steady.\n\nIf you would prefer to have trigger outputs (e.g. a trigger that tells you when a signal has started to rise), you can feed the outputs from this algorithm into a Delayed Function algorithm (above) to convert the gates into triggers.\n\nIf you need simple inverse outputs (e.g. say you want 'changing' instead of 'steady'), use a Logic algorithm (above).",
+  "description": "This algorithm provides slope detection, a classic modular synthesizer function that has been part of the synthesist's toolkit since the very early days of modular. It takes a CV input, and provides three outputs – simple gates that tell you whether the signal is rising, falling, or steady. If you would prefer to have trigger outputs (e.g. a trigger that tells you when a signal has started to rise), you can feed the outputs from this algorithm into a Delayed Function algorithm to convert the gates into triggers. If you need simple inverse outputs (e.g. say you want 'changing' instead of 'steady'), use a Logic algorithm.",
   "categories": [
+    "Signal Processing",
     "Analysis",
-    "CV",
-    "Logic"
+    "CV"
+  ],
+  "use_cases": [
+    "Detecting rising or falling CV signals",
+    "Generating gates from slope direction",
+    "Feeding into Delayed Function for trigger generation"
+  ],
+  "parameters": [
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Rising output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector, for the 'rising' signal."
+    },
+    {
+      "name": "Steady output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector, for the 'steady' signal."
+    },
+    {
+      "name": "Falling output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector, for the 'falling' signal."
+    },
+    {
+      "name": "Sensitivity",
+      "min": 1,
+      "max": 1000,
+      "default": 100,
+      "defaultValue": 100,
+      "description": "The detector sensitivity.",
+      "unit": "ms"
+    }
   ],
   "input_ports": [
     {
+      "name": "CV Input",
+      "description": "The CV signal to analyze for slope direction."
+    },
+    {
       "name": "Input",
-      "description": "CV input for slope detection"
+      "description": "The input bus to process."
     }
   ],
   "output_ports": [
     {
       "name": "Rising",
-      "description": "Gate output indicating the signal is rising"
+      "description": "Gate output that is active when the signal is rising."
     },
     {
       "name": "Steady",
-      "description": "Gate output indicating the signal is steady"
+      "description": "Gate output that is active when the signal is steady."
     },
     {
       "name": "Falling",
-      "description": "Gate output indicating the signal is falling"
+      "description": "Gate output that is active when the signal is falling."
+    },
+    {
+      "name": "Rising output",
+      "description": "The output bus for the 'rising' signal."
+    },
+    {
+      "name": "Steady output",
+      "description": "The output bus for the 'steady' signal."
+    },
+    {
+      "name": "Falling output",
+      "description": "The output bus for the 'falling' signal."
     }
   ]
 }

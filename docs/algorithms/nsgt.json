@@ -2,11 +2,11 @@
   "guid": "nsgt",
   "name": "Noise gate",
   "short_description": "A simple noise gate",
-  "description": "This algorithm is a multi-channel noise gate. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you, say, want a noise gate on all 12 module inputs, you don't need to add 12 copies of the algorithm to do so. A sidechain input is available, to gate one signal with another. The algorithm always works as an insert effect i.e. the output replaces the input.",
+  "description": "This algorithm is a multi-channel noise gate. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you, say, want a noise gate on all 12 module inputs, you don't need to add 12 copies of the algorithm to do so.\n\nA sidechain input is available, to gate one signal with another.\n\nThe algorithm always works as an insert effect i.e. the output replaces the input.",
   "categories": [
-    "Dynamics",
-    "Processing",
-    "Multichannel"
+    "dynamics",
+    "effect",
+    "multichannel"
   ],
   "parameters": [
     {
@@ -21,59 +21,85 @@
       "min": -70.0,
       "max": 0.0,
       "default": -24.0,
-      "type": "folder",
-      "is_bus": true
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true,
+      "description": "The threshold level required to open the gate.",
+      "unit": "dB"
     },
     {
       "name": "Hysteresis",
       "min": -24.0,
       "max": 0.0,
       "default": -3.0,
-      "type": "folder",
-      "is_bus": true
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true,
+      "description": "The level, relative to the threshold, that the input must drop below before the gate closes again.",
+      "unit": "dB"
     },
     {
       "name": "Attack",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "type": "folder",
-      "is_bus": true
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true,
+      "description": "The attack time for the gate opening, from 0.2ms to 200ms with an exponential scale."
     },
     {
       "name": "Hold",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "type": "folder",
-      "is_bus": true
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true,
+      "description": "The minimum time that the gate remains open, from 1ms to 1000ms with an exponential scale."
     },
     {
       "name": "Release",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "type": "folder",
-      "is_bus": true
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true,
+      "description": "The release time for the gate closing, from 2ms to 2000ms with an exponential scale."
     },
     {
       "name": "Lookahead",
       "min": 0.0,
       "max": 10.0,
       "default": 1.0,
-      "type": "folder",
-      "is_bus": true
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true,
+      "description": "The lookahead time. Increase this to prevent the gate from missing sharp attack transients. Note that the audio is delayed by the amount of the lookahead time i.e. this adds latency.",
+      "unit": "ms"
     },
     {
       "name": "Gain reduction",
       "min": -80,
       "max": 0,
       "default": -80,
-      "type": "folder",
-      "is_bus": true
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true,
+      "description": "Sets the amount by which the signal is attenuated when the gate is closed. ‘-80’ is actually treated as ‘-∞dB’ i.e. fully attenuated.",
+      "unit": "dB"
     }
   ],
   "input_ports": [
+    {
+      "name": "Input",
+      "description": "The input signal to be gated. The algorithm works as an insert effect, so the output replaces the input."
+    },
+    {
+      "name": "Sidechain",
+      "description": "A sidechain input to gate one signal with another."
+    },
     {
       "name": "Left/mono input",
       "description": "The left or mono input bus."
@@ -90,7 +116,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The processed output signal (insert effect, replaces input)"
+      "description": "The gated output signal. The algorithm works as an insert effect, so the output replaces the input."
     }
   ]
 }

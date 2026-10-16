@@ -6,12 +6,12 @@
   "categories": [
     "Mixer",
     "Routing",
-    "Utility"
+    "Mixing"
   ],
   "use_cases": [
-    "Mixing multiple mono or stereo audio sources into a stereo output",
-    "Routing audio between buses with aux sends",
-    "Creating pre-fade or post-fade send configurations"
+    "Mixing multiple mono or stereo audio sources",
+    "Routing audio between buses",
+    "Creating pre/post-fade aux sends"
   ],
   "gui_description": "The display shows a level meter for each channel. The thin line at the top indicates 0dBFS; if a channel goes over this, a clip indicator will show (a small rectangle over the 0dBFS line). The chevrons to the right of the level meters indicate the mixer gains. Mute and Solo are indicated with a small 'M' and 'S' respectively. Muted level meters are grayed out.",
   "parameters": [
@@ -20,119 +20,137 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "common",
-      "description": "The standard Add/Replace mode selector."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum",
+      "is_common": true,
+      "is_bus": true
     },
     {
       "name": "Output gain",
       "min": -70.0,
       "max": 6.0,
       "default": 0.0,
-      "scope": "common",
-      "type": "folder",
+      "description": "The mixer output gain.",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true,
+      "unit": "dB"
     },
     {
       "name": "Destination",
       "min": 1,
       "max": 64,
       "default": 13,
-      "scope": "send",
-      "description": "The output bus for the send."
+      "description": "The output bus for the send.",
+      "type": "bus",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Pre/post",
       "min": 0,
       "max": 1,
       "default": 1,
-      "scope": "send",
-      "description": "Whether the send is Pre-fade or Post-fade."
+      "description": "Whether the send is Pre-fade or Post-fade.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Width",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "send",
-      "description": "Whether the send is mono or stereo. Stereo sends use the destination bus and the next one up."
+      "description": "Whether the send is mono or stereo. Stereo sends use the destination bus and the next one up.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "send",
-      "description": "The standard Add/Replace mode selector."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Input left/mono",
       "min": 0,
       "max": 64,
       "default": 1,
-      "scope": "channel",
-      "description": "The channel left input bus."
+      "description": "The channel left input bus.",
+      "type": "bus",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Input right",
       "min": 0,
       "max": 64,
       "default": 1,
-      "scope": "channel",
-      "description": "The channel right input bus (if stereo)."
+      "description": "The channel right input bus (if stereo).",
+      "type": "bus",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "scope": "channel",
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "description": "The channel gain.",
+      "is_per_channel": true,
+      "is_bus": true,
+      "unit": "dB"
     },
     {
       "name": "Pan",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "channel",
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "description": "The channel stereo pan.",
+      "is_per_channel": true,
+      "is_bus": true,
+      "unit": "%"
     },
     {
       "name": "Mute",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "channel",
-      "description": "Mutes the channel."
+      "description": "Mutes the channel.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Solo",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "channel",
-      "description": "Solos the channel."
+      "description": "Solos the channel.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Name",
-      "scope": "channel",
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "description": "A text name for the channel for identification.",
+      "type": "string",
+      "is_per_channel": true,
+      "is_bus": true
     },
     {
       "name": "Send gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "scope": "channel-send",
-      "type": "folder",
-      "is_common": false,
-      "is_bus": false
+      "description": "The send gain.",
+      "is_per_channel": true,
+      "is_bus": true,
+      "unit": "dB"
     }
   ],
   "input_ports": [],

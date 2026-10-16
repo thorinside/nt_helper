@@ -2,121 +2,141 @@
   "guid": "logi",
   "name": "Logic",
   "short_description": "Performs various logical operations",
-  "description": "This algorithm is based on the disting mk4 algorithm of the same name. Each channel of the algorithm is independent and performs logical operations on its X & Y inputs. The following operations are available: AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop, greater than, less than. The SR flip-flop is set high by a rising edge on input X, and cleared low by a rising edge on input Y. The D flip-flop takes the level of input X on a rising edge on input Y. The global parameters set the threshold and hysteresis of the input comparators which generate logical signals from arbitrary CVs. Complex logical operations can be constructed by combining operations. The inputs of each channel can be set to the outputs of other channels, allowing you to chain them internally to the algorithm.",
+  "description": "This algorithm is based on the disting mk4 algorithm of the same name. It also includes comparator functions, thus fulfilling the role of the disting mk4 Comparator algorithm. Each channel of the algorithm is independent and performs logical operations on its X & Y inputs. The following operations are available: AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop, greater than, less than. The SR flip-flop is set high by a rising edge on input X, and cleared low by a rising edge on input Y. The D flip-flop takes the level of input X on a rising edge on input Y. The global parameters set the threshold and hysteresis of the input comparators which generate logical signals from arbitrary CVs. Complex logical operations can be constructed by combining operations. The inputs of each channel can be set to the outputs of other channels, allowing you to chain them internally to the algorithm.",
   "categories": [
     "Logic",
     "Comparator",
-    "Digital"
+    "Signal Processing"
   ],
+  "use_cases": [
+    "Logical operations on CV signals",
+    "Comparator functions",
+    "Building complex logic gates",
+    "Flip-flop operations"
+  ],
+  "gui_description": "The display shows the various logical operations being performed. Disabled channels are grayed out. Inverted inputs and outputs are indicated using the standard logic notation of a bar (horizontal line) above the inverted quantity.",
   "parameters": [
     {
       "name": "Threshold",
       "min": 0.0,
       "max": 10.0,
       "default": 1.0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "Sets the input threshold. Signals above this voltage are treated as a logic ‘1’/true.",
+      "unit": "V"
     },
     {
       "name": "Hysteresis",
       "min": 0.0,
       "max": 10.0,
       "default": 0.5,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "Sets the input hysteresis. Once over the threshold, signals must fall by this amount before being treated as a logic ‘0’/false.",
+      "unit": "V"
     },
     {
       "name": "Output true",
       "min": -10.0,
       "max": 10.0,
       "default": 5.0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": false,
+      "description": "The output voltage for logic ‘1’/true. Logic ‘0’/false is always output as 0V.",
+      "unit": "V"
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Enables the channel."
     },
     {
       "name": "Operation",
       "min": 0,
       "max": 9,
       "default": 0,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Selects the logical operation from the table above."
     },
     {
       "name": "Invert X",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Inverts the X input (before it is used by the logical operation)."
     },
     {
       "name": "Invert Y",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Inverts the Y input (before it is used by the logical operation)."
     },
     {
       "name": "Input X",
       "min": 1,
       "default": 1,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Chooses the X input bus or channel for the operation."
     },
     {
       "name": "Input Y",
       "min": 1,
-      "max": 2,
-      "default": 1,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "default": 2,
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "Chooses the Y input bus or channel for the operation."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "channel",
-      "type": "folder",
-      "is_bus": false
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
     {
-      "name": "X",
-      "description": "X input for logical operations"
+      "name": "Input X",
+      "description": "X input signal for the logical operation"
     },
     {
-      "name": "Y",
-      "description": "Y input for logical operations"
+      "name": "Input Y",
+      "description": "Y input signal for the logical operation"
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "Logical operation output"
+      "description": "Output of the logical operation"
     },
     {
       "name": "Invert output",
-      "description": ""
+      "description": "Inverts the output.",
+      "isPerChannel": true
     }
   ]
 }

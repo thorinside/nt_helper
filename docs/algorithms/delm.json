@@ -14,71 +14,66 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The gain applied to the delay/wet signal.",
+      "unit": "dB"
     },
     {
       "name": "Time",
       "min": 1,
       "max": 32767,
       "default": 250,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The delay time.",
+      "unit": "ms"
     },
     {
       "name": "Feedback",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The delay feedback.",
+      "unit": "%"
     },
     {
       "name": "Delay multiplier",
       "min": 0,
       "max": 23,
       "default": 15,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets a multiplier to apply to the delay time. Affects both the ‘Time’ parameter and the delay time set by the clock."
     },
     {
       "name": "Time change",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets how changes of delay time will be handled. The options are ‘Slew’ (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and ‘Crossfade’ (the effect rapidly crossfades from one time setting to the other)."
     },
     {
       "name": "Fractional",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Enables fractional delay times. See above."
     },
     {
       "name": "Block DC",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "folder",
-      "is_common": true,
       "is_bus": false
     },
     {
@@ -86,36 +81,32 @@
       "min": 0,
       "max": 2,
       "default": 1,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Chooses the clock source: ‘None’, ‘Clock input’, or ‘MIDI clock’."
     },
     {
       "name": "MIDI divisor",
       "min": 0,
       "max": 19,
       "default": 9,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The MIDI divisor, if the clock source is ‘MIDI clock’."
     },
     {
       "name": "MIDI numerator",
       "min": 1,
       "max": 16,
       "default": 1,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The MIDI numerator, if the clock source is ‘MIDI clock’."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [

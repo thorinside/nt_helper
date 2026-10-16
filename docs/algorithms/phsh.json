@@ -2,11 +2,15 @@
   "guid": "phsh",
   "name": "Phase Shifter",
   "short_description": "Shifts the phase of signals",
-  "description": "This algorithm is based on the Phase Shifter algorithm on the disting mk4. The algorithm is a phase shifter – it generates two outputs, one of which is in a fixed phase relationship to the other. Unlike the Phaser algorithm, which is simply designed to create a swooshy sound, this algorithm is designed for mathematical accuracy, and can produce some interesting psycho-acoustic effects. It can also produce swooshy sounds.",
+  "description": "This algorithm is based on the Phase Shifter algorithm on the disting mk4. The algorithm is a phase shifter – it generates two outputs, one of which is in a fixed phase relationship to the other. Unlike the Phaser algorithm (see below), which is simply designed to create a swooshy sound, this algorithm is designed for mathematical accuracy, and can produce some interesting psycho-acoustic effects. It can also produce swooshy sounds.",
   "categories": [
-    "Effect",
-    "Phase",
-    "Modulation"
+    "Modulation",
+    "Effect"
+  ],
+  "use_cases": [
+    "Mathematical phase shifting of signals",
+    "Psycho-acoustic effects",
+    "Creating swooshy sounds"
   ],
   "parameters": [
     {
@@ -14,47 +18,55 @@
       "min": -360,
       "max": 360,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "Sets the phase shift.",
+      "unit": "deg"
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "The output wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_common": true,
+      "is_bus": false,
+      "description": "The output gain applied to the effected signal.",
+      "unit": "dB"
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
       "name": "Unshifted mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "is_common": false,
+      "is_bus": false,
+      "description": "The standard Add/Replace mode selector as described above for the unshifted output."
     },
     {
       "name": "+ve shift mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -62,18 +74,18 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
+      "is_common": false,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "The first audio input bus."
-    },
-    {
       "name": "Shift input",
       "description": "The bus to use for the phase shift CV, scaled as 5V per 360°."
+    },
+    {
+      "name": "Input",
+      "description": "The first audio input bus."
     }
   ],
   "output_ports": [
@@ -83,11 +95,11 @@
     },
     {
       "name": "+ve shift output",
-      "description": "The bus to use for the positive shifted output."
+      "description": ""
     },
     {
       "name": "-ve shift output",
-      "description": "The bus to use for the negative shifted output."
+      "description": ""
     }
   ]
 }

@@ -2,11 +2,11 @@
   "guid": "tunf",
   "name": "Tuner (fancy)",
   "short_description": "A sophisticated tuner",
-  "description": "This algorithm provides four simultaneous tuners.\n\nIt uses an autocorrelation pitch detection method which is fairly CPU heavy, but which provides reliable pitch detection for most signals. For simpler tones, you may prefer the “Tuner (simple)” algorithm.\n\nMicrotuning via Scala or MTS is supported.",
+  "description": "This algorithm provides four simultaneous tuners.\n\nIt uses an autocorrelation pitch detection method which is fairly CPU heavy, but which provides reliable pitch detection for most signals. For simpler tones, you may prefer the \"Tuner (simple)\" algorithm.\n\nMicrotuning via Scala or MTS is supported.",
   "categories": [
-    "Analysis",
     "Tuning",
-    "Pitch Detection"
+    "Analysis",
+    "Utility"
   ],
   "parameters": [
     {
@@ -50,14 +50,18 @@
       "max": 100,
       "default": 10,
       "type": "enum",
-      "is_bus": true
+      "is_common": true,
+      "is_bus": true,
+      "description": "An internal parameter of the pitch tracking algorithm, which can help it avoid errors of octave in some circumstances. The default value is recommended in most cases.",
+      "unit": "%"
     },
     {
-      "name": "Env threshold",
+      "name": "threshold",
       "min": -80,
       "max": 0,
       "default": -40,
       "type": "enum",
+      "is_common": true,
       "is_bus": true
     }
   ],

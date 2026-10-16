@@ -6,17 +6,16 @@
   "categories": [
     "MIDI",
     "Playback",
-    "Sequencer",
-    "CV"
+    "CV Conversion"
   ],
   "use_cases": [
     "Playing MIDI files from MicroSD card",
-    "Converting MIDI to CV and gates",
-    "Drum triggering from MIDI",
-    "Processing live MIDI",
-    "Synchronizing to external clocks"
+    "Converting MIDI to CV and gate signals",
+    "Processing live MIDI input",
+    "Synchronizing to external clock sources"
   ],
   "gui_description": "On the right side, the display shows the current transport position (in bars, beats, and sixteenths) and the current position within the file. Below that is the file's tempo (if it defines one) and the file's length in bars. At the bottom right is a simple progress bar, indicating the playback position within the file. There are two lines of activity indicators. The upper one represents the tracks in the file; the lower one represents MIDI channels. If the current parameter is one of the 'Track mode' parameters, further information about that track is shown: the track name (if defined in the file) and the most recent MIDI message played on that track.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Folder",
@@ -45,10 +44,10 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets the behaviour when a new file is chosen. The options are: Wait until the end of the bar and then change to the new file. Wait until the end of the file and then change to the new file. Change immediately.",
+      "description": "Sets the behaviour when a new file is chosen.",
       "enum_values": [
-        "Wait until end of bar",
-        "Wait until end of file",
+        "Wait until the end of the bar and then change to the new file",
+        "Wait until the end of the file and then change to the new file",
         "Change immediately"
       ]
     },
@@ -57,10 +56,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets how the file position changes when switching to a new file. The options are: The new file starts from the beginning. The new file starts from the current position in the old file (modulo the length of the new file).",
+      "description": "Sets how the file position changes when switching to a new file.",
       "enum_values": [
-        "Start from beginning",
-        "Start from current position"
+        "The new file starts from the beginning",
+        "The new file starts from the current position in the old file (modulo the length of the new file)"
       ]
     },
     {
@@ -68,10 +67,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Set the playback mode for the tracks. The options are: Normal playback. Track is muted.",
+      "description": "Set the playback mode for the tracks.",
       "enum_values": [
         "Normal playback",
-        "Muted"
+        "Track is muted"
       ]
     },
     {
@@ -101,7 +100,8 @@
       "max": 100,
       "default": 10,
       "description": "Sets the length of output trigger pulses.",
-      "type": "trigger"
+      "type": "enum",
+      "unit": "ms"
     },
     {
       "name": "Convert live MIDI",
@@ -115,13 +115,13 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "description": "Sets the multiplier for incoming clock pulses. The options are: clock is interpreted as 24ppqn. clock is interpreted as 1/32 notes. clock is interpreted as 1/16 notes. clock is interpreted as 1/8 notes. clock is interpreted as 1/4 notes.",
+      "description": "Sets the multiplier for incoming clock pulses.",
       "enum_values": [
-        "24ppqn",
-        "1/32 notes",
-        "1/16 notes",
-        "1/8 notes",
-        "1/4 notes"
+        "clock is interpreted as 24ppqn",
+        "clock is interpreted as 1/32 notes",
+        "clock is interpreted as 1/16 notes",
+        "clock is interpreted as 1/8 notes",
+        "clock is interpreted as 1/4 notes"
       ]
     },
     {
@@ -129,10 +129,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets the mode for the reset input. The options are: the input is a reset trigger. the input is a run/stop signal.",
+      "description": "Sets the mode for the reset input.",
       "enum_values": [
-        "Reset trigger",
-        "Run/stop signal"
+        "the input is a reset trigger",
+        "the input is a run/stop signal"
       ]
     },
     {

@@ -2,10 +2,11 @@
   "guid": "chof",
   "name": "Chorus/Flange",
   "short_description": "Chorus or Flange effect",
-  "description": "This algorithm is a stereo chorus or flanger effect. For a chorus effect, select a longish Delay with a low Depth and low Feedback. For a flanger, you want a short Delay and a high Depth, and add feedback to taste. The Spread control sets the phase difference in the LFOs for the left and right channel. When at the default setting of 180 you get the 'stereo chorus' effect provided on certain classic synths to generate a stereo output from an essentially mono source.",
+  "description": "This algorithm is a stereo chorus or flanger effect.\n\nFor a chorus effect, select a longish Delay with a low Depth and low Feedback. For a flanger, you want a short Delay and a high Depth, and add feedback to taste.\n\nWith a very short Delay, you have what is often termed a comb filter.\n\nThe Spread control sets the phase difference in the LFOs for the left and right channel. When at the default setting of 180 you get the 'stereo chorus' effect provided on certain classic synths to generate a stereo output from an essentially mono source.",
   "categories": [
-    "Modulation",
-    "Delay"
+    "modulation",
+    "delay",
+    "effects"
   ],
   "parameters": [
     {
@@ -20,14 +21,27 @@
       "min": 0.1,
       "max": 150.0,
       "default": 20.0,
-      "type": "folder",
-      "is_bus": false
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The size of the delay lines.",
+      "unit": "ms"
+    },
+    {
+      "name": "Delay mult",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "isCommon": false,
+      "is_bus": false,
+      "description": "A multiplier to apply to the Delay parameter; ‘x1’ or ‘x0.1’."
     },
     {
       "name": "Speed",
       "min": 0,
       "max": 1000,
       "default": 500,
+      "isCommon": false,
+      "is_bus": false,
       "description": "The LFO speed; exponential scaling from 0.01Hz to 20Hz."
     },
     {
@@ -35,40 +49,50 @@
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "folder",
-      "is_bus": false
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The internal feedback.",
+      "unit": "%"
     },
     {
       "name": "Depth",
       "min": 0,
       "max": 100,
       "default": 15,
-      "type": "folder",
-      "is_bus": false
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The LFO depth.",
+      "unit": "%"
     },
     {
       "name": "Spread",
       "min": 0,
       "max": 360,
       "default": 180,
-      "type": "folder",
-      "is_bus": false
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The LFO phase difference between channels.",
+      "unit": "degrees"
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "folder",
-      "is_bus": false
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "folder",
-      "is_bus": false
+      "isCommon": false,
+      "is_bus": false,
+      "description": "The gain applied to the wet signal.",
+      "unit": "dB"
     }
   ],
   "input_ports": [
@@ -79,6 +103,10 @@
     {
       "name": "Right input",
       "description": "The right input bus, if stereo."
+    },
+    {
+      "name": "V/octave input",
+      "description": "The input bus to use for V/octave modulation of the delay time. Positive voltages shorten the delay, to give the expected response when using it as a tuned comb filter."
     }
   ],
   "output_ports": [

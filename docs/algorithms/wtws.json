@@ -2,53 +2,54 @@
   "guid": "wtws",
   "name": "Wavetable Waveshaper",
   "short_description": "Waveshaper that uses a wavetable",
-  "description": "This algorithm is based on the Wavetable Waveshaper algorithm on the disting mk4. Applied to audio, this algorithm is a wavetable-based waveshaper effect. More generally, considering the input as a CV lookup, this algorithm provides a wavetable-based transfer function. As such it offers a great way to roll your own phase distortion synthesis.",
+  "description": "This algorithm is based on the Wavetable Waveshaper algorithm on the disting mk4. Applied to audio, this algorithm is a wavetable-based waveshaper effect. More generally, considering the input as a CV lookup, this algorithm provides a wavetable-based transfer function. As such it offers a great way to roll your own phase distortion synthesis. Please see the section above on how wavetables are formatted and arranged on the MicroSD card.",
   "categories": [
-    "Distortion",
+    "Waveshaping",
     "Wavetable",
-    "Effect"
+    "Distortion"
   ],
+  "gui_description": "The display shows the current wavetable.",
   "parameters": [
     {
       "name": "Wavetable",
       "min": 0,
-      "description": "Chooses the wavetable."
+      "description": "Chooses the wavetable.",
+      "type": "enum"
     },
     {
       "name": "Wave offset",
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "Sets the position within the wavetable.",
+      "unit": "%"
     },
     {
       "name": "Input gain",
       "min": -32.0,
       "max": 32.0,
       "default": 1.0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The input gain. Negative values invert the signal."
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The output wet/dry mix.",
+      "unit": "%"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "is_bus": false,
+      "description": "The output gain applied to the shaped signal.",
+      "unit": "dB"
     },
     {
       "name": "Width",
@@ -56,8 +57,8 @@
       "max": 8,
       "default": 1,
       "type": "bus",
-      "is_common": true,
-      "is_bus": true
+      "is_bus": true,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
       "name": "Output mode",
@@ -65,28 +66,28 @@
       "max": 1,
       "default": 0,
       "type": "bus",
-      "is_common": true,
-      "is_bus": true
+      "is_bus": true,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
     {
+      "name": "Input",
+      "description": "The first input bus to process."
+    },
+    {
       "name": "Gain input",
-      "description": ""
+      "description": "The bus to use to control the input gain. Scaled such that a 5V CV gives 32x gain."
     },
     {
       "name": "Wave input",
-      "description": ""
-    },
-    {
-      "name": "Input",
-      "description": ""
+      "description": "Sets an input bus to modulate the wave offset."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": ""
+      "description": "The first output bus."
     }
   ]
 }

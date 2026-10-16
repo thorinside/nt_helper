@@ -4,9 +4,9 @@
   "short_description": "Haken Continuum CV expander",
   "description": "This algorithm allows the disting NT to be used as a virtual CVC (Control Voltage Converter) for the Haken Audio Continuum fingerboard. The disting NT's I2C address needs to be set to 0x28 in the Settings. The Continuum sends 16 output channels. Each one of these can be output to any of the disting NT's busses. Note that the signals from the Continuum don't just have to emerge directly from the module's outputs; they could just as well be the inputs to other algorithms.",
   "categories": [
+    "Utility",
     "CV",
-    "Interface",
-    "Routing"
+    "Interface"
   ],
   "parameters": [
     {
@@ -218,71 +218,76 @@
       "description": "The standard Add/Replace mode selector for channel 16."
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "I2C",
+      "description": "I2C connection from Haken Continuum fingerboard (address 0x28)"
+    }
+  ],
   "output_ports": [
     {
-      "name": "channel_1",
-      "description": "Continuum channel 1 output, routed to selected bus"
+      "name": "Channel 1",
+      "description": "Continuum channel 1 output, routable to any bus"
     },
     {
-      "name": "channel_2",
-      "description": "Continuum channel 2 output, routed to selected bus"
+      "name": "Channel 2",
+      "description": "Continuum channel 2 output, routable to any bus"
     },
     {
-      "name": "channel_3",
-      "description": "Continuum channel 3 output, routed to selected bus"
+      "name": "Channel 3",
+      "description": "Continuum channel 3 output, routable to any bus"
     },
     {
-      "name": "channel_4",
-      "description": "Continuum channel 4 output, routed to selected bus"
+      "name": "Channel 4",
+      "description": "Continuum channel 4 output, routable to any bus"
     },
     {
-      "name": "channel_5",
-      "description": "Continuum channel 5 output, routed to selected bus"
+      "name": "Channel 5",
+      "description": "Continuum channel 5 output, routable to any bus"
     },
     {
-      "name": "channel_6",
-      "description": "Continuum channel 6 output, routed to selected bus"
+      "name": "Channel 6",
+      "description": "Continuum channel 6 output, routable to any bus"
     },
     {
-      "name": "channel_7",
-      "description": "Continuum channel 7 output, routed to selected bus"
+      "name": "Channel 7",
+      "description": "Continuum channel 7 output, routable to any bus"
     },
     {
-      "name": "channel_8",
-      "description": "Continuum channel 8 output, routed to selected bus"
+      "name": "Channel 8",
+      "description": "Continuum channel 8 output, routable to any bus"
     },
     {
-      "name": "channel_9",
-      "description": "Continuum channel 9 output, routed to selected bus"
+      "name": "Channel 9",
+      "description": "Continuum channel 9 output, routable to any bus"
     },
     {
-      "name": "channel_10",
-      "description": "Continuum channel 10 output, routed to selected bus"
+      "name": "Channel 10",
+      "description": "Continuum channel 10 output, routable to any bus"
     },
     {
-      "name": "channel_11",
-      "description": "Continuum channel 11 output, routed to selected bus"
+      "name": "Channel 11",
+      "description": "Continuum channel 11 output, routable to any bus"
     },
     {
-      "name": "channel_12",
-      "description": "Continuum channel 12 output, routed to selected bus"
+      "name": "Channel 12",
+      "description": "Continuum channel 12 output, routable to any bus"
     },
     {
-      "name": "channel_13",
-      "description": "Continuum channel 13 output, routed to selected bus"
+      "name": "Channel 13",
+      "description": "Continuum channel 13 output, routable to any bus"
     },
     {
-      "name": "channel_14",
-      "description": "Continuum channel 14 output, routed to selected bus"
+      "name": "Channel 14",
+      "description": "Continuum channel 14 output, routable to any bus"
     },
     {
-      "name": "channel_15",
-      "description": "Continuum channel 15 output, routed to selected bus"
+      "name": "Channel 15",
+      "description": "Continuum channel 15 output, routable to any bus"
     },
     {
-      "name": "channel_16",
-      "description": "Continuum channel 16 output, routed to selected bus"
+      "name": "Channel 16",
+      "description": "Continuum channel 16 output, routable to any bus"
     }
   ]
 }
