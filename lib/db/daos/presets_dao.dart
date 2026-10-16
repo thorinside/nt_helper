@@ -220,24 +220,30 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       // Assemble FullPresetSlot list
       final List<FullPresetSlot> fullSlots = [];
       for (final slotEntry in slotEntries) {
-        final algorithm = algorithmsMap[slotEntry.algorithmGuid];
-        if (algorithm != null) {
-          final slotId = slotEntry.id;
-          fullSlots.add(
-            FullPresetSlot(
-              slot: slotEntry,
-              algorithm: algorithm,
-              specificationValues:
-                  specificationValuesBySlot[slotId] ?? const [],
-              parameterValues: paramValuesBySlot[slotId] ?? {},
-              parameterStringValues: paramStringValuesBySlot[slotId] ?? {},
-              mappings: paramMappingsBySlot[slotId] ?? {},
-              routing: routingBySlot[slotId],
-            ),
-          );
-        } else {
-          // Handle missing algorithm metadata gracefully (e.g., skip slot or error)
-        }
+        final slotId = slotEntry.id;
+        final specificationValues =
+            specificationValuesBySlot[slotId] ?? const <int>[];
+        // Saved presets can reference community algorithms whose metadata is
+        // unavailable locally. Keep their positions and saved data intact:
+        // dropping a slot would shift every subsequent algorithm on load/save.
+        final algorithm =
+            algorithmsMap[slotEntry.algorithmGuid] ??
+            AlgorithmEntry(
+              guid: slotEntry.algorithmGuid,
+              name: 'Unavailable algorithm (${slotEntry.algorithmGuid})',
+              numSpecifications: specificationValues.length,
+            );
+        fullSlots.add(
+          FullPresetSlot(
+            slot: slotEntry,
+            algorithm: algorithm,
+            specificationValues: specificationValues,
+            parameterValues: paramValuesBySlot[slotId] ?? {},
+            parameterStringValues: paramStringValuesBySlot[slotId] ?? {},
+            mappings: paramMappingsBySlot[slotId] ?? {},
+            routing: routingBySlot[slotId],
+          ),
+        );
       }
 
       // Sort slots by slotIndex using standard sort

@@ -6,6 +6,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
+import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
@@ -481,7 +482,6 @@ class MetadataSyncPage extends StatelessWidget {
 
                           // Primarily use ViewingLocalData state
                           if (metaState is ViewingLocalData) {
-                            // Offline highlighting removed for now
                             return _buildDataView(
                               metaCtx,
                               metaState.algorithms,
@@ -490,7 +490,11 @@ class MetadataSyncPage extends StatelessWidget {
                               isConnected,
                               isOperationInProgress,
                               isOffline,
-                              null, // No loaded preset ID passed
+                              isOffline &&
+                                      currentManager
+                                          is OfflineDistingMidiManager
+                                  ? currentManager.loadedPresetId
+                                  : null,
                             );
                           }
                           // Handle transient success states - might briefly show loading
@@ -967,8 +971,8 @@ class _PresetListView extends StatelessWidget {
         final preset = sortedPresets[index];
         final formattedDate = preset.lastModified.toLocal().toString();
 
-        // Offline highlighting removed (loadedOfflinePresetId is always null)
-        final bool isCurrentlyLoadedOffline = false;
+        final isCurrentlyLoadedOffline =
+            isOffline && loadedOfflinePresetId == preset.id;
 
         // Determine button states
         final bool canLoad = !isOperationInProgress;
@@ -1082,6 +1086,7 @@ class _PresetListView extends StatelessWidget {
             TextButton(
               child: Text(isOffline ? 'Load Offline' : 'Send'),
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 // Pop the dialog first
                 Navigator.of(dialogContext).pop();
                 try {
@@ -1095,12 +1100,31 @@ class _PresetListView extends StatelessWidget {
                   if (fullDetails != null) {
                     // Call correct Cubit based on mode
                     if (isOffline) {
-                      distingCubit.loadPresetOffline(fullDetails);
+                      await distingCubit.loadPresetOffline(fullDetails);
                       // After loading offline, pop the metadata page
                       // Use the original context from the list item builder
                       if (context.mounted) {
                         // Check if the widget is still mounted
                         Navigator.of(context).pop();
+                      }
+                      final manager = distingCubit.disting();
+                      if (manager is OfflineDistingMidiManager &&
+                          manager.unavailableSlotIndices.isNotEmpty) {
+                        final unavailable = manager.unavailableSlotIndices;
+                        final guids = unavailable
+                            .map(
+                              (index) =>
+                                  fullDetails.slots[index].algorithm.guid,
+                            )
+                            .join(', ');
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${unavailable.length} algorithm(s) unavailable offline '
+                              '($guids). Kept in original slots; saved data preserved.',
+                            ),
+                          ),
+                        );
                       }
                     } else {
                       // Need manager instance for online load
@@ -1327,7 +1351,8 @@ class _TemplateListView extends StatelessWidget {
                       .toLocal()
                       .toString();
 
-                  final bool isCurrentlyLoadedOffline = false;
+                  final isCurrentlyLoadedOffline =
+                      isOffline && loadedOfflinePresetId == preset.id;
 
                   // Determine button states
                   final bool canLoad = !isOperationInProgress;
@@ -1456,12 +1481,29 @@ class _TemplateListView extends StatelessWidget {
             ),
             TextButton(
               child: Text(isOffline ? 'Load Offline' : 'Send'),
-              onPressed: () {
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.of(dialogContext).pop();
                 if (isOffline) {
-                  distingCubit.loadPresetOffline(template);
+                  await distingCubit.loadPresetOffline(template);
                   if (context.mounted) {
                     Navigator.of(context).pop();
+                  }
+                  final manager = distingCubit.disting();
+                  if (manager is OfflineDistingMidiManager &&
+                      manager.unavailableSlotIndices.isNotEmpty) {
+                    final unavailable = manager.unavailableSlotIndices;
+                    final guids = unavailable
+                        .map((index) => template.slots[index].algorithm.guid)
+                        .join(', ');
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${unavailable.length} algorithm(s) unavailable offline '
+                          '($guids). Kept in original slots; saved data preserved.',
+                        ),
+                      ),
+                    );
                   }
                 } else {
                   final onlineManager = distingCubit.disting();

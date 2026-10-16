@@ -16,6 +16,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/disting_request_control.dart';
 import 'package:nt_helper/domain/memory_query_input.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/algorithm_shape_snapshot.dart';
 import 'package:nt_helper/models/memory_usage.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
@@ -33,6 +34,9 @@ class OfflineDistingMidiManager
   // Internal state for the simulated preset
   int? _loadedPresetId;
   final List<String> _presetAlgorithmGuids = [];
+  final Map<String, AlgorithmEntry> _loadedAlgorithms = {};
+  final Set<String> _unavailableAlgorithmGuids = {};
+  final Map<int, PresetRoutingEntry?> _savedRoutings = {};
   final List<List<int>> _presetSpecificationValues = [];
   final Map<int, int> _presetSlotIds = {}; // Maps slotIndex -> presetSlotId
   final Map<int, Map<int, int>> _parameterValues = {};
@@ -48,9 +52,22 @@ class OfflineDistingMidiManager
     _shapeResolver = OfflineAlgorithmShapeResolver(_metadataDao);
   }
 
+  /// The saved preset currently being edited, or null for a new preset.
+  int? get loadedPresetId => _loadedPresetId;
+
+  /// Slots kept for round-trip preservation whose algorithms are not cached.
+  Set<int> get unavailableSlotIndices => Set<int>.unmodifiable({
+    for (var index = 0; index < _presetAlgorithmGuids.length; index++)
+      if (_unavailableAlgorithmGuids.contains(_presetAlgorithmGuids[index]))
+        index,
+  });
+
   // Initialize state from loaded preset details
   Future<void> initializeFromDb(FullPresetDetails? details) async {
     _presetAlgorithmGuids.clear();
+    _loadedAlgorithms.clear();
+    _unavailableAlgorithmGuids.clear();
+    _savedRoutings.clear();
     _resolvedShapeCache.clear();
     _presetSpecificationValues.clear();
     _presetSlotIds.clear();
@@ -67,12 +84,18 @@ class OfflineDistingMidiManager
       return;
     }
 
+    final cachedGuids = (await _metadataDao.getAllAlgorithms())
+        .map((algorithm) => algorithm.guid)
+        .toSet();
     _loadedPresetId = details.preset.id;
     _presetName = details.preset.name;
     for (int i = 0; i < details.slots.length; i++) {
       final slotData = details.slots[i];
       final guid = slotData.algorithm.guid;
       _presetAlgorithmGuids.add(guid);
+      _loadedAlgorithms[guid] = slotData.algorithm;
+      if (!cachedGuids.contains(guid)) _unavailableAlgorithmGuids.add(guid);
+      _savedRoutings[i] = slotData.routing;
       _presetSpecificationValues.add(
         List<int>.unmodifiable(slotData.specificationValues),
       );
@@ -205,9 +228,11 @@ class OfflineDistingMidiManager
     final guid = _presetAlgorithmGuids[algorithmIndex];
 
     try {
-      final algoEntry = await (_metadataDao.select(
-        _metadataDao.algorithms,
-      )..where((a) => a.guid.equals(guid))).getSingleOrNull();
+      final algoEntry =
+          await (_metadataDao.select(
+            _metadataDao.algorithms,
+          )..where((a) => a.guid.equals(guid))).getSingleOrNull() ??
+          _loadedAlgorithms[guid];
 
       if (algoEntry != null) {
         // Retrieve pre-calculated default name and custom name
@@ -572,6 +597,9 @@ class OfflineDistingMidiManager
   @override
   Future<void> requestNewPreset() async {
     _presetAlgorithmGuids.clear();
+    _loadedAlgorithms.clear();
+    _unavailableAlgorithmGuids.clear();
+    _savedRoutings.clear();
     _presetSpecificationValues.clear();
     _presetSlotIds.clear();
     _parameterValues.clear();
@@ -806,14 +834,85 @@ class OfflineDistingMidiManager
   Future<ResolvedAlgorithmShape> _resolvedShape(
     int algorithmIndex,
     String guid,
-  ) {
+  ) async {
     final values = List<int>.unmodifiable(
       _presetSpecificationValues[algorithmIndex],
     );
+    // Orphaned parameter/page rows do not make an uncached algorithm usable.
+    // Preserve its raw preset fields separately, but expose no editable shape.
+    if (_unavailableAlgorithmGuids.contains(guid)) {
+      return ResolvedAlgorithmShape(
+        usedGrammar: false,
+        snapshot: AlgorithmShapeSnapshot(
+          specificationValues: values,
+          parameters: const [],
+          pages: const [],
+          pageMemberships: const [],
+          outputUsage: const [],
+        ),
+      );
+    }
     final cacheKey = jsonEncode([guid, values]);
-    return _resolvedShapeCache.putIfAbsent(
+    final resolved = await _resolvedShapeCache.putIfAbsent(
       cacheKey,
       () => _shapeResolver.resolve(guid, values),
+    );
+    // A successfully expanded grammar defines the selected topology, even if
+    // an older, larger topology left saved values beyond its current shape.
+    if (resolved.usedGrammar) return resolved;
+
+    // Older cached presets may contain values without complete metadata.
+    // Keep their hardware parameter positions visible without inventing names,
+    // units, routing flags, or editable ranges for the missing metadata.
+    final savedNumbers = <int>{
+      ...?_parameterValues[algorithmIndex]?.keys,
+      ...?_parameterStringValues[algorithmIndex]?.keys,
+      ...?_mappings[algorithmIndex]?.keys,
+    }.where((number) => number >= 0);
+    if (savedNumbers.isEmpty) return resolved;
+    final count = savedNumbers.reduce(max) + 1;
+    final snapshot = resolved.snapshot;
+    if (count <= snapshot.parameters.length) return resolved;
+    return ResolvedAlgorithmShape(
+      usedGrammar: false,
+      snapshot: AlgorithmShapeSnapshot(
+        specificationValues: values,
+        parameters: [
+          ...snapshot.parameters,
+          for (
+            var number = snapshot.parameters.length;
+            number < count;
+            number++
+          )
+            ShapeParameterAtom(
+              name: 'Parameter ${number + 1}',
+              min: _parameterValues[algorithmIndex]?[number] ?? 0,
+              max: _parameterValues[algorithmIndex]?[number] ?? 0,
+              defaultValue: _parameterValues[algorithmIndex]?[number] ?? 0,
+              rawUnitIndex: 0,
+              powerOfTen: 0,
+              ioFlags: 0,
+              enumStrings: const [],
+            ),
+        ],
+        pages: [
+          ...snapshot.pages,
+          ShapePageAtom(name: 'Saved parameters (metadata unavailable)'),
+        ],
+        pageMemberships: [
+          ...snapshot.pageMemberships,
+          for (
+            var number = snapshot.parameters.length;
+            number < count;
+            number++
+          )
+            ShapePageMembershipAtom(
+              pageIndex: snapshot.pages.length,
+              parameterNumber: number,
+            ),
+        ],
+        outputUsage: snapshot.outputUsage,
+      ),
     );
   }
 
@@ -838,9 +937,11 @@ class OfflineDistingMidiManager
     final List<FullPresetSlot> slots = [];
     for (int i = 0; i < _presetAlgorithmGuids.length; i++) {
       final guid = _presetAlgorithmGuids[i];
-      final algoEntry = await (_metadataDao.select(
-        _metadataDao.algorithms,
-      )..where((a) => a.guid.equals(guid))).getSingleOrNull();
+      final algoEntry =
+          await (_metadataDao.select(
+            _metadataDao.algorithms,
+          )..where((a) => a.guid.equals(guid))).getSingleOrNull() ??
+          _loadedAlgorithms[guid];
 
       if (algoEntry == null) {
         return null;
@@ -860,6 +961,7 @@ class OfflineDistingMidiManager
           parameterValues: _parameterValues[i] ?? {},
           parameterStringValues: _parameterStringValues[i] ?? {},
           mappings: _mappings[i] ?? {},
+          routing: _savedRoutings[i],
         ),
       );
     }
@@ -869,6 +971,7 @@ class OfflineDistingMidiManager
   // --- Internal State Shifting Helpers ---
 
   void _removeAndShiftState(int removedIndex) {
+    _savedRoutings.remove(removedIndex);
     _parameterValues.remove(removedIndex);
     _parameterStringValues.remove(removedIndex);
     _mappings.remove(removedIndex);
@@ -877,6 +980,7 @@ class OfflineDistingMidiManager
     _defaultNames.remove(removedIndex);
 
     for (int i = removedIndex; i < _presetAlgorithmGuids.length; i++) {
+      _savedRoutings[i] = _savedRoutings.remove(i + 1);
       _parameterValues[i] = _parameterValues.remove(i + 1) ?? {};
       _parameterStringValues[i] = _parameterStringValues.remove(i + 1) ?? {};
       _mappings[i] = _mappings.remove(i + 1) ?? {};
@@ -900,6 +1004,7 @@ class OfflineDistingMidiManager
       }
     }
     final lastIndex = _presetAlgorithmGuids.length;
+    _savedRoutings.remove(lastIndex);
     _parameterValues.remove(lastIndex);
     _parameterStringValues.remove(lastIndex);
     _mappings.remove(lastIndex);
@@ -909,6 +1014,9 @@ class OfflineDistingMidiManager
   }
 
   void _shiftStateUp(int movedIndex) {
+    final movingRouting = _savedRoutings[movedIndex];
+    _savedRoutings[movedIndex] = _savedRoutings[movedIndex - 1];
+    _savedRoutings[movedIndex - 1] = movingRouting;
     final movingDefaultName = _defaultNames[movedIndex];
     final otherDefaultName = _defaultNames[movedIndex - 1];
     final movingCustomName = _customNames[movedIndex];
@@ -964,6 +1072,9 @@ class OfflineDistingMidiManager
   }
 
   void _shiftStateDown(int movedIndex) {
+    final movingRouting = _savedRoutings[movedIndex];
+    _savedRoutings[movedIndex] = _savedRoutings[movedIndex + 1];
+    _savedRoutings[movedIndex + 1] = movingRouting;
     final movingDefaultName = _defaultNames[movedIndex];
     final otherDefaultName = _defaultNames[movedIndex + 1];
     final movingCustomName = _customNames[movedIndex];

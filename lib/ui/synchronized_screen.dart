@@ -17,6 +17,7 @@ import 'package:nt_helper/ui/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show AlgorithmInfo, DisplayMode;
 
@@ -1181,6 +1182,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       return SlotDetailView(
                         key: ValueKey("$index - ${slot.algorithm.guid}"),
                         slot: slot,
+                        unavailableOffline:
+                            state is DistingStateSynchronized &&
+                            state.disting is OfflineDistingMidiManager &&
+                            (state.disting as OfflineDistingMidiManager)
+                                .unavailableSlotIndices
+                                .contains(index),
                         slotIndex: index,
                         units: widget.units,
                         firmwareVersion: widget.firmwareVersion,
@@ -2110,6 +2117,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             return SlotDetailView(
               key: ValueKey("$index - ${slot.algorithm.guid}"),
               slot: slot,
+              unavailableOffline:
+                  state is DistingStateSynchronized &&
+                  state.disting is OfflineDistingMidiManager &&
+                  (state.disting as OfflineDistingMidiManager)
+                      .unavailableSlotIndices
+                      .contains(index),
               slotIndex: index,
               units: widget.units,
               firmwareVersion: widget.firmwareVersion,

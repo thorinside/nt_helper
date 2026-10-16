@@ -31,6 +31,7 @@ class SlotDetailView extends StatefulWidget {
   final SlotEditorMode editorMode;
   final ValueChanged<SlotEditorMode> onEditorModeChanged;
   final bool editorModeEnabled;
+  final bool unavailableOffline;
 
   const SlotDetailView({
     super.key,
@@ -43,6 +44,7 @@ class SlotDetailView extends StatefulWidget {
     required this.onEditorModeChanged,
     this.sectionController,
     this.editorModeEnabled = true,
+    this.unavailableOffline = false,
   });
 
   @override
@@ -98,6 +100,22 @@ class _SlotDetailViewState extends State<SlotDetailView>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    if (widget.unavailableOffline) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              'Algorithm ${widget.slot.algorithm.guid} is unavailable offline. '
+              'Its original slot and saved data are preserved. '
+              'Sync this algorithm from the device to edit it.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
 
     final definition = AlgorithmControllerRegistry.bundled.findForGuid(
       widget.slot.algorithm.guid,
