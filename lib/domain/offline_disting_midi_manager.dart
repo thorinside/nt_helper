@@ -576,19 +576,15 @@ class OfflineDistingMidiManager
 
   @override
   Future<void> requestSavePreset({int option = 0}) async {
-    try {
-      final FullPresetDetails? presetDetails =
-          await _buildPresetDetailsForSave();
-      if (presetDetails == null) {
-        return;
-      }
-      final presetsDao = _database.presetsDao;
-      final savedPresetId = await presetsDao.saveFullPreset(presetDetails);
-      _loadedPresetId = savedPresetId;
-      _presetName = presetDetails.preset.name;
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
+    final FullPresetDetails? presetDetails = await _buildPresetDetailsForSave();
+    if (presetDetails == null) {
+      throw StateError('Unable to build the offline preset for local saving.');
     }
+    final savedPresetId = await _database.presetsDao.saveFullPreset(
+      presetDetails,
+    );
+    _loadedPresetId = savedPresetId;
+    _presetName = presetDetails.preset.name;
   }
 
   @override
@@ -612,11 +608,44 @@ class OfflineDistingMidiManager
     _loadedPresetId = null;
   }
 
+  /// Checks an addition without changing the preset, including replacements
+  /// whose existing slot must remain intact if the requested shape is unknown.
+  Future<void> validateAlgorithmSpecifications(
+    AlgorithmInfo algorithm,
+    List<int> specifications,
+  ) async {
+    if (specifications.length != algorithm.specifications.length) {
+      throw ArgumentError('The algorithm specification count does not match.');
+    }
+    for (var index = 0; index < specifications.length; index++) {
+      final value = specifications[index];
+      final specification = algorithm.specifications[index];
+      if (value < specification.min || value > specification.max) {
+        throw ArgumentError(
+          'Specification ${index + 1} must be between '
+          '${specification.min} and ${specification.max}.',
+        );
+      }
+    }
+    // Unlike legacy preset hydration, adding an algorithm must build exactly
+    // the requested topology or fail before changing the preset.
+    final shape = await _shapeResolver.resolve(
+      algorithm.guid,
+      specifications,
+      requireExactSpecifications: true,
+    );
+    _resolvedShapeCache[jsonEncode([algorithm.guid, specifications])] =
+        Future.value(shape);
+  }
+
   @override
   Future<void> requestAddAlgorithm(
     AlgorithmInfo algorithm,
     List<int> specifications,
   ) async {
+    specifications = List<int>.unmodifiable(specifications);
+    await validateAlgorithmSpecifications(algorithm, specifications);
+
     // Calculate default name before adding
     String baseName = algorithm.name;
     String guid = algorithm.guid;

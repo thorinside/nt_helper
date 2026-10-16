@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +8,8 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
+import 'package:nt_helper/models/algorithm_repeat_grammar.dart';
+import 'package:nt_helper/services/metadata_import_service.dart';
 
 void main() {
   group('OfflineDistingMidiManager specification values', () {
@@ -29,6 +34,69 @@ void main() {
                 numSpecifications: const Value(1),
               ),
             );
+        await database
+            .into(database.specifications)
+            .insert(
+              SpecificationEntry(
+                algorithmGuid: guid,
+                specIndex: 0,
+                name: 'Channels',
+                minValue: 1,
+                maxValue: 8,
+                defaultValue: 1,
+                type: 0,
+              ),
+            );
+        final grammar = AlgorithmRepeatGrammar(
+          baselineSpecifications: [1],
+          sections: [
+            RepeatSection(
+              specificationIndex: 0,
+              countBias: 0,
+              sourceOrdinal: 0,
+              runs: const [
+                ShapeStreamRun(
+                  stream: ShapeStream.parameters,
+                  firstStart: 0,
+                  itemCount: 1,
+                ),
+              ],
+              substitutions: [
+                OrdinalTextSubstitution(
+                  stream: ShapeStream.parameters,
+                  rowOffset: 0,
+                  field: OrdinalField.parameterName,
+                  parts: const [
+                    OrdinalTextPlaceholder(
+                      specificationIndex: 0,
+                      displayBias: 1,
+                    ),
+                    LiteralTextPart(':Value'),
+                  ],
+                ),
+              ],
+              children: const [],
+            ),
+          ],
+        );
+        await database.metadataDao.replaceAlgorithmShapeAndGrammar(
+          guid: guid,
+          parameters: [
+            ParameterEntry(
+              algorithmGuid: guid,
+              parameterNumber: 0,
+              name: '1:Value',
+              minValue: 0,
+              maxValue: 100,
+              defaultValue: 0,
+            ),
+          ],
+          enums: const [],
+          pages: const [],
+          pageItems: const [],
+          outputUsage: const [],
+          grammar: grammar,
+        );
       }
     });
 
@@ -82,6 +150,57 @@ void main() {
         expect(savedDetails!.slots.single.specificationValues, [4]);
       },
     );
+
+    test('failed local saves propagate and can be retried', () async {
+      await manager.initializeFromDb(null);
+      await manager.requestSetPresetName('Retry local save');
+      await manager.requestAddAlgorithm(
+        _algorithmInfo('algo-a', 'Algorithm A'),
+        [2],
+      );
+      await database.customStatement('''
+        CREATE TRIGGER reject_preset_save BEFORE INSERT ON presets
+        BEGIN SELECT RAISE(ABORT, 'local save rejected'); END;
+      ''');
+
+      await expectLater(
+        manager.requestSavePreset(),
+        throwsA(
+          predicate(
+            (error) => error.toString().contains('local save rejected'),
+          ),
+        ),
+      );
+      expect(manager.loadedPresetId, isNull);
+      expect(
+        await database.presetsDao.getPresetByName('Retry local save'),
+        isNull,
+      );
+
+      await database.customStatement('DROP TRIGGER reject_preset_save');
+      await manager.requestSavePreset();
+      final saved = await database.presetsDao.getPresetByName(
+        'Retry local save',
+      );
+      expect(manager.loadedPresetId, saved!.id);
+      final restored = await database.presetsDao.getFullPresetDetails(saved.id);
+      expect(restored!.slots.single.specificationValues, [2]);
+    });
+
+    test('unbuildable local presets report a save failure', () async {
+      await manager.initializeFromDb(null);
+      await manager.requestAddAlgorithm(
+        _algorithmInfo('algo-a', 'Algorithm A'),
+        [2],
+      );
+      await (database.delete(
+        database.algorithms,
+      )..where((row) => row.guid.equals('algo-a'))).go();
+
+      await expectLater(manager.requestSavePreset(), throwsStateError);
+      expect(manager.loadedPresetId, isNull);
+      expect(await database.presetsDao.getAllPresets(), isEmpty);
+    });
 
     test('keeps values aligned through moves and removal', () async {
       await manager.initializeFromDb(
@@ -149,6 +268,113 @@ void main() {
       expect(await manager.requestAlgorithmGuid(0), isNull);
       expect((await manager.requestCurrentPresetDetails())?.slots, isEmpty);
     });
+
+    for (final corruptGrammar in [false, true]) {
+      test('${corruptGrammar ? 'corrupt' : 'missing'} grammar rejects a new '
+          'unsupported shape without changing the preset', () async {
+        await manager.initializeFromDb(
+          _presetDetails([
+            _slot(0, 'algo-b', 'Algorithm B', [2]),
+          ]),
+        );
+        if (corruptGrammar) {
+          await (database.update(
+            database.algorithmRepeatGrammars,
+          )..where((row) => row.algorithmGuid.equals('algo-a'))).write(
+            const AlgorithmRepeatGrammarsCompanion(grammarJson: Value('{')),
+          );
+        } else {
+          await (database.delete(
+            database.algorithmRepeatGrammars,
+          )..where((row) => row.algorithmGuid.equals('algo-a'))).go();
+        }
+        await expectLater(
+          manager.requestAddAlgorithm(_algorithmInfo('algo-a', 'Algorithm A'), [
+            4,
+          ]),
+          throwsStateError,
+        );
+        expect(await _slotIdentities(manager), [
+          {
+            'guid': 'algo-b',
+            'specifications': [2],
+          },
+        ]);
+      });
+    }
+
+    test(
+      'bundled Attenuverter expands every advertised channel count',
+      () async {
+        final bundled =
+            jsonDecode(
+                  await File(
+                    'assets/metadata/full_metadata.json',
+                  ).readAsString(),
+                )
+                as Map<String, dynamic>;
+        final tables = bundled['tables'] as Map<String, dynamic>;
+        for (final entry in tables.entries) {
+          if (entry.key == 'units') continue;
+          tables[entry.key] = (entry.value as List).where((row) {
+            final data = row as Map<String, dynamic>;
+            return data['algorithmGuid'] == 'attn' || data['guid'] == 'attn';
+          }).toList();
+        }
+        expect(
+          await MetadataImportService(
+            database,
+          ).importFromJson(jsonEncode(bundled)),
+          isTrue,
+        );
+        final catalog = await database.metadataDao.getFullAlgorithmDetails(
+          'attn',
+        );
+        final algorithm = AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: 'attn',
+          name: 'Attenuverter',
+          specifications: [
+            for (final spec in catalog!.specifications)
+              Specification(
+                name: spec.name,
+                min: spec.minValue,
+                max: spec.maxValue,
+                defaultValue: spec.defaultValue,
+                type: spec.type,
+              ),
+          ],
+        );
+        for (var channels = 1; channels <= 12; channels++) {
+          await manager.requestAddAlgorithm(algorithm, [channels]);
+          final slot = channels - 1;
+          expect((await manager.requestAlgorithmGuid(slot))?.specifications, [
+            channels,
+          ]);
+          expect(
+            (await manager.requestNumberOfParameters(slot))?.numParameters,
+            1 + 10 * channels,
+          );
+          expect(
+            (await manager.requestParameterInfo(slot, 10 * channels))?.name,
+            '$channels:Gain',
+          );
+          final pages = (await manager.requestParameterPages(slot))!.pages;
+          expect(pages.map((page) => page.name), [
+            for (var channel = 1; channel <= channels; channel++)
+              'Channel $channel',
+            'Algorithm',
+          ]);
+          for (var channel = 0; channel < channels; channel++) {
+            expect(pages[channel].parameters, [
+              for (var parameter = 1; parameter <= 10; parameter++)
+                10 * channel + parameter,
+            ]);
+          }
+          expect(pages.last.parameters, [0]);
+        }
+      },
+    );
   });
 }
 

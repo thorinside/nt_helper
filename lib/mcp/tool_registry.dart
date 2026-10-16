@@ -642,7 +642,8 @@ class ToolRegistry {
         description:
             'Edit and save a specific slot: change algorithm, set parameters, or rename. '
             'Repeating the current algorithm GUID does not require its construction specifications. '
-            'A successful response has persisted=true. Device must be in connected mode.',
+            'Changing specifications on an existing algorithm is unsupported; add a new instance instead. '
+            'A successful response has persisted=true. Supports connected and offline modes.',
         inputSchema: {
           'properties': {
             'slot_index': {
@@ -659,7 +660,8 @@ class ToolRegistry {
                 'algorithm': {
                   'type': 'object',
                   'description':
-                      'Algorithm specification (guid or name, plus optional specifications)',
+                      'Algorithm identity (guid or name). Specifications are used when replacing '
+                      'the algorithm; an existing instance only accepts its unchanged specification values.',
                   'properties': {
                     'guid': {'type': 'string', 'description': 'Algorithm GUID'},
                     'name': {
@@ -846,7 +848,9 @@ class ToolRegistry {
             'algorithms': {
               'type': 'array',
               'description':
-                  'Algorithms to add. Each: {name: string} or {guid: string}. Added to slots 0, 1, 2, etc.',
+                  'Algorithms to add. Each: {name: string} or {guid: string}, with optional '
+                  'specifications: [integer, ...]. Explicit values are validated and preserved. '
+                  'Offline omission uses cached defaults. Added to slots 0, 1, 2, etc.',
               'items': {
                 'type': 'object',
                 'properties': {
@@ -877,7 +881,9 @@ class ToolRegistry {
     _entries.add(
       ToolRegistryEntry(
         name: 'save',
-        description: 'Save the current preset to the device.',
+        description:
+            'Save the current preset to the local database in offline mode, '
+            'or send the save command to the connected device in live mode.',
         inputSchema: {'properties': {}},
         handler: (args) => _distingTools.savePreset(args),
       ),
@@ -907,7 +913,9 @@ class ToolRegistry {
               'type': 'array',
               'items': {'type': 'integer'},
               'description':
-                  'Specification values for algorithms that require them (e.g., channel count, max delay time).',
+                  'Ordered integer specification values (e.g., channel count, max delay time). '
+                  'Explicit values are validated and preserved; offline omission uses cached defaults. '
+                  'Unsupported offline shapes return an error.',
             },
           },
         },

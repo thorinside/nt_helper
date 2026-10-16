@@ -3,6 +3,7 @@ import 'dart:typed_data'; // Added for Uint8List
 
 import 'package:collection/collection.dart';
 import 'package:image/image.dart' as img; // For image processing
+import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show
         Algorithm,
@@ -156,10 +157,72 @@ class DistingTools {
     return state is DistingStateSynchronized && state.offline;
   }
 
-  String _buildOfflineSpecsLimitation(String guid, List<Specification> specs) {
+  String _buildOfflineSpecsDefaultNotice(
+    String guid,
+    List<Specification> specs,
+  ) {
     final defaults = specs.map((s) => '${s.name}=${s.defaultValue}').join(', ');
-    return 'Offline mode limitation: specifications for "$guid" are fixed to '
-        'default values ($defaults). Any provided specifications are ignored.';
+    return 'Offline mode: no specifications provided for "$guid"; '
+        'using default values ($defaults).';
+  }
+
+  ({List<int> values, Map<String, dynamic>? error}) _resolveSpecifications({
+    required String guid,
+    required List<Specification> metadata,
+    required Object? provided,
+    required bool allowDefaults,
+  }) {
+    if (provided == null) {
+      if (metadata.isEmpty || allowDefaults) {
+        return (
+          values: metadata.map((spec) => spec.defaultValue).toList(),
+          error: null,
+        );
+      }
+      return (values: const [], error: _buildSpecRequiredError(guid, metadata));
+    }
+    if (provided is! List) {
+      return (
+        values: const [],
+        error: MCPUtils.buildError(
+          'Specifications must be a list of integers.',
+        ),
+      );
+    }
+    if (provided.length != metadata.length) {
+      return (
+        values: const [],
+        error: {
+          ..._buildSpecRequiredError(guid, metadata),
+          'error':
+              'Algorithm "$guid" requires ${metadata.length} specification(s), '
+              'got ${provided.length}.',
+        },
+      );
+    }
+    final values = <int>[];
+    for (var index = 0; index < provided.length; index++) {
+      final value = provided[index];
+      final spec = metadata[index];
+      if (value is! int) {
+        return (
+          values: const [],
+          error: MCPUtils.buildError(
+            'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
+          ),
+        );
+      }
+      if (value < spec.min || value > spec.max) {
+        return (
+          values: const [],
+          error: MCPUtils.buildError(
+            'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+          ),
+        );
+      }
+      values.add(value);
+    }
+    return (values: values, error: null);
   }
 
   /// Builds an error response with specification details for algorithms that require specs.
@@ -471,44 +534,12 @@ class DistingTools {
   ///   - algorithm_guid (string, required): The GUID of the algorithm to add.
   /// Returns:
   ///   A JSON string confirming the addition or an error.
-  Future<String> addAlgorithm(Map<String, dynamic> params) async {
-    final String? algorithmGuid = params['algorithm_guid'];
-    final String? algorithmName = params['algorithm_name'];
-
-    // Use shared algorithm resolver (includes device-only algorithms)
-    final algorithms = _getAllKnownAlgorithms();
-    final resolution = AlgorithmResolver.resolveAlgorithm(
-      guid: algorithmGuid,
-      algorithmName: algorithmName,
-      allAlgorithms: algorithms,
-    );
-
-    if (!resolution.isSuccess) {
-      return jsonEncode(convertToSnakeCaseKeys(resolution.error!));
-    }
-
-    try {
-      final algoStub = Algorithm(
-        algorithmIndex: -1,
-        guid: resolution.resolvedGuid!,
-        name: '',
-      );
-
-      final slotIndex = await _addAlgorithmAndVerify(algoStub);
-
-      return jsonEncode(
-        convertToSnakeCaseKeys(
-          MCPUtils.buildSuccess(
-            'Algorithm ${resolution.resolvedGuid!} added to slot $slotIndex',
-          ),
-        ),
-      );
-    } catch (e) {
-      return jsonEncode(
-        convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())),
-      );
-    }
-  }
+  Future<String> addAlgorithm(Map<String, dynamic> params) => addSimple({
+    'guid': params['algorithm_guid'],
+    'name': params['algorithm_name'],
+    if (params.containsKey('specifications'))
+      'specifications': params['specifications'],
+  });
 
   /// MCP Tool: Simple interface to add an algorithm to the preset.
   /// Designed for minimal cognitive load - flat parameter structure.
@@ -524,8 +555,7 @@ class DistingTools {
     final String? name = params['name'] as String?;
     final String? guid = params['guid'] as String?;
     final int? slotIndex = params['slot_index'] as int?;
-    final List<dynamic>? specifications =
-        params['specifications'] as List<dynamic>?;
+    final specifications = params['specifications'];
 
     // Validate that at least one of name or guid is provided
     if (name == null && guid == null) {
@@ -571,62 +601,21 @@ class DistingTools {
       // Check specification requirements from device state
       final deviceAlgoInfo = _getDeviceAlgorithmInfo(resolvedGuid);
       final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
-      final List<int> specValues = [];
       final offlineMode = _isOfflineMode();
-      String? limitationMessage;
-
-      if (requiredSpecs.isNotEmpty) {
-        if (offlineMode) {
-          specValues.addAll(requiredSpecs.map((s) => s.defaultValue));
-          limitationMessage = _buildOfflineSpecsLimitation(
-            resolvedGuid,
-            requiredSpecs,
-          );
-        } else {
-          if (specifications == null || specifications.isEmpty) {
-            return jsonEncode(
-              convertToSnakeCaseKeys(
-                _buildSpecRequiredError(resolvedGuid, requiredSpecs),
-              ),
-            );
-          }
-
-          if (specifications.length != requiredSpecs.length) {
-            return jsonEncode(
-              convertToSnakeCaseKeys({
-                ..._buildSpecRequiredError(resolvedGuid, requiredSpecs),
-                'error':
-                    'Algorithm "$resolvedGuid" requires ${requiredSpecs.length} specification(s), got ${specifications.length}.',
-              }),
-            );
-          }
-
-          // Validate and convert spec values
-          for (int i = 0; i < specifications.length; i++) {
-            final spec = requiredSpecs[i];
-            final value = specifications[i];
-            if (value is! int) {
-              return jsonEncode(
-                convertToSnakeCaseKeys(
-                  MCPUtils.buildError(
-                    'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
-                  ),
-                ),
-              );
-            }
-            if (value < spec.min || value > spec.max) {
-              return jsonEncode(
-                convertToSnakeCaseKeys(
-                  MCPUtils.buildError(
-                    'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
-                  ),
-                ),
-              );
-            }
-            specValues.add(value);
-          }
-        }
+      final resolvedSpecs = _resolveSpecifications(
+        guid: resolvedGuid,
+        metadata: requiredSpecs,
+        provided: specifications,
+        allowDefaults: offlineMode,
+      );
+      if (resolvedSpecs.error != null) {
+        return jsonEncode(convertToSnakeCaseKeys(resolvedSpecs.error!));
       }
+      final specValues = resolvedSpecs.values;
+      final limitationMessage =
+          offlineMode && specifications == null && requiredSpecs.isNotEmpty
+          ? _buildOfflineSpecsDefaultNotice(resolvedGuid, requiredSpecs)
+          : null;
 
       final algoStub = Algorithm(
         algorithmIndex: -1,
@@ -652,6 +641,9 @@ class DistingTools {
           await _controller.moveAlgorithmUp(currentPos);
         }
         finalSlotIndex = slotIndex;
+        // The add operation hydrates its original appended index. Refresh the
+        // final position after insertion invalidates that background read.
+        await _distingCubit.refreshSlot(finalSlotIndex);
       }
 
       final message =
@@ -664,6 +656,8 @@ class DistingTools {
       };
       if (limitationMessage != null) {
         responseData['limitation'] = limitationMessage;
+      }
+      if (requiredSpecs.isNotEmpty) {
         responseData['effective_specifications'] = specValues;
       }
 
@@ -1166,7 +1160,7 @@ class DistingTools {
     }
   }
 
-  /// MCP Tool: Tells the device to save the current working preset.
+  /// Saves to the offline database or sends the live device's save command.
   /// Parameters: None.
   /// Returns: A JSON string confirming the action or an error.
   Future<String> savePreset(Map<String, dynamic> params) async {
@@ -1190,10 +1184,20 @@ class DistingTools {
         );
       }
 
+      final offline = _isOfflineMode();
+      await _controller.flushParameterQueue();
       await _controller.savePreset();
       return jsonEncode(
         convertToSnakeCaseKeys(
-          MCPUtils.buildSuccess('Preset "$presetName" saved to device.'),
+          MCPUtils.buildSuccess(
+            offline
+                ? 'Saved locally: preset "$presetName".'
+                : 'Save command sent to device for preset "$presetName".',
+            data: {
+              'destination': offline ? 'local_database' : 'device',
+              'device_write_confirmed': false,
+            },
+          ),
         ),
       );
     } catch (e) {
@@ -2442,6 +2446,8 @@ class DistingTools {
                 // Add algorithm (this will be added to the first available slot)
                 final Map<String, dynamic> addParams = {
                   'algorithm_guid': resolution.resolvedGuid,
+                  if (algorithmData.containsKey('specifications'))
+                    'specifications': algorithmData['specifications'],
                 };
                 await addAlgorithm(addParams);
 
@@ -2477,6 +2483,8 @@ class DistingTools {
                   'slot_index': slotIndex,
                   'success': true,
                   'algorithm_guid': resolution.resolvedGuid,
+                  if (algorithmData.containsKey('specifications'))
+                    'specifications': algorithmData['specifications'],
                   'parameters_set': slotData.containsKey('parameters')
                       ? (slotData['parameters'] as List).length
                       : 0,
@@ -2828,6 +2836,51 @@ class DistingTools {
       // but we're working with the controller directly.
       // If the controller throws an error for offline mode, we'll catch it.
 
+      // Reject invalid explicit construction values before replacing any
+      // existing work. Other per-algorithm errors retain batch result behavior.
+      if (algorithmsArray != null) {
+        final allAlgorithms = _getAllKnownAlgorithms();
+        final state = _distingCubit.state;
+        final manager = state is DistingStateSynchronized
+            ? state.disting
+            : null;
+        for (var index = 0; index < algorithmsArray.length; index++) {
+          final entry = algorithmsArray[index];
+          if (entry is! Map<String, dynamic> ||
+              entry['specifications'] == null) {
+            continue;
+          }
+          final resolution = AlgorithmResolver.resolveAlgorithm(
+            guid: entry['guid'] as String?,
+            algorithmName: entry['name'] as String?,
+            allAlgorithms: allAlgorithms,
+          );
+          if (!resolution.isSuccess) continue;
+          final guid = resolution.resolvedGuid!;
+          final info = _getDeviceAlgorithmInfo(guid);
+          final resolvedSpecs = _resolveSpecifications(
+            guid: guid,
+            metadata: info?.specifications ?? const [],
+            provided: entry['specifications'],
+            allowDefaults: offlineMode,
+          );
+          if (resolvedSpecs.error != null) {
+            return jsonEncode(
+              convertToSnakeCaseKeys({
+                ...resolvedSpecs.error!,
+                'algorithm_index': index,
+              }),
+            );
+          }
+          if (manager is OfflineDistingMidiManager && info != null) {
+            await manager.validateAlgorithmSpecifications(
+              info,
+              resolvedSpecs.values,
+            );
+          }
+        }
+      }
+
       // Step 3: Clear current preset
       try {
         await _controller.newPreset();
@@ -2883,8 +2936,7 @@ class DistingTools {
 
           final String? algoGuid = algoSpec['guid'] as String?;
           final String? algoName = algoSpec['name'] as String?;
-          final List<dynamic>? specifications =
-              algoSpec['specifications'] as List<dynamic>?;
+          final specifications = algoSpec['specifications'];
 
           // Resolve algorithm
           final resolution = AlgorithmResolver.resolveAlgorithm(
@@ -2915,88 +2967,21 @@ class DistingTools {
 
           // Validate specifications against device state
           final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
-          final List<int> specValues = [];
-          String? limitationMessage;
-
-          if (requiredSpecs.isNotEmpty) {
-            if (offlineMode) {
-              specValues.addAll(requiredSpecs.map((s) => s.defaultValue));
-              limitationMessage = _buildOfflineSpecsLimitation(
-                resolvedGuid,
-                requiredSpecs,
-              );
-            } else {
-              if (specifications == null || specifications.isEmpty) {
-                algorithmResults.add({
-                  'index': i,
-                  'success': false,
-                  'error':
-                      'Algorithm "$algoDisplayName" requires ${requiredSpecs.length} specification(s)',
-                  'specifications': requiredSpecs
-                      .map(
-                        (s) => {
-                          'name': s.name,
-                          'min': s.min,
-                          'max': s.max,
-                          'default': s.defaultValue,
-                        },
-                      )
-                      .toList(),
-                });
-                continue;
-              }
-
-              if (specifications.length != requiredSpecs.length) {
-                algorithmResults.add({
-                  'index': i,
-                  'success': false,
-                  'error':
-                      'Algorithm "$algoDisplayName" requires ${requiredSpecs.length} specification(s), got ${specifications.length}',
-                  'specifications': requiredSpecs
-                      .map(
-                        (s) => {
-                          'name': s.name,
-                          'min': s.min,
-                          'max': s.max,
-                          'default': s.defaultValue,
-                        },
-                      )
-                      .toList(),
-                });
-                continue;
-              }
-
-              bool specError = false;
-              for (int j = 0; j < specifications.length; j++) {
-                final spec = requiredSpecs[j];
-                final value = specifications[j];
-                if (value is! int) {
-                  algorithmResults.add({
-                    'index': i,
-                    'success': false,
-                    'error':
-                        'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
-                  });
-                  specError = true;
-                  break;
-                }
-                if (value < spec.min || value > spec.max) {
-                  algorithmResults.add({
-                    'index': i,
-                    'success': false,
-                    'error':
-                        'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
-                  });
-                  specError = true;
-                  break;
-                }
-                specValues.add(value);
-              }
-              if (specError) continue;
-            }
-          } else if (specifications != null && specifications.isNotEmpty) {
-            specValues.addAll(specifications.whereType<int>());
+          final resolvedSpecs = _resolveSpecifications(
+            guid: resolvedGuid,
+            metadata: requiredSpecs,
+            provided: specifications,
+            allowDefaults: offlineMode,
+          );
+          if (resolvedSpecs.error != null) {
+            algorithmResults.add({'index': i, ...resolvedSpecs.error!});
+            continue;
           }
+          final specValues = resolvedSpecs.values;
+          final limitationMessage =
+              offlineMode && specifications == null && requiredSpecs.isNotEmpty
+              ? _buildOfflineSpecsDefaultNotice(resolvedGuid, requiredSpecs)
+              : null;
 
           // Add algorithm to preset
           try {
@@ -3015,7 +3000,7 @@ class DistingTools {
               'name': algoDisplayName,
               // ignore: use_null_aware_elements
               if (limitationMessage != null) 'limitation': limitationMessage,
-              if (limitationMessage != null)
+              if (requiredSpecs.isNotEmpty)
                 'effective_specifications': specValues,
             });
           } catch (e) {
@@ -3434,7 +3419,7 @@ class DistingTools {
       // Step 5: Validate algorithm (if specified)
       String? resolvedAlgorithmGuid;
       String? limitationMessage;
-      List<int>? effectiveOfflineSpecifications;
+      List<int>? effectiveSpecifications;
       if (algorithmData != null) {
         final String? algoGuid = algorithmData['guid'] as String?;
         final String? algoName = algorithmData['name'] as String?;
@@ -3463,88 +3448,40 @@ class DistingTools {
 
         // Validate specifications using device state
         final deviceAlgoInfo = _getDeviceAlgorithmInfo(resolvedAlgorithmGuid);
-        final List<dynamic>? specifications =
-            algorithmData['specifications'] as List<dynamic>?;
+        final specifications = algorithmData['specifications'];
         final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
         final offlineMode = _isOfflineMode();
         final isCurrentAlgorithm =
             currentAlgorithm?.guid == resolvedAlgorithmGuid;
-
-        if (requiredSpecs.isNotEmpty) {
+        if (!isCurrentAlgorithm || specifications != null) {
+          final resolvedSpecs = _resolveSpecifications(
+            guid: resolvedAlgorithmGuid,
+            metadata: requiredSpecs,
+            provided: specifications,
+            allowDefaults: offlineMode,
+          );
+          if (resolvedSpecs.error != null) {
+            return jsonEncode(convertToSnakeCaseKeys(resolvedSpecs.error!));
+          }
+          effectiveSpecifications = resolvedSpecs.values;
           if (isCurrentAlgorithm &&
-              (specifications == null || specifications.isEmpty)) {
-            // Algorithm identity in a patch is redundant when the requested
-            // GUID is already instantiated. Its construction specifications
-            // are not needed to update parameters, mappings, or the slot name.
-          } else if (offlineMode) {
-            effectiveOfflineSpecifications = requiredSpecs
-                .map((s) => s.defaultValue)
-                .toList();
-            limitationMessage = _buildOfflineSpecsLimitation(
+              !const ListEquality<int>().equals(
+                effectiveSpecifications,
+                currentAlgorithm!.specifications,
+              )) {
+            return jsonEncode(
+              MCPUtils.buildError(
+                'Changing specifications of an existing slot is not supported by edit_slot. '
+                'Add the algorithm with the requested specifications instead.',
+              ),
+            );
+          }
+          if (offlineMode &&
+              specifications == null &&
+              requiredSpecs.isNotEmpty) {
+            limitationMessage = _buildOfflineSpecsDefaultNotice(
               resolvedAlgorithmGuid,
               requiredSpecs,
-            );
-          } else {
-            if (specifications == null || specifications.isEmpty) {
-              return jsonEncode(
-                convertToSnakeCaseKeys(
-                  _buildSpecRequiredError(resolvedAlgorithmGuid, requiredSpecs),
-                ),
-              );
-            }
-
-            if (specifications.length != requiredSpecs.length) {
-              return jsonEncode(
-                convertToSnakeCaseKeys({
-                  ..._buildSpecRequiredError(
-                    resolvedAlgorithmGuid,
-                    requiredSpecs,
-                  ),
-                  'error':
-                      'Algorithm "$resolvedAlgorithmGuid" requires ${requiredSpecs.length} specification(s), got ${specifications.length}.',
-                }),
-              );
-            }
-
-            for (int j = 0; j < specifications.length; j++) {
-              final spec = requiredSpecs[j];
-              final value = specifications[j];
-              if (value is! int) {
-                return jsonEncode(
-                  convertToSnakeCaseKeys(
-                    MCPUtils.buildError(
-                      'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
-                    ),
-                  ),
-                );
-              }
-              if (value < spec.min || value > spec.max) {
-                return jsonEncode(
-                  convertToSnakeCaseKeys(
-                    MCPUtils.buildError(
-                      'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
-                    ),
-                  ),
-                );
-              }
-            }
-          }
-        } else if (!offlineMode &&
-            specifications != null &&
-            specifications.isNotEmpty) {
-          // Algorithm has no specs but some were provided - validate count from metadata
-          final metadataService = AlgorithmMetadataService();
-          final algorithmMetadata = metadataService.getAlgorithmByGuid(
-            resolvedAlgorithmGuid,
-          );
-          if (algorithmMetadata != null &&
-              specifications.length > algorithmMetadata.specifications.length) {
-            return jsonEncode(
-              convertToSnakeCaseKeys(
-                MCPUtils.buildError(
-                  'Algorithm "$resolvedAlgorithmGuid" expects ${algorithmMetadata.specifications.length} specification(s), got ${specifications.length}',
-                ),
-              ),
             );
           }
         }
@@ -3697,17 +3634,17 @@ class DistingTools {
       if (resolvedAlgorithmGuid != null &&
           currentAlgorithm?.guid != resolvedAlgorithmGuid) {
         try {
-          // Collect spec values if provided
-          final List<int> specValues = [];
-          if (effectiveOfflineSpecifications != null) {
-            specValues.addAll(effectiveOfflineSpecifications);
-          } else {
-            final algorithmData2 = data['algorithm'] as Map<String, dynamic>?;
-            final specList =
-                algorithmData2?['specifications'] as List<dynamic>?;
-            if (specList != null) {
-              specValues.addAll(specList.whereType<int>());
+          final specValues = effectiveSpecifications ?? const <int>[];
+
+          final manager = _distingCubit.requireDisting();
+          if (manager is OfflineDistingMidiManager) {
+            final info = _getDeviceAlgorithmInfo(resolvedAlgorithmGuid);
+            if (info == null) {
+              throw StateError(
+                'Algorithm metadata is unavailable for $resolvedAlgorithmGuid',
+              );
             }
+            await manager.validateAlgorithmSpecifications(info, specValues);
           }
 
           await _controller.clearSlot(slotIndex);
@@ -3717,7 +3654,15 @@ class DistingTools {
             name: '',
             specifications: specValues,
           );
-          await _addAlgorithmAndVerify(newAlgorithm);
+          final addedSlotIndex = await _addAlgorithmAndVerify(newAlgorithm);
+          for (var index = addedSlotIndex; index > slotIndex; index--) {
+            await _controller.moveAlgorithmUp(index);
+          }
+          if (addedSlotIndex > slotIndex) {
+            // Moving invalidates the add operation's background hydration at
+            // its original index. Read the replacement at its final slot.
+            await _distingCubit.refreshSlot(slotIndex);
+          }
         } catch (e) {
           return jsonEncode(
             convertToSnakeCaseKeys(
@@ -3865,7 +3810,9 @@ class DistingTools {
         };
         if (limitationMessage != null) {
           response['limitation'] = limitationMessage;
-          response['effective_specifications'] = effectiveOfflineSpecifications;
+        }
+        if (effectiveSpecifications != null) {
+          response['effective_specifications'] = effectiveSpecifications;
         }
 
         return jsonEncode(convertToSnakeCaseKeys(response));

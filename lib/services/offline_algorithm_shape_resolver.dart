@@ -24,8 +24,9 @@ final class OfflineAlgorithmShapeResolver {
 
   Future<ResolvedAlgorithmShape> resolve(
     String algorithmGuid,
-    List<int> specificationValues,
-  ) async {
+    List<int> specificationValues, {
+    bool requireExactSpecifications = false,
+  }) async {
     final parameters =
         await (dao.select(dao.parameters)
               ..where((row) => row.algorithmGuid.equals(algorithmGuid))
@@ -87,6 +88,14 @@ final class OfflineAlgorithmShapeResolver {
         ),
     ];
     final baseline = grammar?.baselineSpecifications ?? fallbackSpecifications;
+    if (requireExactSpecifications &&
+        (specificationValues.length != specifications.length ||
+            !_inRange(specifications, specificationValues))) {
+      throw StateError(
+        'Offline specification metadata for $algorithmGuid does not support '
+        'the requested values. Sync algorithm metadata from the device first.',
+      );
+    }
     final canonical = AlgorithmShapeSnapshot(
       specificationValues: baseline,
       parameters: [
@@ -125,6 +134,16 @@ final class OfflineAlgorithmShapeResolver {
         specificationValues.length != specifications.length ||
         baseline.length != specifications.length ||
         !_inRange(specifications, specificationValues)) {
+      if (requireExactSpecifications &&
+          (specificationValues.length != baseline.length ||
+              specificationValues.indexed.any(
+                (entry) => entry.$2 != baseline[entry.$1],
+              ))) {
+        throw StateError(
+          'Offline metadata for $algorithmGuid cannot build the requested '
+          'specifications. Sync algorithm metadata from the device first.',
+        );
+      }
       return ResolvedAlgorithmShape(snapshot: canonical, usedGrammar: false);
     }
     try {
@@ -133,6 +152,12 @@ final class OfflineAlgorithmShapeResolver {
         usedGrammar: true,
       );
     } catch (_) {
+      if (requireExactSpecifications) {
+        throw StateError(
+          'Offline metadata for $algorithmGuid cannot build the requested '
+          'specifications. Sync algorithm metadata from the device first.',
+        );
+      }
       return ResolvedAlgorithmShape(snapshot: canonical, usedGrammar: false);
     }
   }
