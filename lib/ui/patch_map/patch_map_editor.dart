@@ -929,7 +929,7 @@ class _PatchMapEditorState extends State<PatchMapEditor>
                   section.columns,
                   compact,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 16),
                 for (final records in document.recordSections.where(
                   (records) =>
                       records.afterSocket ==
@@ -937,17 +937,34 @@ class _PatchMapEditorState extends State<PatchMapEditor>
                       map.companionRecordSets[records.source]!.isNotEmpty,
                 )) ...[
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        records.short,
-                        style: Theme.of(context).textTheme.labelSmall,
+                      SizedBox(
+                        width: 8 * (compact ? 48.0 : 30.0),
+                        child: Text(
+                          records.short,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
                       ),
-                      for (final record
-                          in map.companionRecordSets[records.source]!)
-                        _recordMarker(records, record),
+                      for (
+                        var offset = 0;
+                        offset <
+                            map.companionRecordSets[records.source]!.length;
+                        offset += 8
+                      )
+                        Row(
+                          children: [
+                            for (final record
+                                in map.companionRecordSets[records.source]!
+                                    .skip(offset)
+                                    .take(8))
+                              _recordMarker(records, record, compact),
+                          ],
+                        ),
                     ],
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 16),
                 ],
               ],
             ],
@@ -976,6 +993,7 @@ class _PatchMapEditorState extends State<PatchMapEditor>
   Widget _recordMarker(
     CompanionRecordSection section,
     Map<String, dynamic> record,
+    bool compact,
   ) {
     final identity = (section.source, record[section.identity] as int);
     return Semantics(
@@ -983,17 +1001,46 @@ class _PatchMapEditorState extends State<PatchMapEditor>
       selected: _selected == identity,
       label: '${section.label(record)}, ${record[section.fields.first.key]}',
       child: SizedBox(
-        width: 48,
-        height: 48,
+        width: compact ? 48 : 30,
+        height: compact ? 48 : 36,
         child: TextButton(
           key: ValueKey('${section.id}-dot-${identity.$2}'),
           onPressed: () => _jump(identity),
           style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+              side: _selected == identity
+                  ? BorderSide(color: Theme.of(context).colorScheme.primary)
+                  : BorderSide.none,
+            ),
             backgroundColor: _selected == identity
                 ? Theme.of(context).colorScheme.secondaryContainer
                 : null,
           ),
-          child: ExcludeSemantics(child: Text('${identity.$2}')),
+          child: ExcludeSemantics(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  key: ValueKey('${section.id}-circle-${identity.$2}'),
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${identity.$2}',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1008,7 +1055,16 @@ class _PatchMapEditorState extends State<PatchMapEditor>
     bool compact,
   ) => Column(
     children: [
-      Text(name, style: Theme.of(context).textTheme.labelSmall),
+      SizedBox(
+        width: columns * (compact ? 48.0 : 30.0),
+        child: Text(
+          name,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall,
+        ),
+      ),
       for (var offset = 0; offset < count; offset += columns)
         Row(
           children: [
