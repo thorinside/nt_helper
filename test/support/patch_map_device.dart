@@ -4,6 +4,9 @@ import 'package:nt_helper/domain/patch_map/patch_map.dart';
 import 'package:nt_helper/domain/patch_map/patch_map_client.dart';
 
 class PatchMapDevice implements PatchMapTransport {
+  bool supportsAux = true;
+  bool _auxSession = false;
+  int selectedAux = 0;
   PatchMap map = PatchMap.empty();
   int revision = 0, lease = 0, firstSocket = 1;
   bool loseReply = false;
@@ -55,8 +58,13 @@ class PatchMapDevice implements PatchMapTransport {
     var status = 0;
     var data = <int>[];
     if (command == 1) {
-      lease = integer(13);
-      data = [...encode(map.title), map.expanders.length];
+      if (request[21] == 3 && !supportsAux) {
+        status = 1;
+      } else {
+        lease = integer(13);
+        _auxSession = request[21] == 3;
+        data = [...encode(map.title), map.expanders.length, if (_auxSession) 1];
+      }
     } else if (integer(13) != lease) {
       status = 2;
     } else if (command == 9) {
@@ -67,9 +75,21 @@ class PatchMapDevice implements PatchMapTransport {
         firstSocket,
         row.colour,
         row.tag,
+        if (_auxSession) selectedAux,
       ];
     } else if (integer(17) != revision) {
       status = 3;
+    } else if (command == 10) {
+      data = List.generate(7, (group) {
+        var bits = 0;
+        for (final row in map.aux) {
+          if ((row.bus - 1) ~/ 7 == group) bits |= 1 << ((row.bus - 1) % 7);
+        }
+        return bits;
+      });
+    } else if (command == 11) {
+      final row = map.aux.firstWhere((row) => row.bus == request[21]);
+      data = [row.bus, ...encode(row.description), ...encode(row.group)];
     } else if (command == 2) {
       final row = map.connections[request[21]];
       data = [
@@ -83,7 +103,16 @@ class PatchMapDevice implements PatchMapTransport {
       final expander = map.expanders[request[21]];
       data = [expander.type, ...encode(expander.name)];
     } else {
-      if (command == 3) {
+      if (command == 12) {
+        map = map.addAux(request[21]);
+      } else if (command == 13) {
+        final bus = request[at++];
+        map = map.withAux(
+          PatchAux(bus: bus, description: text(), group: text()),
+        );
+      } else if (command == 14) {
+        map = map.removeAux(request[21]);
+      } else if (command == 3) {
         final socket = request[at++],
             colour = request[at++],
             tag = request[at++];
@@ -99,6 +128,7 @@ class PatchMapDevice implements PatchMapTransport {
       } else if (command == 4) {
         map = PatchMap(
           title: text(),
+          aux: map.aux,
           connections: map.connections,
           expanders: map.expanders,
         );

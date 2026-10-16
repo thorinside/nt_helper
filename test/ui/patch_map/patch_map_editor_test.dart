@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nt_helper/services/settings_service.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -27,6 +30,292 @@ Future<void> settleCompanion(WidgetTester tester) async {
 }
 
 void main() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await SettingsService().init();
+  });
+  testWidgets(
+    'Lua column order and labels render directly and resized widths survive reopening',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 820));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final device = PatchMapDevice();
+      var source = File(
+        'test/fixtures/patch_map/patch_helper.lua',
+      ).readAsStringSync();
+      Widget editor(String key) => MaterialApp(
+        home: Scaffold(
+          body: PatchMapEditor(
+            key: ValueKey(key),
+            transport: device,
+            slotIndex: 0,
+            watchInterval: null,
+            download: (_) async => Uint8List.fromList(utf8.encode(source)),
+          ),
+        ),
+      );
+      await tester.pumpWidget(editor('first'));
+      await settleCompanion(tester);
+      final semantics = tester.ensureSemantics();
+      await tester.pump();
+      final column = find.byKey(const ValueKey('column-sockets-destination'));
+      final handle = find.byKey(const ValueKey('resize-sockets-destination'));
+      final before = tester.getSize(column).width;
+      expect(
+        find.bySemanticsLabel('Resize Destination column'),
+        findsOneWidget,
+      );
+      await tester.drag(handle, const Offset(90, 0));
+      await tester.pumpAndSettle();
+      var resized = tester.getSize(column).width;
+      expect(resized, closeTo(before + 90, 1));
+      Focus.of(tester.element(handle)).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      resized += 12;
+      expect(tester.getSize(column).width, closeTo(resized, 1));
+      expect(SettingsService().companionColumnWidths.values, contains(resized));
+      final destination = find
+          .descendant(
+            of: find.byType(PatchMapRow).first,
+            matching: find.byType(TextField),
+          )
+          .first;
+      expect(tester.getSize(destination).width, closeTo(resized - 8, 1));
+      source = source.replaceAll(
+        "label = 'Destination', width = 288",
+        "label = 'Where', width = 500",
+      );
+      final columns = RegExp(
+        r'^      columns = \{\n(.*?)\n      \},',
+        dotAll: true,
+        multiLine: true,
+      ).firstMatch(source)!;
+      final rows = columns.group(1)!.split('\n');
+      final ordered = [rows[0], rows[4], rows[1], rows[2], rows[3]].join('\n');
+      source = source.replaceRange(
+        columns.start,
+        columns.end,
+        '      columns = {\n$ordered\n      },',
+      );
+      await tester.pumpWidget(editor('reopened'));
+      await settleCompanion(tester);
+      expect(
+        find.text('Where'),
+        findsOneWidget,
+        reason: tester
+            .widgetList<Text>(find.byType(Text))
+            .map((text) => text.data)
+            .join(' | '),
+      );
+      expect(tester.getSize(column).width, resized);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('column-sockets-group'))).left,
+        lessThan(tester.getRect(column).left),
+      );
+      source = source.replaceAll(
+        "label = 'Where', width = 500, min_width = 140",
+        "label = 'Where', width = 288, min_width = 140, max_width = 300",
+      );
+      await tester.pumpWidget(editor('bounded'));
+      await settleCompanion(tester);
+      expect(tester.getSize(column).width, 300);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'AUX picker, editing, deletion and compact selection preserve the physical table',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 820));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final font = File('/System/Library/Fonts/SFNS.ttf');
+      if (font.existsSync()) {
+        final loader = FontLoader('Evidence');
+        loader.addFont(
+          Future.value(ByteData.sublistView(font.readAsBytesSync())),
+        );
+        await loader.load();
+      }
+      final iconFont = File(
+        '/Users/nealsanche/fvm/default/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+      );
+      if (iconFont.existsSync()) {
+        final loader = FontLoader('MaterialIcons');
+        loader.addFont(
+          Future.value(ByteData.sublistView(iconFont.readAsBytesSync())),
+        );
+        await loader.load();
+      }
+      final device = PatchMapDevice();
+      for (var i = 0; i < 8; i++) {
+        device.map = device.map.addExpander(i % 4);
+      }
+      final boundary = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme:
+              AppTheme.build(
+                seedColor: AppTheme.defaultSeedColor,
+                brightness: Brightness.dark,
+              ).copyWith(
+                textTheme: ThemeData.dark().textTheme.apply(
+                  fontFamily: 'Evidence',
+                ),
+              ),
+          home: Scaffold(
+            body: RepaintBoundary(
+              key: boundary,
+              child: PatchMapEditor(
+                transport: device,
+                slotIndex: 0,
+                watchInterval: null,
+                download: (_) async => File(
+                  'test/fixtures/patch_map/patch_helper.lua',
+                ).readAsBytesSync(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await settleCompanion(tester);
+      final header = tester.getRect(find.text('Socket'));
+      final semantics = tester.ensureSemantics();
+      final add = find.byKey(const ValueKey('add-aux'));
+      Future<void> addBus(int bus) async {
+        await tester.ensureVisible(add);
+        await tester.pumpAndSettle();
+        await tester.tap(add);
+        await tester.pumpAndSettle();
+        final choice = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('AUX $bus'),
+        );
+        await tester.ensureVisible(choice);
+        await tester.pumpAndSettle();
+        await tester.tap(choice);
+        await settleCompanion(tester);
+      }
+
+      await addBus(44);
+      expect(device.map.aux.single.bus, 44);
+      expect(tester.getRect(find.text('Socket')), header);
+      expect(
+        find.descendant(
+          of: find.byType(CompanionRecordRow),
+          matching: find.byType(DropdownButton<int>),
+        ),
+        findsNothing,
+      );
+      final description = find.byKey(const ValueKey('aux-description-44'));
+      await tester.ensureVisible(description);
+      await tester.pumpAndSettle();
+      await tester.enterText(description, 'Stereo effect return L');
+      await settleCompanion(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('aux-group-44')),
+        'Effects',
+      );
+      await settleCompanion(tester);
+      expect(device.map.aux.single.description, 'Stereo effect return L');
+      expect(device.map.aux.single.group, 'Effects');
+      await tester.ensureVisible(find.byTooltip('Remove AUX 44'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel(RegExp('Remove AUX 44')), findsOneWidget);
+      await tester.tap(find.byTooltip('Remove AUX 44'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(device.map.aux.single.description, 'Stereo effect return L');
+      await tester.tap(find.byTooltip('Remove AUX 44'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+      await settleCompanion(tester);
+      expect(device.map.aux, isEmpty);
+      await addBus(44);
+      expect(device.map.aux.single.description, isEmpty);
+      await addBus(3);
+      expect(device.map.aux.map((row) => row.bus), [3, 44]);
+      await tester.ensureVisible(add);
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('AUX 44'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('AUX 3'),
+        ),
+        findsNothing,
+      );
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await tester.enterText(description, 'Stereo effect return L');
+      await settleCompanion(tester);
+      await tester.ensureVisible(find.text('Out 8'));
+      await tester.pumpAndSettle();
+      if (Platform.environment['CAPTURE_PATCH_AUX'] == '1') {
+        await tester.runAsync(() async {
+          final image =
+              await (boundary.currentContext!.findRenderObject()!
+                      as RenderRepaintBoundary)
+                  .toImage();
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          File(
+            'docs/evidence/patch-helper/aux-desktop.png',
+          ).writeAsBytesSync(bytes!.buffer.asUint8List());
+          image.dispose();
+        });
+      }
+      await tester.binding.setSurfaceSize(const Size(430, 820));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Sockets'));
+      await tester.pumpAndSettle();
+      final dot = find.byKey(const ValueKey('aux-dot-44'));
+      await tester.ensureVisible(dot);
+      await tester.pumpAndSettle();
+      await tester.tap(dot);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widgetList<CompanionRecordRow>(find.byType(CompanionRecordRow))
+            .singleWhere((row) => row.selected)
+            .record['bus'],
+        44,
+      );
+      expect(
+        tester.getRect(find.text('AUX 44').first).left,
+        greaterThanOrEqualTo(0),
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Sockets'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      if (Platform.environment['CAPTURE_PATCH_AUX'] == '1') {
+        await tester.runAsync(() async {
+          final image =
+              await (boundary.currentContext!.findRenderObject()!
+                      as RenderRepaintBoundary)
+                  .toImage();
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          File(
+            'docs/evidence/patch-helper/aux-compact.png',
+          ).writeAsBytesSync(bytes!.buffer.asUint8List());
+          image.dispose();
+        });
+      }
+      semantics.dispose();
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
   testWidgets(
     'slot name follows renames without moving or reloading the editor',
     (tester) async {

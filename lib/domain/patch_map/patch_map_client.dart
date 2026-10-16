@@ -35,6 +35,8 @@ class PatchMapClient {
   int _requestId = 0;
   int _revision = 0;
   bool _ready = false;
+  bool _supportsAux = false;
+  bool get supportsAux => _supportsAux;
   bool _busy = false;
   PatchMap? _map;
   static const _prefix = [0x7d, 84, 104, 80, 104, 1];
@@ -53,7 +55,11 @@ class PatchMapClient {
     final data = _Reader(await _exchange(9, const []));
     final title = data.text(63), count = data.byte();
     final first = data.byte(), colour = data.byte(), tag = data.byte();
+    final auxBus = _supportsAux ? data.byte() : 0;
     data.finish();
+    if (auxBus > PatchMap.auxCount) {
+      throw const FormatException("Invalid selected AUX bus");
+    }
     if (count > PatchMap.maxExpanders ||
         first < 1 ||
         first > 20 + 8 * count ||
@@ -68,6 +74,7 @@ class PatchMapClient {
       'first_socket': first,
       'colour': colour,
       'tag': tag,
+      'aux_bus': auxBus,
     });
     return _map = map;
   });
@@ -89,11 +96,23 @@ class PatchMapClient {
     _ready = false;
     // A fresh lease also separates late replies from an earlier reload.
     _lease = _lease == 0x0fffffff ? 1 : _lease + 1;
-    final titleData = _Reader(await _exchange(1, const [2]));
+    _supportsAux = false;
+    List<int> begin;
+    try {
+      begin = await _exchange(1, const [3]);
+      _supportsAux = true;
+    } on PatchMapSyncException catch (error) {
+      if (error.status != 1) rethrow;
+      begin = await _exchange(1, const [2]);
+    }
+    final titleData = _Reader(begin);
     final title = titleData.text(63);
     final count = titleData.byte();
     if (count > PatchMap.maxExpanders) {
       throw const FormatException('Invalid expander count');
+    }
+    if (_supportsAux && titleData.byte() != 1) {
+      throw const FormatException("Unsupported AUX capability");
     }
     titleData.finish();
     _map = await _readMap(title, count);
@@ -134,7 +153,28 @@ class PatchMapClient {
         ),
       );
     }
-    _map = PatchMap(title: title, connections: rows, expanders: expanders);
+    final aux = <PatchAux>[];
+    if (_supportsAux) {
+      final inventory = _Reader(await _exchange(10, const []));
+      final masks = List.generate(7, (_) => inventory.byte());
+      inventory.finish();
+      if (masks.last > 3) throw const FormatException('Invalid AUX inventory');
+      for (var bus = 1; bus <= PatchMap.auxCount; bus++) {
+        if (masks[(bus - 1) ~/ 7] & (1 << ((bus - 1) % 7)) == 0) continue;
+        final data = _Reader(await _exchange(11, [bus]));
+        if (data.byte() != bus) throw const FormatException('Wrong AUX reply');
+        aux.add(
+          PatchAux(bus: bus, description: data.text(32), group: data.text(32)),
+        );
+        data.finish();
+      }
+    }
+    _map = PatchMap(
+      title: title,
+      connections: rows,
+      expanders: expanders,
+      aux: aux,
+    );
     return _map!;
   }
 
@@ -165,6 +205,7 @@ class PatchMapClient {
     _requireReady();
     final candidate = PatchMap(
       title: title,
+      aux: _map!.aux,
       connections: _map!.connections,
       expanders: _map!.expanders,
     );
@@ -205,6 +246,43 @@ class PatchMapClient {
     }
     return _map = candidate;
   });
+
+  Future<PatchMap> addAux(int bus) => _run(() async {
+    _requireAux();
+    final candidate = _map!.addAux(bus);
+    if ((await _exchange(12, [bus])).isNotEmpty) {
+      throw const FormatException('Unexpected AUX reply');
+    }
+    return _map = candidate;
+  });
+  Future<PatchMap> setAux(PatchAux row) => _run(() async {
+    _requireAux();
+    final candidate = _map!.withAux(row);
+    if ((await _exchange(13, [
+      row.bus,
+      ..._text(row.description),
+      ..._text(row.group),
+    ])).isNotEmpty) {
+      throw const FormatException('Unexpected AUX reply');
+    }
+    return _map = candidate;
+  });
+  Future<PatchMap> removeAux(int bus) => _run(() async {
+    _requireAux();
+    final candidate = _map!.removeAux(bus);
+    if ((await _exchange(14, [bus])).isNotEmpty) {
+      throw const FormatException('Unexpected AUX reply');
+    }
+    return _map = candidate;
+  });
+  void _requireAux() {
+    _requireReady();
+    if (!_supportsAux) {
+      throw const PatchMapSyncException(
+        'Update Patch Helper to use AUX buses.',
+      );
+    }
+  }
 
   void _requireReady() {
     if (!_ready) {
@@ -273,7 +351,8 @@ class PatchMapClient {
       }, status: status);
     }
     final revision = _readInteger(response, 17);
-    final expected = _revision + ([3, 4, 5, 7, 8].contains(command) ? 1 : 0);
+    final expected =
+        _revision + ([3, 4, 5, 7, 8, 12, 13, 14].contains(command) ? 1 : 0);
     if (command != 1 && command != 9 && revision != expected) {
       throw const FormatException('Unexpected Patch Helper revision');
     }

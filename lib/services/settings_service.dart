@@ -78,6 +78,7 @@ class SettingsService {
   static const String _mcpRemoteConnectionsKey = 'mcp_remote_connections';
   static const String _chatEnabledKey = 'chat_enabled';
   static const String _chatPanelWidthKey = 'chat_panel_width';
+  static const String _companionColumnWidthsKey = 'companion_column_widths';
   static const String _chatLlmProviderKey = 'chat_llm_provider';
   static const String _anthropicApiKeyKey = 'anthropic_api_key';
   static const String _openaiApiKeyKey = 'openai_api_key';
@@ -128,6 +129,7 @@ class SettingsService {
     _mcpRemoteConnectionsKey,
     _chatEnabledKey,
     _chatPanelWidthKey,
+    _companionColumnWidthsKey,
     _chatLlmProviderKey,
     _anthropicApiKeyKey,
     _openaiApiKeyKey,
@@ -539,6 +541,44 @@ class SettingsService {
   /// Set the split-screen divider position
   Future<bool> setSplitDividerPosition(double value) async {
     return await _prefs?.setDouble(_splitDividerPositionKey, value) ?? false;
+  }
+
+  /// Column IDs survive Lua label and order changes. Preferences stay on the host.
+  Map<String, double> get companionColumnWidths {
+    final raw = _prefs?.get(_companionColumnWidthsKey);
+    if (raw is! String) return {};
+    try {
+      final value = jsonDecode(raw);
+      if (value is! Map) return {};
+      return {
+        for (final entry in value.entries)
+          if (entry.key is String &&
+              entry.value is num &&
+              (entry.value as num).isFinite &&
+              entry.value > 0 &&
+              entry.value <= 2000)
+            entry.key as String: (entry.value as num).toDouble(),
+      };
+    } on FormatException {
+      return {};
+    }
+  }
+
+  Future<bool> setCompanionColumnWidth(
+    String companion,
+    String table,
+    String column,
+    double width,
+  ) async {
+    if (!width.isFinite || width < 32 || width > 2000) {
+      throw ArgumentError.value(width, 'width');
+    }
+    final key = jsonEncode([companion, table, column]);
+    return await _prefs?.setString(
+          _companionColumnWidthsKey,
+          jsonEncode({...companionColumnWidths, key: width}),
+        ) ??
+        false;
   }
 
   /// Check if chat is enabled

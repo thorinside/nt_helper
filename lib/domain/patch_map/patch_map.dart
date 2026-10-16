@@ -4,6 +4,7 @@ class PatchMap {
   static const version = 1;
   static const maxEditableTextLength = 32;
   static const socketCount = 20;
+  static const auxCount = 44;
   // Limited by the protocol's seven-bit socket address, not hardware topology.
   static const maxExpanders = (128 - socketCount) ~/ 8;
   // New maps fit four-field native pages including read-only text.
@@ -30,7 +31,9 @@ class PatchMap {
     required String title,
     required List<PatchConnection> connections,
     List<PatchExpander> expanders = const [],
+    List<PatchAux> aux = const [],
   }) : title = _text(title, 63, 'title'),
+       aux = _orderedAux(aux),
        expanders = _expanders(expanders),
        connections = _orderedConnections(connections, expanders.length);
 
@@ -47,10 +50,13 @@ class PatchMap {
       'version',
       'title',
       'connections',
-      if (json['version'] == 2) 'expanders',
+      if (json['version'] == 2 || json['version'] == 3) 'expanders',
+      if (json['version'] == 3) 'aux',
     }, 'patch_helper');
     if (json['version'] is! int ||
-        (json['version'] != version && json['version'] != 2)) {
+        (json['version'] != version &&
+            json['version'] != 2 &&
+            json['version'] != 3)) {
       throw const FormatException('Unsupported Patch Helper version');
     }
     final rows = json['connections'];
@@ -59,7 +65,8 @@ class PatchMap {
     }
     return PatchMap(
       title: _text(json['title'], 63, 'title'),
-      expanders: json['version'] == 2
+      aux: json['version'] == 3 ? _parseAux(json['aux']) : const [],
+      expanders: json['version'] == 2 || json['version'] == 3
           ? _parseExpanders(json['expanders'])
           : const [],
       connections: [
@@ -72,13 +79,23 @@ class PatchMap {
     );
   }
 
+  Map<String, List<Map<String, dynamic>>> get companionRecordSets => {
+    'aux': [for (final row in aux) row.toJson()],
+  };
+
   final String title;
+  final List<PatchAux> aux;
   final List<PatchExpander> expanders;
   final List<PatchConnection> connections;
 
   Map<String, dynamic> toJson() => {
-    'version': expanders.isEmpty ? version : 2,
-    if (expanders.isNotEmpty)
+    'version': aux.isNotEmpty
+        ? 3
+        : expanders.isEmpty
+        ? version
+        : 2,
+    if (aux.isNotEmpty) 'aux': [for (final row in aux) row.toJson()],
+    if (expanders.isNotEmpty || aux.isNotEmpty)
       'expanders': [for (final e in expanders) e.toJson()],
     'title': title,
     'connections': [for (final connection in connections) connection.toJson()],
@@ -86,6 +103,7 @@ class PatchMap {
 
   PatchMap withConnection(PatchConnection connection) => PatchMap(
     title: title,
+    aux: aux,
     expanders: expanders,
     connections: [
       for (final previous in connections)
@@ -95,6 +113,7 @@ class PatchMap {
 
   PatchMap addExpander(int type) => PatchMap(
     title: title,
+    aux: aux,
     expanders: [
       ...expanders,
       PatchExpander(type: type, name: 'Expander ${expanders.length + 1}'),
@@ -111,7 +130,12 @@ class PatchMap {
   PatchMap renameExpander(int index, String name) {
     final next = List<PatchExpander>.of(expanders);
     next[index] = PatchExpander(type: next[index].type, name: name);
-    return PatchMap(title: title, connections: connections, expanders: next);
+    return PatchMap(
+      title: title,
+      connections: connections,
+      expanders: next,
+      aux: aux,
+    );
   }
 
   PatchMap moveExpander(int from, int to) {
@@ -135,8 +159,71 @@ class PatchMap {
     }
     return PatchMap(
       title: title,
+      aux: aux,
       connections: rows,
       expanders: [for (final i in order) expanders[i]],
+    );
+  }
+
+  PatchMap withAux(PatchAux row) {
+    if (!aux.any((previous) => previous.bus == row.bus)) {
+      throw StateError('The AUX bus is not in the map');
+    }
+    return PatchMap(
+      title: title,
+      connections: connections,
+      expanders: expanders,
+      aux: [
+        for (final previous in aux) previous.bus == row.bus ? row : previous,
+      ],
+    );
+  }
+
+  PatchMap addAux(int bus) {
+    if (aux.any((row) => row.bus == bus)) {
+      throw StateError('AUX bus already added');
+    }
+    return PatchMap(
+      title: title,
+      connections: connections,
+      expanders: expanders,
+      aux: [
+        ...aux,
+        PatchAux(bus: bus),
+      ],
+    );
+  }
+
+  PatchMap removeAux(int bus) {
+    if (!aux.any((row) => row.bus == bus)) {
+      throw StateError('The AUX bus is not in the map');
+    }
+    return PatchMap(
+      title: title,
+      connections: connections,
+      expanders: expanders,
+      aux: aux.where((row) => row.bus != bus).toList(),
+    );
+  }
+
+  static List<PatchAux> _parseAux(Object? value) {
+    if (value is! List) throw const FormatException('aux must be a list');
+    return [
+      for (final row in value)
+        if (row is Map<String, dynamic>)
+          PatchAux.fromJson(row)
+        else
+          throw const FormatException('Invalid AUX row'),
+    ];
+  }
+
+  static List<PatchAux> _orderedAux(List<PatchAux> rows) {
+    if (rows.length > auxCount ||
+        rows.map((row) => row.bus).toSet().length != rows.length) {
+      throw const FormatException('Duplicate or invalid AUX bus inventory');
+    }
+    return List.unmodifiable(
+      List<PatchAux>.of(rows)..sort((a, b) => a.bus.compareTo(b.bus)),
     );
   }
 
@@ -283,4 +370,34 @@ class PatchExpander {
   final int type;
   final String name;
   Map<String, dynamic> toJson() => {'type': type, 'name': name};
+}
+
+class PatchAux {
+  PatchAux({required int bus, String description = '', String group = ''})
+    : bus = _integer(bus, 1, PatchMap.auxCount, 'AUX bus'),
+      description = _text(
+        description,
+        PatchMap.maxEditableTextLength,
+        'description',
+      ),
+      group = _text(group, PatchMap.maxEditableTextLength, 'group');
+  factory PatchAux.fromJson(Map<String, dynamic> json) {
+    _keys(json, {'bus', 'description', 'group'}, 'AUX row');
+    return PatchAux(
+      bus: _integer(json['bus'], 1, PatchMap.auxCount, 'AUX bus'),
+      description: _text(
+        json['description'],
+        PatchMap.maxEditableTextLength,
+        'description',
+      ),
+      group: _text(json['group'], PatchMap.maxEditableTextLength, 'group'),
+    );
+  }
+  final int bus;
+  final String description, group;
+  Map<String, dynamic> toJson() => {
+    'bus': bus,
+    'description': description,
+    'group': group,
+  };
 }
