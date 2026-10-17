@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nt_helper/chat/models/allowed_file_root.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
+import 'package:nt_helper/chat/models/additional_provider_config.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/database_integrity_service.dart';
@@ -86,6 +87,7 @@ class SettingsService {
   static const String _openaiModelKey = 'openai_model';
   static const String _openaiSubscriptionModelKey = 'openai_subscription_model';
   static const String _openaiBaseUrlKey = 'openai_base_url';
+  static const String _additionalChatProvidersKey = 'chat_additional_providers';
   static const String _allowCodexAuthRefreshKey = 'allow_codex_auth_refresh';
   static const String _chatLocalDirectoryKey = 'chat_local_directory';
   static const String _allowedFileRootsKey = 'allowed_file_roots';
@@ -137,6 +139,7 @@ class SettingsService {
     _openaiModelKey,
     _openaiSubscriptionModelKey,
     _openaiBaseUrlKey,
+    _additionalChatProvidersKey,
     _allowCodexAuthRefreshKey,
     _chatLocalDirectoryKey,
     _allowedFileRootsKey,
@@ -602,6 +605,11 @@ class SettingsService {
   /// Get the configured LLM provider
   LlmProviderType get chatLlmProvider {
     final value = _prefs?.getString(_chatLlmProviderKey);
+    for (final provider in LlmProviderType.values.where(
+      (p) => p.isAdditional,
+    )) {
+      if (value == provider.name) return provider;
+    }
     if (value == 'openai') return LlmProviderType.openai;
     if (value == 'openai_subscription') {
       return LlmProviderType.openaiSubscription;
@@ -624,8 +632,45 @@ class SettingsService {
         value = 'anthropic_subscription';
       case LlmProviderType.anthropic:
         value = 'anthropic';
+      case LlmProviderType.gemini:
+      case LlmProviderType.openrouter:
+      case LlmProviderType.local:
+        value = provider.name;
     }
     return await _prefs?.setString(_chatLlmProviderKey, value) ?? false;
+  }
+
+  Map<LlmProviderType, AdditionalProviderConfig> get additionalChatProviders {
+    final raw = _prefs?.getString(_additionalChatProvidersKey);
+    if (raw == null) return const {};
+    try {
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      return Map.unmodifiable({
+        for (final type in LlmProviderType.values.where((p) => p.isAdditional))
+          if (data[type.name] is Map)
+            type: AdditionalProviderConfig.fromJson(
+              Map<String, dynamic>.from(data[type.name] as Map),
+            ),
+      });
+    } on Object {
+      return const {};
+    }
+  }
+
+  Future<bool> setAdditionalChatProviders(
+    Map<LlmProviderType, AdditionalProviderConfig> configs,
+  ) async {
+    if (configs.keys.any((p) => !p.isAdditional)) {
+      throw ArgumentError('Only additional provider settings belong here');
+    }
+    return await _prefs?.setString(
+          _additionalChatProvidersKey,
+          jsonEncode({
+            for (final entry in configs.entries)
+              entry.key.name: entry.value.toJson(),
+          }),
+        ) ??
+        false;
   }
 
   /// Get the Anthropic API key

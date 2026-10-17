@@ -19,7 +19,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 2.58.0+342
 
 environment:
-  sdk: ">=3.8.1 <4.0.0"
+  sdk: ">=3.12.0 <4.0.0" # Required by Genkit 1.0.
 
 analyzer:
   errors:
@@ -83,6 +83,8 @@ dependencies:
   get_it: ^9.2.0
   dart_elf: ^2.0.0
   http: ^1.6.0
+  genkit: 1.0.0
+  schemantic: 1.0.0
   pub_semver: ^2.2.0
   url_launcher: ^6.3.2
   share_plus: ^13.3.0

@@ -42,6 +42,7 @@ class LlmMessage {
   final String? toolName;
   final String? imageBase64;
   final String? imageMimeType;
+  final Map<String, dynamic> providerMetadata;
   final List<LlmImageAttachment> imageAttachments;
   final List<LlmFileAttachment> fileAttachments;
 
@@ -55,6 +56,7 @@ class LlmMessage {
     this.imageMimeType,
     this.imageAttachments = const [],
     this.fileAttachments = const [],
+    this.providerMetadata = const {},
   });
 
   bool get hasImage => imageBase64 != null && imageMimeType != null;
@@ -78,7 +80,9 @@ class LlmMessage {
   factory LlmMessage.assistantWithToolCalls(
     List<LlmToolCall> toolCalls, {
     String? content,
+    Map<String, dynamic> providerMetadata = const {},
   }) => LlmMessage(
+    providerMetadata: providerMetadata,
     role: LlmRole.assistant,
     content: content,
     toolCalls: toolCalls,
@@ -106,12 +110,14 @@ class LlmToolCall {
   final String name;
   final String? namespace;
   final Map<String, dynamic> arguments;
+  final Map<String, dynamic> providerMetadata;
 
   const LlmToolCall({
     required this.id,
     required this.name,
     this.namespace,
     required this.arguments,
+    this.providerMetadata = const {},
   });
 }
 
@@ -134,12 +140,14 @@ class LlmResponse {
   final List<LlmToolCall> toolCalls;
   final bool isComplete;
   final LlmUsage? usage;
+  final Map<String, dynamic> providerMetadata;
 
   const LlmResponse({
     this.content,
     this.toolCalls = const [],
     required this.isComplete,
     this.usage,
+    this.providerMetadata = const {},
   });
 
   bool get hasToolCalls => toolCalls.isNotEmpty;

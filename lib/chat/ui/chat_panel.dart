@@ -5,6 +5,7 @@ import 'package:nt_helper/chat/cubit/chat_state.dart';
 import 'package:nt_helper/chat/models/chat_message.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/chat/ui/chat_input_bar.dart';
+import 'package:nt_helper/chat/ui/conversation_picker.dart';
 import 'package:nt_helper/chat/ui/chat_message_bubble.dart';
 import 'package:nt_helper/chat/ui/chat_settings_dialog.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -25,6 +26,8 @@ class _ChatPanelState extends State<ChatPanel> {
   int _previousMessageCount = 0;
   bool _previousIsProcessing = false;
   bool _wasProcessing = false;
+  String _previousTail = '';
+  String? _previousConversationId;
 
   @override
   void initState() {
@@ -53,9 +56,14 @@ class _ChatPanelState extends State<ChatPanel> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool immediate = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (_scrollController.hasClients) {
+        if (immediate || MediaQuery.disableAnimationsOf(context)) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+          return;
+        }
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 200),
@@ -77,6 +85,7 @@ class _ChatPanelState extends State<ChatPanel> {
       openaiBaseUrl: settings.openaiBaseUrl,
       allowCodexAuthRefresh: settings.allowCodexAuthRefresh,
       chatEnabled: settings.chatEnabled,
+      additionalProviders: settings.additionalChatProviders,
     );
   }
 
@@ -159,17 +168,30 @@ class _ChatPanelState extends State<ChatPanel> {
   Widget _buildChat(BuildContext context, ChatReady state) {
     final messages = state.messages;
     final messageCount = messages.length;
+    final conversationChanged = state.conversationId != _previousConversationId;
     final isProcessing = state.isProcessing;
+    final tail = messages.isEmpty
+        ? ''
+        : '${messages.last.id}:${messages.last.content.length}';
+    final followStream =
+        isProcessing &&
+        tail != _previousTail &&
+        (!_scrollController.hasClients ||
+            _scrollController.position.extentAfter < 100);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (messageCount > _previousMessageCount ||
-          (isProcessing && !_previousIsProcessing)) {
-        _scrollToBottom();
+      if (conversationChanged ||
+          messageCount > _previousMessageCount ||
+          (isProcessing && !_previousIsProcessing) ||
+          followStream) {
+        _scrollToBottom(immediate: conversationChanged);
       }
+      _previousConversationId = state.conversationId;
       if (_wasProcessing && !state.isProcessing) {
         _inputFocusNode.requestFocus();
       }
+      _previousTail = tail;
       _previousMessageCount = messageCount;
       _previousIsProcessing = isProcessing;
       _wasProcessing = state.isProcessing;
@@ -210,6 +232,7 @@ class _ChatPanelState extends State<ChatPanel> {
             outputTokens: state.totalOutputTokens,
           ),
         ChatInputBar(
+          enabled: !state.isLoadingHistory,
           isProcessing: state.isProcessing,
           onSend: (text, images, files) => _send(context, text, images, files),
           onCancel: () => context.read<ChatCubit>().cancelProcessing(),
@@ -238,8 +261,51 @@ class _ChatPanelState extends State<ChatPanel> {
             color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 8),
-          Text('Chat', style: theme.textTheme.titleSmall),
-          const Spacer(),
+          Expanded(
+            child: Text(
+              readyState.conversationTitle ?? 'Chat',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall,
+            ),
+          ),
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: readyState.isLoadingHistory
+                ? const Padding(
+                    padding: EdgeInsets.all(3),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : readyState.historyError == null
+                ? null
+                : Tooltip(
+                    message: readyState.historyError!,
+                    child: Semantics(
+                      liveRegion: true,
+                      label: readyState.historyError,
+                      child: Icon(
+                        Icons.error_outline,
+                        size: 18,
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
+          ),
+          IconButton(
+            tooltip: 'Conversations',
+            icon: const Icon(Icons.history, size: 20),
+            onPressed: readyState.isProcessing || readyState.isLoadingHistory
+                ? null
+                : () => _openHistory(context),
+          ),
+          IconButton(
+            tooltip: 'New chat',
+            icon: const Icon(Icons.add_comment_outlined, size: 20),
+            onPressed: readyState.isProcessing || readyState.isLoadingHistory
+                ? null
+                : () => _newChat(context),
+          ),
           _ContextStatusButton(
             state: readyState,
             summary: context.read<ChatCubit>().contextSummary,
@@ -252,6 +318,26 @@ class _ChatPanelState extends State<ChatPanel> {
         ],
       ),
     );
+  }
+
+  Future<void> _newChat(BuildContext context) async {
+    await context.read<ChatCubit>().newChat();
+    if (mounted) _inputFocusNode.requestFocus();
+  }
+
+  Future<void> _openHistory(BuildContext context) async {
+    final cubit = context.read<ChatCubit>();
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (_) => ConversationPicker(cubit: cubit),
+    );
+    if (selected == null || !context.mounted) return;
+    if (selected.isEmpty) {
+      await cubit.newChat();
+    } else {
+      await cubit.openConversation(selected);
+    }
+    if (mounted) _inputFocusNode.requestFocus();
   }
 
   void _send(
@@ -283,7 +369,8 @@ class _ChatPanelState extends State<ChatPanel> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Clear chat?'),
         content: const Text(
-          'This removes the visible conversation and current model context.',
+          'This clears the saved conversation and current model context. '
+          'Memory notes and separate text snapshots are kept. Use New chat to keep this conversation.',
         ),
         actions: [
           TextButton(
@@ -331,8 +418,13 @@ class _ContextStatusButton extends StatelessWidget {
     final progress = _contextProgress(state);
     final percent = (progress * 100).round();
     final canCompact =
-        !state.isProcessing && !summary.isEmpty && settings.hasApiKey;
-    final canClear = state.messages.isNotEmpty || !summary.isEmpty;
+        !state.isProcessing &&
+        !state.isLoadingHistory &&
+        !summary.isEmpty &&
+        settings.hasApiKey;
+    final canClear =
+        !state.isLoadingHistory &&
+        (state.messages.isNotEmpty || !summary.isEmpty);
     return Semantics(
       label: 'Context status, $percent percent used',
       button: true,

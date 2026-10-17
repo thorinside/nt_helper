@@ -23,6 +23,9 @@ The Disting NT MCP (Model Context Protocol) API provides individual, well-named 
 
 ### Remote Controls
 
+For operating the hardware through screen-feedback navigation, held gestures,
+and context-sensitive controls, see the [agent remote-control tutorial](mcp-remote-control-tutorial.md).
+
 External MCP and built-in chat share these tools and the UI's remote-control
 transport. They require a synchronized live connection with recognized firmware
 1.19 or newer and a transport supporting remote input. Offline and demo modes
@@ -53,7 +56,12 @@ Put a complete held combination in one call. Outstanding presses are released
 at the end, on cancellation, or after an error while the original transport is
 available; holds do not persist across calls. A disconnected device cannot
 acknowledge release, so an unknown release outcome must not be described as a
-confirmed hardware state. Gesture size, encoder movement, and waits are bounded,
+confirmed hardware state. `actions_completed` counts processed actions, including
+waits and no-ops, rather than hardware packets. Remote gestures do not save the
+preset automatically; use `save` when persistence is intended. Observe navigation
+with `show_screen({})`, which accepts no arguments and never switches display
+mode. Use `remote_control` for menu navigation.
+Gesture size, encoder movement, and waits are bounded,
 and the complete sequence is validated before any command is sent. An active UI
 remote session must finish before a tool can acquire the controls.
 
@@ -429,18 +437,32 @@ making a redundant inspection call.
 
 #### show_screen
 
-Capture and return the current device screen as a base64 JPEG image.
-
-**Parameters**:
-- `display_mode` (optional, string): Display mode to switch to before capturing. Options: "parameter", "algorithm", "overview", "vu_meters"
+Wake the display and capture its current screen as a base64 PNG image.
+Takes no arguments; it preserves display mode and menu position. For menu
+navigation, send button/encoder gestures with `remote_control`, then capture.
 
 ```json
 {"tool": "show_screen", "arguments": {}}
 ```
 
+#### set_display_mode
+
+Explicitly switch to a hardware display view. This can dismiss menus, so use it
+only when the user requests a view change, not as a navigation or screenshot tool.
+
+**Parameters**:
+- `mode` (required): "parameter", "algorithm", "overview", or "vu_meters".
+
 ```json
-{"tool": "show_screen", "arguments": {"display_mode": "overview"}}
+{"tool": "set_display_mode", "arguments": {"mode": "overview"}}
 ```
+
+Success means transport send only, not acknowledged hardware execution. Capture
+separately with `show_screen({})` to inspect the result.
+
+**Compatibility:** `show_screen(display_mode: ...)` is no longer accepted. Its
+observation and mutation behaviors were separated to prevent screenshot requests
+from repeatedly resetting menu navigation.
 
 ---
 

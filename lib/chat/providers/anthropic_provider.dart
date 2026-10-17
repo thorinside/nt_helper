@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:genkit/genkit.dart' show CancellationToken;
+import 'package:nt_helper/chat/providers/provider_streaming.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
@@ -13,7 +15,7 @@ const anthropicLongCacheControl = <String, String>{
 };
 
 /// Anthropic Claude Messages API provider.
-class AnthropicProvider with LlmErrorHandling implements LlmProvider {
+class AnthropicProvider with LlmErrorHandling implements StreamingLlmProvider {
   final String apiKey;
   final String model;
   final http.Client _client;
@@ -46,6 +48,45 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
     required List<LlmToolDefinition> tools,
     String? systemPrompt,
   }) async {
+    final body = _requestBody(messages, tools, systemPrompt);
+
+    final response = await _client.post(
+      Uri.parse(_baseUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': _apiVersion,
+      },
+      body: jsonEncode(body),
+    );
+
+    DebugService().addLocalMessage(
+      'Anthropic API response: ${response.statusCode} '
+      '(${response.body.length} bytes)',
+    );
+
+    throwIfApiError(response, 'Anthropic API');
+
+    try {
+      return parseResponse(jsonDecode(response.body));
+    } on FormatException catch (e) {
+      final preview = response.body.length > 200
+          ? '${response.body.substring(0, 200)}...'
+          : response.body;
+      DebugService().addLocalMessage(
+        'Anthropic response parse error: $e\nBody: $preview',
+      );
+      throw LlmApiException(
+        'Failed to parse Anthropic response. Check Debug Log for details.',
+      );
+    }
+  }
+
+  Map<String, dynamic> _requestBody(
+    List<LlmMessage> messages,
+    List<LlmToolDefinition> tools,
+    String? systemPrompt,
+  ) {
     final body = <String, dynamic>{
       'model': model,
       'max_tokens': 4096,
@@ -82,36 +123,35 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
       body['tools'] = toolsList;
     }
 
-    final response = await _client.post(
-      Uri.parse(_baseUrl),
+    return body;
+  }
+
+  @override
+  Future<LlmResponse> sendMessagesStreaming({
+    required List<LlmMessage> messages,
+    required List<LlmToolDefinition> tools,
+    String? systemPrompt,
+    required void Function(String) onTextDelta,
+    CancellationToken? cancel,
+  }) async {
+    final response = await sendStreamingRequest(
+      client: _client,
+      url: Uri.parse(_baseUrl),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
         'x-api-key': apiKey,
         'anthropic-version': _apiVersion,
       },
-      body: jsonEncode(body),
+      body: {..._requestBody(messages, tools, systemPrompt), 'stream': true},
+      cancel: cancel,
     );
-
-    DebugService().addLocalMessage(
-      'Anthropic API response: ${response.statusCode} '
-      '(${response.body.length} bytes)',
+    return readAnthropicStream(
+      response,
+      onTextDelta: onTextDelta,
+      cancel: cancel,
+      parseJson: parseResponse,
     );
-
-    throwIfApiError(response, 'Anthropic API');
-
-    try {
-      return parseResponse(jsonDecode(response.body));
-    } on FormatException catch (e) {
-      final preview = response.body.length > 200
-          ? '${response.body.substring(0, 200)}...'
-          : response.body;
-      DebugService().addLocalMessage(
-        'Anthropic response parse error: $e\nBody: $preview',
-      );
-      throw LlmApiException(
-        'Failed to parse Anthropic response. Check Debug Log for details.',
-      );
-    }
   }
 
   List<Map<String, dynamic>> convertMessages(List<LlmMessage> messages) {

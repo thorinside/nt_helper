@@ -24,11 +24,10 @@ class _HardwareCommandsDelegate {
     }
   }
 
-  void setDisplayMode(DisplayMode displayMode) {
-    _cubit.requireDisting().let((disting) {
-      disting.requestWake();
-      disting.requestSetDisplayMode(displayMode);
-    });
+  Future<void> setDisplayMode(DisplayMode displayMode) async {
+    final disting = _cubit.requireDisting();
+    await disting.requestWake();
+    await disting.requestSetDisplayMode(displayMode);
   }
 
   /// Reboots the Disting NT module.

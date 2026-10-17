@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:genkit/genkit.dart' show CancellationToken;
+import 'package:nt_helper/chat/providers/provider_streaming.dart' show sseData;
 
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
@@ -13,7 +15,7 @@ import 'package:nt_helper/chat/services/codex_model_metadata_service.dart';
 import 'package:nt_helper/chat/services/model_catalog_service.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
-class OpenAISubscriptionProvider implements LlmProvider {
+class OpenAISubscriptionProvider implements StreamingLlmProvider {
   final String model;
   final bool allowAuthRefresh;
   final String promptCacheKey;
@@ -72,7 +74,35 @@ class OpenAISubscriptionProvider implements LlmProvider {
     required List<LlmMessage> messages,
     required List<LlmToolDefinition> tools,
     String? systemPrompt,
+  }) => _sendMessages(
+    messages: messages,
+    tools: tools,
+    systemPrompt: systemPrompt,
+  );
+
+  @override
+  Future<LlmResponse> sendMessagesStreaming({
+    required List<LlmMessage> messages,
+    required List<LlmToolDefinition> tools,
+    String? systemPrompt,
+    required void Function(String) onTextDelta,
+    CancellationToken? cancel,
+  }) => _sendMessages(
+    messages: messages,
+    tools: tools,
+    systemPrompt: systemPrompt,
+    onTextDelta: onTextDelta,
+    cancel: cancel,
+  );
+
+  Future<LlmResponse> _sendMessages({
+    required List<LlmMessage> messages,
+    required List<LlmToolDefinition> tools,
+    String? systemPrompt,
+    void Function(String)? onTextDelta,
+    CancellationToken? cancel,
   }) async {
+    cancel?.throwIfCancelled();
     final clientVersion = await _clientVersionService.resolve();
     final useResponsesLite = await _modelMetadataService.useResponsesLite(
       model,
@@ -85,6 +115,7 @@ class OpenAISubscriptionProvider implements LlmProvider {
       systemPrompt,
       clientVersion,
       useResponsesLite,
+      cancel,
     );
 
     if (response.statusCode == 401 && allowAuthRefresh) {
@@ -96,6 +127,7 @@ class OpenAISubscriptionProvider implements LlmProvider {
         systemPrompt,
         clientVersion,
         useResponsesLite,
+        cancel,
       );
     }
 
@@ -108,7 +140,11 @@ class OpenAISubscriptionProvider implements LlmProvider {
       'OpenAI Subscription API response: ${response.statusCode}',
     );
 
-    return _parseEventStream(response.stream);
+    return _parseEventStream(
+      response.stream,
+      onTextDelta: onTextDelta,
+      cancel: cancel,
+    );
   }
 
   Future<http.StreamedResponse> _sendRequest(
@@ -118,8 +154,14 @@ class OpenAISubscriptionProvider implements LlmProvider {
     String? systemPrompt,
     String clientVersion,
     bool useResponsesLite,
+    CancellationToken? cancel,
   ) async {
-    final request = http.Request('POST', Uri.parse(_baseUrl));
+    cancel?.throwIfCancelled();
+    final request = http.AbortableRequest(
+      'POST',
+      Uri.parse(_baseUrl),
+      abortTrigger: cancel?.whenCancelled,
+    );
     request.headers.addAll({
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
@@ -280,13 +322,19 @@ class OpenAISubscriptionProvider implements LlmProvider {
     return mimeType == 'application/pdf';
   }
 
-  Future<LlmResponse> _parseEventStream(Stream<List<int>> stream) async {
+  Future<LlmResponse> _parseEventStream(
+    Stream<List<int>> stream, {
+    void Function(String)? onTextDelta,
+    CancellationToken? cancel,
+  }) async {
     final textBuffer = StringBuffer();
     final toolCalls = <LlmToolCall>[];
     LlmUsage? usage;
     var sawTextDelta = false;
+    var completed = false;
 
-    await for (final data in _sseData(stream)) {
+    await for (final data in sseData(stream)) {
+      cancel?.throwIfCancelled();
       if (data == '[DONE]') break;
       final event = jsonDecode(data) as Map<String, dynamic>;
       final type = event['type'] as String?;
@@ -297,22 +345,40 @@ class OpenAISubscriptionProvider implements LlmProvider {
           if (delta is String) {
             sawTextDelta = true;
             textBuffer.write(delta);
+            onTextDelta?.call(delta);
           }
           break;
         case 'response.output_item.done':
           final item = event['item'];
           if (item is Map<String, dynamic>) {
+            final previousLength = textBuffer.length;
             _parseDoneItem(item, toolCalls, textBuffer, sawTextDelta);
+            if (textBuffer.length > previousLength) {
+              onTextDelta?.call(
+                textBuffer.toString().substring(previousLength),
+              );
+            }
           }
           break;
         case 'response.completed':
+          completed = true;
           usage = _parseUsage(event['response']);
           break;
+        case 'response.incomplete':
+          throw LlmApiException('OpenAI Subscription output was incomplete.');
+        case 'error':
+          throw LlmApiException('OpenAI Subscription stream failed.');
         case 'response.failed':
           throw LlmApiException(_responseFailureMessage(event));
       }
     }
 
+    cancel?.throwIfCancelled();
+    if (onTextDelta != null && !completed) {
+      throw LlmApiException(
+        'OpenAI Subscription stream ended before completion.',
+      );
+    }
     final content = textBuffer.toString();
     return LlmResponse(
       content: content.isEmpty ? null : content,
@@ -403,28 +469,6 @@ class OpenAISubscriptionProvider implements LlmProvider {
     return 0;
   }
 
-  Stream<String> _sseData(Stream<List<int>> stream) async* {
-    final lines = stream
-        .transform(utf8.decoder)
-        .transform(const LineSplitter());
-    final dataLines = <String>[];
-
-    await for (final line in lines) {
-      if (line.isEmpty) {
-        if (dataLines.isNotEmpty) {
-          yield dataLines.join('\n');
-          dataLines.clear();
-        }
-        continue;
-      }
-      if (line.startsWith('data:')) {
-        dataLines.add(line.substring(5).trimLeft());
-      }
-    }
-
-    if (dataLines.isNotEmpty) yield dataLines.join('\n');
-  }
-
   Never _throwResponseError(int statusCode, String body) {
     String message = body;
     try {
@@ -437,6 +481,10 @@ class OpenAISubscriptionProvider implements LlmProvider {
       }
     } on FormatException {
       // Keep raw body.
+    }
+    if (statusCode == 400 && message.contains('not supported')) {
+      message =
+          '$message Open Chat settings and select a model from the current subscription model list.';
     }
     throw LlmApiException(
       'OpenAI Subscription API error ($statusCode): $message',

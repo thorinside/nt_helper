@@ -107,6 +107,43 @@ void main() {
     verifyNever(() => mockCubit.clearChat());
   });
 
+  testWidgets('history controls stay fixed and are disabled while processing', (
+    tester,
+  ) async {
+    final mockCubit = _MockChatCubit();
+    final changes = StreamController<ChatState>();
+    addTearDown(changes.close);
+    final ready = ChatReady(
+      messages: [ChatMessage.user('Saved question')],
+      conversationTitle: 'Saved question',
+    );
+    whenListen(mockCubit, changes.stream, initialState: ready);
+    when(
+      () => mockCubit.contextSummary,
+    ).thenReturn(const ChatContextSummary(messageCount: 1, userMessages: 1));
+    when(() => mockCubit.newChat()).thenAnswer((_) async {});
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BlocProvider<ChatCubit>.value(
+            value: mockCubit,
+            child: const ChatPanel(),
+          ),
+        ),
+      ),
+    );
+    final position = tester.getRect(find.byTooltip('New chat'));
+    changes.add(ready.copyWith(isProcessing: true));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.getRect(find.byTooltip('New chat')), position);
+    await tester.tap(find.byTooltip('New chat'));
+    verifyNever(() => mockCubit.newChat());
+    changes.add(ready);
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.tap(find.byTooltip('New chat'));
+    verify(() => mockCubit.newChat()).called(1);
+  });
+
   testWidgets('tool use does not move a bottom-pinned transcript', (
     tester,
   ) async {

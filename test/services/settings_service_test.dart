@@ -41,6 +41,8 @@ const Map<String, Object> _nonDefaultSeeds = {
   'companion_column_widths': '{"seed":420}',
   'chat_panel_width': 777.0,
   'chat_llm_provider': 'openai',
+  'chat_additional_providers':
+      '{"local":{"api_key":"fixture","model":"fixture"}}',
   'anthropic_api_key': 'sk-fake-anthropic',
   'openai_api_key': 'sk-fake-openai',
   'anthropic_model': 'fake-anthropic-model',

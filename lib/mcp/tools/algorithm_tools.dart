@@ -1051,41 +1051,50 @@ class MCPAlgorithmTools {
     );
   }
 
-  /// Show current device screen as base64 PNG image.
+  /// Deliberately separate from observation: switching mode can dismiss menus.
+  Future<String> setDisplayMode(dynamic mode) async {
+    const modes = ['parameter', 'algorithm', 'overview', 'vu_meters'];
+    if (mode is! String || !modes.contains(mode)) {
+      return jsonEncode({
+        'success': false,
+        'error':
+            'Invalid mode: expected parameter, algorithm, overview, or vu_meters.',
+        'valid_modes': modes,
+      });
+    }
+    final state = _distingCubit.state;
+    if (state is! DistingStateSynchronized || state.offline || state.demo) {
+      return jsonEncode({
+        'success': false,
+        'error': 'Changing display mode requires a synchronized live device.',
+      });
+    }
+    try {
+      await _distingCubit.setDisplayMode(_stringToDisplayMode(mode)!);
+      return jsonEncode({
+        'success': true,
+        'mode': mode,
+        'delivery': 'transport_send_only',
+        'acknowledged': false,
+        'hardware_reported': null,
+      });
+    } catch (error) {
+      return jsonEncode({
+        'success': false,
+        'error': 'Failed to send display mode change: $error',
+      });
+    }
+  }
+
+  /// Wake and observe the current screen without switching its display mode.
   Future<String> showScreen({dynamic displayMode}) async {
     try {
-      // Validate display_mode parameter first, before checking device state
       if (displayMode != null) {
-        if (displayMode is! String) {
-          return jsonEncode(
-            convertToSnakeCaseKeys({
-              'success': false,
-              'error':
-                  'Invalid display_mode: expected a string, got ${displayMode.runtimeType}',
-              'valid_modes': [
-                'parameter',
-                'algorithm',
-                'overview',
-                'vu_meters',
-              ],
-            }),
-          );
-        }
-        final modeEnum = _stringToDisplayMode(displayMode);
-        if (modeEnum == null) {
-          return jsonEncode(
-            convertToSnakeCaseKeys({
-              'success': false,
-              'error': 'Invalid display_mode: $displayMode',
-              'valid_modes': [
-                'parameter',
-                'algorithm',
-                'overview',
-                'vu_meters',
-              ],
-            }),
-          );
-        }
+        return jsonEncode({
+          'success': false,
+          'error':
+              'show_screen takes no arguments. Use remote_control for menu navigation; use set_display_mode only for an explicitly requested display mode change.',
+        });
       }
 
       final state = _distingCubit.state;
@@ -1098,19 +1107,9 @@ class MCPAlgorithmTools {
         );
       }
 
-      // Handle display_mode parameter if provided and validated
-      if (displayMode != null && displayMode is String) {
-        final modeEnum = _stringToDisplayMode(displayMode)!;
-
-        // Set the display mode
-        _distingCubit.setDisplayMode(modeEnum);
-
-        // Wait for screen update
-        await Future.delayed(const Duration(milliseconds: 200));
-      }
-
-      final manager = state.disting;
-      final screenshotData = await manager.encodeTakeScreenshot();
+      // Use the same wake-before-capture authority as the UI. A sleeping
+      // display otherwise returns a valid but entirely black screenshot.
+      final screenshotData = await _distingCubit.getHardwareScreenshot();
 
       if (screenshotData == null) {
         return jsonEncode(

@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:nt_helper/chat/cubit/chat_cubit.dart';
 import 'package:nt_helper/chat/services/memory_service.dart';
+import 'package:nt_helper/chat/services/conversation_store.dart';
 import 'package:nt_helper/chat/ui/chat_panel.dart';
 import 'package:nt_helper/mcp/tool_registry.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
@@ -353,6 +354,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     return _chatCubit = ChatCubit(
       toolRegistry: ToolRegistry(distingCubit, memoryService: memoryService),
       memoryService: memoryService,
+      conversationStore: FileConversationStore(),
     );
   }
 

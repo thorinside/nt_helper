@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:nt_helper/chat/providers/openai_provider_metadata.dart';
+import 'package:genkit/genkit.dart' show CancellationToken;
+import 'package:nt_helper/chat/providers/provider_streaming.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
@@ -10,11 +13,14 @@ import 'package:nt_helper/chat/providers/model_context_window.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 /// OpenAI Chat Completions API provider.
-class OpenAIProvider with LlmErrorHandling implements LlmProvider {
+class OpenAIProvider with LlmErrorHandling implements StreamingLlmProvider {
   final String apiKey;
   final String model;
   final String baseUrl;
   final String? promptCacheKey;
+  final String providerLabel;
+  final int? contextWindowTokens;
+  final Map<String, dynamic> requestOptions;
   final http.Client _client;
 
   static const _defaultBaseUrl = 'https://api.openai.com/v1/chat/completions';
@@ -24,15 +30,19 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
     required this.model,
     String? baseUrl,
     this.promptCacheKey,
+    this.providerLabel = 'OpenAI',
+    this.contextWindowTokens,
+    this.requestOptions = const {},
     http.Client? client,
   }) : baseUrl = baseUrl ?? _defaultBaseUrl,
        _client = client ?? http.Client();
 
   @override
-  String get displayName => 'OpenAI ($model)';
+  String get displayName => '$providerLabel ($model)';
 
   @override
   Future<int?> resolveContextWindowTokens() {
+    if (contextWindowTokens != null) return Future.value(contextWindowTokens);
     return OpenAIContextWindowResolver.resolve(
       model: model,
       baseUrl: baseUrl,
@@ -47,40 +57,14 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
     required List<LlmToolDefinition> tools,
     String? systemPrompt,
   }) async {
-    final apiMessages = <Map<String, dynamic>>[];
-
-    if (systemPrompt != null) {
-      apiMessages.add({'role': 'system', 'content': systemPrompt});
-    }
-
-    apiMessages.addAll(_convertMessages(messages));
-
-    final body = <String, dynamic>{'model': model, 'messages': apiMessages};
-
-    if (promptCacheKey != null && _isOfficialOpenAIEndpoint) {
-      body['prompt_cache_key'] = promptCacheKey;
-    }
-
-    if (tools.isNotEmpty) {
-      body['tools'] = tools
-          .map(
-            (t) => {
-              'type': 'function',
-              'function': {
-                'name': t.name,
-                'description': t.description,
-                'parameters': {'type': 'object', ...t.inputSchema},
-              },
-            },
-          )
-          .toList();
-    }
+    final body = _requestBody(messages, tools, systemPrompt);
 
     final response = await _client.post(
       Uri.parse(baseUrl),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
+        if (apiKey.trim().isNotEmpty)
+          'Authorization': 'Bearer ${apiKey.trim()}',
       },
       body: jsonEncode(body),
     );
@@ -90,7 +74,7 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
       '(${response.body.length} bytes) from $baseUrl',
     );
 
-    throwIfApiError(response, 'OpenAI API');
+    throwIfApiError(response, '$providerLabel API');
 
     final Map<String, dynamic> parsed;
     try {
@@ -121,10 +105,89 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
     }
   }
 
+  Map<String, dynamic> _requestBody(
+    List<LlmMessage> messages,
+    List<LlmToolDefinition> tools,
+    String? systemPrompt,
+  ) {
+    final apiMessages = <Map<String, dynamic>>[];
+
+    if (systemPrompt != null) {
+      apiMessages.add({'role': 'system', 'content': systemPrompt});
+    }
+
+    apiMessages.addAll(_convertMessages(messages));
+
+    final body = <String, dynamic>{
+      ...requestOptions,
+      'model': model,
+      'messages': apiMessages,
+    };
+
+    if (promptCacheKey != null && _isOfficialOpenAIEndpoint) {
+      body['prompt_cache_key'] = promptCacheKey;
+    }
+
+    if (tools.isNotEmpty) {
+      body['tools'] = tools
+          .map(
+            (t) => {
+              'type': 'function',
+              'function': {
+                'name': t.name,
+                'description': t.description,
+                'parameters': {'type': 'object', ...t.inputSchema},
+              },
+            },
+          )
+          .toList();
+    }
+
+    return body;
+  }
+
+  @override
+  Future<LlmResponse> sendMessagesStreaming({
+    required List<LlmMessage> messages,
+    required List<LlmToolDefinition> tools,
+    String? systemPrompt,
+    required void Function(String) onTextDelta,
+    CancellationToken? cancel,
+  }) async {
+    final response = await sendStreamingRequest(
+      client: _client,
+      url: Uri.parse(baseUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        if (apiKey.trim().isNotEmpty)
+          'Authorization': 'Bearer ${apiKey.trim()}',
+      },
+      body: {
+        ..._requestBody(messages, tools, systemPrompt),
+        'stream': true,
+        if (_isOfficialOpenAIEndpoint)
+          'stream_options': {'include_usage': true},
+      },
+      cancel: cancel,
+    );
+    return readOpenAIStream(
+      response,
+      onTextDelta: onTextDelta,
+      cancel: cancel,
+      parseJson: _parseResponse,
+    );
+  }
+
   List<Map<String, dynamic>> _convertMessages(List<LlmMessage> messages) {
     final result = <Map<String, dynamic>>[];
+    final screenshots = <Map<String, dynamic>>[];
 
     for (final msg in messages) {
+      if (msg.role != LlmRole.tool && screenshots.isNotEmpty) {
+        result.addAll(screenshots);
+        screenshots.clear();
+      }
       switch (msg.role) {
         case LlmRole.user:
           if (msg.hasImageAttachments) {
@@ -146,25 +209,21 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
           }
         case LlmRole.assistant:
           if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) {
-            final apiMsg = <String, dynamic>{'role': 'assistant'};
+            final apiMsg = <String, dynamic>{
+              ...openAIFieldsFor(msg.providerMetadata, baseUrl, model),
+              'role': 'assistant',
+            };
             if (msg.content != null && msg.content!.isNotEmpty) {
               apiMsg['content'] = msg.content!;
             }
-            apiMsg['tool_calls'] = msg.toolCalls!
-                .map(
-                  (tc) => {
-                    'id': tc.id,
-                    'type': 'function',
-                    'function': {
-                      'name': tc.name,
-                      'arguments': jsonEncode(tc.arguments),
-                    },
-                  },
-                )
-                .toList();
+            apiMsg['tool_calls'] = msg.toolCalls!.map(_toolCallJson).toList();
             result.add(apiMsg);
           } else {
-            result.add({'role': 'assistant', 'content': msg.content ?? ''});
+            result.add({
+              ...openAIFieldsFor(msg.providerMetadata, baseUrl, model),
+              'role': 'assistant',
+              'content': msg.content ?? '',
+            });
           }
         case LlmRole.tool:
           result.add({
@@ -173,7 +232,9 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
             'content': msg.content!,
           });
           if (msg.hasImage) {
-            result.add({
+            // Keep every result adjacent to its assistant tool group before
+            // introducing screenshot user messages, even for multi-call rounds.
+            screenshots.add({
               'role': 'user',
               'content': <dynamic>[
                 {
@@ -194,7 +255,22 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
       }
     }
 
+    result.addAll(screenshots);
     return result;
+  }
+
+  Map<String, dynamic> _toolCallJson(LlmToolCall call) {
+    final extras = openAIFieldsFor(call.providerMetadata, baseUrl, model);
+    return {
+      ...extras,
+      'id': call.id,
+      'type': 'function',
+      'function': {
+        ...Map<String, dynamic>.from(extras['function'] as Map? ?? const {}),
+        'name': call.name,
+        'arguments': jsonEncode(call.arguments),
+      },
+    };
   }
 
   LlmResponse _parseResponse(Map<String, dynamic> json) {
@@ -226,6 +302,11 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
             id: tc['id'] as String,
             name: function['name'] as String,
             arguments: args,
+            providerMetadata: scopedOpenAIMetadata(
+              baseUrl,
+              model,
+              openAIToolExtras(Map<String, dynamic>.from(tc as Map)),
+            ),
           ),
         );
       }
@@ -234,6 +315,11 @@ class OpenAIProvider with LlmErrorHandling implements LlmProvider {
     return LlmResponse(
       content: textContent,
       toolCalls: toolCalls,
+      providerMetadata: scopedOpenAIMetadata(
+        baseUrl,
+        model,
+        openAIMessageExtras(message),
+      ),
       isComplete: finishReason != 'tool_calls',
       usage: usage != null
           ? LlmUsage(

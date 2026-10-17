@@ -718,13 +718,13 @@ void main() {
     });
   });
 
-  group('showScreen — display_mode validation', () {
+  group('setDisplayMode — mode validation', () {
     test('returns error for invalid display_mode', () async {
-      final result = await algoTools.showScreen(displayMode: 'invalid_mode');
+      final result = await algoTools.setDisplayMode('invalid_mode');
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
-      expect(json['error'], contains('Invalid display_mode'));
+      expect(json['error'], contains('Invalid mode'));
       expect(json['valid_modes'], isNotNull);
     });
 
@@ -738,11 +738,11 @@ void main() {
 
     test('validates display_mode before checking synchronized state', () async {
       // Even when not synchronized, invalid display_mode should error first
-      final result = await algoTools.showScreen(displayMode: 'bogus');
+      final result = await algoTools.setDisplayMode('bogus');
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
-      expect(json['error'], contains('Invalid display_mode'));
+      expect(json['error'], contains('Invalid mode'));
     });
   });
 

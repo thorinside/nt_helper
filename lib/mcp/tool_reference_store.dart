@@ -18,6 +18,39 @@ class ToolReferenceStore {
 
   bool get isEmpty => _references.isEmpty;
 
+  List<Map<String, dynamic>> exportSnapshot() => [
+    for (final reference in _references.values)
+      {
+        'id': reference.id,
+        'tool_name': reference.toolName,
+        'content': reference.content,
+      },
+  ];
+
+  void restoreSnapshot(List<Map<String, dynamic>> snapshot) {
+    if (snapshot.length > maxReferences) {
+      throw const FormatException('Too many saved references');
+    }
+    final restored = <String, _ToolReference>{};
+    for (final value in snapshot) {
+      final id = value['id'];
+      final name = value['tool_name'];
+      final content = value['content'];
+      if (id is! String ||
+          id.isEmpty ||
+          name is! String ||
+          content is! String ||
+          restored.containsKey(id)) {
+        throw const FormatException('Invalid saved reference');
+      }
+      restored[id] = _ToolReference(id: id, toolName: name, content: content);
+    }
+    _references
+      ..clear()
+      ..addAll(restored);
+    if (_counter < restored.length) _counter = restored.length;
+  }
+
   void clear() {
     _references.clear();
   }

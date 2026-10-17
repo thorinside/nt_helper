@@ -81,7 +81,9 @@ void main() {
     );
 
     final errorSemantics = tester.getSemantics(
-      find.text('Model discovery failed. Manual entry is still allowed.'),
+      find.bySemanticsLabel(
+        'Model discovery failed. Manual entry is still allowed.',
+      ),
     );
     expect(
       errorSemantics.getSemanticsData().flagsCollection.isLiveRegion,
@@ -89,7 +91,7 @@ void main() {
     );
     expect(find.bySemanticsLabel('Refresh model list'), findsOneWidget);
 
-    await tester.tap(find.text('Refresh model list'));
+    await tester.tap(find.byTooltip('Refresh model list'));
     await tester.pump();
 
     expect(refreshCount, 1);
@@ -136,7 +138,7 @@ void main() {
       );
       return (
         tester.getSize(find.byType(EditableModelSelector)),
-        tester.getTopLeft(find.text('Refresh model list')),
+        tester.getTopLeft(find.byTooltip('Refresh model list')),
         tester.getTopLeft(find.text('Following control')),
       );
     }

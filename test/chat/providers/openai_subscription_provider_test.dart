@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -66,6 +67,147 @@ class _QueueClient extends http.BaseClient {
 
 void main() {
   group('OpenAISubscriptionProvider', () {
+    for (final lite in [false, true]) {
+      test(
+        'streams Codex ${lite ? 'Responses Lite' : 'Responses'} without losing auth or cache identity',
+        () async {
+          final frames = StreamController<List<int>>();
+          final requestSent = Completer<void>();
+          final firstDelta = Completer<void>();
+          final auth = _FakeAuthService(
+            const CodexAuthSnapshot(
+              accessToken: 'token',
+              refreshToken: 'refresh',
+              accountId: 'account',
+            ),
+          );
+          final client = _QueueClient([
+            (_) {
+              requestSent.complete();
+              return http.StreamedResponse(
+                frames.stream,
+                200,
+                headers: {'content-type': 'text/event-stream'},
+              );
+            },
+          ]);
+          final provider = OpenAISubscriptionProvider(
+            model: 'gpt-5.5',
+            allowAuthRefresh: false,
+            authService: auth,
+            clientVersionService: _FakeCodexClientVersionService(),
+            modelMetadataService: _FakeCodexModelMetadataService(lite: lite),
+            client: client,
+            promptCacheKey: 'stable-session',
+          );
+          addTearDown(provider.dispose);
+          var completed = false;
+          final deltas = <String>[];
+          final work = provider
+              .sendMessagesStreaming(
+                messages: [LlmMessage.user('inspect')],
+                tools: [],
+                systemPrompt: 'NT assistant',
+                onTextDelta: (delta) {
+                  deltas.add(delta);
+                  if (!firstDelta.isCompleted) firstDelta.complete();
+                },
+              )
+              .then((result) {
+                completed = true;
+                return result;
+              });
+          await requestSent.future;
+          void frame(Map<String, dynamic> event) =>
+              frames.add(utf8.encode('data: ${jsonEncode(event)}\n\n'));
+          frame({'type': 'response.output_text.delta', 'delta': 'Inspecting'});
+          await firstDelta.future;
+          expect(completed, isFalse);
+          frame({
+            'type': 'response.output_item.done',
+            'item': {
+              'type': 'function_call',
+              'name': 'show_screen',
+              'namespace': 'functions',
+              'call_id': 'c1',
+              'arguments': '{}',
+            },
+          });
+          frame({
+            'type': 'response.completed',
+            'response': {
+              'usage': {'input_tokens': 12, 'output_tokens': 3},
+            },
+          });
+          await frames.close();
+          final result = await work;
+          expect(deltas, ['Inspecting']);
+          expect(result.toolCalls.single.namespace, 'functions');
+          expect(result.usage!.inputTokens, 12);
+          final request = client.requests.single;
+          expect(request.headers['Authorization'], 'Bearer token');
+          expect(request.headers['ChatGPT-Account-ID'], 'account');
+          final body = jsonDecode(request.body);
+          expect(body['prompt_cache_key'], 'stable-session');
+          expect(body['parallel_tool_calls'], false);
+          if (lite) {
+            expect(body['input'][0]['type'], 'additional_tools');
+            expect(
+              request.headers['x-openai-internal-codex-responses-lite'],
+              'true',
+            );
+          } else {
+            expect(body['instructions'], 'NT assistant');
+          }
+        },
+      );
+    }
+
+    test(
+      'unsupported subscription models explain how to choose an available model',
+      () async {
+        final auth = _FakeAuthService(
+          const CodexAuthSnapshot(
+            accessToken: 'token',
+            refreshToken: 'refresh',
+            accountId: 'account',
+          ),
+        );
+        final client = _QueueClient([
+          (_) => _textResponse(
+            400,
+            jsonEncode({
+              'error': {
+                'message': 'This model is not supported for this account.',
+              },
+            }),
+          ),
+        ]);
+        final provider = OpenAISubscriptionProvider(
+          model: 'unavailable',
+          allowAuthRefresh: false,
+          authService: auth,
+          clientVersionService: _FakeCodexClientVersionService(),
+          modelMetadataService: _FakeCodexModelMetadataService(lite: false),
+          client: client,
+        );
+        addTearDown(provider.dispose);
+        await expectLater(
+          provider.sendMessages(
+            messages: [LlmMessage.user('hello')],
+            tools: [],
+          ),
+          throwsA(
+            predicate<Object>(
+              (error) =>
+                  error.toString().contains('Open Chat settings') &&
+                  error.toString().contains('subscription model list'),
+            ),
+          ),
+        );
+      },
+    );
+
     test('resolves context window from Codex models endpoint', () async {
       final auth = _FakeAuthService(
         const CodexAuthSnapshot(

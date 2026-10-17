@@ -165,25 +165,25 @@ void main() {
     },
   );
 
-  group('showScreen — non-string displayMode handling', () {
+  group('setDisplayMode — non-string mode handling', () {
     // Bug: non-string displayMode values (int, bool) are silently ignored
     // instead of returning an error. This is confusing for callers.
 
     test('should return error when displayMode is an integer', () async {
-      final result = await algoTools.showScreen(displayMode: 42);
+      final result = await algoTools.setDisplayMode(42);
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
-      expect(json['error'], contains('display_mode'));
+      expect(json['error'], contains('mode'));
       expect(json['valid_modes'], isNotNull);
     });
 
     test('should return error when displayMode is a boolean', () async {
-      final result = await algoTools.showScreen(displayMode: true);
+      final result = await algoTools.setDisplayMode(true);
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
-      expect(json['error'], contains('display_mode'));
+      expect(json['error'], contains('mode'));
       expect(json['valid_modes'], isNotNull);
     });
   });

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:genkit/genkit.dart' show CancellationToken;
+import 'package:nt_helper/chat/providers/provider_streaming.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
@@ -14,7 +16,7 @@ import 'package:nt_helper/services/debug_service.dart';
 /// for subscription access.
 class AnthropicSubscriptionProvider
     with LlmErrorHandling
-    implements LlmProvider {
+    implements StreamingLlmProvider {
   final String token;
   final String model;
   final http.Client _client;
@@ -58,40 +60,7 @@ class AnthropicSubscriptionProvider
     required List<LlmToolDefinition> tools,
     String? systemPrompt,
   }) async {
-    final body = <String, dynamic>{
-      'model': model,
-      'max_tokens': 4096,
-      'messages': withAnthropicRollingCacheBreakpoint(
-        _delegate.convertMessages(messages),
-      ),
-      'cache_control': anthropicLongCacheControl,
-    };
-
-    // Prepend required system prefix for subscription auth
-    final fullSystemPrompt = systemPrompt != null
-        ? '$_requiredSystemPrefix\n\n$systemPrompt'
-        : _requiredSystemPrefix;
-    body['system'] = [
-      {
-        'type': 'text',
-        'text': fullSystemPrompt,
-        'cache_control': anthropicLongCacheControl,
-      },
-    ];
-
-    if (tools.isNotEmpty) {
-      final toolsList = tools
-          .map(
-            (t) => <String, dynamic>{
-              'name': t.name,
-              'description': t.description,
-              'input_schema': {'type': 'object', ...t.inputSchema},
-            },
-          )
-          .toList();
-      toolsList.last['cache_control'] = anthropicLongCacheControl;
-      body['tools'] = toolsList;
-    }
+    final body = _requestBody(messages, tools, systemPrompt);
 
     final response = await _client.post(
       Uri.parse(_baseUrl),
@@ -128,6 +97,81 @@ class AnthropicSubscriptionProvider
         'Check Debug Log for details.',
       );
     }
+  }
+
+  Map<String, dynamic> _requestBody(
+    List<LlmMessage> messages,
+    List<LlmToolDefinition> tools,
+    String? systemPrompt,
+  ) {
+    final body = <String, dynamic>{
+      'model': model,
+      'max_tokens': 4096,
+      'messages': withAnthropicRollingCacheBreakpoint(
+        _delegate.convertMessages(messages),
+      ),
+      'cache_control': anthropicLongCacheControl,
+    };
+
+    // Prepend required system prefix for subscription auth
+    final fullSystemPrompt = systemPrompt != null
+        ? '$_requiredSystemPrefix\n\n$systemPrompt'
+        : _requiredSystemPrefix;
+    body['system'] = [
+      {
+        'type': 'text',
+        'text': fullSystemPrompt,
+        'cache_control': anthropicLongCacheControl,
+      },
+    ];
+
+    if (tools.isNotEmpty) {
+      final toolsList = tools
+          .map(
+            (t) => <String, dynamic>{
+              'name': t.name,
+              'description': t.description,
+              'input_schema': {'type': 'object', ...t.inputSchema},
+            },
+          )
+          .toList();
+      toolsList.last['cache_control'] = anthropicLongCacheControl;
+      body['tools'] = toolsList;
+    }
+
+    return body;
+  }
+
+  @override
+  Future<LlmResponse> sendMessagesStreaming({
+    required List<LlmMessage> messages,
+    required List<LlmToolDefinition> tools,
+    String? systemPrompt,
+    required void Function(String) onTextDelta,
+    CancellationToken? cancel,
+  }) async {
+    final response = await sendStreamingRequest(
+      client: _client,
+      url: Uri.parse(_baseUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'Authorization': 'Bearer $token',
+        'anthropic-version': _apiVersion,
+        'anthropic-beta': _betaHeader,
+        'user-agent': 'claude-cli/1.0.0 (external, cli)',
+        'x-app': 'cli',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: {..._requestBody(messages, tools, systemPrompt), 'stream': true},
+      cancel: cancel,
+    );
+    return readAnthropicStream(
+      response,
+      onTextDelta: onTextDelta,
+      cancel: cancel,
+      parseJson: _delegate.parseResponse,
+    );
   }
 
   @override

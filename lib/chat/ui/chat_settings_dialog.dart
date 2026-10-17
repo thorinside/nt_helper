@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:nt_helper/chat/models/additional_provider_config.dart';
+import 'package:nt_helper/chat/providers/openai_endpoint.dart';
+import 'package:nt_helper/chat/services/gemini_model_catalog.dart';
+import 'package:nt_helper/chat/ui/additional_provider_fields.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:nt_helper/chat/models/allowed_file_root.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
@@ -10,8 +14,15 @@ import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
+typedef AdditionalCatalogFactory =
+    ChatModelCatalog Function(
+      LlmProviderType provider,
+      AdditionalProviderConfig config,
+    );
+
 class ChatSettingsDialog extends StatefulWidget {
-  const ChatSettingsDialog({super.key});
+  final AdditionalCatalogFactory? additionalCatalogFactory;
+  const ChatSettingsDialog({super.key, this.additionalCatalogFactory});
 
   @override
   State<ChatSettingsDialog> createState() => _ChatSettingsDialogState();
@@ -42,6 +53,14 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   List<LlmModelOption> _anthropicModels = const [];
   List<LlmModelOption> _openAIModels = const [];
   List<LlmModelOption> _openaiSubscriptionModels = const [];
+  final _extraKeys = <LlmProviderType, TextEditingController>{};
+  final _extraModels = <LlmProviderType, TextEditingController>{};
+  final _extraOptions = <LlmProviderType, List<LlmModelOption>>{};
+  late final TextEditingController _localUrl;
+  late final TextEditingController _localContext;
+  ChatModelCatalog? _activeAdditionalCatalog;
+  bool _saving = false;
+  String? _saveError;
 
   bool get _isOpenAI => _provider == LlmProviderType.openai;
   bool get _isOpenaiSubscription => _isOpenAI && _useOpenaiSubscription;
@@ -49,7 +68,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   /// The effective provider type, factoring in subscription toggles.
   LlmProviderType get _effectiveProvider {
     if (_isOpenaiSubscription) return LlmProviderType.openaiSubscription;
-    if (!_isOpenAI && _useAnthropicSubscription) {
+    if (_provider == LlmProviderType.anthropic && _useAnthropicSubscription) {
       return LlmProviderType.anthropicSubscription;
     }
     return _provider;
@@ -87,20 +106,37 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     _openaiBaseUrlController = TextEditingController(
       text: _settings.openaiBaseUrl,
     );
+    final extras = _settings.additionalChatProviders;
+    for (final type in LlmProviderType.values.where((p) => p.isAdditional)) {
+      final config = extras[type] ?? const AdditionalProviderConfig();
+      _extraKeys[type] = TextEditingController(text: config.apiKey);
+      _extraModels[type] = TextEditingController(text: config.model);
+    }
+    final local =
+        extras[LlmProviderType.local] ?? const AdditionalProviderConfig();
+    _localUrl = TextEditingController(
+      text: local.baseUrl.isEmpty ? defaultLocalBaseUrl : local.baseUrl,
+    );
+    _localContext = TextEditingController(
+      text: local.contextWindowTokens?.toString() ?? '',
+    );
     _allowedRoots = _settings.allowedFileRoots.toList();
     _showAdvanced =
         _settings.openaiBaseUrl != null && _settings.openaiBaseUrl!.isNotEmpty;
-    if (_isOpenaiSubscription) {
-      _loadOpenAISubscriptionModels();
-    } else if (_isOpenAI) {
-      _loadOpenAIModels();
-    } else {
-      _loadAnthropicModels();
-    }
+    _loadSelectedModels();
   }
 
   @override
   void dispose() {
+    _activeAdditionalCatalog?.dispose();
+    for (final controller in [
+      ..._extraKeys.values,
+      ..._extraModels.values,
+      _localUrl,
+      _localContext,
+    ]) {
+      controller.dispose();
+    }
     _anthropicKeyController.dispose();
     _openaiKeyController.dispose();
     _anthropicModelController.dispose();
@@ -112,36 +148,214 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     super.dispose();
   }
 
-  Future<void> _save() async {
-    if (_effectiveProvider == LlmProviderType.openaiSubscription) {
-      final authFound = await _codexAuthService.authFound();
-      if (!mounted) return;
-      if (!authFound) {
-        setState(() {
-          _codexAuthFound = false;
-          _codexAuthError =
-              'Codex auth not found. Run `codex login` in a terminal.';
-        });
-        return;
+  AdditionalProviderConfig _draft(LlmProviderType type) {
+    final model = _extraModels[type]!.text.trim();
+    final saved = _settings.additionalChatProviders[type];
+    int? window = type == LlmProviderType.local
+        ? int.tryParse(_localContext.text.trim())
+        : null;
+    if (type != LlmProviderType.local) {
+      for (final option in _extraOptions[type] ?? const <LlmModelOption>[]) {
+        if (option.id == model) {
+          window = option.contextWindowTokens;
+          break;
+        }
+      }
+      if (window == null && saved?.model == model) {
+        window = saved?.contextWindowTokens;
       }
     }
+    return AdditionalProviderConfig(
+      apiKey: _extraKeys[type]!.text.trim(),
+      model: model,
+      baseUrl: type == LlmProviderType.local ? _localUrl.text.trim() : '',
+      contextWindowTokens: window,
+    );
+  }
 
-    await _settings.setChatLlmProvider(_effectiveProvider);
-    await _settings.setAnthropicApiKey(_anthropicKeyController.text.trim());
-    await _settings.setOpenaiApiKey(_openaiKeyController.text.trim());
-    await _settings.setAnthropicModel(_anthropicModelController.text.trim());
-    await _settings.setOpenaiModel(_openaiModelController.text.trim());
-    await _settings.setOpenaiSubscriptionModel(
-      _openaiSubscriptionModelController.text.trim(),
-    );
-    await _settings.setAllowCodexAuthRefresh(_allowCodexAuthRefresh);
-    await _settings.setOpenaiBaseUrl(
-      _showAdvanced && !_isOpenaiSubscription
-          ? _openaiBaseUrlController.text.trim()
-          : '',
-    );
-    await _settings.setAllowedFileRoots(_allowedRoots);
-    if (mounted) Navigator.of(context).pop(true);
+  String? _validateAdditional(AdditionalProviderConfig config) {
+    if (config.model.isEmpty) {
+      return 'Choose or enter a model ID for ${_provider.label}.';
+    }
+    if (_provider != LlmProviderType.local && config.apiKey.isEmpty) {
+      return 'Enter an API key for ${_provider.label}.';
+    }
+    if (_provider == LlmProviderType.local) {
+      try {
+        chatCompletionsUri(config.baseUrl);
+      } on FormatException {
+        return 'Enter an HTTP(S) server URL without credentials, a query or fragment.';
+      }
+      if (_localContext.text.trim().isNotEmpty &&
+          (config.contextWindowTokens == null ||
+              config.contextWindowTokens! <= 0)) {
+        return 'The local context window must be a positive number of tokens.';
+      }
+    }
+    return null;
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    final effective = _effectiveProvider;
+    final config = _provider.isAdditional ? _draft(_provider) : null;
+    final error = config == null ? null : _validateAdditional(config);
+    if (error != null) {
+      setState(() => _saveError = error);
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    Future<void> write(Future<bool> setting) async {
+      if (!await setting) throw StateError('Settings storage unavailable');
+    }
+
+    try {
+      if (effective == LlmProviderType.openaiSubscription) {
+        final authFound = await _codexAuthService.authFound();
+        if (!mounted) return;
+        if (!authFound) {
+          setState(() {
+            _codexAuthFound = false;
+            _codexAuthError =
+                'Codex auth not found. Run `codex login` in a terminal.';
+            _saveError = _codexAuthError;
+          });
+          return;
+        }
+      }
+      await write(
+        _settings.setAnthropicApiKey(_anthropicKeyController.text.trim()),
+      );
+      await write(_settings.setOpenaiApiKey(_openaiKeyController.text.trim()));
+      await write(
+        _settings.setAnthropicModel(_anthropicModelController.text.trim()),
+      );
+      await write(_settings.setOpenaiModel(_openaiModelController.text.trim()));
+      await write(
+        _settings.setOpenaiSubscriptionModel(
+          _openaiSubscriptionModelController.text.trim(),
+        ),
+      );
+      await write(_settings.setAllowCodexAuthRefresh(_allowCodexAuthRefresh));
+      if (_isOpenAI && !_isOpenaiSubscription) {
+        await write(
+          _settings.setOpenaiBaseUrl(
+            _showAdvanced ? _openaiBaseUrlController.text.trim() : '',
+          ),
+        );
+      }
+      if (config != null) {
+        await write(
+          _settings.setAdditionalChatProviders({
+            ..._settings.additionalChatProviders,
+            _provider: config,
+          }),
+        );
+      }
+      await write(_settings.setAllowedFileRoots(_allowedRoots));
+      // Select only after its configuration has been stored successfully.
+      await write(_settings.setChatLlmProvider(effective));
+      if (mounted) Navigator.of(context).pop(true);
+    } on Object {
+      if (mounted) {
+        setState(
+          () => _saveError =
+              'Could not save settings. Keep this dialog open and try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _loadSelectedModels() {
+    if (_isOpenaiSubscription) return _loadOpenAISubscriptionModels();
+    if (_isOpenAI) return _loadOpenAIModels();
+    if (_provider == LlmProviderType.anthropic) return _loadAnthropicModels();
+    return _loadAdditionalModels();
+  }
+
+  void _invalidateAdditionalModels() {
+    _modelLoadGeneration++;
+    _activeAdditionalCatalog?.dispose();
+    _activeAdditionalCatalog = null;
+    setState(() {
+      _extraOptions[_provider] = const [];
+      _modelListLoading = false;
+      _modelListError = null;
+      _saveError = null;
+    });
+  }
+
+  Future<void> _loadAdditionalModels() async {
+    if (!_provider.isAdditional) return;
+    final type = _provider;
+    final config = _draft(type);
+    final generation = ++_modelLoadGeneration;
+    _activeAdditionalCatalog?.dispose();
+    _activeAdditionalCatalog = null;
+    if (type == LlmProviderType.gemini && config.apiKey.isEmpty) {
+      setState(() {
+        _modelListLoading = false;
+        _modelListError = null;
+      });
+      return;
+    }
+    setState(() {
+      _modelListLoading = true;
+      _modelListError = null;
+    });
+    ChatModelCatalog? catalog;
+    try {
+      catalog =
+          widget.additionalCatalogFactory?.call(type, config) ??
+          (type == LlmProviderType.gemini
+              ? GeminiModelCatalog(apiKey: config.apiKey)
+              : OpenAIModelCatalog(
+                  apiKey: config.apiKey,
+                  providerLabel: type.label,
+                  requireTools: type == LlmProviderType.openrouter,
+                  baseUrl: type == LlmProviderType.openrouter
+                      ? openRouterChatUrl
+                      : chatCompletionsUri(
+                          config.baseUrl.isEmpty
+                              ? defaultLocalBaseUrl
+                              : config.baseUrl,
+                        ).toString(),
+                ));
+      _activeAdditionalCatalog = catalog;
+      final models = await catalog.fetchModels();
+      if (!mounted || generation != _modelLoadGeneration) return;
+      setState(() {
+        _extraOptions[type] = models;
+        _modelListLoading = false;
+        _modelListError = models.isEmpty
+            ? 'No models returned. You can still enter a model ID.'
+            : null;
+      });
+    } on ModelCatalogException catch (error) {
+      if (!mounted || generation != _modelLoadGeneration) return;
+      setState(() {
+        _modelListLoading = false;
+        _modelListError = '${error.message} You can still enter a model ID.';
+      });
+    } on Object {
+      if (!mounted || generation != _modelLoadGeneration) return;
+      setState(() {
+        _modelListLoading = false;
+        _modelListError =
+            'Could not load models. Check the connection and refresh, or enter a model ID.';
+      });
+    } finally {
+      catalog?.dispose();
+      if (identical(_activeAdditionalCatalog, catalog)) {
+        _activeAdditionalCatalog = null;
+      }
+    }
   }
 
   Future<void> _addAllowedRoot() async {
@@ -372,17 +586,15 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   }
 
   Future<void> _setProvider(LlmProviderType provider) async {
+    _modelLoadGeneration++;
+    _activeAdditionalCatalog?.dispose();
+    _activeAdditionalCatalog = null;
     setState(() {
       _provider = provider;
       _modelListError = null;
+      _saveError = null;
     });
-    if (_isOpenaiSubscription) {
-      await _loadOpenAISubscriptionModels();
-    } else if (_isOpenAI) {
-      await _loadOpenAIModels();
-    } else {
-      await _loadAnthropicModels();
-    }
+    await _loadSelectedModels();
   }
 
   Future<void> _setAllowCodexAuthRefresh(bool value) async {
@@ -428,49 +640,81 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       content: SizedBox(
         width: 400,
         height: 520,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('LLM Provider', style: theme.textTheme.titleSmall),
-              const SizedBox(height: 8),
-              SegmentedButton<LlmProviderType>(
-                segments: const [
-                  ButtonSegment(
-                    value: LlmProviderType.anthropic,
-                    label: Text('Anthropic'),
+        child: FocusScope(
+          canRequestFocus: !_saving,
+          child: AbsorbPointer(
+            absorbing: _saving,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<LlmProviderType>(
+                    key: const ValueKey('chat_provider'),
+                    initialValue: _provider,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Provider',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final type in [
+                        LlmProviderType.anthropic,
+                        LlmProviderType.openai,
+                        LlmProviderType.gemini,
+                        LlmProviderType.openrouter,
+                        LlmProviderType.local,
+                      ])
+                        DropdownMenuItem(
+                          value: type,
+                          child: Text(
+                            type.label,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) _setProvider(value);
+                    },
                   ),
-                  ButtonSegment(
-                    value: LlmProviderType.openai,
-                    label: Text('OpenAI'),
-                  ),
+                  if (_isOpenAI) ..._buildOpenAISettings(theme),
+                  if (_provider == LlmProviderType.anthropic)
+                    ..._buildAnthropicSettings(theme),
+                  if (_provider.isAdditional)
+                    AdditionalProviderFields(
+                      provider: _provider,
+                      apiKeyController: _extraKeys[_provider]!,
+                      modelController: _extraModels[_provider]!,
+                      localUrlController: _localUrl,
+                      localContextController: _localContext,
+                      models: _extraOptions[_provider] ?? const [],
+                      loading: _modelListLoading,
+                      error: _modelListError,
+                      onRefresh: _loadAdditionalModels,
+                      onConnectionChanged: _invalidateAdditionalModels,
+                    ),
+                  ..._buildLocalContextSettings(theme),
                 ],
-                selected: {_provider},
-                onSelectionChanged: (s) => _setProvider(s.first),
               ),
-              if (_isOpenAI) ..._buildOpenAISettings(theme),
-              if (!_isOpenAI) ..._buildAnthropicSettings(theme),
-              ..._buildLocalContextSettings(theme),
-              const SizedBox(height: 16),
-              Text(
-                _isOpenaiSubscription
-                    ? 'Codex auth is stored locally by Codex CLI.'
-                    : 'API keys are stored locally on this device.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
       actions: [
+        SettingsStatusIndicator(
+          loading: _saving,
+          error: _saveError,
+          loadingLabel: 'Saving settings',
+        ),
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _save, child: const Text('Save')),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: const Text('Save'),
+        ),
       ],
     );
   }
@@ -479,12 +723,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     const SizedBox(height: 12),
     SwitchListTile(
       title: Text('Use Subscription', style: theme.textTheme.titleSmall),
-      subtitle: Text(
-        'Authenticate with Claude subscription OAuth token',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
+
       value: _useAnthropicSubscription,
       onChanged: _setAnthropicSubscription,
       contentPadding: EdgeInsets.zero,
@@ -508,18 +747,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
         obscureText: true,
       ),
     ),
-    if (_useAnthropicSubscription) ...[
-      const SizedBox(height: 4),
-      Text(
-        'Run "claude setup-key" in a terminal to get your token.',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-    ],
     const SizedBox(height: 16),
-    Text('Model', style: theme.textTheme.titleSmall),
-    const SizedBox(height: 8),
     EditableModelSelector(
       fieldKey: const ValueKey('model_anthropic'),
       controller: _anthropicModelController,
@@ -538,12 +766,20 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
         'Use Subscription (Codex)',
         style: theme.textTheme.titleSmall,
       ),
-      subtitle: Text(
-        'Use ChatGPT subscription auth from Codex CLI',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
+      secondary: _isOpenaiSubscription
+          ? SettingsStatusIndicator(
+              loading: _codexAuthFound == null,
+              error:
+                  _codexAuthError ??
+                  (_codexAuthFound == false
+                      ? 'Codex authentication not found.'
+                      : null),
+              readyLabel: _codexAuthFound == true
+                  ? 'Codex authentication found.'
+                  : null,
+              loadingLabel: 'Checking Codex authentication',
+            )
+          : null,
       value: _useOpenaiSubscription,
       onChanged: (v) => _setOpenaiSubscription(v),
       contentPadding: EdgeInsets.zero,
@@ -554,21 +790,6 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   ];
 
   List<Widget> _buildOpenAISubscriptionSettings(ThemeData theme) => [
-    const SizedBox(height: 8),
-    SettingsStatusRegion(
-      message:
-          _codexAuthError ??
-          (_codexAuthFound == null
-              ? 'Checking Codex authentication…'
-              : _codexAuthFound!
-              ? 'Codex authentication found.'
-              : 'Codex authentication not found.'),
-      loading: _codexAuthFound == null,
-      isError: _codexAuthFound == false || _codexAuthError != null,
-      isSuccess: _codexAuthFound == true && _codexAuthError == null,
-    ),
-    const SizedBox(height: 16),
-    Text('Model', style: theme.textTheme.titleSmall),
     const SizedBox(height: 8),
     EditableModelSelector(
       fieldKey: const ValueKey('model_openai_subscription'),
@@ -609,8 +830,6 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       ),
     ),
     const SizedBox(height: 16),
-    Text('Model', style: theme.textTheme.titleSmall),
-    const SizedBox(height: 8),
     EditableModelSelector(
       fieldKey: const ValueKey('model_openai'),
       controller: _openaiModelController,
@@ -655,13 +874,6 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
           keyboardType: TextInputType.url,
         ),
       ),
-      const SizedBox(height: 4),
-      Text(
-        'For LM Studio, OpenRouter, or other OpenAI-compatible APIs.',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
     ],
   ];
 
@@ -672,13 +884,6 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       child: Text('Allowed File Roots', style: theme.textTheme.titleSmall),
     ),
     const SizedBox(height: 8),
-    if (_allowedRoots.isEmpty)
-      Text(
-        'No folders are available to chat or MCP file tools.',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
     for (var i = 0; i < _allowedRoots.length; i++) ...[
       _buildAllowedRootEditor(theme, i),
       const SizedBox(height: 16),
@@ -687,13 +892,6 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
       onPressed: _addAllowedRoot,
       icon: const Icon(Icons.create_new_folder_outlined),
       label: const Text('Add Folder'),
-    ),
-    const SizedBox(height: 4),
-    Text(
-      'Each folder grants separate read, write, and search permissions for chat and external MCP.',
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
     ),
   ];
 

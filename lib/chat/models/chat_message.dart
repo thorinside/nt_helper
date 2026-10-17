@@ -23,6 +23,17 @@ class ChatImageAttachment {
     required this.mimeType,
     this.name,
   });
+  Map<String, dynamic> toJson() => {
+    'data': data,
+    'mime_type': mimeType,
+    'name': name,
+  };
+  factory ChatImageAttachment.fromJson(Map<String, dynamic> json) =>
+      ChatImageAttachment(
+        data: json['data'] as String,
+        mimeType: json['mime_type'] as String,
+        name: json['name'] as String?,
+      );
 }
 
 class ChatFileAttachment {
@@ -39,6 +50,21 @@ class ChatFileAttachment {
     required this.sizeBytes,
     this.textContent,
   });
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'data': data,
+    'mime_type': mimeType,
+    'size_bytes': sizeBytes,
+    'text_content': textContent,
+  };
+  factory ChatFileAttachment.fromJson(Map<String, dynamic> json) =>
+      ChatFileAttachment(
+        name: json['name'] as String,
+        data: json['data'] as String,
+        mimeType: json['mime_type'] as String,
+        sizeBytes: json['size_bytes'] as int,
+        textContent: json['text_content'] as String?,
+      );
 }
 
 class ChatMessage {
@@ -67,6 +93,59 @@ class ChatMessage {
     this.fileAttachments = const [],
     required this.timestamp,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'role': role.name,
+    'content': content,
+    'timestamp': timestamp.toIso8601String(),
+    'tool_name': toolName,
+    'tool_call_id': toolCallId,
+    'tool_arguments': toolArguments,
+    'image_base64': imageBase64,
+    'image_mime_type': imageMimeType,
+    'image_attachments': imageAttachments.map((a) => a.toJson()).toList(),
+    'file_attachments': fileAttachments.map((a) => a.toJson()).toList(),
+  };
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+    id: json['id'] as String,
+    role: ChatMessageRole.values.byName(json['role'] as String),
+    content: json['content'] as String,
+    timestamp: DateTime.parse(json['timestamp'] as String),
+    toolName: json['tool_name'] as String?,
+    toolCallId: json['tool_call_id'] as String?,
+    toolArguments: json['tool_arguments'] == null
+        ? null
+        : Map<String, dynamic>.from(json['tool_arguments'] as Map),
+    imageBase64: json['image_base64'] as String?,
+    imageMimeType: json['image_mime_type'] as String?,
+    imageAttachments: (json['image_attachments'] as List? ?? const [])
+        .map(
+          (a) =>
+              ChatImageAttachment.fromJson(Map<String, dynamic>.from(a as Map)),
+        )
+        .toList(),
+    fileAttachments: (json['file_attachments'] as List? ?? const [])
+        .map(
+          (a) =>
+              ChatFileAttachment.fromJson(Map<String, dynamic>.from(a as Map)),
+        )
+        .toList(),
+  );
+
+  ChatMessage withContent(String value) => ChatMessage(
+    id: id,
+    role: role,
+    content: value,
+    toolName: toolName,
+    toolCallId: toolCallId,
+    toolArguments: toolArguments,
+    imageBase64: imageBase64,
+    imageMimeType: imageMimeType,
+    imageAttachments: imageAttachments,
+    fileAttachments: fileAttachments,
+    timestamp: timestamp,
+  );
 
   bool get hasImage => imageBase64 != null && imageMimeType != null;
   bool get hasImageAttachments => imageAttachments.isNotEmpty;

@@ -23,6 +23,8 @@ class ToolBridgeService {
         .toList();
   }
 
+  Future<void> cancelRemoteControl() => _registry.cancelRemoteControl();
+
   /// Execute a tool by name with the given arguments.
   Future<String> executeTool(
     String name,

@@ -128,6 +128,19 @@ void main() {
         expect(state['acknowledged'], isFalse);
         expect(state['commanded']['pot_values'], [2048, 2048, 2048]);
         expect(state['commanded']['held_controls'], isEmpty);
+        final capabilities = state['capabilities'] as Map;
+        final controls = state['controls'] as Map;
+        expect(capabilities['pot_indices'], [0, 1, 2]);
+        expect(capabilities['pot_indices'], controls['pots'].values.toList());
+        expect(
+          capabilities['encoder_indices'],
+          controls['encoders'].values.toList(),
+        );
+        expect(capabilities['push_indices'], [
+          ...controls['buttons'].values,
+          ...controls['pot_pushes'].values,
+          ...controls['encoder_pushes'].values,
+        ]);
         expect(state['capabilities']['holds_across_calls'], isFalse);
         expect(state['capabilities']['gesture_deadline_ms'], 6000);
         expect(state['capabilities']['cleanup_deadline_ms'], 2000);
@@ -188,6 +201,36 @@ void main() {
         expect(state['acknowledged'], isFalse);
       },
     );
+
+    test('$facade counts waits and no-ops as processed actions', () async {
+      final response = await call('remote_control', {
+        'actions': [
+          {'type': 'wait', 'duration_ms': 0},
+          {'type': 'encoder_turn', 'index': 0, 'delta': 0},
+          {'type': 'release', 'index': 0},
+          {'type': 'pot_turn', 'index': 1, 'value': 2048},
+        ],
+      }, chat: chat);
+      expect(response['success'], isTrue);
+      expect(response['actions_completed'], 4);
+      expect(wire.remotePackets, isEmpty);
+    });
+
+    test('$facade supports every advertised pot index', () async {
+      final state = await call('remote_state', {}, chat: chat);
+      for (final index in state['capabilities']['pot_indices'] as List) {
+        final response = await call('remote_control', {
+          'actions': [
+            {'type': 'pot_turn', 'index': index, 'value': 1024},
+          ],
+        }, chat: chat);
+        expect(response['success'], isTrue);
+      }
+      expect(wire.remotePackets, [
+        for (final index in [0, 1, 2]) remoteFrame([4, index, 0, 8]),
+      ]);
+      expect(cubit.remoteControlState.potValues, [1024, 1024, 1024]);
+    });
 
     test(
       '$facade prevalidates entire batches and rejects invalid input without writes',
@@ -615,7 +658,57 @@ void main() {
                   (tool) => tool['name'] == 'remote_control',
                 )['inputSchema']
                 as Map;
+        expect(schema, registry.findByName('remote_control')!.inputSchema);
+        expect(
+          tools.singleWhere(
+            (tool) => tool['name'] == 'remote_state',
+          )['inputSchema'],
+          registry.findByName('remote_state')!.inputSchema,
+        );
         expect(schema['properties']['actions']['maxItems'], 32);
+        final beforeInvalid = wire.remoteAttempts.length;
+        for (final arguments in [
+          {
+            'actions': [
+              {'type': 'encoder_turn', 'index': 2, 'delta': 1},
+            ],
+          },
+          {
+            'actions': [
+              {'type': 'pot_turn', 'index': 3, 'value': 0},
+            ],
+          },
+          {
+            'actions': [
+              {'type': 'wait'},
+            ],
+          },
+          {
+            'actions': [
+              {'type': 'push', 'index': 0, 'delta': 1},
+            ],
+          },
+          {
+            'actions': [
+              {'type': 'wait', 'duration_ms': 0},
+            ],
+            'extra': true,
+          },
+        ]) {
+          final invalid = await _rpc(client, port, {
+            'jsonrpc': '2.0',
+            'id': 99,
+            'method': 'tools/call',
+            'params': {'name': 'remote_control', 'arguments': arguments},
+          }, session: session);
+          final result = invalid.$2['result'] as Map?;
+          expect(
+            invalid.$2['error'] != null || result?['isError'] == true,
+            isTrue,
+            reason: '${invalid.$2}',
+          );
+          expect(wire.remoteAttempts.length, beforeInvalid);
+        }
         final execution = await _rpc(client, port, {
           'jsonrpc': '2.0',
           'id': 3,

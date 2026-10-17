@@ -44,7 +44,6 @@ import 'package:nt_helper/services/firmware_version_service.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/startup_log_service.dart';
-import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart'; // Add collection package import
 import 'package:nt_helper/domain/video/video_stream_state.dart';
@@ -791,7 +790,7 @@ class DistingCubit extends _DistingCubitBase
     return _parameterRefreshDelegate.queueProgramRefresh(algorithmIndex);
   }
 
-  void setDisplayMode(DisplayMode displayMode) {
+  Future<void> setDisplayMode(DisplayMode displayMode) {
     return _hardwareCommandsDelegate.setDisplayMode(displayMode);
   }
 

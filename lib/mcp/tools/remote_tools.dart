@@ -34,7 +34,7 @@ final class RemoteTools {
       'capabilities': {
         'push_indices': [0, 1, 2, 3, 4, 5, 6, 7, 8],
         'encoder_indices': [0, 1],
-        'pot_indices': [0, 2],
+        'pot_indices': [0, 1, 2],
         'pot_range': [0, 4095],
         'max_actions': 32,
         'max_encoder_delta': 1024,
@@ -99,7 +99,7 @@ final class RemoteTools {
         if (_cubit.remoteControlState.sessionId != gesture.session) {
           throw StateError('The remote connection or host session was lost.');
         }
-        if (action is RemoteAction) completed++;
+        completed++;
       }
     } catch (error) {
       failure = error;

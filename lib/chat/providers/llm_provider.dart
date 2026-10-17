@@ -1,4 +1,16 @@
 import 'package:nt_helper/chat/models/llm_types.dart';
+import 'package:genkit/genkit.dart' show CancellationToken;
+
+/// Transport-level streaming; Genkit owns the agent loop, not the provider.
+abstract interface class StreamingLlmProvider implements LlmProvider {
+  Future<LlmResponse> sendMessagesStreaming({
+    required List<LlmMessage> messages,
+    required List<LlmToolDefinition> tools,
+    String? systemPrompt,
+    required void Function(String delta) onTextDelta,
+    CancellationToken? cancel,
+  });
+}
 
 /// Abstract LLM provider interface.
 ///

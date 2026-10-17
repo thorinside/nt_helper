@@ -1,17 +1,31 @@
 import 'dart:async';
 import 'dart:math' show max, min;
 
+import 'package:genkit/genkit.dart' as g;
+// Genkit 1.0 agents are deliberately pinned behind this runtime boundary.
+// ignore: experimental_member_use
+import 'package:genkit/experimental.dart' as g;
+import 'package:schemantic/schemantic.dart';
 import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart'
     show LlmApiException;
 import 'package:nt_helper/chat/providers/llm_provider.dart';
+import 'package:nt_helper/chat/services/genkit_message_codec.dart';
 import 'package:nt_helper/chat/services/tool_bridge_service.dart';
 import 'package:nt_helper/chat/utils/image_result_detector.dart';
 
-/// Events emitted during the agentic loop.
+export 'chat_history.dart' show providerSafeToolHistory;
+import 'chat_history.dart';
+
 sealed class ChatLoopEvent {}
 
 class ChatLoopThinking extends ChatLoopEvent {}
+
+class ChatLoopTextDelta extends ChatLoopEvent {
+  final String messageId;
+  final String delta;
+  ChatLoopTextDelta(this.messageId, this.delta);
+}
 
 class ChatLoopToolCall extends ChatLoopEvent {
   final LlmToolCall toolCall;
@@ -37,22 +51,21 @@ class ChatLoopAssistantMessage extends ChatLoopEvent {
   final String content;
   final LlmUsage? usage;
   final bool isFinal;
-
-  /// When [isFinal] is true, contains the full updated LLM history including
-  /// all tool calls/results and the final assistant message, ready to replace
-  /// the cubit's [_llmHistory].
   final List<LlmMessage>? finalHistory;
+  final String? messageId;
   ChatLoopAssistantMessage(
     this.content, {
     this.usage,
     this.isFinal = false,
     this.finalHistory,
+    this.messageId,
   });
 }
 
 class ChatLoopError extends ChatLoopEvent {
   final String message;
-  ChatLoopError(this.message);
+  final List<LlmMessage>? finalHistory;
+  ChatLoopError(this.message, {this.finalHistory});
 }
 
 class ChatLoopRateLimited extends ChatLoopEvent {
@@ -66,19 +79,17 @@ class ChatLoopRateLimited extends ChatLoopEvent {
   });
 }
 
-/// Orchestrates the agentic tool-use loop.
-///
-/// Sends messages to the LLM, executes tool calls, appends results, and loops
-/// until the LLM produces a final text response. Yields [ChatLoopEvent]s so
-/// the UI can update in real time.
+/// Genkit owns generation, ordered tool rounds, and the in-flight transcript.
+/// The finalized snapshot is handed back to the conversation owner between runs.
+/// No coding tools, MCP client, reflection server, or remote backend is enabled.
 class ChatService {
   final LlmProvider _provider;
   final ToolBridgeService _toolBridge;
   final String _systemPrompt;
-
-  static const _maxIterations = 100;
-  static const _maxRateLimitRetries = 4;
-  static const _maxBackoffSeconds = 30;
+  final _cancel = g.CancellationController();
+  Future<void>? _work;
+  Future<void>? _cleanup;
+  List<LlmMessage>? lastGoodHistory;
 
   ChatService({
     required LlmProvider provider,
@@ -88,220 +99,267 @@ class ChatService {
        _toolBridge = toolBridge,
        _systemPrompt = systemPrompt;
 
-  /// Run the agentic loop as a stream of events.
-  ///
-  /// [messages] is the current conversation history (user + assistant messages).
-  /// The stream yields events as the loop progresses and completes when the
-  /// LLM produces a final response with no tool calls.
-  Stream<ChatLoopEvent> runAgenticLoop(List<LlmMessage> messages) async* {
-    // Work on a private copy so that cancellation or external mutation of the
-    // caller's history list cannot corrupt the loop's in-flight state. Repair
-    // incomplete tool groups at this provider boundary as well: strict
-    // providers reject orphan results or calls without adjacent results.
-    final currentMessages = providerSafeToolHistory(messages);
-    final tools = _toolBridge.toolDefinitions;
+  Future<void> cancel() async {
+    _cancel.cancel('Chat stopped');
+    try {
+      await _releaseControls();
+    } catch (_) {
+      /* Remote state retains uncertainty. */
+    }
+    await _work;
+  }
 
-    // Accumulate token usage across all API calls in the loop, not just the
-    // final one.
-    int totalInputTokens = 0;
-    int totalOutputTokens = 0;
-    int totalCacheCreationInputTokens = 0;
-    int totalCacheReadInputTokens = 0;
-    int peakInputTokens = 0;
+  Future<void> _releaseControls() =>
+      _cleanup ??= _toolBridge.cancelRemoteControl();
 
-    for (int i = 0; i < _maxIterations; i++) {
-      yield ChatLoopThinking();
+  Stream<ChatLoopEvent> runAgenticLoop(List<LlmMessage> messages) {
+    late StreamController<ChatLoopEvent> events;
+    events = StreamController<ChatLoopEvent>(
+      onListen: () {
+        _work =
+            _run(List.of(messages), (event) {
+              if (!_cancel.isCancelled && !events.isClosed) events.add(event);
+            }).whenComplete(() {
+              unawaited(events.close());
+            });
+      },
+      onCancel: cancel,
+    );
+    return events.stream;
+  }
 
-      LlmResponse? response;
-      for (int retry = 0; retry <= _maxRateLimitRetries; retry++) {
-        try {
-          response = await _provider.sendMessages(
-            messages: currentMessages,
-            tools: tools,
-            systemPrompt: _systemPrompt,
-          );
-          break;
-        } on LlmApiException catch (e) {
-          if (!e.isRateLimited || retry == _maxRateLimitRetries) {
-            if (e.isRateLimited) {
-              yield ChatLoopError(
-                'Rate limited by the API after $_maxRateLimitRetries '
-                'retries. Please wait a few minutes before trying again.',
+  Future<void> _run(
+    List<LlmMessage> messages,
+    void Function(ChatLoopEvent) emit,
+  ) async {
+    final ai = g.Genkit(isDevEnv: false, promptDir: null);
+    var input = 0;
+    var output = 0;
+    var cacheCreated = 0;
+    var cacheRead = 0;
+    var peakInput = 0;
+    var turnNumber = 0;
+    var currentMessageId = '';
+    Object? failure;
+    g.AgentChat<dynamic>? activeChat;
+    try {
+      final definitions = _toolBridge.toolDefinitions;
+      final tools = [
+        for (final definition in definitions)
+          ai.defineTool<Map<String, dynamic>, dynamic>(
+            name: definition.name,
+            description: definition.description,
+            inputSchema: SchemanticType.from(
+              jsonSchema: {'type': 'object', ...definition.inputSchema},
+              parse: (value) => Map<String, dynamic>.from(value as Map),
+            ),
+            fn: (args, context) async {
+              _cancel.token.throwIfCancelled();
+              final id =
+                  context.toolRequest?.toolRequest.ref ?? definition.name;
+              emit(
+                ChatLoopToolCall(
+                  LlmToolCall(id: id, name: definition.name, arguments: args),
+                ),
               );
-            } else {
-              yield ChatLoopError(e.toString());
-            }
-            return;
-          }
-          final backoff = min(
-            e.retryAfterSeconds ?? (1 << retry),
-            _maxBackoffSeconds,
-          );
-          yield ChatLoopRateLimited(
-            waitSeconds: backoff,
-            attempt: retry + 1,
-            maxAttempts: _maxRateLimitRetries,
-          );
-          await Future<void>.delayed(Duration(seconds: backoff));
-        } catch (e) {
-          yield ChatLoopError(e.toString());
-          return;
-        }
-      }
-      if (response == null) return;
-
-      // Accumulate usage from every API call
-      if (response.usage != null) {
-        final usage = response.usage!;
-        totalInputTokens += usage.inputTokens;
-        totalOutputTokens += usage.outputTokens;
-        totalCacheCreationInputTokens += usage.cacheCreationInputTokens;
-        totalCacheReadInputTokens += usage.cacheReadInputTokens;
-        peakInputTokens = max(peakInputTokens, usage.contextInputTokens);
-      }
-
-      if (response.hasToolCalls) {
-        // Add assistant message with tool calls to history
-        currentMessages.add(
-          LlmMessage.assistantWithToolCalls(
-            response.toolCalls,
-            content: response.content,
+              final result = await _toolBridge.executeTool(
+                definition.name,
+                args,
+              );
+              _cancel.token.throwIfCancelled();
+              final image = tryParseImageResult(result);
+              emit(
+                ChatLoopToolResult(
+                  id,
+                  definition.name,
+                  result,
+                  imageBase64: image?.data,
+                  imageMimeType: image?.mimeType,
+                ),
+              );
+              return g.ToolResult.response(
+                image == null
+                    ? result
+                    : {'type': image.mimeType, 'size': 'image data'},
+                parts: image == null
+                    ? null
+                    : [
+                        g.MediaPart(
+                          media: g.Media(
+                            url: 'data:${image.mimeType};base64,${image.data}',
+                            contentType: image.mimeType,
+                          ),
+                        ),
+                      ],
+              );
+            },
           ),
-        );
-
-        if (response.content != null && response.content!.isNotEmpty) {
-          yield ChatLoopAssistantMessage(response.content!);
-        }
-
-        // Execute each tool call
-        for (final toolCall in response.toolCalls) {
-          yield ChatLoopToolCall(toolCall);
-
-          final result = await _toolBridge.executeTool(
-            toolCall.name,
-            toolCall.arguments,
+      ];
+      ai.defineModel(
+        name: 'nt-provider',
+        fn: (request, context) async {
+          currentMessageId = 'genkit-turn-${turnNumber++}';
+          final messageId = currentMessageId;
+          emit(ChatLoopThinking());
+          final providerMessages = fromGenkitMessages(request.messages);
+          // Keep the exact last Genkit request as a recovery checkpoint. A
+          // failed client-managed turn can roll its public chat state back.
+          lastGoodHistory = List.unmodifiable(
+            providerSafeToolHistory(providerMessages),
           );
-
-          final image = tryParseImageResult(result);
-          final String llmContent;
-          String? imageBase64;
-          String? imageMimeType;
-          if (image != null) {
-            llmContent = '{"type":"${image.mimeType}","size":"image data"}';
-            imageBase64 = image.data;
-            imageMimeType = image.mimeType;
-          } else {
-            llmContent = result;
+          String? system;
+          for (final message in request.messages) {
+            if (message.role == g.Role.system) system = message.text;
           }
-
-          yield ChatLoopToolResult(
-            toolCall.id,
-            toolCall.name,
-            result,
-            imageBase64: imageBase64,
-            imageMimeType: imageMimeType,
-          );
-
-          // Add tool result to history
-          currentMessages.add(
-            LlmMessage.toolResult(
-              toolCallId: toolCall.id,
-              toolName: toolCall.name,
-              content: llmContent,
-              imageBase64: imageBase64,
-              imageMimeType: imageMimeType,
+          LlmResponse? response;
+          var streamed = false;
+          for (var retry = 0; retry <= 4; retry++) {
+            _cancel.token.throwIfCancelled();
+            try {
+              final provider = _provider;
+              if (provider is StreamingLlmProvider) {
+                response = await provider.sendMessagesStreaming(
+                  messages: providerMessages,
+                  tools: definitions,
+                  systemPrompt: system ?? _systemPrompt,
+                  cancel: _cancel.token,
+                  onTextDelta: (delta) {
+                    _cancel.token.throwIfCancelled();
+                    streamed = true;
+                    emit(ChatLoopTextDelta(messageId, delta));
+                    context.sendChunk(
+                      g.ModelResponseChunk(content: [g.TextPart(text: delta)]),
+                    );
+                  },
+                );
+              } else {
+                response = await Future.any([
+                  provider.sendMessages(
+                    messages: providerMessages,
+                    tools: definitions,
+                    systemPrompt: system ?? _systemPrompt,
+                  ),
+                  _cancel.token.whenCancelled.then<LlmResponse>(
+                    (_) => throw g.CancelledException(),
+                  ),
+                ]);
+              }
+              break;
+            } on LlmApiException catch (error) {
+              if (!error.isRateLimited || streamed) rethrow;
+              if (retry == 4) {
+                throw LlmApiException(
+                  'Rate limited by the API after 4 retries. Please try again later.',
+                  statusCode: error.statusCode,
+                );
+              }
+              final wait = min(error.retryAfterSeconds ?? (1 << retry), 30);
+              emit(
+                ChatLoopRateLimited(
+                  waitSeconds: wait,
+                  attempt: retry + 1,
+                  maxAttempts: 4,
+                ),
+              );
+              await Future.any([
+                Future<void>.delayed(Duration(seconds: wait)),
+                _cancel.token.whenCancelled,
+              ]);
+            }
+          }
+          _cancel.token.throwIfCancelled();
+          final value = response!;
+          final usage = value.usage;
+          if (usage != null) {
+            input += usage.inputTokens;
+            output += usage.outputTokens;
+            cacheCreated += usage.cacheCreationInputTokens;
+            cacheRead += usage.cacheReadInputTokens;
+            peakInput = max(peakInput, usage.contextInputTokens);
+          }
+          if (value.hasToolCalls && (value.content?.isNotEmpty ?? false)) {
+            emit(
+              ChatLoopAssistantMessage(value.content!, messageId: messageId),
+            );
+          }
+          return g.ModelResponse(
+            finishReason: g.FinishReason.stop,
+            message: toGenkitMessage(
+              LlmMessage.assistantWithToolCalls(
+                value.toolCalls,
+                content: value.content,
+                providerMetadata: value.providerMetadata,
+              ),
             ),
           );
+        },
+      );
+      final safe = providerSafeToolHistory(messages);
+      if (safe.isEmpty || safe.last.role != LlmRole.user) {
+        throw StateError('A chat turn must end with a user message.');
+      }
+      final history = toGenkitMessages(safe);
+      final user = history.removeLast();
+      final agent = ai.defineAgent(
+        name: 'nt-assistant',
+        model: g.modelRef('nt-provider'),
+        system: _systemPrompt,
+        tools: tools,
+        maxTurns: 100,
+      );
+      final chat = agent.chat(
+        state: g.SessionState(messages: history, artifacts: []),
+      );
+      activeChat = chat;
+      final turn = chat.sendStream(message: user, cancel: _cancel.token);
+      // Consume the stream even though provider/tool hooks project richer UI
+      // events. The agent stream applies authoritative session-state updates.
+      await turn.stream.drain<void>();
+      final response = await turn.response;
+      _cancel.token.throwIfCancelled();
+      if (response.finishReason != g.AgentFinishReason.stop) {
+        throw StateError(
+          'Agent stopped without an answer (${response.finishReason.value}).',
+        );
+      }
+      await _releaseControls();
+      emit(
+        ChatLoopAssistantMessage(
+          response.text,
+          messageId: currentMessageId,
+          isFinal: true,
+          finalHistory: List.unmodifiable(fromGenkitMessages(chat.messages)),
+          usage: LlmUsage(
+            inputTokens: input,
+            outputTokens: output,
+            cacheCreationInputTokens: cacheCreated,
+            cacheReadInputTokens: cacheRead,
+            peakInputTokens: peakInput,
+          ),
+        ),
+      );
+    } catch (error) {
+      failure = error;
+    } finally {
+      try {
+        await _releaseControls();
+      } catch (error) {
+        failure ??= error;
+      }
+      if (activeChat != null) {
+        final snapshot = providerSafeToolHistory(
+          fromGenkitMessages(activeChat.messages),
+        );
+        if (snapshot.length >= (lastGoodHistory?.length ?? 0)) {
+          lastGoodHistory = List.unmodifiable(snapshot);
         }
-
-        // Loop continues — LLM needs to process tool results
-        continue;
       }
-
-      // No tool calls — final response
-      final finalContent = response.content ?? '';
-      currentMessages.add(LlmMessage.assistant(finalContent));
-      yield ChatLoopAssistantMessage(
-        finalContent,
-        usage: LlmUsage(
-          inputTokens: totalInputTokens,
-          outputTokens: totalOutputTokens,
-          cacheCreationInputTokens: totalCacheCreationInputTokens,
-          cacheReadInputTokens: totalCacheReadInputTokens,
-          peakInputTokens: peakInputTokens,
-        ),
-        isFinal: true,
-        finalHistory: List.unmodifiable(currentMessages),
-      );
-      return;
-    }
-
-    yield ChatLoopError(
-      'Reached maximum number of tool iterations ($_maxIterations). '
-      'The assistant may need a simpler request.',
-    );
-  }
-}
-
-/// Returns a provider-safe copy containing only complete, adjacent tool groups.
-///
-/// A cancelled or partially restored conversation can contain a tool result
-/// without its assistant call, or a call whose result was never recorded.
-/// OpenAI-compatible providers reject orphan IDs, and retaining an incomplete
-/// group is unsafe for Anthropic as well. Ordinary text remains intact while
-/// unmatched calls/results are omitted from the request history.
-List<LlmMessage> providerSafeToolHistory(List<LlmMessage> messages) {
-  final safe = <LlmMessage>[];
-
-  for (var index = 0; index < messages.length; index++) {
-    final message = messages[index];
-    if (message.role == LlmRole.tool) continue;
-
-    final calls = message.role == LlmRole.assistant
-        ? message.toolCalls ?? const <LlmToolCall>[]
-        : const <LlmToolCall>[];
-    if (calls.isEmpty) {
-      safe.add(message);
-      continue;
-    }
-
-    final callIds = calls.map((call) => call.id).toSet();
-    final results = <LlmMessage>[];
-    var nextIndex = index + 1;
-    while (nextIndex < messages.length &&
-        messages[nextIndex].role == LlmRole.tool) {
-      results.add(messages[nextIndex]);
-      nextIndex++;
-    }
-
-    final matchedIds = results
-        .map((result) => result.toolCallId)
-        .whereType<String>()
-        .where(callIds.contains)
-        .toSet();
-    final matchedCalls = calls
-        .where((call) => matchedIds.contains(call.id))
-        .toList(growable: false);
-
-    if (matchedCalls.isNotEmpty || (message.content?.isNotEmpty ?? false)) {
-      safe.add(
-        LlmMessage(
-          role: LlmRole.assistant,
-          content: message.content,
-          toolCalls: matchedCalls.isEmpty ? null : matchedCalls,
-        ),
-      );
-    }
-
-    final emittedIds = <String>{};
-    for (final result in results) {
-      final id = result.toolCallId;
-      if (id != null && matchedIds.contains(id) && emittedIds.add(id)) {
-        safe.add(result);
+      await ai.shutdown();
+      // A terminal UI error must not make a new send possible before the
+      // preceding run has finished its hardware cleanup.
+      if (failure != null && !_cancel.isCancelled) {
+        emit(ChatLoopError(failure.toString(), finalHistory: lastGoodHistory));
       }
     }
-    index = nextIndex - 1;
   }
-
-  return safe;
 }

@@ -27,6 +27,7 @@ void main() {
     provider = MockLlmProvider();
     toolRegistry = MockToolRegistry();
     when(() => toolRegistry.entries).thenReturn(const []);
+    when(() => toolRegistry.cancelRemoteControl()).thenAnswer((_) async {});
     toolBridge = ToolBridgeService(toolRegistry);
     chatService = ChatService(
       provider: provider,

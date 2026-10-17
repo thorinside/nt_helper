@@ -56,6 +56,10 @@ class ChatReady extends ChatState {
   final int totalOutputTokens;
   final int contextInputTokens;
   final int contextWindowTokens;
+  final String? conversationId;
+  final String? conversationTitle;
+  final bool isLoadingHistory;
+  final String? historyError;
 
   const ChatReady({
     this.messages = const [],
@@ -65,6 +69,10 @@ class ChatReady extends ChatState {
     this.totalOutputTokens = 0,
     this.contextInputTokens = 0,
     this.contextWindowTokens = 100000,
+    this.conversationId,
+    this.conversationTitle,
+    this.isLoadingHistory = false,
+    this.historyError,
   });
 
   ChatReady copyWith({
@@ -76,6 +84,11 @@ class ChatReady extends ChatState {
     int? totalOutputTokens,
     int? contextInputTokens,
     int? contextWindowTokens,
+    String? conversationId,
+    String? conversationTitle,
+    bool? isLoadingHistory,
+    String? historyError,
+    bool clearHistoryError = false,
   }) {
     return ChatReady(
       messages: messages ?? this.messages,
@@ -87,6 +100,12 @@ class ChatReady extends ChatState {
       totalOutputTokens: totalOutputTokens ?? this.totalOutputTokens,
       contextInputTokens: contextInputTokens ?? this.contextInputTokens,
       contextWindowTokens: contextWindowTokens ?? this.contextWindowTokens,
+      conversationId: conversationId ?? this.conversationId,
+      conversationTitle: conversationTitle ?? this.conversationTitle,
+      isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
+      historyError: clearHistoryError
+          ? null
+          : historyError ?? this.historyError,
     );
   }
 
@@ -99,6 +118,10 @@ class ChatReady extends ChatState {
     totalOutputTokens,
     contextInputTokens,
     contextWindowTokens,
+    conversationId,
+    conversationTitle,
+    isLoadingHistory,
+    historyError,
   ];
 }
 

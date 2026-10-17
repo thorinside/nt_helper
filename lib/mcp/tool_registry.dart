@@ -99,6 +99,11 @@ class ToolRegistry {
     return _executeEntry(entry, arguments);
   }
 
+  List<Map<String, dynamic>> exportReferenceSnapshot() =>
+      _referenceStore.exportSnapshot();
+  void restoreReferenceSnapshot(List<Map<String, dynamic>> snapshot) =>
+      _referenceStore.restoreSnapshot(snapshot);
+
   String storeReferenceIfLarge({
     required String toolName,
     required String result,
@@ -154,10 +159,9 @@ class ToolRegistry {
       description: entry.description,
       inputSchema: ToolInputSchema.fromJson(
         _deepCastMap({
+          ...entry.inputSchema,
           'type': 'object',
           'properties': entry.inputSchema['properties'] ?? {},
-          if (entry.inputSchema['required'] != null)
-            'required': entry.inputSchema['required'],
         }),
       ),
       callback: (args, extra) async {
@@ -203,7 +207,11 @@ class ToolRegistry {
         name: 'remote_state',
         description:
             'Read remote control capability, control indices, and local commanded state. No hardware readback or acknowledgement is available.',
-        inputSchema: {'properties': {}},
+        inputSchema: {
+          'type': 'object',
+          'properties': {},
+          'additionalProperties': false,
+        },
         handler: _remoteTools.remoteState,
       ),
     );
@@ -211,8 +219,10 @@ class ToolRegistry {
       ToolRegistryEntry(
         name: 'remote_control',
         description:
-            'Send one bounded ordered remote gesture through the same authority as the remote UI. Push multiple controls for held combinations, then turn/release; all remaining holds are released at the end. No holds persist across calls. Completes on transport send, never acknowledged hardware execution. Refuses an active UI host. Maximum 32 actions, 1024 ticks per encoder action and 2048 cumulative ticks, 1000 ms per wait and 2000 ms cumulative wait.',
+            'Send one bounded ordered remote gesture through the same authority as the remote UI. Push multiple controls for held combinations, then turn/release; all remaining holds are released at the end. No holds persist across calls. Completes on transport send, never acknowledged hardware execution. Refuses an active UI host. Maximum 32 actions, 1024 ticks per encoder action and 2048 cumulative ticks, 1000 ms per wait and 2000 ms cumulative wait. actions_completed counts processed actions including waits and no-ops, not hardware packets. Navigate menus only with these button/encoder gestures, then observe with show_screen({}); screenshots do not navigate menus.',
         inputSchema: {
+          'type': 'object',
+          'additionalProperties': false,
           'properties': {
             'actions': {
               'type': 'array',
@@ -258,6 +268,90 @@ class ToolRegistry {
                   },
                 },
                 'required': ['type'],
+                'additionalProperties': false,
+                'oneOf': [
+                  for (final type in ['push', 'release'])
+                    {
+                      'properties': {
+                        'type': {
+                          'enum': [type],
+                        },
+                      },
+                      'required': ['index'],
+                      'not': {
+                        'anyOf': [
+                          {
+                            'required': ['delta'],
+                          },
+                          {
+                            'required': ['value'],
+                          },
+                          {
+                            'required': ['duration_ms'],
+                          },
+                        ],
+                      },
+                    },
+                  {
+                    'properties': {
+                      'type': {
+                        'enum': ['encoder_turn'],
+                      },
+                      'index': {'maximum': 1},
+                    },
+                    'required': ['index', 'delta'],
+                    'not': {
+                      'anyOf': [
+                        {
+                          'required': ['value'],
+                        },
+                        {
+                          'required': ['duration_ms'],
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    'properties': {
+                      'type': {
+                        'enum': ['pot_turn'],
+                      },
+                      'index': {'maximum': 2},
+                    },
+                    'required': ['index', 'value'],
+                    'not': {
+                      'anyOf': [
+                        {
+                          'required': ['delta'],
+                        },
+                        {
+                          'required': ['duration_ms'],
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    'properties': {
+                      'type': {
+                        'enum': ['wait'],
+                      },
+                    },
+                    'required': ['duration_ms'],
+                    'not': {
+                      'anyOf': [
+                        {
+                          'required': ['index'],
+                        },
+                        {
+                          'required': ['delta'],
+                        },
+                        {
+                          'required': ['value'],
+                        },
+                      ],
+                    },
+                  },
+                ],
               },
             },
           },
@@ -604,19 +698,48 @@ class ToolRegistry {
       ToolRegistryEntry(
         name: 'show_screen',
         description:
-            'Capture and return the current device screen as a base64 PNG image.',
+            'Observe the current NT screen: wake the display, then return a PNG without changing display mode or menu position. Takes no arguments. Use remote_control for button/encoder menu navigation; capture again after each gesture.',
         inputSchema: {
+          'type': 'object',
+          'properties': {},
+          'additionalProperties': false,
+        },
+        handler: (args) => args.isEmpty
+            ? _algoTools.showScreen()
+            : Future.value(
+                jsonEncode({
+                  'success': false,
+                  'error':
+                      'show_screen takes no arguments. Use remote_control for menu navigation, or set_display_mode for an explicit display mode change.',
+                }),
+              ),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'set_display_mode',
+        description:
+            'Explicitly switch the NT to a parameter, algorithm, overview, or VU-meter view only when the user requests that view. This changes the screen and can dismiss menus. It does not navigate menus or capture screenshots. For menu navigation use remote_control; for observation use show_screen({}).',
+        inputSchema: {
+          'type': 'object',
           'properties': {
-            'display_mode': {
+            'mode': {
               'type': 'string',
-              'description':
-                  'Optional display mode to switch to before capturing. Options: "parameter" (hardware parameter list), "algorithm" (custom algorithm interface), "overview" (all slots overview), "vu_meters" (VU meter display)',
               'enum': ['parameter', 'algorithm', 'overview', 'vu_meters'],
             },
           },
+          'required': ['mode'],
+          'additionalProperties': false,
         },
-        handler: (args) =>
-            _algoTools.showScreen(displayMode: args['display_mode']),
+        handler: (args) => args.keys.any((key) => key != 'mode')
+            ? Future.value(
+                jsonEncode({
+                  'success': false,
+                  'error': 'Only mode is accepted.',
+                }),
+              )
+            : _algoTools.setDisplayMode(args['mode']),
       ),
     );
 

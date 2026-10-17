@@ -16,6 +16,7 @@ import 'package:path/path.dart' as path;
 
 class ChatInputBar extends StatefulWidget {
   final bool isProcessing;
+  final bool enabled;
   final void Function(
     String text,
     List<ChatImageAttachment> imageAttachments,
@@ -29,6 +30,7 @@ class ChatInputBar extends StatefulWidget {
   const ChatInputBar({
     super.key,
     required this.isProcessing,
+    this.enabled = true,
     required this.onSend,
     required this.onCancel,
     required this.onSettings,
@@ -193,7 +195,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 
   Future<void> _attachDroppedFiles(List<XFile> files) async {
-    if (widget.isProcessing) return;
+    if (!widget.enabled || widget.isProcessing) return;
     for (final file in files) {
       if (!_canAddAttachment()) break;
       final fileName = file.name.isNotEmpty
@@ -501,7 +503,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   child: IconButton(
                     icon: const Icon(Icons.attach_file, size: 20),
                     tooltip: 'Attach image or file',
-                    onPressed: widget.isProcessing ? null : _attachFiles,
+                    onPressed: !widget.enabled || widget.isProcessing
+                        ? null
+                        : _attachFiles,
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
@@ -578,9 +582,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
                               ),
                               isDense: true,
                             ),
-                            enabled: !widget.isProcessing,
+                            enabled: widget.enabled && !widget.isProcessing,
                             textInputAction: TextInputAction.send,
-                            onSubmitted: widget.isProcessing
+                            onSubmitted: !widget.enabled || widget.isProcessing
                                 ? null
                                 : (_) => _handleSend(),
                             maxLines: 3,
@@ -615,7 +619,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         color: theme.colorScheme.primary,
                       ),
                       tooltip: 'Send',
-                      onPressed: _handleSend,
+                      onPressed: widget.enabled ? _handleSend : null,
                     ),
                   ),
               ],

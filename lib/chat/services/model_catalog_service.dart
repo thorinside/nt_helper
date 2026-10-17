@@ -21,6 +21,11 @@ class LlmModelOption {
   });
 }
 
+abstract interface class ChatModelCatalog {
+  Future<List<LlmModelOption>> fetchModels();
+  void dispose();
+}
+
 class ModelCatalogException implements Exception {
   final String message;
 
@@ -125,9 +130,13 @@ class OpenAISubscriptionModelCatalog {
       models.add(
         LlmModelOption(
           id: id,
-          displayName: _nonEmptyString(rawModel['display_name']) ?? id,
+          displayName:
+              _nonEmptyString(rawModel['display_name'] ?? rawModel['name']) ??
+              id,
           contextWindowTokens: _positiveInt(
-            rawModel['context_window'] ?? rawModel['max_input_tokens'],
+            rawModel['context_window'] ??
+                rawModel['max_input_tokens'] ??
+                rawModel['context_length'],
           ),
         ),
       );
@@ -141,44 +150,64 @@ class OpenAISubscriptionModelCatalog {
 }
 
 /// Discovers models available to an OpenAI API key or compatible endpoint.
-class OpenAIModelCatalog {
+class OpenAIModelCatalog implements ChatModelCatalog {
   final String apiKey;
+  final String providerLabel;
+  final bool requireTools;
   final Uri modelsUri;
   final http.Client _client;
 
   OpenAIModelCatalog({
     required this.apiKey,
+    this.providerLabel = 'OpenAI API',
+    this.requireTools = false,
     String? baseUrl,
     http.Client? client,
   }) : modelsUri = _openAIModelsUri(baseUrl),
        _client = client ?? http.Client();
 
+  @override
   Future<List<LlmModelOption>> fetchModels() async {
     final response = await _client
         .get(
           modelsUri,
           headers: {
             'Accept': 'application/json',
-            'Authorization': 'Bearer $apiKey',
+            if (apiKey.trim().isNotEmpty)
+              'Authorization': 'Bearer ${apiKey.trim()}',
           },
         )
         .timeout(const Duration(seconds: 5));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ModelCatalogException(
-        'Could not load OpenAI API models (${response.statusCode}).',
+        'Could not load $providerLabel models (${response.statusCode}).',
       );
     }
     try {
-      return OpenAISubscriptionModelCatalog.parseModels(
-        jsonDecode(response.body),
-      );
+      final decoded = jsonDecode(response.body);
+      if (requireTools && decoded is Map && decoded['data'] is List) {
+        return OpenAISubscriptionModelCatalog.parseModels({
+          'data': (decoded['data'] as List)
+              .where(
+                (item) =>
+                    item is Map &&
+                    (item['supported_parameters'] is! List ||
+                        (item['supported_parameters'] as List).contains(
+                          'tools',
+                        )),
+              )
+              .toList(),
+        });
+      }
+      return OpenAISubscriptionModelCatalog.parseModels(decoded);
     } on FormatException {
-      throw const ModelCatalogException(
-        'The OpenAI API model list was not valid JSON.',
+      throw ModelCatalogException(
+        'The $providerLabel model list was not valid JSON.',
       );
     }
   }
 
+  @override
   void dispose() {
     _client.close();
   }

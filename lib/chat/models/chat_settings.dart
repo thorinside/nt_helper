@@ -1,10 +1,26 @@
 // Chat configuration models.
+import 'package:nt_helper/chat/models/additional_provider_config.dart';
 
 enum LlmProviderType {
   anthropic,
   anthropicSubscription,
   openai,
   openaiSubscription,
+  gemini,
+  openrouter,
+  local;
+
+  bool get isAdditional =>
+      this == gemini || this == openrouter || this == local;
+  String get label => switch (this) {
+    anthropic => 'Anthropic',
+    anthropicSubscription => 'Claude subscription',
+    openai => 'OpenAI',
+    openaiSubscription => 'ChatGPT / Codex',
+    gemini => 'Google Gemini',
+    openrouter => 'OpenRouter',
+    local => 'Local / OpenAI-compatible',
+  };
 }
 
 enum VoiceInputMethod { platform, whisper, elevenlabs }
@@ -21,6 +37,9 @@ class ChatSettings {
   final bool chatEnabled;
   final VoiceInputMethod voiceInputMethod;
   final String? elevenlabsApiKey;
+  final Map<LlmProviderType, AdditionalProviderConfig> additionalProviders;
+  AdditionalProviderConfig configFor(LlmProviderType type) =>
+      additionalProviders[type] ?? const AdditionalProviderConfig();
 
   const ChatSettings({
     this.provider = LlmProviderType.anthropic,
@@ -34,6 +53,7 @@ class ChatSettings {
     this.chatEnabled = false,
     this.voiceInputMethod = VoiceInputMethod.platform,
     this.elevenlabsApiKey,
+    this.additionalProviders = const {},
   });
 
   bool get hasApiKey {
@@ -45,6 +65,13 @@ class ChatSettings {
         return openaiApiKey != null && openaiApiKey!.trim().isNotEmpty;
       case LlmProviderType.openaiSubscription:
         return true;
+      case LlmProviderType.gemini:
+      case LlmProviderType.openrouter:
+        final config = configFor(provider);
+        return config.apiKey.trim().isNotEmpty &&
+            config.model.trim().isNotEmpty;
+      case LlmProviderType.local:
+        return configFor(provider).model.trim().isNotEmpty;
     }
   }
 
@@ -60,6 +87,7 @@ class ChatSettings {
     bool? chatEnabled,
     VoiceInputMethod? voiceInputMethod,
     String? elevenlabsApiKey,
+    Map<LlmProviderType, AdditionalProviderConfig>? additionalProviders,
   }) {
     return ChatSettings(
       provider: provider ?? this.provider,
@@ -75,6 +103,7 @@ class ChatSettings {
       chatEnabled: chatEnabled ?? this.chatEnabled,
       voiceInputMethod: voiceInputMethod ?? this.voiceInputMethod,
       elevenlabsApiKey: elevenlabsApiKey ?? this.elevenlabsApiKey,
+      additionalProviders: additionalProviders ?? this.additionalProviders,
     );
   }
 }

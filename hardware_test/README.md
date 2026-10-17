@@ -18,6 +18,23 @@ Run the suite explicitly:
 Set `NT_HELPER_MCP_URL` to target a non-default MCP endpoint. The default is
 `http://127.0.0.1:3847/mcp`.
 
+## Genkit chat smoke (separately opt-in)
+
+`genkit_chat_live_smoke_test.dart` uses real Codex subscription authentication and
+the running app's read-only MCP tools to check streamed state/screen reasoning.
+It spends provider quota but cannot send gestures or change the preset. Run it
+only when requested, never as part of release tests:
+
+```sh
+flutter test --no-pub --dart-define=NT_GENKIT_LIVE=true \
+  hardware_test/genkit_chat_live_smoke_test.dart
+```
+
+Optionally pass `--dart-define=NT_GENKIT_MODEL=<account-model>` or
+`--dart-define=NT_GENKIT_MCP_URL=<endpoint>`. Otherwise the test discovers an
+available model and uses `http://127.0.0.1:3847/mcp`. It remains skipped without
+`NT_GENKIT_LIVE=true`, even when the hardware-test directory is run explicitly.
+
 ## Specification-aware metadata coverage
 
 `specification_repeat_metadata_hardware_test.dart` records the current preset,
