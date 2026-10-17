@@ -251,53 +251,73 @@ void main() {
       });
     });
 
-    group('show tool display_mode parameter', () {
+    group('screen observation and explicit display mode', () {
+      test('shared tools keep observation and mode changes separate', () async {
+        final registry = ToolRegistry(distingCubit);
+        addTearDown(registry.dispose);
+        final screen = registry.findByName('show_screen')!;
+        expect(screen.inputSchema['properties'], isEmpty);
+        expect(screen.inputSchema['additionalProperties'], isFalse);
+        final mode = registry.findByName('set_display_mode')!;
+        expect(mode.inputSchema['required'], ['mode']);
+        expect((mode.inputSchema['properties'] as Map)['mode']['enum'], [
+          'parameter',
+          'algorithm',
+          'overview',
+          'vu_meters',
+        ]);
+      });
+
       test(
-        'should return valid string to DisplayMode mapping for parameter',
-        () {
-          // Test that parameter maps to DisplayMode.parameters
-          // This is a unit test for the conversion logic
-          // The main testing happens in integration tests below
-          expect(true, isTrue); // Placeholder
+        'screen observations reject mode arguments without pretending to change views',
+        () async {
+          for (final mode in [
+            'invalid_mode',
+            'parameter',
+            'algorithm',
+            'overview',
+            'vu_meters',
+          ]) {
+            final decoded = jsonDecode(
+              await tools.show({'target': 'screen', 'display_mode': mode}),
+            );
+            expect(decoded['success'], isFalse);
+            expect(
+              decoded['error'],
+              contains('show_screen takes no arguments'),
+            );
+            expect(decoded['error'], contains('set_display_mode'));
+            expect(decoded.containsKey('valid_modes'), isFalse);
+          }
         },
       );
 
-      test('should validate display_mode parameter value', () async {
-        // Test invalid display_mode value
-        final result = await tools.show({
-          'target': 'screen',
-          'display_mode': 'invalid_mode',
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('Invalid display_mode'));
-        expect(
-          decoded['valid_modes'],
-          equals(['parameter', 'algorithm', 'overview', 'vu_meters']),
-        );
-      });
-
-      test('should accept valid display_mode values', () async {
-        final validModes = ['parameter', 'algorithm', 'overview', 'vu_meters'];
-
-        for (final mode in validModes) {
-          // Test that valid modes don't produce validation errors
-          // (they may fail for other reasons like device not synchronized,
-          // but they shouldn't fail validation)
-          final result = await tools.show({
-            'target': 'screen',
-            'display_mode': mode,
-          });
-
-          final decoded = jsonDecode(result);
-          // Should either succeed or fail with non-validation error
-          // (device not synchronized is expected in test environment)
-          if (decoded['error'] != null) {
-            expect(decoded['error'], isNot(contains('Invalid display_mode')));
+      test(
+        'the explicit mode tool validates modes before requiring live hardware',
+        () async {
+          final invalid = jsonDecode(
+            await tools.setDisplayMode('invalid_mode'),
+          );
+          expect(invalid['success'], isFalse);
+          expect(invalid['error'], contains('Invalid mode'));
+          expect(invalid['valid_modes'], [
+            'parameter',
+            'algorithm',
+            'overview',
+            'vu_meters',
+          ]);
+          for (final mode in [
+            'parameter',
+            'algorithm',
+            'overview',
+            'vu_meters',
+          ]) {
+            final result = jsonDecode(await tools.setDisplayMode(mode));
+            expect(result['success'], isFalse);
+            expect(result['error'], contains('synchronized live device'));
           }
-        }
-      });
+        },
+      );
 
       test('should work without display_mode parameter', () async {
         // Test that show works when display_mode is not provided
