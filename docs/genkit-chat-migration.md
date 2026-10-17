@@ -1,8 +1,7 @@
 # Genkit Dart migration assessment for nt_helper
 
-2026-10-17. Initial assessment followed by implementation in the migration
-worktree. Development stays isolated from the main checkout; the worktree build
-is run separately for hands-on testing.
+2026-10-17. Initial assessment followed by implementation and hands-on testing
+in the migration worktree, then integration into `main` for release 2.59.0.
 
 ## Implemented: `feat/genkit-chat-migration`
 
@@ -44,9 +43,9 @@ This worktree includes the earlier remote-control corrections and instructions.
 ### Validation
 
 - `flutter analyze --no-pub`: no issues.
-- Last full `flutter test --no-pub`: **4,124 passed**. The live smoke was
-  skipped then and has since been moved outside `test/` so release-test discovery
-  does not even compile it. No more full runs are scheduled for this task.
+- Release full `flutter test --no-pub --concurrency=1`: **4,164 passed**,
+  with two opt-in widget-capture tests skipped. The real provider/hardware smoke
+  lives outside `test/`, so release-test discovery does not compile or run it.
 - `flutter build macos --debug --no-pub`: succeeded. Existing native plugin and
   out-of-date local iOS simulator warnings remain; no iOS build was attempted.
 - Additional opt-in live smoke passed with **real Codex subscription auth**, the
