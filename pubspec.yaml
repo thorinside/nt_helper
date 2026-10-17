@@ -19,7 +19,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 2.58.0+342
 
 environment:
-  sdk: ">=3.12.0 <4.0.0" # Required by Genkit 1.0.
+  sdk: ">=3.8.1 <4.0.0" # Source language floor; Genkit requires Dart >=3.12.
 
 analyzer:
   errors:
