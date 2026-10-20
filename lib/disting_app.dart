@@ -601,6 +601,8 @@ class _DeviceSelectionView extends StatelessWidget {
                 const SizedBox(height: 16),
                 DropdownMenu<int>(
                   width: 250,
+                  // Search text is not a committed SysEx ID. Show selections only.
+                  selectOnly: true,
                   initialSelection: selectedSysExId,
                   label: const Text("Device ID"),
                   dropdownMenuEntries: List.generate(128, (index) {

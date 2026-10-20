@@ -3,6 +3,7 @@ import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:flutter_midi_command_platform_interface/midi_port.dart';
@@ -10,10 +11,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/disting_app.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 
 class _MockDistingCubit extends MockCubit<DistingState>
     implements DistingCubit {}
+
+class _MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
 class _RecordingNavigatorObserver extends NavigatorObserver {
   int pushCount = 0;
@@ -185,6 +189,73 @@ void main() {
 
   final inputDevice = _input('input', 'Input');
   final outputDevice = _output('output', 'Output');
+  testWidgets(
+    'Device ID stays committed and keyboard-selectable after a failed sync',
+    (tester) async {
+      final semanticsHandle = tester.ensureSemantics();
+      final selection = DistingStateSelectDevice(
+        inputDevices: [inputDevice],
+        outputDevices: [outputDevice],
+        selectedInputDevice: inputDevice,
+        selectedOutputDevice: outputDevice,
+        canWorkOffline: false,
+      );
+      final harness = _SelectionHarness(selection);
+      when(
+        () => harness.cubit.connectToDevices(inputDevice, outputDevice, any()),
+      ).thenAnswer((_) async {});
+      when(() => harness.cubit.cancelSync()).thenAnswer((_) async {
+        harness.emit(selection);
+      });
+      await _pumpPage(tester, harness);
+      await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
+      verify(
+        () => harness.cubit.connectToDevices(inputDevice, outputDevice, 0),
+      ).called(1);
+
+      harness.states.add(
+        DistingState.connected(
+          disting: _MockDistingMidiManager(),
+          inputDevice: inputDevice,
+          outputDevice: outputDevice,
+          syncStatus: 'Synchronization timed out.',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Synchronization Failed'), findsOneWidget);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Back'));
+      await tester.pumpAndSettle();
+
+      final dropdown = find.byType(DropdownMenu<int>);
+      final editor = find.descendant(
+        of: dropdown,
+        matching: find.byType(EditableText),
+      );
+      // Editable search text previously looked like a changed ID without
+      // committing anything to Connect. Only actual selections may be shown.
+      expect(tester.widget<EditableText>(editor).readOnly, isTrue);
+      final connect = find.widgetWithText(FilledButton, 'Connect');
+      final before = tester.getRect(connect);
+      await tester.tapAt(tester.getTopLeft(dropdown) + const Offset(20, 20));
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(harness.state.selectedSysExId, 1);
+      expect(tester.widget<EditableText>(editor).controller.text, '1');
+      final semantics = tester.getSemantics(find.bySemanticsLabel('Device ID'));
+      expect(semantics.getSemanticsData().value, '1');
+      expect(semantics.getSemanticsData().flagsCollection.isButton, isTrue);
+      expect(tester.getRect(connect), before);
+      await tester.tap(connect);
+      verify(
+        () => harness.cubit.connectToDevices(inputDevice, outputDevice, 1),
+      ).called(1);
+      semanticsHandle.dispose();
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.linux),
+  );
+
   final replacementInput = _input('replacement-input', 'Replacement Input');
   final replacementOutput = _output('replacement-output', 'Replacement Output');
   final selectionCases = [
