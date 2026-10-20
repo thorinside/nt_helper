@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
@@ -40,6 +41,7 @@ class _BusLanesViewState extends State<BusLanesView> {
   final ScrollController _h = ScrollController();
   final ScrollController _v = ScrollController();
   final FocusNode _focusNode = FocusNode(debugLabel: 'BusLanes');
+  final Set<String> _collapsed = {};
   String? _draggingId;
   double _dragDy = 0;
   final Set<int> _canvasPanPointers = {};
@@ -222,91 +224,106 @@ class _BusLanesViewState extends State<BusLanesView> {
                 _scroll(_v, -event.localPanDelta.dy);
                 _scroll(_h, -event.localPanDelta.dx);
               },
-              child: Scrollbar(
-                controller: _v,
-                thumbVisibility: true,
-                notificationPredicate: (n) => n.metrics.axis == Axis.vertical,
-                child: Scrollbar(
-                  controller: _h,
-                  thumbVisibility: true,
-                  scrollbarOrientation: ScrollbarOrientation.bottom,
-                  notificationPredicate: (n) =>
-                      n.metrics.axis == Axis.horizontal,
-                  child: SingleChildScrollView(
+              child: Stack(
+                children: [
+                  Scrollbar(
                     controller: _v,
-                    physics: const NeverScrollableScrollPhysics(),
-                    child: SingleChildScrollView(
+                    thumbVisibility: true,
+                    notificationPredicate: (n) =>
+                        n.metrics.axis == Axis.vertical,
+                    child: Scrollbar(
                       controller: _h,
-                      scrollDirection: Axis.horizontal,
-                      physics: const NeverScrollableScrollPhysics(),
-                      child: SizedBox(
-                        key: _contentKey,
-                        width: m.contentWidth,
-                        height: m.contentHeight,
-                        child: Semantics(
-                          label:
-                              'Bus lanes canvas with $blockCount algorithm $blockLabel',
-                          hint:
-                              'Pan to navigate. Drag beads to reassign buses.',
-                          container: true,
-                          child: MouseRegion(
-                            onHover: (e) => _hover.value = e.localPosition,
-                            onExit: (_) => _hover.value = null,
-                            child: Focus(
-                              focusNode: _focusNode,
-                              onKeyEvent: _onKey,
-                              child: Stack(
-                                children: [
-                                  Positioned.fill(
-                                    child: CustomPaint(
-                                      painter: BusLanesPainter(
-                                        rails: data.rails,
-                                        metrics: m,
-                                        noneColor:
-                                            theme.colorScheme.outlineVariant,
-                                        separatorColor: theme.dividerColor,
+                      thumbVisibility: true,
+                      scrollbarOrientation: ScrollbarOrientation.bottom,
+                      notificationPredicate: (n) =>
+                          n.metrics.axis == Axis.horizontal,
+                      child: SingleChildScrollView(
+                        controller: _v,
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: SingleChildScrollView(
+                          controller: _h,
+                          scrollDirection: Axis.horizontal,
+                          physics: const NeverScrollableScrollPhysics(),
+                          child: SizedBox(
+                            key: _contentKey,
+                            width: m.contentWidth,
+                            height: m.contentHeight,
+                            child: Semantics(
+                              label:
+                                  'Bus lanes canvas with $blockCount algorithm $blockLabel',
+                              hint:
+                                  'Pan to navigate. Drag beads to reassign buses.',
+                              container: true,
+                              child: MouseRegion(
+                                onHover: (e) => _hover.value = e.localPosition,
+                                onExit: (_) => _hover.value = null,
+                                child: Focus(
+                                  focusNode: _focusNode,
+                                  onKeyEvent: _onKey,
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: CustomPaint(
+                                          painter: BusLanesPainter(
+                                            rails: data.rails,
+                                            metrics: m,
+                                            noneColor: theme
+                                                .colorScheme
+                                                .outlineVariant,
+                                            separatorColor: theme.dividerColor,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  for (final i in order)
-                                    _buildBlock(context, i, data, colors, tops),
-                                  Positioned.fill(
-                                    child: ValueListenableBuilder<Offset?>(
-                                      valueListenable: _hover,
-                                      builder: (ctx, hover, _) => _buildGhosts(
-                                        context,
-                                        data,
-                                        hover,
-                                        state,
+                                      for (final i in order)
+                                        _buildBlock(
+                                          context,
+                                          i,
+                                          data,
+                                          colors,
+                                          tops,
+                                        ),
+                                      Positioned.fill(
+                                        child: ValueListenableBuilder<Offset?>(
+                                          valueListenable: _hover,
+                                          builder: (ctx, hover, _) =>
+                                              _buildGhosts(
+                                                context,
+                                                data,
+                                                hover,
+                                                state,
+                                              ),
+                                        ),
                                       ),
-                                    ),
+                                      Positioned.fill(
+                                        child: Listener(
+                                          behavior: HitTestBehavior.translucent,
+                                          onPointerDown: (event) {
+                                            if (_isCanvasPanDown(event, data)) {
+                                              _canvasPanPointers.add(
+                                                event.pointer,
+                                              );
+                                            }
+                                          },
+                                          onPointerMove: (event) {
+                                            if (_isCanvasPanMove(event)) {
+                                              _panCanvasBy(event.delta);
+                                            }
+                                          },
+                                          onPointerUp: (event) {
+                                            _canvasPanPointers.remove(
+                                              event.pointer,
+                                            );
+                                          },
+                                          onPointerCancel: (event) {
+                                            _canvasPanPointers.remove(
+                                              event.pointer,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Positioned.fill(
-                                    child: Listener(
-                                      behavior: HitTestBehavior.translucent,
-                                      onPointerDown: (event) {
-                                        if (_isCanvasPanDown(event, data)) {
-                                          _canvasPanPointers.add(event.pointer);
-                                        }
-                                      },
-                                      onPointerMove: (event) {
-                                        if (_isCanvasPanMove(event)) {
-                                          _panCanvasBy(event.delta);
-                                        }
-                                      },
-                                      onPointerUp: (event) {
-                                        _canvasPanPointers.remove(
-                                          event.pointer,
-                                        );
-                                      },
-                                      onPointerCancel: (event) {
-                                        _canvasPanPointers.remove(
-                                          event.pointer,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
@@ -314,7 +331,58 @@ class _BusLanesViewState extends State<BusLanesView> {
                       ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: BusLanesMetrics.headerHeight,
+                    child: IgnorePointer(
+                      child: ClipRect(
+                        child: ColoredBox(
+                          color: theme.colorScheme.surface,
+                          child: AnimatedBuilder(
+                            animation: _h,
+                            builder: (context, _) => Stack(
+                              children: [
+                                for (
+                                  var column = 0;
+                                  column < m.columnCount;
+                                  column++
+                                )
+                                  Positioned(
+                                    left:
+                                        m.columnX(column) -
+                                        BusLanesMetrics.railWidth / 2 -
+                                        (_h.hasClients ? _h.offset : 0),
+                                    width: BusLanesMetrics.railWidth,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: Center(
+                                      child: Text(
+                                        column == 0
+                                            ? '—'
+                                            : column == m.columnCount - 1
+                                            ? '＋'
+                                            : data.rails[column - 1].label,
+                                        key: ValueKey('bus-header-$column'),
+                                        style: TextStyle(
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           },
@@ -417,13 +485,53 @@ class _BusLanesViewState extends State<BusLanesView> {
             ),
           ),
           for (final bead in card.beads) _buildBead(context, bead),
+          Positioned(
+            right: m.contentWidth - BusLanesMetrics.gutterWidth + 6,
+            top: 4,
+            width: 24,
+            height: 24,
+            child: Semantics(
+              toggled: _collapsed.contains(card.id),
+              child: IconButton(
+                key: ValueKey('collapse-${card.id}'),
+                padding: EdgeInsets.zero,
+                iconSize: 16,
+                tooltip: _collapsed.contains(card.id)
+                    ? 'Show unconnected ports: ${card.title}'
+                    : 'Hide unconnected ports: ${card.title}',
+                icon: Icon(
+                  _collapsed.contains(card.id)
+                      ? Icons.unfold_more
+                      : Icons.unfold_less,
+                ),
+                onPressed: () {
+                  setState(() {
+                    if (!_collapsed.remove(card.id)) _collapsed.add(card.id);
+                    _selected = null;
+                    _hover.value = null;
+                  });
+                  SemanticsService.sendAnnouncement(
+                    View.of(context),
+                    _collapsed.contains(card.id)
+                        ? 'Unconnected ports hidden: ${card.title}'
+                        : 'Unconnected ports shown: ${card.title}',
+                    Directionality.of(context),
+                  );
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
 
     return AnimatedPositioned(
       key: ValueKey(card.id),
-      duration: isDragging ? Duration.zero : const Duration(milliseconds: 300),
+      // Port filtering changes rail stops and bead rows together. Only animate
+      // the reorder preview, so collapsing never separates beads from rails.
+      duration: isDragging || _draggingId == null
+          ? Duration.zero
+          : const Duration(milliseconds: 300),
       curve: Curves.easeOutBack,
       left: 0,
       top: top,
@@ -811,11 +919,23 @@ class _BusLanesViewState extends State<BusLanesView> {
     OutputMode modeOf(Port p) =>
         portOutputModes[p.id] ?? p.outputMode ?? OutputMode.add;
 
+    // Disabled ports are unavailable; unassigned active ports remain editable
+    // unless the user explicitly collapses them for this algorithm.
+    bool showPort(RoutingAlgorithm algo, Port port) =>
+        port.isActive && (!_collapsed.contains(algo.id) || port.isConnected);
+    final inputs = [
+      for (final algo in slots)
+        algo.inputPorts.where((p) => showPort(algo, p)).toList(),
+    ];
+    final outputs = [
+      for (final algo in slots)
+        algo.outputPorts.where((p) => showPort(algo, p)).toList(),
+    ];
     final usedBuses = <int>{};
     for (final algo in slots) {
       for (final p in [...algo.inputPorts, ...algo.outputPorts]) {
         final b = p.busValue;
-        if (b != null && b > 0) usedBuses.add(b);
+        if (p.isActive && b != null && b > 0) usedBuses.add(b);
       }
     }
 
@@ -837,10 +957,8 @@ class _BusLanesViewState extends State<BusLanesView> {
     _lastProfile = deviceIoProfile;
 
     final cardHeights = [
-      for (final a in slots)
-        BusLanesMetrics.cardHeightFor(
-          a.inputPorts.length + a.outputPorts.length,
-        ),
+      for (var s = 0; s < n; s++)
+        BusLanesMetrics.cardHeightFor(inputs[s].length + outputs[s].length),
     ];
     final cardTops = <double>[];
     var y = BusLanesMetrics.headerHeight;
@@ -870,7 +988,8 @@ class _BusLanesViewState extends State<BusLanesView> {
     var outputOrdinal = 0;
     for (var s = 0; s < n; s++) {
       final algo = slots[s];
-      final nIn = algo.inputPorts.length;
+      final nIn = inputs[s].length;
+      var visibleOutput = 0;
       for (var o = 0; o < algo.outputPorts.length; o++) {
         final p = algo.outputPorts[o];
         final b = p.busValue;
@@ -878,9 +997,11 @@ class _BusLanesViewState extends State<BusLanesView> {
         // collide with physical-input ids (which use the bus number, 1-12).
         final origin = deviceIoProfile.inputBusCount + 1 + outputOrdinal;
         outputOrdinal++;
+        if (!showPort(algo, p)) continue;
+        final row = nIn + visibleOutput++;
         if (b != null && b > 0 && railIndex.containsKey(b)) {
           (writeYsByBus[b] ??= []).add((
-            y: cardTops[s] + BusLanesMetrics.portRowY(nIn + o),
+            y: cardTops[s] + BusLanesMetrics.portRowY(row),
             replace: modeOf(p) == OutputMode.replace,
             origin: origin,
           ));
@@ -1078,10 +1199,10 @@ class _BusLanesViewState extends State<BusLanesView> {
       }
 
       var row = 0;
-      for (final p in algo.inputPorts) {
+      for (final p in inputs[s]) {
         addPort(p, false, row++);
       }
-      for (final p in algo.outputPorts) {
+      for (final p in outputs[s]) {
         addPort(p, true, row++);
       }
 

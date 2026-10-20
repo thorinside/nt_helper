@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -43,6 +44,41 @@ void main() {
     routingCubit = RoutingEditorCubit(distingCubit);
     await Future<void>.delayed(const Duration(milliseconds: 10));
   }
+
+  test(
+    'firmware-disabled bus parameters become inactive routing ports',
+    () async {
+      final slot = _slotWithSharedAuxReferences().copyWith(
+        parameters: [
+          _parameter(0, 'Input', 0, 64, 1),
+          _parameter(1, 'Output', 0, 64, 2),
+          _parameter(2, 'Available input', 0, 64, 1),
+        ],
+        values: [
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 1,
+            isDisabled: true,
+          ),
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            value: 13,
+            isDisabled: true,
+          ),
+          _value(2, 0),
+        ],
+      );
+      seed(slot);
+      final algorithm =
+          (routingCubit.state as RoutingEditorStateLoaded).algorithms.single;
+      expect(algorithm.inputPorts.first.isActive, isFalse);
+      expect(algorithm.outputPorts.single.isActive, isFalse);
+      expect(algorithm.inputPorts.last.isActive, isTrue);
+      expect(algorithm.inputPorts.last.busValue, 0);
+    },
+  );
 
   test('Reset All Connections preserves non-routing enums', () async {
     seed(_slotWithOutputAndMode());

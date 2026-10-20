@@ -292,6 +292,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
         final inputPorts = routing.inputPorts;
         final outputPorts = routing.outputPorts;
+        final disabledParameters = {
+          for (final value in slot.values)
+            if (value.isDisabled) value.parameterNumber,
+        };
 
         // Filter out algorithms with no ports (e.g., the 'note' algorithm)
         if (inputPorts.isEmpty && outputPorts.isEmpty) {
@@ -317,6 +321,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   busValue: p.busValue,
                   busParam: p.busParam,
                   parameterNumber: p.parameterNumber,
+                  isActive:
+                      p.isActive &&
+                      !disabledParameters.contains(p.parameterNumber),
                   isPolyVoice: p.isPolyVoice,
                   voiceNumber: p.voiceNumber,
                   isVirtualCV: p.isVirtualCV,
@@ -333,6 +340,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   busValue: p.busValue,
                   busParam: p.busParam,
                   parameterNumber: p.parameterNumber,
+                  isActive:
+                      p.isActive &&
+                      !disabledParameters.contains(p.parameterNumber),
                   modeParameterNumber: p.modeParameterNumber,
                   outputMode: p.outputMode,
                   channelNumber: p.channelNumber,

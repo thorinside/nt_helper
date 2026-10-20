@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +12,7 @@ import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart' as state;
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/widgets/routing/bus_lanes_view.dart';
+import 'package:nt_helper/ui/widgets/routing/bus_lanes_painter.dart';
 
 import 'bus_lanes_view_test.mocks.dart';
 
@@ -246,6 +249,164 @@ void main() {
     await tester.pump();
   }
 
+  List<BusBlockPainter> blocks(WidgetTester tester) => tester
+      .widgetList<CustomPaint>(find.byType(CustomPaint))
+      .map((paint) => paint.painter)
+      .whereType<BusBlockPainter>()
+      .toList();
+
+  BusLanesPainter lanes(WidgetTester tester) => tester
+      .widgetList<CustomPaint>(find.byType(CustomPaint))
+      .map((paint) => paint.painter)
+      .whereType<BusLanesPainter>()
+      .single;
+
+  testWidgets('bus labels stay at the top and track their lanes horizontally', (
+    tester,
+  ) async {
+    final (horizontal, vertical) = await pumpConstrainedOversizedPreset(tester);
+    final header = find.byKey(const ValueKey('bus-header-1'));
+    final initial = tester.getCenter(header);
+    vertical.jumpTo(150);
+    await tester.pump();
+    expect(tester.getCenter(header), initial);
+    horizontal.jumpTo(100);
+    await tester.pump();
+    expect(tester.getCenter(header), initial - const Offset(100, 0));
+    expect(
+      tester.getCenter(header).dx,
+      lanes(tester).rails.first.x - horizontal.offset,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'disabled inputs and outputs are absent while unassigned active ports remain',
+    (tester) async {
+      final algo = oscWithOutput();
+      final disabled = algo.outputPorts.single.copyWith(
+        id: 'disabled_out',
+        name: 'Disabled output',
+        isActive: false,
+        busValue: 14,
+      );
+      when(cubit.state).thenReturn(
+        loadedWith([
+          algo.copyWith(
+            inputPorts: [
+              disabled.copyWith(
+                id: 'disabled_in',
+                name: 'Disabled input',
+                direction: PortDirection.input,
+                busValue: 15,
+              ),
+              disabled.copyWith(
+                id: 'unassigned_in',
+                name: 'Available input',
+                direction: PortDirection.input,
+                isActive: true,
+                busValue: 0,
+              ),
+            ],
+            outputPorts: [
+              ...algo.outputPorts,
+              disabled,
+              disabled.copyWith(
+                id: 'unassigned_out',
+                name: 'Available output',
+                isActive: true,
+                busValue: null,
+              ),
+            ],
+          ),
+        ]),
+      );
+      await tester.pumpWidget(host());
+      expect(blocks(tester).single.ports.map((p) => p.label), [
+        'Available input',
+        'Out',
+        'Available output',
+      ]);
+      expect(lanes(tester).rails.map((rail) => rail.bus), [13]);
+      expect(
+        lanes(tester).metrics.cardHeights.single,
+        BusLanesMetrics.cardHeightFor(3),
+      );
+    },
+  );
+
+  testWidgets(
+    'collapse and expand preserve connected ports and realign signal geometry',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final algo = oscWithOutput();
+      final unassigned = algo.outputPorts.single.copyWith(
+        id: 'unassigned',
+        name: 'Unassigned',
+        busValue: 0,
+      );
+      when(cubit.state).thenReturn(
+        loadedWith([
+          algo.copyWith(
+            inputPorts: [unassigned.copyWith(direction: PortDirection.input)],
+            outputPorts: [
+              unassigned.copyWith(id: 'unused_out'),
+              ...algo.outputPorts,
+            ],
+          ),
+          algo.copyWith(id: 'algoB', index: 1),
+        ]),
+      );
+      await tester.pumpWidget(host());
+      final original = lanes(tester);
+      final originalColor = blocks(tester).first.ports.last.color;
+      final toggle = find.byKey(const ValueKey('collapse-algoA'));
+      expect(find.byTooltip('Hide unconnected ports: 1. Osc'), findsOneWidget);
+      await tester.tap(toggle);
+      await tester.pump();
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('algoB'))).dy,
+        lanes(tester).metrics.cardTops[1],
+      );
+      await tester.pumpAndSettle();
+      expect(blocks(tester).first.ports.map((p) => p.label), ['Out']);
+      expect(blocks(tester).last.ports, hasLength(1));
+      final collapsed = lanes(tester);
+      expect(
+        collapsed.metrics.cardTops[1],
+        original.metrics.cardTops[1] - 2 * BusLanesMetrics.portRowHeight,
+      );
+      expect(blocks(tester).first.ports.single.color, originalColor);
+      final writeY =
+          collapsed.metrics.cardTops.first + BusLanesMetrics.portRowY(0);
+      expect(collapsed.rails.single.segments.first.bottom, writeY);
+      expect(collapsed.rails.single.segments[1].top, writeY);
+      final beadFinder = find
+          .byWidgetPredicate((widget) => widget is Draggable)
+          .first;
+      expect(
+        tester.getCenter(beadFinder),
+        Offset(collapsed.rails.single.x, writeY),
+      );
+      expect(find.byTooltip('Show unconnected ports: 1. Osc'), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(
+              find.ancestor(of: toggle, matching: find.byType(Semantics)).first,
+            )
+            .flagsCollection
+            .isToggled,
+        Tristate.isTrue,
+      );
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(blocks(tester).first.ports, hasLength(3));
+      expect(lanes(tester).metrics.cardTops, original.metrics.cardTops);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
   testWidgets('shows empty message when there are no algorithms', (
     tester,
   ) async {
@@ -282,8 +443,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.bySemanticsLabel('Current bus O2'), findsOneWidget);
-      expect(find.text('O1'), findsOneWidget);
-      expect(find.text('O2'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(Dialog), matching: find.text('O1')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(Dialog), matching: find.text('O2')),
+        findsOneWidget,
+      );
     },
   );
 

@@ -127,7 +127,6 @@ class BusLanesPainter extends CustomPainter {
         ..color = noneColor
         ..strokeWidth = 1.5,
     );
-    _label(canvas, '—', noneX, BusLanesMetrics.headerHeight / 2, noneColor);
     _label(
       canvas,
       '—',
@@ -145,7 +144,6 @@ class BusLanesPainter extends CustomPainter {
         ..color = noneColor
         ..strokeWidth = 1.5,
     );
-    _label(canvas, '＋', addX, BusLanesMetrics.headerHeight / 2, noneColor);
     _label(
       canvas,
       '＋',
@@ -193,8 +191,6 @@ class BusLanesPainter extends CustomPainter {
             ..strokeCap = StrokeCap.round,
         );
       }
-      _label(canvas, rail.label, rail.x, BusLanesMetrics.headerHeight / 2,
-          rail.labelColor);
       _label(
         canvas,
         rail.label,
@@ -305,8 +301,15 @@ class BusBlockPainter extends CustomPainter {
         ..strokeWidth = selected ? 2 : 1,
     );
 
-    _text(canvas, title, 14, BusLanesMetrics.titleHeight / 2 + 4, textColor,
-        bold: true, maxWidth: BusLanesMetrics.gutterWidth - 24);
+    _text(
+      canvas,
+      title,
+      14,
+      BusLanesMetrics.titleHeight / 2 + 4,
+      textColor,
+      bold: true,
+      maxWidth: BusLanesMetrics.gutterWidth - 54,
+    );
 
     for (final port in ports) {
       final y = BusLanesMetrics.portRowY(port.row);
