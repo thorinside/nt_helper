@@ -17,6 +17,9 @@ import 'package:nt_helper/services/video_popup_window_service.dart';
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/startup_recovery_app.dart';
+import 'package:nt_helper/services/macos_library_storage.dart';
+import 'package:nt_helper/utils/app_directory.dart';
 import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/ui/widgets/contextual_help_tooltip_scope.dart';
 import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
@@ -34,7 +37,14 @@ bool isFirmwareUpdateAvailable({
 class DistingApp extends StatefulWidget {
   static const templateManagerRoute = '/template-manager';
 
-  const DistingApp({super.key});
+  const DistingApp({
+    super.key,
+    this.startupStorageLocation,
+    this.startupRecovery,
+  });
+
+  final String? startupStorageLocation;
+  final LibraryRecovery? startupRecovery;
 
   static Map<String, WidgetBuilder> buildRoutes() {
     return {
@@ -170,7 +180,12 @@ class _DistingAppState extends State<DistingApp> {
                           onZoomOut: settings.zoomOutUi,
                           onResetZoom: settings.resetUiScale,
                         ),
-                        child: child ?? const SizedBox.shrink(),
+                        child: StorageLocationNotice(
+                          location: widget.startupStorageLocation,
+                          recovery: widget.startupRecovery,
+                          galleryStorage: galleryCacheStorage,
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                       ),
                     ),
                   ),

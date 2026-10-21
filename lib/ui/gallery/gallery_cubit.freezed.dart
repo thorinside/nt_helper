@@ -55,13 +55,14 @@ extension GalleryStatePatterns on GalleryState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GalleryInitial value)?  initial,TResult Function( GalleryLoading value)?  loading,TResult Function( GalleryLoaded value)?  loaded,TResult Function( GalleryError value)?  error,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GalleryInitial value)?  initial,TResult Function( GalleryLoading value)?  loading,TResult Function( GalleryLoaded value)?  loaded,TResult Function( GalleryUnavailable value)?  unavailable,TResult Function( GalleryError value)?  error,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case GalleryInitial() when initial != null:
 return initial(_that);case GalleryLoading() when loading != null:
 return loading(_that);case GalleryLoaded() when loaded != null:
-return loaded(_that);case GalleryError() when error != null:
+return loaded(_that);case GalleryUnavailable() when unavailable != null:
+return unavailable(_that);case GalleryError() when error != null:
 return error(_that);case _:
   return orElse();
 
@@ -80,13 +81,14 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GalleryInitial value)  initial,required TResult Function( GalleryLoading value)  loading,required TResult Function( GalleryLoaded value)  loaded,required TResult Function( GalleryError value)  error,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GalleryInitial value)  initial,required TResult Function( GalleryLoading value)  loading,required TResult Function( GalleryLoaded value)  loaded,required TResult Function( GalleryUnavailable value)  unavailable,required TResult Function( GalleryError value)  error,}){
 final _that = this;
 switch (_that) {
 case GalleryInitial():
 return initial(_that);case GalleryLoading():
 return loading(_that);case GalleryLoaded():
-return loaded(_that);case GalleryError():
+return loaded(_that);case GalleryUnavailable():
+return unavailable(_that);case GalleryError():
 return error(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -104,13 +106,14 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GalleryInitial value)?  initial,TResult? Function( GalleryLoading value)?  loading,TResult? Function( GalleryLoaded value)?  loaded,TResult? Function( GalleryError value)?  error,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GalleryInitial value)?  initial,TResult? Function( GalleryLoading value)?  loading,TResult? Function( GalleryLoaded value)?  loaded,TResult? Function( GalleryUnavailable value)?  unavailable,TResult? Function( GalleryError value)?  error,}){
 final _that = this;
 switch (_that) {
 case GalleryInitial() when initial != null:
 return initial(_that);case GalleryLoading() when loading != null:
 return loading(_that);case GalleryLoaded() when loaded != null:
-return loaded(_that);case GalleryError() when error != null:
+return loaded(_that);case GalleryUnavailable() when unavailable != null:
+return unavailable(_that);case GalleryError() when error != null:
 return error(_that);case _:
   return null;
 
@@ -128,12 +131,13 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing,  Map<String, PluginInstallStatus> installStatuses,  Map<String, CollectionExpansion> expandedCollections)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing,  Map<String, PluginInstallStatus> installStatuses,  Map<String, CollectionExpansion> expandedCollections)?  loaded,TResult Function( String message,  bool retrying)?  unavailable,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case GalleryInitial() when initial != null:
 return initial();case GalleryLoading() when loading != null:
 return loading();case GalleryLoaded() when loaded != null:
-return loaded(_that.gallery,_that.filteredPlugins,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing,_that.installStatuses,_that.expandedCollections);case GalleryError() when error != null:
+return loaded(_that.gallery,_that.filteredPlugins,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing,_that.installStatuses,_that.expandedCollections);case GalleryUnavailable() when unavailable != null:
+return unavailable(_that.message,_that.retrying);case GalleryError() when error != null:
 return error(_that.message);case _:
   return orElse();
 
@@ -152,12 +156,13 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing,  Map<String, PluginInstallStatus> installStatuses,  Map<String, CollectionExpansion> expandedCollections)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing,  Map<String, PluginInstallStatus> installStatuses,  Map<String, CollectionExpansion> expandedCollections)  loaded,required TResult Function( String message,  bool retrying)  unavailable,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case GalleryInitial():
 return initial();case GalleryLoading():
 return loading();case GalleryLoaded():
-return loaded(_that.gallery,_that.filteredPlugins,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing,_that.installStatuses,_that.expandedCollections);case GalleryError():
+return loaded(_that.gallery,_that.filteredPlugins,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing,_that.installStatuses,_that.expandedCollections);case GalleryUnavailable():
+return unavailable(_that.message,_that.retrying);case GalleryError():
 return error(_that.message);case _:
   throw StateError('Unexpected subclass');
 
@@ -175,12 +180,13 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing,  Map<String, PluginInstallStatus> installStatuses,  Map<String, CollectionExpansion> expandedCollections)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing,  Map<String, PluginInstallStatus> installStatuses,  Map<String, CollectionExpansion> expandedCollections)?  loaded,TResult? Function( String message,  bool retrying)?  unavailable,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case GalleryInitial() when initial != null:
 return initial();case GalleryLoading() when loading != null:
 return loading();case GalleryLoaded() when loaded != null:
-return loaded(_that.gallery,_that.filteredPlugins,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing,_that.installStatuses,_that.expandedCollections);case GalleryError() when error != null:
+return loaded(_that.gallery,_that.filteredPlugins,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing,_that.installStatuses,_that.expandedCollections);case GalleryUnavailable() when unavailable != null:
+return unavailable(_that.message,_that.retrying);case GalleryError() when error != null:
 return error(_that.message);case _:
   return null;
 
@@ -370,6 +376,74 @@ $GalleryCopyWith<$Res> get gallery {
     return _then(_self.copyWith(gallery: value));
   });
 }
+}
+
+/// @nodoc
+
+
+class GalleryUnavailable implements GalleryState {
+  const GalleryUnavailable(this.message, {this.retrying = false});
+
+
+ final  String message;
+@JsonKey() final  bool retrying;
+
+/// Create a copy of GalleryState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GalleryUnavailableCopyWith<GalleryUnavailable> get copyWith => _$GalleryUnavailableCopyWithImpl<GalleryUnavailable>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GalleryUnavailable&&(identical(other.message, message) || other.message == message)&&(identical(other.retrying, retrying) || other.retrying == retrying));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,message,retrying);
+
+@override
+String toString() {
+  return 'GalleryState.unavailable(message: $message, retrying: $retrying)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GalleryUnavailableCopyWith<$Res> implements $GalleryStateCopyWith<$Res> {
+  factory $GalleryUnavailableCopyWith(GalleryUnavailable value, $Res Function(GalleryUnavailable) _then) = _$GalleryUnavailableCopyWithImpl;
+@useResult
+$Res call({
+ String message, bool retrying
+});
+
+
+
+
+}
+/// @nodoc
+class _$GalleryUnavailableCopyWithImpl<$Res>
+    implements $GalleryUnavailableCopyWith<$Res> {
+  _$GalleryUnavailableCopyWithImpl(this._self, this._then);
+
+  final GalleryUnavailable _self;
+  final $Res Function(GalleryUnavailable) _then;
+
+/// Create a copy of GalleryState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? message = null,Object? retrying = null,}) {
+  return _then(GalleryUnavailable(
+null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,retrying: null == retrying ? _self.retrying : retrying // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
 }
 
 /// @nodoc

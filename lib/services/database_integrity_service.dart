@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/utils/app_directory.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,11 +22,20 @@ class DatabaseIntegrityService {
 
   static Future<File> getDatabaseFile() async {
     final dbFolder = await getAppDirectory();
-    return File(p.join(dbFolder.path, _dbFileName));
+    return selectedLibrary?.file ?? File(p.join(dbFolder.path, _dbFileName));
   }
 
   static Future<DatabaseIntegrityResult> checkIntegrity() async {
     final file = await getDatabaseFile();
+    final selected = selectedLibrary;
+    if (selected != null) {
+      // macOS selection has already validated the actual AppDatabase. Reopen
+      // the bound identity, propagating access/native/missing failures instead
+      // of sending them through the historical delete-and-create fallback.
+      final database = await selected.open();
+      await database.close();
+      return const DatabaseIntegrityResult(isCorrupt: false, fileExists: true);
+    }
     if (!file.existsSync()) {
       return const DatabaseIntegrityResult(isCorrupt: false, fileExists: false);
     }
@@ -35,9 +43,8 @@ class DatabaseIntegrityService {
     try {
       final db = sqlite3.open(file.path, mode: OpenMode.readOnly);
       try {
-        final result = db.select('PRAGMA integrity_check');
-        final status = result.first.values.first as String;
-        if (status == 'ok') {
+        final status = inspect(db);
+        if (status == null) {
           return const DatabaseIntegrityResult(
             isCorrupt: false,
             fileExists: true,
@@ -61,31 +68,26 @@ class DatabaseIntegrityService {
     }
   }
 
-  @visibleForTesting
   static bool isDatabaseCorruptionError(Object error) {
     return _isDatabaseCorruptionError(error);
   }
 
-  static bool _isDatabaseCorruptionError(Object error) {
-    final message = error.toString().toLowerCase();
-
-    // If sqlite3 itself cannot be loaded, the database file has not been
-    // inspected. Treating that as corruption would delete healthy user data and
-    // still leave startup broken.
-    const nativeLibraryLoadMarkers = [
-      'couldn\'t resolve native function',
-      'failed to load dynamic library',
-      'dynamiclibrary.open',
-      'sqlite3.dll',
-      'winsqlite3.dll',
-      'libsqlite3',
-    ];
-    if (nativeLibraryLoadMarkers.any(message.contains)) {
-      return false;
-    }
-
-    return true;
+  /// Null means SQLite completed inspection and found no damage. Inspection
+  /// failures propagate; neither an error message nor failure to load SQLite
+  /// is evidence that the user's library is corrupt.
+  static String? inspect(Database database) {
+    final failures = database
+        .select('PRAGMA integrity_check')
+        .map((row) => row.values.first as String)
+        .where((status) => status != 'ok')
+        .toList();
+    return failures.isEmpty ? null : failures.join('\n');
   }
+
+  static bool _isDatabaseCorruptionError(Object error) =>
+      error is SqliteException &&
+      (error.resultCode == 11 || error.resultCode == 26) &&
+      [11, 26].contains(error.extendedResultCode & 0xff);
 
   static Future<void> deleteDatabase() async {
     final file = await getDatabaseFile();

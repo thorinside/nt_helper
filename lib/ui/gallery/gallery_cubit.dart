@@ -7,6 +7,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/models/plugin_cleanup_outcome.dart';
 import 'package:nt_helper/services/gallery_service.dart';
+import 'package:nt_helper/services/gallery_cache_storage.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 
@@ -51,16 +52,81 @@ class GalleryCubit extends Cubit<GalleryState> {
   final List<_PendingInstall> _installQueue = [];
   bool _isProcessingQueue = false;
 
-  GalleryCubit(this._galleryService) : super(const GalleryState.initial());
+  GalleryCubit(this._galleryService) : super(const GalleryState.initial()) {
+    _galleryService.cacheStorage?.addListener(_storageChanged);
+  }
+
+  void _storageChanged() {
+    final storage = _galleryService.cacheStorage;
+    final current = state;
+    if (current is! GalleryUnavailable || storage == null || _loading) return;
+    if (storage.ready) {
+      unawaited(
+        loadGallery(
+          devicePluginGuids: _devicePluginGuids,
+          devicePluginPaths: _devicePluginPaths,
+        ),
+      );
+    } else {
+      emit(
+        GalleryState.unavailable(
+          storage.failure?.toString() ?? current.message,
+          retrying: storage.busy,
+        ),
+      );
+    }
+  }
+
+  bool _loading = false;
+  Set<String>? _devicePluginGuids;
+  Map<String, String>? _devicePluginPaths;
 
   @override
   Future<void> close() {
+    _galleryService.cacheStorage?.removeListener(_storageChanged);
     _archiveCache.clear();
     _installQueue.clear();
     return super.close();
   }
 
   Future<void> loadGallery({
+    bool forceRefresh = false,
+    Set<String>? devicePluginGuids,
+    Map<String, String>? devicePluginPaths,
+  }) async {
+    if (_loading) return;
+    _devicePluginGuids = devicePluginGuids;
+    _devicePluginPaths = devicePluginPaths;
+    _loading = true;
+    try {
+      final current = state;
+      final storage = _galleryService.cacheStorage;
+      if (current is GalleryUnavailable ||
+          (storage != null && !storage.ready)) {
+        emit(
+          GalleryState.unavailable(
+            current is GalleryUnavailable
+                ? current.message
+                : 'Gallery cache transfer is in progress. Originals and interrupted work are retained.',
+            retrying: true,
+          ),
+        );
+      }
+      await _galleryService.prepareCache();
+      if (isClosed) return;
+      await _loadGallery(
+        forceRefresh: forceRefresh,
+        devicePluginGuids: devicePluginGuids,
+        devicePluginPaths: devicePluginPaths,
+      );
+    } on GalleryStorageUnavailable catch (error) {
+      if (!isClosed) emit(GalleryState.unavailable(error.toString()));
+    } finally {
+      _loading = false;
+    }
+  }
+
+  Future<void> _loadGallery({
     bool forceRefresh = false,
     Set<String>? devicePluginGuids,
     Map<String, String>? devicePluginPaths,

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/models/plugin_cleanup_outcome.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/services/gallery_cache_storage.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:nt_helper/services/plugin_update_checker.dart';
 import 'package:nt_helper/db/database.dart';
@@ -144,6 +145,14 @@ typedef SampleInstallCallback =
 /// Service for managing the plugin gallery
 class GalleryService {
   final SettingsService _settingsService;
+  final GalleryCacheStorage? _cacheStorage;
+  GalleryCacheStorage? get cacheStorage => _cacheStorage ?? galleryCacheStorage;
+
+  Future<void> prepareCache() async {
+    if (_cacheStorage == null) await getAppDirectory();
+    await cacheStorage?.prepare();
+  }
+
   final AppDatabase? _database;
   final Duration _graphqlRequestTimeout;
   final List<Duration> _graphqlRetryDelays;
@@ -169,10 +178,12 @@ class GalleryService {
   GalleryService({
     required SettingsService settingsService,
     AppDatabase? database,
+    GalleryCacheStorage? cacheStorage,
     Duration graphqlRequestTimeout = _defaultGraphqlRequestTimeout,
     List<Duration> graphqlRetryDelays = _defaultGraphqlRetryDelays,
   }) : _settingsService = settingsService,
        _database = database,
+       _cacheStorage = cacheStorage,
        _graphqlRequestTimeout = graphqlRequestTimeout,
        _graphqlRetryDelays = List.unmodifiable(graphqlRetryDelays) {
     // Initialize update checker if database is available
@@ -208,6 +219,7 @@ class GalleryService {
   /// 2. Persisted file cache (24 hour stale threshold)
   /// 3. Fresh fetch from GraphQL API
   Future<Gallery> fetchGallery({bool forceRefresh = false}) async {
+    await prepareCache();
     // Return memory cached data if valid and not forcing refresh
     if (!forceRefresh &&
         _cachedGallery != null &&
@@ -295,6 +307,8 @@ class GalleryService {
 
   /// Get the cache file path
   Future<File> _getCacheFile() async {
+    await prepareCache();
+    if (cacheStorage case final storage?) return storage.file;
     final directory = await getAppDirectory();
     return File(path.join(directory.path, _cacheFileName));
   }
@@ -309,6 +323,8 @@ class GalleryService {
 
       await file.writeAsString(json.encode(cacheData));
       _persistedCacheTimestamp = DateTime.now();
+    } on GalleryStorageUnavailable {
+      rethrow;
     } catch (e) {
       // Silently fail cache write - not critical
     }
@@ -333,6 +349,8 @@ class GalleryService {
 
       final galleryJson = cacheData['gallery'] as Map<String, dynamic>;
       return Gallery.fromJson(galleryJson);
+    } on GalleryStorageUnavailable {
+      rethrow;
     } catch (e) {
       // Return null if cache is corrupted or unreadable
       return null;

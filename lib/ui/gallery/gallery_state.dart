@@ -20,5 +20,10 @@ class GalleryState with _$GalleryState {
     @Default({}) Map<String, CollectionExpansion> expandedCollections,
   }) = GalleryLoaded;
 
+  const factory GalleryState.unavailable(
+    String message, {
+    @Default(false) bool retrying,
+  }) = GalleryUnavailable;
+
   const factory GalleryState.error(String message) = GalleryError;
 }
