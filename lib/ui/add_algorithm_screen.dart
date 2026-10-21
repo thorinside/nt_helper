@@ -93,14 +93,20 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     if (distingState case DistingStateSynchronized(
       algorithms: final algorithms,
     )) {
-      _allAlgorithms = List<AlgorithmInfo>.from(algorithms)
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      _allAlgorithms = _sortedUniqueAlgorithms(algorithms);
       // Initial filter
       _filterAlgorithms();
     } else {
       _allAlgorithms = [];
       _filteredAlgorithms = [];
     }
+  }
+
+  List<AlgorithmInfo> _sortedUniqueAlgorithms(List<AlgorithmInfo> algorithms) {
+    // Selection uses GUID identity. Keep the first entry and its add metadata.
+    final seenGuids = <String>{};
+    return algorithms.where((algo) => seenGuids.add(algo.guid)).toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
   @override
@@ -457,10 +463,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     if (distingState case DistingStateSynchronized(
       algorithms: final algorithms,
     )) {
-      if (!listEquals(_allAlgorithms, algorithms)) {
-        _allAlgorithms = List<AlgorithmInfo>.from(
-          algorithms,
-        )..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      final updatedAlgorithms = _sortedUniqueAlgorithms(algorithms);
+      if (!listEquals(_allAlgorithms, updatedAlgorithms)) {
+        _allAlgorithms = updatedAlgorithms;
 
         // If we have a currently selected algorithm, update it to reflect the latest state
         if (selectedAlgorithmGuid != null) {
