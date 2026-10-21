@@ -165,12 +165,7 @@ final class MacosLibraryStorage {
           'sources': inventory,
           'recovery': {
             for (final source in sources)
-              source: {
-                'main': sha256.convert(files.read(source)).toString(),
-                'walBytes': MacosStorageIo.identity('$source-wal') == null
-                    ? 0
-                    : File('$source-wal').lengthSync(),
-              },
+              source: _recoveryReceipt(source, files),
           },
         });
       });
@@ -378,7 +373,9 @@ final class MacosLibraryStorage {
               !inventory.containsKey(source) ||
               previous is! Map ||
               previous['walBytes'] is! int ||
-              previous['main'] is! String) {
+              previous['main'] is! String ||
+              (previous['walSemantics'] != null &&
+                  previous['walSemantics'] is! String)) {
             throw const StorageFailure(
               StorageFailureKind.uncertain,
               'Malformed migration recovery history',
@@ -386,13 +383,19 @@ final class MacosLibraryStorage {
           }
           if ((previous['walBytes'] as int) > 32 &&
               MacosStorageIo.identity('$source-wal') == null &&
-              MacosStorageIo.identity(source) != null &&
-              sha256.convert(files.read(source)).toString() ==
-                  previous['main']) {
-            throw const StorageFailure(
-              StorageFailureKind.uncertain,
-              'Previously observed WAL recovery data is missing without a changed main file; restore required recovery data and Retry',
-            );
+              MacosStorageIo.identity(source) != null) {
+            final main = files.read(source);
+            // A FULL checkpoint may leave a nonempty WAL that disappears on
+            // normal last-close without changing main. Compare the coherent
+            // recovery evidence, not WAL length, before declaring data lost.
+            if (sha256.convert(main).toString() == previous['main'] &&
+                (previous['walSemantics'] == null ||
+                    _recoverySemantics(main) != previous['walSemantics'])) {
+              throw const StorageFailure(
+                StorageFailureKind.uncertain,
+                'Previously observed WAL recovery data is missing and completeness cannot be established; restore required recovery data and Retry',
+              );
+            }
           }
         }
         if (jsonEncode(record['sources']) != jsonEncode(inventory)) {
@@ -542,6 +545,71 @@ void _retain(String source, Directory work, String name, _SourceFiles files) {
       StorageFailureKind.uncertain,
       'Source changed while preserving untouched recovery data; Retry after writers settle',
     );
+  }
+}
+
+Map<String, Object?> _recoveryReceipt(String source, _SourceFiles files) {
+  final before = _seal(source, files);
+  final main = files.read(source);
+  final wal = MacosStorageIo.identity('$source-wal') == null
+      ? null
+      : files.read('$source-wal');
+  final recovery = {
+    'main': sha256.convert(main).toString(),
+    'walBytes': wal?.length ?? 0,
+    if (wal != null && wal.length > 32)
+      'walSemantics': _recoverySemantics(main, wal),
+  };
+  if (_seal(source, files) != before) {
+    throw const StorageFailure(
+      StorageFailureKind.uncertain,
+      'Source changed while recording recovery evidence; Retry after writers settle',
+    );
+  }
+  return recovery;
+}
+
+/// Let SQLite interpret committed WAL frames on private, memory-only copies.
+/// Exclusive mode needs no shared WAL index. No original is opened, checkpointed
+/// or closed, and the digest is durable with the very first ownership receipt.
+String _recoverySemantics(Uint8List main, [Uint8List? wal]) {
+  final vfs = InMemoryFileSystem(name: 'nt-recovery-${const Uuid().v4()}');
+  for (final entry in {'': main, '-wal': ?wal}.entries) {
+    final opened = vfs.xOpen(
+      Sqlite3Filename('/library${entry.key}'),
+      SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
+    );
+    opened.file.xWrite(entry.value, 0);
+    opened.file.xClose();
+  }
+  sqlite3.registerVirtualFileSystem(vfs);
+  Database? raw;
+  try {
+    raw = sqlite3.open('/library', vfs: vfs.name, mode: OpenMode.readWrite);
+    raw.execute('PRAGMA locking_mode=EXCLUSIVE');
+    if (raw
+        .select('PRAGMA integrity_check')
+        .any((r) => r.values.first != 'ok')) {
+      throw const StorageFailure(
+        StorageFailureKind.uncertain,
+        'Cannot establish coherent recovery evidence; originals are retained',
+      );
+    }
+    return _semantics(raw);
+  } on SqliteException catch (error) {
+    // A pre-exclusion copy may race a checkpoint. It is evidence to validate,
+    // not a basis for diagnosing damage to the original authoritative store.
+    if ([11, 26].contains(error.resultCode & 0xff)) {
+      throw StorageFailure(
+        StorageFailureKind.uncertain,
+        'Cannot establish coherent recovery evidence; originals are retained',
+        error,
+      );
+    }
+    rethrow;
+  } finally {
+    raw?.close();
+    sqlite3.unregisterVirtualFileSystem(vfs);
   }
 }
 

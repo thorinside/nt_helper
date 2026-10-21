@@ -278,6 +278,45 @@ void main() {
     }
   }
 
+  for (final point in ['after:reservation', 'before:exclude-0']) {
+    test(
+      'checkpointed WAL removed after SIGKILL $point automatically relaunches a complete library',
+      () async {
+        await seed('R');
+        final wal = File('${source!.file.path}-wal');
+        final checkpoint = source!.raw
+            .select('PRAGMA wal_checkpoint(FULL)')
+            .single;
+        expect(checkpoint['busy'], 0);
+        expect(checkpoint['log'], greaterThan(0));
+        expect(checkpoint['checkpointed'], checkpoint['log']);
+        expect(wal.lengthSync(), greaterThan(32));
+        final mainBefore = source!.file.readAsBytesSync();
+        final child = await start(fault: point);
+        await waitReached(child, point);
+        child.process.kill(ProcessSignal.sigkill);
+        expect(await child.process.exitCode, isNot(0));
+        final retained = {
+          for (final file in appDir.listSync(recursive: true).whereType<File>())
+            file.path: file.readAsBytesSync(),
+        };
+        final original = source!.file;
+        await source!.close();
+        source = null;
+        expect(wal.existsSync(), isFalse);
+        expect(original.readAsBytesSync(), mainBefore);
+        final selected = await recover();
+        expect(
+          (await recover(noDocuments: true))['selected'],
+          selected['selected'],
+        );
+        for (final entry in retained.entries) {
+          expect(File(entry.key).readAsBytesSync(), entry.value);
+        }
+      },
+    );
+  }
+
   for (final mode in ['WAL', 'DELETE']) {
     test(
       '$mode post-crash commits and held writer are included through cutover; source exclusion really prevents writers',

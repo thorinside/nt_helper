@@ -492,6 +492,49 @@ void main() {
     },
   );
 
+  for (final point in ['after:reservation', 'before:exclude-0']) {
+    test(
+      'checkpointed WAL removal after $point automatically retries without losing retained work',
+      () async {
+        final source = await fixture(docs);
+        final expected = await contents(source.app);
+        final wal = File('${source.file.path}-wal');
+        final checkpoint = source.raw
+            .select('PRAGMA wal_checkpoint(FULL)')
+            .single;
+        expect(checkpoint['busy'], 0);
+        expect(checkpoint['log'], greaterThan(0));
+        expect(checkpoint['checkpointed'], checkpoint['log']);
+        expect(wal.lengthSync(), greaterThan(32));
+        final mainBefore = source.file.readAsBytesSync();
+        final walBefore = wal.readAsBytesSync();
+        await expectLater(
+          prepare(
+            checkpoint: (boundary) async {
+              if (boundary == point) {
+                throw StateError('pre-exclusion interruption');
+              }
+            },
+          ),
+          throwsA(isA<StorageFailure>()),
+        );
+        final retained = {
+          for (final file in appDir.listSync(recursive: true).whereType<File>())
+            file.path: file.readAsBytesSync(),
+        };
+        expect(wal.readAsBytesSync(), walBefore);
+        await source.close();
+        fixtures.remove(source);
+        expect(wal.existsSync(), isFalse);
+        expect(source.file.readAsBytesSync(), mainBefore);
+        await assertComplete(await prepare(), expected);
+        for (final entry in retained.entries) {
+          expect(File(entry.key).readAsBytesSync(), entry.value);
+        }
+      },
+    );
+  }
+
   test(
     'missing previously observed WAL cannot silently admit an incomplete main file',
     () async {
