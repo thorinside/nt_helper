@@ -61,7 +61,12 @@ class GalleryCubit extends Cubit<GalleryState> {
     final current = state;
     if (current is! GalleryUnavailable || storage == null || _loading) return;
     if (storage.ready) {
-      unawaited(loadGallery());
+      unawaited(
+        loadGallery(
+          devicePluginGuids: _devicePluginGuids,
+          devicePluginPaths: _devicePluginPaths,
+        ),
+      );
     } else {
       emit(
         GalleryState.unavailable(
@@ -73,6 +78,8 @@ class GalleryCubit extends Cubit<GalleryState> {
   }
 
   bool _loading = false;
+  Set<String>? _devicePluginGuids;
+  Map<String, String>? _devicePluginPaths;
 
   @override
   Future<void> close() {
@@ -88,6 +95,8 @@ class GalleryCubit extends Cubit<GalleryState> {
     Map<String, String>? devicePluginPaths,
   }) async {
     if (_loading) return;
+    _devicePluginGuids = devicePluginGuids;
+    _devicePluginPaths = devicePluginPaths;
     _loading = true;
     try {
       final current = state;

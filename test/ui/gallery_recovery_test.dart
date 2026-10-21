@@ -5,6 +5,8 @@ import 'dart:ui' show Tristate;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/gallery_cache_storage.dart';
@@ -263,7 +265,9 @@ void main() {
           () => StorageFixture.create(docs),
         ))!;
         final original = File(p.join(docs.path, 'gallery_cache.json'))
-          ..writeAsStringSync(cache('Retained plugin'));
+          ..writeAsStringSync(
+            cache('Retained plugin', stable: externalRetry ? '1.0.0' : null),
+          );
         final bytes = original.readAsBytesSync();
         await tester.runAsync(
           () => getAppDirectory(
@@ -337,6 +341,18 @@ void main() {
               .isHeader,
           isTrue,
         );
+        if (externalRetry) {
+          final cubit = tester
+              .element(find.text('Gallery temporarily unavailable'))
+              .read<GalleryCubit>();
+          await tester.runAsync(
+            () => cubit.loadGallery(
+              devicePluginGuids: {'TEST'},
+              devicePluginPaths: {'TEST': '/programs/lua/fixture.lua'},
+            ),
+          );
+          await tester.pump();
+        }
         final titleRect = tester.getRect(
           find.text('Gallery temporarily unavailable'),
         );
@@ -380,6 +396,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Gallery temporarily unavailable'), findsNothing);
         expect(find.text('Retained plugin'), findsOneWidget);
+        if (externalRetry) expect(find.byTooltip('Update'), findsOneWidget);
         expect(
           tester.getRect(find.byTooltip('Install from File')),
           installRect,
