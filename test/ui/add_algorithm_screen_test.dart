@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -229,6 +230,185 @@ void main() {
       videoStream: null,
     );
   }
+
+  group('AddAlgorithmScreen algorithm identity', () {
+    AlgorithmInfo attenuverter({int index = 3, int channels = 8}) {
+      return AlgorithmInfo(
+        algorithmIndex: index,
+        guid: 'attu',
+        name: 'Attenuverter',
+        specifications: [
+          Specification(
+            name: 'Channels',
+            min: 1,
+            max: 8,
+            defaultValue: channels,
+            type: 0,
+          ),
+        ],
+      );
+    }
+
+    tearDown(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    for (final mode in AlgorithmViewMode.values) {
+      for (final offline in [false, true]) {
+        testWidgets(
+          '${mode.name} shows one choice per GUID when offline=$offline',
+          (tester) async {
+            final semantics = tester.ensureSemantics();
+            try {
+              SharedPreferences.setMockInitialValues({
+                'add_algorithm_view_mode': mode.index,
+              });
+              final algorithms = [
+                mockFactoryAlgorithm,
+                attenuverter(),
+                attenuverter(index: 9),
+              ];
+              when(
+                () => mockCubit.state,
+              ).thenReturn(synchronizedWith(algorithms, offline: offline));
+              when(
+                () => mockCubit.stream,
+              ).thenAnswer((_) => const Stream.empty());
+
+              await tester.pumpWidget(createTestWidget());
+              await tester.pumpAndSettle();
+
+              expect(find.text('Attenuverter'), findsOneWidget);
+              expect(find.bySemanticsLabel('Clock'), findsOneWidget);
+              expect(find.text('Showing 2 of 2 algorithms'), findsOneWidget);
+              expect(find.bySemanticsLabel('Attenuverter'), findsOneWidget);
+              await tester.tap(find.text('Attenuverter'));
+              await tester.pumpAndSettle();
+              final selected = tester
+                  .getSemantics(find.bySemanticsLabel('Attenuverter'))
+                  .getSemanticsData();
+              expect(selected.flagsCollection.isButton, isTrue);
+              expect(selected.flagsCollection.isSelected, Tristate.isTrue);
+              expect(selected.hint, 'Double tap to deselect');
+              expect(algorithms, hasLength(3));
+            } finally {
+              semantics.dispose();
+            }
+          },
+        );
+      }
+
+      testWidgets('${mode.name} keeps refreshed choices unique and selected', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({
+          'add_algorithm_view_mode': mode.index,
+        });
+        final states = StreamController<DistingState>.broadcast();
+        addTearDown(states.close);
+        var state = synchronizedWith([attenuverter(), mockFactoryAlgorithm]);
+        when(() => mockCubit.state).thenAnswer((_) => state);
+        when(() => mockCubit.stream).thenAnswer((_) => states.stream);
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Attenuverter'));
+        await tester.pumpAndSettle();
+        final searchRect = tester.getRect(find.byType(TextField));
+        final countRect = tester.getRect(
+          find.text('Showing 2 of 2 algorithms'),
+        );
+
+        state = synchronizedWith([
+          mockFactoryAlgorithm,
+          attenuverter(channels: 4),
+          attenuverter(index: 9),
+        ]);
+        states.add(state);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Attenuverter'), findsOneWidget);
+        expect(find.text('Showing 2 of 2 algorithms'), findsOneWidget);
+        expect(tester.getRect(find.byType(TextField)), searchRect);
+        expect(
+          tester.getRect(find.text('Showing 2 of 2 algorithms')),
+          countRect,
+        );
+        expect(
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+          findsOneWidget,
+        );
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<TextFormField>(find.byKey(const ValueKey('attu_spec_0')))
+              .controller
+              ?.text,
+          '8',
+        );
+      });
+    }
+
+    testWidgets(
+      'same names with different case-sensitive GUIDs stay distinct',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final factory = attenuverter();
+        final community = AlgorithmInfo(
+          algorithmIndex: 10,
+          guid: 'AtTu',
+          name: 'Attenuverter',
+          specifications: const [],
+          isPlugin: true,
+        );
+        when(() => mockCubit.state).thenReturn(
+          synchronizedWith([factory, community, attenuverter(index: 9)]),
+        );
+        when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Attenuverter'), findsNWidgets(2));
+        await tester.tap(find.text('Attenuverter').last);
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+              .where((chip) => chip.selected),
+          hasLength(1),
+        );
+      },
+    );
+
+    testWidgets('Add retains the first GUID entry and its specifications', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      Object? routeResult;
+      final first = attenuverter(index: 12, channels: 6);
+      when(() => mockCubit.state).thenReturn(
+        synchronizedWith([first, attenuverter(index: 3, channels: 2)]),
+      );
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+      await tester.pumpWidget(
+        createRouteTestWidget((result) => routeResult = result),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Add Algorithm'));
+      await tester.pumpAndSettle();
+      expect(find.text('Attenuverter'), findsOneWidget);
+      await tester.tap(find.text('Attenuverter'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Algorithm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      final result = routeResult as Map<String, dynamic>;
+      expect(result['algorithm'], same(first));
+      expect(result['specValues'], [6]);
+    });
+  });
 
   group('AddAlgorithmScreen Plugin Loading', () {
     testWidgets('displays Load Plugin button for unloaded plugin', (
