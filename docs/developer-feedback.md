@@ -39,16 +39,20 @@ build failures remain visible. Superseded runs are cancelled by ref; the final
 including all matrix entries. A failed, skipped, or cancelled dependency cannot
 produce a green aggregate.
 
-Runner mapping comes from `tag-build.yml`, corroborated against the organization
-runner API on 2026-10-21:
+Only analysis and the full Flutter suite use GitHub-hosted infrastructure.
+All platform builds retain the existing self-hosted routes from `tag-build.yml`,
+corroborated against the organization runner API on 2026-10-21. Hosted build
+minutes are expensive; do not move builds or add hosted build fallbacks.
 
 | Work | Labels | Registered machine |
 | --- | --- | --- |
-| Analysis, full tests, aggregate, Linux, Android | self-hosted, Linux, X64 | dev |
+| Analysis, full tests | ubuntu-24.04 | GitHub-hosted Ubuntu |
+| Aggregate, Linux, Android | self-hosted, Linux, X64 | dev |
 | Windows | self-hosted, Windows, X64 | dev-Windows |
 | macOS, iOS | self-hosted, macOS, ARM64 | MacBookPro |
 
-The jobs share existing single-machine capacity and may queue. Linux native
+The self-hosted jobs share existing single-machine capacity and may queue;
+full-suite validation runs independently on GitHub-hosted Ubuntu. Linux native
 prerequisite checks, JDK 17 / Android NDK / UVCCamera setup, Windows x64, and
 Xcode 27 follow the release configuration. Android CI uses a debug APK to avoid
 the required release keystore; macOS and iOS compile without signing. These are

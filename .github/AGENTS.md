@@ -10,6 +10,9 @@ one analysis/full-suite job, then platform builds, then an always-running
 Keep all five existing platforms, explicit runner OS/architecture labels,
 `fail-fast: false`, and no tolerated failures. Generate ignored Dart outputs in
 each clean checkout. Build jobs must not rerun the full test suite.
+Only the analysis/full-suite job uses GitHub-hosted infrastructure. Keep every
+platform build and the aggregate on their existing self-hosted routes; hosted
+build minutes are expensive. Do not add hosted build fallbacks.
 
 Validate workflow edits with `actionlint .github/workflows/ci.yml` and
 `git diff --check`; inspect the triggered run after pushing. YAML is not branch

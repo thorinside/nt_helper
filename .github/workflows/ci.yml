@@ -20,7 +20,8 @@ env:
 jobs:
   test:
     name: Analyze and full Flutter suite
-    runs-on: [self-hosted, Linux, X64]
+    # Only full-suite validation uses hosted minutes; builds retain owner hardware.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
