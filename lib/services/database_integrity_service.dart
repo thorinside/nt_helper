@@ -23,11 +23,20 @@ class DatabaseIntegrityService {
 
   static Future<File> getDatabaseFile() async {
     final dbFolder = await getAppDirectory();
-    return File(p.join(dbFolder.path, _dbFileName));
+    return selectedLibrary?.file ?? File(p.join(dbFolder.path, _dbFileName));
   }
 
   static Future<DatabaseIntegrityResult> checkIntegrity() async {
     final file = await getDatabaseFile();
+    final selected = selectedLibrary;
+    if (selected != null) {
+      // macOS selection has already validated the actual AppDatabase. Reopen
+      // the bound identity, propagating access/native/missing failures instead
+      // of sending them through the historical delete-and-create fallback.
+      final database = await selected.open();
+      await database.close();
+      return const DatabaseIntegrityResult(isCorrupt: false, fileExists: true);
+    }
     if (!file.existsSync()) {
       return const DatabaseIntegrityResult(isCorrupt: false, fileExists: false);
     }
