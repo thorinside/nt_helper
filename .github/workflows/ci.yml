@@ -1,0 +1,148 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.44.9'
+  ANDROID_NDK_VERSION: '27.0.12077973'
+
+jobs:
+  test:
+    name: Analyze and full Flutter suite
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter analyze --no-pub --fatal-infos
+      - name: Full Flutter suite
+        if: ${{ !cancelled() }}
+        run: flutter test --no-pub
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: test
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: [self-hosted, Linux, X64]
+            architecture: x64
+          - platform: android
+            runner: [self-hosted, Linux, X64]
+            architecture: x64
+          - platform: windows
+            runner: [self-hosted, Windows, X64]
+            architecture: x64
+          - platform: macos
+            runner: [self-hosted, macOS, ARM64]
+            architecture: arm64
+          - platform: ios
+            runner: [self-hosted, macOS, ARM64]
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Select Xcode 27
+        if: matrix.platform == 'macos' || matrix.platform == 'ios'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '27'
+      - uses: actions/setup-java@v4
+        if: matrix.platform == 'android'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: ${{ matrix.architecture }}
+      - name: Install Android NDK
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          # Avoid yes exiting with SIGPIPE under Actions' pipefail.
+          "$SDKMANAGER" --install "ndk;${ANDROID_NDK_VERSION}"
+          test -d "${SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}"
+      - name: Build UVCCamera dependency
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          UVCCAMERA_DIR="$(mktemp -d "$RUNNER_TEMP/UVCCamera.XXXXXX")"
+          git clone --branch feature/16kb-page-size-compliance --single-branch \
+            https://github.com/DigifinityLtd/UVCCamera.git "$UVCCAMERA_DIR"
+          cd "$UVCCAMERA_DIR"
+          ./gradlew :lib:assembleRelease
+          ./gradlew :lib:publishToMavenLocal
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - name: Verify Linux dependencies
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          for command in clang cmake ninja pkg-config; do
+            command -v "$command"
+          done
+          for package in gtk+-3.0 liblzma gstreamer-1.0 gstreamer-app-1.0; do
+            pkg-config --exists "$package"
+          done
+      - name: Build Linux
+        if: matrix.platform == 'linux'
+        run: flutter build linux --release --no-pub
+      - name: Build Android without release signing
+        if: matrix.platform == 'android'
+        run: flutter build apk --debug --no-pub
+      - name: Build Windows
+        if: matrix.platform == 'windows'
+        run: flutter build windows --release --no-pub
+      - name: Build macOS without signing
+        if: matrix.platform == 'macos'
+        run: |
+          flutter build macos --release --no-pub --config-only
+          (cd macos && pod install)
+          xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner \
+            -configuration Release -derivedDataPath build/macos \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: Build iOS without signing
+        if: matrix.platform == 'ios'
+        run: flutter build ios --release --no-codesign --no-pub
+
+  ci-success:
+    name: CI success
+    if: always()
+    needs: [test, build]
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Require all tests and platform builds
+        env:
+          TEST_RESULT: ${{ needs.test.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          test "$TEST_RESULT" = success
+          test "$BUILD_RESULT" = success

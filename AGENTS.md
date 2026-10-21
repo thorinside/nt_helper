@@ -95,9 +95,22 @@ tools only for PR/merge work, and corroborate current GitHub status separately.
 
 ```
 flutter analyze          # Must pass with zero warnings
-flutter test             # Run before commits
+flutter test test/path/to/affected_test.dart --no-pub  # Tight local loop
 flutter run -d macos --print-dtd   # Run with DTD URL for MCP connection
 ```
+
+For local iteration, select the affected test file(s), then the related test
+folder when shared behavior changes; use `--plain-name 'test name'` to isolate a
+failure. Run `dart format --output=none --set-exit-if-changed <changed Dart files>`
+and `flutter analyze --no-pub` for Dart changes. Preserve regression tests and
+assertions: narrow selection, not coverage. Docs/workflow-only edits need link,
+diff, and workflow validation rather than an unrelated Flutter suite.
+
+Before committing, run relevant checks and report the exact commands and limits.
+The full `flutter test --no-pub` suite runs once per CI run on every PR and branch
+push; it is not required after every local edit. Releases still require the full
+local suite on the release commit. See `test/AGENTS.md` for selection examples and
+`docs/developer-feedback.md` for CI routing and merge-protection requirements.
 
 ## Updating Flutter (fvm)
 
