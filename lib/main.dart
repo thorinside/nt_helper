@@ -12,7 +12,9 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/debug_poly_sample_upload_command.dart';
 import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
-import 'package:nt_helper/services/database_integrity_service.dart';
+import 'package:nt_helper/services/startup_controller.dart';
+import 'package:nt_helper/services/startup_storage_opener.dart';
+import 'package:nt_helper/ui/startup_recovery_app.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
@@ -90,6 +92,8 @@ class _WindowBoundsManager with WindowListener {
 final _windowBoundsManager = _WindowBoundsManager();
 
 bool _hasRunAppSuccessfully = false;
+StartupController? _startup;
+bool get _processClosing => _startup?.closed ?? false;
 
 void main(List<String> args) {
   StartupLogService.initialize();
@@ -178,6 +182,34 @@ Future<void> _bootstrapApp(List<String> args) async {
     }
   }
 
+  final opener = StartupStorageOpener();
+  final startup = StartupController(
+    open: opener.open,
+    canSelectLegacyDirectory: () => opener.legacyAccessDirectory != null,
+    activationSteps: [
+      (database) => AlgorithmMetadataService().initialize(database),
+      (_) => RoutingServiceLocator.setup(),
+    ],
+  );
+
+  _startup = startup;
+  // Install before any storage await, including the first attempt.
+  _windowEventsChannel.setMethodCallHandler((call) async {
+    if (call.method != 'windowWillClose') return null;
+    // Invalidates pending admission and window-show callbacks immediately.
+    final settled = startup.close();
+    try {
+      await settled;
+    } finally {
+      try {
+        if (_isDesktop) await McpServerService.instance.stop();
+      } finally {
+        await RoutingServiceLocator.reset();
+      }
+    }
+    return true;
+  });
+
   // Initialize window_manager on desktop platforms
   Rect? savedBounds;
   if (_isDesktop) {
@@ -230,109 +262,31 @@ Future<void> _bootstrapApp(List<String> args) async {
     );
   }
 
-  // Check database integrity before opening
-  final integrityResult = await StartupLogService.traceAsync(
-    'DatabaseIntegrityService.checkIntegrity',
-    DatabaseIntegrityService.checkIntegrity,
-  );
-  StartupLogService.log(
-    'Database integrity: fileExists=${integrityResult.fileExists}, '
-    'isCorrupt=${integrityResult.isCorrupt}, error=${integrityResult.error}',
-  );
-  if (integrityResult.isCorrupt) {
-    await StartupLogService.traceAsync(
-      'DatabaseIntegrityService.deleteDatabase',
-      DatabaseIntegrityService.deleteDatabase,
-    );
-  }
+  await SettingsService().init();
+  if (_processClosing) return;
+  await NodePositionsPersistenceService().init();
+  if (_processClosing) return;
 
-  final database = StartupLogService.traceSync(
-    'AppDatabase()',
-    AppDatabase.new,
-  );
-  await StartupLogService.traceAsync(
-    'SettingsService.init',
-    SettingsService().init,
-  );
-  await StartupLogService.traceAsync(
-    'NodePositionsPersistenceService.init',
-    NodePositionsPersistenceService().init,
-  );
-  await StartupLogService.traceAsync(
-    'AlgorithmMetadataService.initialize',
-    () => AlgorithmMetadataService().initialize(database),
-  );
-
-  // Initialize routing dependencies
-  await StartupLogService.traceAsync(
-    'RoutingServiceLocator.setup',
-    RoutingServiceLocator.setup,
-  );
-
-  StartupLogService.log('Calling runApp');
   runApp(
-    MultiProvider(
-      providers: [
-        RepositoryProvider<AppDatabase>(create: (context) => database),
-        ChangeNotifierProvider(create: (_) => InAppLogger()),
-      ],
-      child: DistingApp(),
+    StartupRecoveryApp(
+      controller: startup,
+      normalBuilder: (_) => MultiProvider(
+        providers: [
+          RepositoryProvider<AppDatabase>.value(value: startup.database),
+          ChangeNotifierProvider(create: (_) => InAppLogger()),
+        ],
+        child: DistingApp(startupStorageLocation: startup.location),
+      ),
     ),
   );
   _hasRunAppSuccessfully = true;
-  StartupLogService.log('runApp returned');
 
-  // Show window after first frame renders to avoid white flash
-  if (_isDesktop) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      StartupLogService.log('First frame rendered; showing desktop window');
-      unawaited(_showDesktopWindow('normal startup'));
-    });
-  }
-
-  // Set up the method call handler for _windowEventsChannel
-  _windowEventsChannel.setMethodCallHandler((call) async {
-    if (call.method == 'windowWillClose') {
-      StartupLogService.log('windowWillClose received');
-      // Bounds are already saved by _WindowBoundsManager on move/resize
-      if (_isDesktop) {
-        try {
-          await McpServerService.instance.stop();
-        } catch (error, stackTrace) {
-          StartupLogService.logError(
-            'McpServerService.stop failed during shutdown',
-            error,
-            stackTrace,
-          );
-        }
-      }
-
-      try {
-        await database.close();
-      } catch (error, stackTrace) {
-        StartupLogService.logError(
-          'Database close failed during shutdown',
-          error,
-          stackTrace,
-        );
-      }
-
-      try {
-        await RoutingServiceLocator.reset();
-      } catch (error, stackTrace) {
-        StartupLogService.logError(
-          'RoutingServiceLocator.reset failed during shutdown',
-          error,
-          stackTrace,
-        );
-      }
-
-      StartupLogService.log('windowWillClose completed');
-      return true; // Signal Swift to proceed with close
-    }
-    return null;
+  // The recovery shell, not storage readiness, controls first window visibility.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (_processClosing) return;
+    if (_isDesktop) unawaited(_showDesktopWindow('library recovery'));
+    unawaited(startup.retry());
   });
-  StartupLogService.log('Window events MethodChannel handler installed');
 
   _zoomHotkeysChannel.setMethodCallHandler((call) async {
     switch (call.method) {
@@ -406,12 +360,15 @@ void _installGlobalErrorHandlers() {
 }
 
 Future<void> _showDesktopWindow(String reason) async {
+  if (_processClosing) return;
   try {
     if (Platform.isWindows) {
       _videoPopupDebugLog('_showDesktopWindow start reason=$reason');
     }
     await windowManager.ensureInitialized();
+    if (_processClosing) return;
     await windowManager.show();
+    if (_processClosing) return;
     await windowManager.focus();
     if (Platform.isWindows) {
       _videoPopupDebugLog('_showDesktopWindow done reason=$reason');
@@ -427,6 +384,7 @@ Future<void> _showDesktopWindow(String reason) async {
 }
 
 void _showStartupFailure(Object error, StackTrace stackTrace) {
+  if (_processClosing) return;
   try {
     WidgetsFlutterBinding.ensureInitialized();
     runApp(_StartupFailureApp(error: error, stackTrace: stackTrace));
@@ -470,7 +428,7 @@ class _StartupFailureApp extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Please send the startup log file and the error below to the nt_helper developer.',
+                  'Process setup could not complete. The operation details and startup log are shown below. No replacement library was admitted.',
                 ),
                 const SizedBox(height: 12),
                 SelectableText('Startup log: $logPath'),

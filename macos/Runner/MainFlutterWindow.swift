@@ -18,6 +18,48 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 
+    let accessChannel = FlutterMethodChannel(
+      name: "com.nt_helper.app/legacy_storage_access",
+      binaryMessenger: flutterViewController.engine.binaryMessenger)
+    var legacyAccessURL: URL?
+    accessChannel.setMethodCallHandler { [weak self] call, result in
+      if call.method == "release" {
+        legacyAccessURL?.stopAccessingSecurityScopedResource()
+        legacyAccessURL = nil
+        result(nil)
+        return
+      }
+      guard call.method == "select", let path = call.arguments as? String,
+            let window = self else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      let expected = URL(fileURLWithPath: path).standardizedFileURL
+      let panel = NSOpenPanel()
+      panel.canChooseDirectories = true
+      panel.canChooseFiles = false
+      panel.allowsMultipleSelection = false
+      panel.canCreateDirectories = false
+      panel.directoryURL = expected
+      panel.message = "Select the reported legacy folder for library and recovery-file access. This does not guarantee access will be permitted."
+      panel.beginSheetModal(for: window) { response in
+        guard response == .OK, let url = panel.url else {
+          result(false)
+          return
+        }
+        guard url.standardizedFileURL == expected else {
+          result(FlutterError(code: "wrong-folder", message: "Select the reported legacy folder; no alternate library will be imported.", details: nil))
+          return
+        }
+        if url.startAccessingSecurityScopedResource() {
+          legacyAccessURL = url
+        }
+        // Non-sandboxed builds may not need an explicit scope. The real
+        // storage attempt, never the picker response, decides access/readiness.
+        result(true)
+      }
+    }
+
     // Register custom plugins
     UsbVideoCapturePlugin.register(with: flutterViewController.registrar(forPlugin: "com.example.nt_helper.UsbVideoCapturePlugin"))
     FlutterMultiWindowPlugin.setOnWindowCreatedCallback { registry in

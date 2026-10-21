@@ -71,7 +71,7 @@ final class SelectedLibrary {
         rethrow;
       }
     } catch (error) {
-      throw _classify(error, 'Cannot reopen selected library');
+      throw classifyStorageFailure(error, 'Cannot reopen selected library');
     }
   }
 
@@ -85,7 +85,7 @@ final class SelectedLibrary {
       return app;
     } catch (error) {
       await app.close();
-      throw _classify(error, 'Cannot open selected library schema');
+      throw classifyStorageFailure(error, 'Cannot open selected library schema');
     }
   }
 }
@@ -188,7 +188,19 @@ final class MacosLibraryStorage {
           // RESERVED in rollback mode, WAL write lock in WAL mode: excludes
           // *future writers*, unlike a read snapshot. Use a separate reader for
           // backup because SQLite cannot back up a source write transaction.
-          raw.execute('BEGIN IMMEDIATE');
+          try {
+            raw.execute('BEGIN IMMEDIATE');
+          } on SqliteException catch (error) {
+            if ((sources.length > 1 || source == paths.last) &&
+                [11, 26].contains(error.resultCode & 0xff)) {
+              throw StorageFailure(
+                StorageFailureKind.uncertain,
+                'Unselected candidate cannot establish library authority: $source; all files are retained',
+                error,
+              );
+            }
+            rethrow;
+          }
           if (MacosStorageIo.identity(source) != inventory[source]) {
             throw const StorageFailure(
               StorageFailureKind.uncertain,
@@ -310,7 +322,7 @@ final class MacosLibraryStorage {
       });
       return result;
     } catch (error) {
-      throw _classify(error, 'Library selection did not complete');
+      throw classifyStorageFailure(error, 'Library selection did not complete');
     } finally {
       _release(locked);
       files.close();
@@ -782,7 +794,7 @@ void _release(List<Database> locked) {
   locked.clear();
 }
 
-StorageFailure _classify(Object error, String operation) {
+StorageFailure classifyStorageFailure(Object error, String operation) {
   if (error is StorageFailure) return error;
   if (error is SqliteException) {
     final kind = switch (error.resultCode & 0xff) {
