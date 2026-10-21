@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/startup_storage_opener.dart';
+import 'package:nt_helper/services/macos_library_storage.dart';
 
 /// One observable startup lifecycle: settled storage retries, then once-only
 /// service activation. Closing synchronously invalidates every pending result.
@@ -33,6 +34,7 @@ class StartupController extends ChangeNotifier {
       canRetry && (canSelectLegacyDirectory?.call() ?? false);
   AppDatabase get database => _library!.database;
   String? get location => _library?.location;
+  LibraryRecovery? get recovery => _library?.recovery;
 
   Future<void> retry({bool selectLegacyDirectory = false}) {
     if (_pending != null) return _pending!;

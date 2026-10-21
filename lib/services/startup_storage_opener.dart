@@ -9,9 +9,10 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 class OpenedStartupLibrary {
-  const OpenedStartupLibrary(this.database, {this.location});
+  const OpenedStartupLibrary(this.database, {this.location, this.recovery});
   final AppDatabase database;
   final String? location;
+  final LibraryRecovery? recovery;
 }
 
 /// Resolves authority on macOS; other platforms retain their storage policy.
@@ -85,7 +86,11 @@ class StartupStorageOpener {
             ? AppDatabase()
             : await selected.open(checkpoint: checkpoint);
         await database.select(database.algorithms).get();
-        return OpenedStartupLibrary(database, location: selected?.file.path);
+        return OpenedStartupLibrary(
+          database,
+          location: selected?.file.path,
+          recovery: selected?.recovery,
+        );
       } finally {
         // prepare() has released source exclusion and closed source resources.
         if (accessRequested) await releaseAccess();

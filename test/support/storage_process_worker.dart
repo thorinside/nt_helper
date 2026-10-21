@@ -45,6 +45,7 @@ Future<void> main() async {
     File(p.join(root, 'result-$pid')).writeAsStringSync(
       jsonEncode({
         'selected': selectedLibrary!.file.path,
+        'recovery': selectedLibrary!.recovery?.name,
         'contents': data,
         'reached': reached,
       }),

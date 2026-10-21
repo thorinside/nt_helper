@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:drift/native.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/services/database_integrity_service.dart';
 import 'package:nt_helper/services/macos_storage_io.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
@@ -37,23 +38,37 @@ final class StorageFailure implements Exception {
 /// Each persistent operation is bracketed; throwing never deletes failed work.
 typedef StorageCheckpoint = Future<void> Function(String boundary);
 
+enum LibraryRecovery { repaired, freshAfterDamage }
+
 /// The selected file is never opened with CREATE. Identity is checked on every
 /// reopen, including in the ordinary Drift opener. No legacy access is needed.
 final class SelectedLibrary {
-  SelectedLibrary._(this.file, this.identity, this.journalIdentity);
+  SelectedLibrary._(
+    this.file,
+    this.identity,
+    this.journalIdentity,
+    this.attempt, [
+    this.recovery,
+  ]);
   final File file;
   final String identity;
   final String journalIdentity;
+  final String attempt;
+  final LibraryRecovery? recovery;
+
+  void _requireIdentity() {
+    if (MacosStorageIo.identity(file.path) != identity ||
+        MacosStorageIo.identity('${file.path}-journal') != journalIdentity) {
+      throw const StorageFailure(
+        StorageFailureKind.uncertain,
+        'Selected library or its retained recovery journal is missing or replaced; restore the same identity and Retry',
+      );
+    }
+  }
 
   Database openRaw() {
     try {
-      if (MacosStorageIo.identity(file.path) != identity ||
-          MacosStorageIo.identity('${file.path}-journal') != journalIdentity) {
-        throw const StorageFailure(
-          StorageFailureKind.uncertain,
-          'Selected library or its retained recovery journal is missing or replaced; restore the same identity and Retry',
-        );
-      }
+      _requireIdentity();
       final raw = sqlite3.open(file.path, mode: OpenMode.readWrite);
       try {
         raw.execute(
@@ -85,7 +100,10 @@ final class SelectedLibrary {
       return app;
     } catch (error) {
       await app.close();
-      throw classifyStorageFailure(error, 'Cannot open selected library schema');
+      throw classifyStorageFailure(
+        error,
+        'Cannot open selected library schema',
+      );
     }
   }
 }
@@ -134,26 +152,37 @@ final class MacosLibraryStorage {
       });
       final selected = _readSelection();
       if (selected != null) {
-        await _effect('open', () async {
-          final app = await selected.open(checkpoint: checkpoint);
-          await app.close();
-        });
-        return selected;
+        selected._requireIdentity();
+        final damaged = await _effect(
+          'inspect-selected',
+          () async => _inspectSource(selected.file.path, files),
+        );
+        if (!damaged) {
+          files.close();
+          await _effect('open', () async {
+            final app = await selected.open(checkpoint: checkpoint);
+            await app.close();
+          });
+          return selected;
+        }
       }
 
-      // An old .migrated marker is not authority. Reinventory on every attempt.
-      final documents = await documentsProvider();
-      final paths = [
-        p.join(documents.path, libraryFileName),
-        p.join(documents.path, 'nt_helper', libraryFileName),
-        p.join(directory.path, libraryFileName),
-      ];
+      // Selected damage never reintroduces a Documents prerequisite. A recovery
+      // successor uses the same owned work and no-replace selection protocol.
+      final documents = selected == null ? await documentsProvider() : null;
+      final paths = selected != null
+          ? [selected.file.path]
+          : [
+              p.join(documents!.path, libraryFileName),
+              p.join(documents.path, 'nt_helper', libraryFileName),
+              p.join(directory.path, libraryFileName),
+            ];
       final inventory = _inventory(paths);
       final sources = inventory.entries
           .where((e) => e.value != null)
           .map((e) => e.key)
           .toList();
-      _checkReceipts(inventory, files);
+      if (selected == null) _checkReceipts(inventory, files);
 
       final attempt = const Uuid().v4();
       final work = Directory(p.join(_control.path, 'work-$attempt'));
@@ -182,20 +211,18 @@ final class MacosLibraryStorage {
           _retain(source, work, 'original-$i', files);
         });
         await _effect('exclude-$i', () async {
-          final raw = sqlite3.open(source, mode: OpenMode.readWrite);
-          locked.add(raw);
-          raw.execute('PRAGMA busy_timeout=0');
-          // RESERVED in rollback mode, WAL write lock in WAL mode: excludes
-          // *future writers*, unlike a read snapshot. Use a separate reader for
-          // backup because SQLite cannot back up a source write transaction.
           try {
+            final raw = sqlite3.open(source, mode: OpenMode.readWrite);
+            locked.add(raw);
+            raw.execute('PRAGMA busy_timeout=0');
+            // RESERVED in rollback mode, WAL write lock in WAL mode: excludes
+            // future writers. A failed lock/inspection is not damage authority.
             raw.execute('BEGIN IMMEDIATE');
           } on SqliteException catch (error) {
-            if ((sources.length > 1 || source == paths.last) &&
-                [11, 26].contains(error.resultCode & 0xff)) {
+            if (DatabaseIntegrityService.isDatabaseCorruptionError(error)) {
               throw StorageFailure(
                 StorageFailureKind.uncertain,
-                'Unselected candidate cannot establish library authority: $source; all files are retained',
+                'Cannot establish library authority through coherent exclusive inspection: $source; all files are retained',
                 error,
               );
             }
@@ -218,29 +245,58 @@ final class MacosLibraryStorage {
       };
       String? expected;
       File? destination;
+      LibraryRecovery? recovery;
       for (var i = 0; i < sources.length; i++) {
         final copy = File(
           p.join(work.path, i == 0 ? libraryFileName : 'comparison-$i.sqlite'),
         );
-        await _effect('transfer-$i', () async {
-          final reader = sqlite3.open(sources[i], mode: OpenMode.readOnly);
-          Database? target;
-          try {
-            target = sqlite3.open(copy.path);
-            await for (final _ in reader.backup(target, nPage: 8)) {
-              await _at('during:transfer-$i');
-            }
-          } finally {
-            target?.close();
-            reader.close();
-          }
-          MacosStorageIo.sync(copy.path);
-          MacosStorageIo.sync(work.path);
-        });
-        final semantic = await _effect(
-          'schema-$i',
-          () => _validate(copy, checkpoint: checkpoint),
+        final damaged = await _effect(
+          'inspect-$i',
+          () async => _inspectSource(sources[i], files),
         );
+        var transferSource = sources[i];
+        if (damaged) {
+          if (sources.length != 1) {
+            throw const StorageFailure(
+              StorageFailureKind.uncertain,
+              'Damage in competing unselected stores cannot establish sole authority; all files are retained',
+            );
+          }
+          final repaired = await _effect('repair', () async {
+            _retain(sources[i], work, 'repair', files);
+            final repair = File(p.join(work.path, 'repair', libraryFileName));
+            return _repair(repair, checkpoint: checkpoint);
+          });
+          if (!repaired) {
+            recovery = LibraryRecovery.freshAfterDamage;
+            break; // Only confirmed source damage AND failed safe repair.
+          }
+          recovery = LibraryRecovery.repaired;
+          transferSource = p.join(work.path, 'repair', libraryFileName);
+        }
+        late final String semantic;
+        try {
+          await _effect('transfer-$i', () async {
+            await _backup(
+              transferSource,
+              copy,
+              () => _at('during:transfer-$i'),
+            );
+            MacosStorageIo.sync(copy.path);
+            MacosStorageIo.sync(work.path);
+          });
+          semantic = await _effect(
+            'schema-$i',
+            () => _validate(copy, checkpoint: checkpoint),
+          );
+        } catch (error) {
+          if (!_positiveDamage(error)) rethrow;
+          throw StorageFailure(
+            StorageFailureKind.uncertain,
+            'Isolated transfer or validation failed; source damage was not established by this failure',
+            error,
+          );
+        }
         if (expected != null && expected != semantic) {
           throw const StorageFailure(
             StorageFailureKind.uncertain,
@@ -293,6 +349,8 @@ final class MacosLibraryStorage {
         destination,
         MacosStorageIo.identity(destination.path)!,
         MacosStorageIo.identity('${destination.path}-journal')!,
+        attempt,
+        recovery,
       );
       await _effect('selection', () async {
         _requireInventory(paths, inventory);
@@ -304,13 +362,20 @@ final class MacosLibraryStorage {
             );
           }
         }
-        await _publish('selected.json', {
-          'version': 1,
-          'file': p.relative(result.file.path, from: _control.path),
-          'identity': result.identity,
-          'journalIdentity': result.journalIdentity,
-          'attempt': attempt,
-        });
+        await _publish(
+          selected == null
+              ? 'selected.json'
+              : 'selected-${selected.attempt}.json',
+          {
+            'version': 1,
+            if (selected != null) 'predecessor': selected.attempt,
+            if (recovery != null) 'recovery': recovery.name,
+            'file': p.relative(result.file.path, from: _control.path),
+            'identity': result.identity,
+            'journalIdentity': result.journalIdentity,
+            'attempt': attempt,
+          },
+        );
       });
       // Cutover is durable before exclusion is released. Never keep a lifetime
       // Documents lease, and never consult it on the selected path.
@@ -331,34 +396,60 @@ final class MacosLibraryStorage {
   }
 
   SelectedLibrary? _readSelection() {
-    final path = p.join(_control.path, 'selected.json');
-    if (MacosStorageIo.identity(path) == null) return null;
-    final record = _readRecord(path);
-    final relative = record['file'];
-    final attempt = record['attempt'];
-    if (relative is! String ||
-        attempt is! String ||
-        !RegExp(r'^[a-f0-9-]{36}$').hasMatch(attempt) ||
-        relative != p.join('work-$attempt', libraryFileName) ||
-        record['identity'] is! String ||
-        record['journalIdentity'] is! String) {
-      throw const StorageFailure(
-        StorageFailureKind.uncertain,
-        'Malformed selected authority',
+    var path = p.join(_control.path, 'selected.json');
+    SelectedLibrary? previous;
+    final seen = <String>{};
+    while (MacosStorageIo.identity(path) != null) {
+      final record = _readRecord(path);
+      final relative = record['file'];
+      final attempt = record['attempt'];
+      if (relative is! String ||
+          attempt is! String ||
+          !RegExp(r'^[a-f0-9-]{36}$').hasMatch(attempt) ||
+          relative != p.join('work-$attempt', libraryFileName) ||
+          record['identity'] is! String ||
+          record['journalIdentity'] is! String) {
+        throw const StorageFailure(
+          StorageFailureKind.uncertain,
+          'Malformed selected authority',
+        );
+      }
+      final receipt = _readRecord(
+        p.join(_control.path, 'attempt-$attempt.json'),
       );
-    }
-    final receipt = _readRecord(p.join(_control.path, 'attempt-$attempt.json'));
-    if (receipt['attempt'] != attempt || receipt['work'] != 'work-$attempt') {
-      throw const StorageFailure(
-        StorageFailureKind.uncertain,
-        'Contradictory selected authority',
+      if (receipt['attempt'] != attempt || receipt['work'] != 'work-$attempt') {
+        throw const StorageFailure(
+          StorageFailureKind.uncertain,
+          'Contradictory selected authority',
+        );
+      }
+      final recoveryName = record['recovery'];
+      final recovery = recoveryName == null
+          ? null
+          : LibraryRecovery.values
+                .where((r) => r.name == recoveryName)
+                .firstOrNull;
+      if (!seen.add(attempt) ||
+          (recoveryName != null && recovery == null) ||
+          record['predecessor'] != previous?.attempt ||
+          (previous != null &&
+              (receipt['sources'] as Map?)?[previous.file.path] !=
+                  previous.identity)) {
+        throw const StorageFailure(
+          StorageFailureKind.uncertain,
+          'Contradictory recovery selection authority',
+        );
+      }
+      previous = SelectedLibrary._(
+        File(p.join(_control.path, relative)),
+        record['identity'] as String,
+        record['journalIdentity'] as String,
+        attempt,
+        recovery,
       );
+      path = p.join(_control.path, 'selected-$attempt.json');
     }
-    return SelectedLibrary._(
-      File(p.join(_control.path, relative)),
-      record['identity'] as String,
-      record['journalIdentity'] as String,
-    );
+    return previous;
   }
 
   void _checkReceipts(Map<String, String?> inventory, _SourceFiles files) {
@@ -443,7 +534,7 @@ final class MacosLibraryStorage {
     );
     // A kill after the temp file is written but before its atomic publication
     // is explicitly tested. Such a temp is never parsed as authority.
-    final kind = name == 'selected.json' ? 'selection' : 'reservation';
+    final kind = name.startsWith('selected') ? 'selection' : 'reservation';
     await MacosStorageIo.publish(
       temp,
       p.join(_control.path, name),
@@ -566,11 +657,20 @@ Map<String, Object?> _recoveryReceipt(String source, _SourceFiles files) {
   final wal = MacosStorageIo.identity('$source-wal') == null
       ? null
       : files.read('$source-wal');
+  String? semantic;
+  if (wal != null && wal.length > 32) {
+    try {
+      semantic = _recoverySemantics(main, wal);
+    } catch (error) {
+      // Pre-exclusion bytes are retention evidence, never damage authority.
+      // A damaged image can still be retained; missing its WAL later blocks.
+      if (!_positiveDamage(error)) rethrow;
+    }
+  }
   final recovery = {
     'main': sha256.convert(main).toString(),
     'walBytes': wal?.length ?? 0,
-    if (wal != null && wal.length > 32)
-      'walSemantics': _recoverySemantics(main, wal),
+    'walSemantics': ?semantic,
   };
   if (_seal(source, files) != before) {
     throw const StorageFailure(
@@ -585,43 +685,174 @@ Map<String, Object?> _recoveryReceipt(String source, _SourceFiles files) {
 /// Exclusive mode needs no shared WAL index. No original is opened, checkpointed
 /// or closed, and the digest is durable with the very first ownership receipt.
 String _recoverySemantics(Uint8List main, [Uint8List? wal]) {
-  final vfs = InMemoryFileSystem(name: 'nt-recovery-${const Uuid().v4()}');
-  for (final entry in {'': main, '-wal': ?wal}.entries) {
-    final opened = vfs.xOpen(
-      Sqlite3Filename('/library${entry.key}'),
-      SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
-    );
-    opened.file.xWrite(entry.value, 0);
-    opened.file.xClose();
-  }
-  sqlite3.registerVirtualFileSystem(vfs);
-  Database? raw;
+  final image = _RecoveryImage({'': main, '-wal': ?wal});
   try {
-    raw = sqlite3.open('/library', vfs: vfs.name, mode: OpenMode.readWrite);
-    raw.execute('PRAGMA locking_mode=EXCLUSIVE');
-    if (raw
-        .select('PRAGMA integrity_check')
-        .any((r) => r.values.first != 'ok')) {
-      throw const StorageFailure(
-        StorageFailureKind.uncertain,
-        'Cannot establish coherent recovery evidence; originals are retained',
-      );
+    final damage = DatabaseIntegrityService.inspect(image.raw);
+    if (damage != null) {
+      throw StorageFailure(StorageFailureKind.damaged, damage);
     }
-    return _semantics(raw);
-  } on SqliteException catch (error) {
-    // A pre-exclusion copy may race a checkpoint. It is evidence to validate,
-    // not a basis for diagnosing damage to the original authoritative store.
-    if ([11, 26].contains(error.resultCode & 0xff)) {
+    return _semantics(image.raw);
+  } finally {
+    image.close();
+  }
+}
+
+final class _RecoveryImage {
+  _RecoveryImage(Map<String, Uint8List> bytes) {
+    for (final entry in bytes.entries) {
+      final opened = vfs.xOpen(
+        Sqlite3Filename('/library${entry.key}'),
+        SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
+      );
+      opened.file.xWrite(entry.value, 0);
+      opened.file.xClose();
+    }
+    sqlite3.registerVirtualFileSystem(vfs);
+    Database? opened;
+    try {
+      opened = sqlite3.open(
+        '/library',
+        vfs: vfs.name,
+        mode: OpenMode.readWrite,
+      );
+      opened.execute('PRAGMA locking_mode=EXCLUSIVE');
+      raw = opened;
+    } catch (_) {
+      opened?.close();
+      sqlite3.unregisterVirtualFileSystem(vfs);
+      rethrow;
+    }
+  }
+  final vfs = InMemoryFileSystem(name: 'nt-recovery-${const Uuid().v4()}');
+  late final Database raw;
+  void close() {
+    raw.close();
+    sqlite3.unregisterVirtualFileSystem(vfs);
+  }
+}
+
+bool _positiveDamage(Object error) =>
+    (error is StorageFailure && error.kind == StorageFailureKind.damaged) ||
+    DatabaseIntegrityService.isDatabaseCorruptionError(error);
+
+/// Called again under exclusion before damage can authorize anything. Opening
+/// these private bytes cannot checkpoint, repair or remove original sidecars.
+Future<bool> _inspectSource(String source, _SourceFiles files) async {
+  final before = _seal(source, files);
+  final image = _RecoveryImage({
+    '': files.read(source),
+    for (final suffix in ['-wal', '-journal'])
+      if (MacosStorageIo.identity('$source$suffix') != null)
+        suffix: files.read('$source$suffix'),
+  });
+  final app = AppDatabase.forTesting(
+    NativeDatabase.opened(image.raw, closeUnderlyingOnClose: false),
+  );
+  try {
+    try {
+      _checkVersion(image.raw, app);
+    } on SqliteException catch (error) {
+      if (!DatabaseIntegrityService.isDatabaseCorruptionError(error)) rethrow;
       throw StorageFailure(
         StorageFailureKind.uncertain,
-        'Cannot establish coherent recovery evidence; originals are retained',
+        'Cannot establish a supported library schema; originals are retained',
         error,
       );
     }
-    rethrow;
+    bool damaged;
+    try {
+      damaged = DatabaseIntegrityService.inspect(image.raw) != null;
+    } on SqliteException catch (error) {
+      if (!DatabaseIntegrityService.isDatabaseCorruptionError(error)) rethrow;
+      damaged = true;
+    }
+    if (damaged) {
+      // Prove this is a supported library, not an unknown partial or a random
+      // file. AppDatabase owns supported upgrades; LIMIT 0 validates the full
+      // schema without reading damaged table/index pages or losing rows.
+      try {
+        await _querySchema(app, limit: 0);
+      } on SqliteException catch (error) {
+        if (!DatabaseIntegrityService.isDatabaseCorruptionError(error)) rethrow;
+        throw StorageFailure(
+          StorageFailureKind.uncertain,
+          'Cannot validate the complete supported schema; originals are retained',
+          error,
+        );
+      }
+    }
+    if (_seal(source, files) != before) {
+      throw const StorageFailure(
+        StorageFailureKind.uncertain,
+        'Source changed during isolated inspection; Retry after writers settle',
+      );
+    }
+    return damaged;
   } finally {
-    raw?.close();
-    sqlite3.unregisterVirtualFileSystem(vfs);
+    await app.close();
+    image.close();
+  }
+}
+
+/// Conservative repair: rebuild indexes only if complete logical contents,
+/// schema, relationships and sequence state can be read and remain identical.
+/// Unreadable/lost rows are not a successful repair. Never repair in place.
+Future<bool> _repair(File file, {StorageCheckpoint? checkpoint}) async {
+  final raw = sqlite3.open(file.path, mode: OpenMode.readWrite);
+  try {
+    final before = _semantics(raw);
+    await checkpoint?.call('before:reindex');
+    raw.execute('REINDEX');
+    await checkpoint?.call('after:reindex');
+    if (DatabaseIntegrityService.inspect(raw) != null ||
+        raw.select('PRAGMA foreign_key_check').isNotEmpty ||
+        _semantics(raw) != before) {
+      return false;
+    }
+  } catch (error) {
+    // With damage already proven, a uniqueness violation rebuilding an index
+    // means repair cannot preserve both the rows and the supported constraints.
+    final incompatibleRows = error is SqliteException && error.resultCode == 19;
+    if (!_positiveDamage(error) && !incompatibleRows) rethrow;
+    return false;
+  } finally {
+    raw.close();
+  }
+  await _validate(file, checkpoint: checkpoint);
+  return true;
+}
+
+Future<void> _backup(
+  String source,
+  File destination,
+  Future<void> Function() during,
+) async {
+  final reader = sqlite3.open(source, mode: OpenMode.readOnly);
+  Database? target;
+  try {
+    target = sqlite3.open(destination.path);
+    await for (final _ in reader.backup(target, nPage: 8)) {
+      await during();
+    }
+  } finally {
+    target?.close();
+    reader.close();
+  }
+}
+
+void _checkVersion(Database raw, AppDatabase app, {bool allowNew = false}) {
+  final version = raw.select('PRAGMA user_version').first.values.first as int;
+  if (version == 0 && !allowNew) {
+    throw const StorageFailure(
+      StorageFailureKind.uncertain,
+      'Unknown empty or unversioned historical target',
+    );
+  }
+  if (version > app.schemaVersion || version < 0) {
+    throw StorageFailure(
+      StorageFailureKind.unsupportedSchema,
+      'Unsupported schema version $version',
+    );
   }
 }
 
@@ -674,21 +905,7 @@ Future<String> _validate(
     storageCheckpoint: checkpoint,
   );
   try {
-    final version = raw.select('PRAGMA user_version').first.values.first as int;
-    // A zero-byte/unknown historical target is not genuine first use. Only the
-    // explicitly owned initialization is allowed to start at version zero.
-    if (version == 0 && !allowNew) {
-      throw const StorageFailure(
-        StorageFailureKind.uncertain,
-        'Unknown empty or unversioned historical target',
-      );
-    }
-    if (version > app.schemaVersion || version < 0) {
-      throw StorageFailure(
-        StorageFailureKind.unsupportedSchema,
-        'Unsupported schema version $version',
-      );
-    }
+    _checkVersion(raw, app, allowNew: allowNew);
     if (raw
         .select('PRAGMA integrity_check')
         .any((r) => r.values.first != 'ok')) {
@@ -704,18 +921,18 @@ Future<String> _validate(
   }
 }
 
-Future<void> _querySchema(AppDatabase app) async {
+Future<void> _querySchema(AppDatabase app, {int limit = 1}) async {
   // Forces real opening and supported migrations; also checks every supported
   // table/column instead of using a lazy constructor or PRAGMA-only readiness.
   for (final table in app.allTables) {
     final columns = table.$columns.map((c) => _quote(c.$name)).join(',');
     await app
         .customSelect(
-          'SELECT $columns FROM ${_quote(table.actualTableName)} LIMIT 1',
+          'SELECT $columns FROM ${_quote(table.actualTableName)} LIMIT $limit',
         )
         .get();
   }
-  await app.select(app.algorithms).get();
+  if (limit != 0) await app.select(app.algorithms).get();
 }
 
 String _quote(String identifier) => '"${identifier.replaceAll('"', '""')}"';
@@ -799,7 +1016,8 @@ StorageFailure classifyStorageFailure(Object error, String operation) {
   if (error is SqliteException) {
     final kind = switch (error.resultCode & 0xff) {
       5 || 6 => StorageFailureKind.busy,
-      11 || 26 => StorageFailureKind.damaged,
+      11 || 26 when DatabaseIntegrityService.isDatabaseCorruptionError(error) =>
+        StorageFailureKind.damaged,
       8 || 14 || 23 => StorageFailureKind.access,
       _ => StorageFailureKind.io,
     };

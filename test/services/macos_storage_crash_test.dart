@@ -229,6 +229,128 @@ void main() {
     return result;
   }
 
+  for (final repairable in [false, true]) {
+    for (final wasSelected in [false, true]) {
+      for (final point in [
+        'after:reservation',
+        'after:work',
+        'after:retain-0',
+        'after:exclude-0',
+        'after:retain-locked-0',
+        'after:inspect-0',
+        'before:repair',
+        if (repairable) ...['before:reindex', 'after:reindex'],
+        'after:repair',
+        if (!repairable) ...[
+          'after:initialize',
+          'during:schema',
+          'after:schema-commit',
+        ],
+        'after:schema-0',
+        'after:validation',
+        'during:write:selection-record',
+        'before:publish:selection-record',
+        'after:publish:selection-record',
+        'after:selection',
+        'before:open',
+      ]) {
+        for (final killed in [false, true]) {
+          test(
+            'damage ${repairable ? 'repair' : 'fresh'} ${wasSelected ? 'selected' : 'legacy'} ${killed ? 'SIGKILL/relaunch' : 'fault/Retry'} $point',
+            () async {
+              await seed('R');
+              final original = source!.file;
+              await source!.close();
+              source = null;
+              final file = wasSelected
+                  ? (await MacosLibraryStorage(
+                      directory: appDir,
+                      documentsProvider: () async => docs,
+                    ).prepare()).file
+                  : original;
+              damageLibrary(file, repairable: repairable);
+              final originals = storageBytes(file);
+              if (!repairable) expected = null;
+              if (killed) {
+                final child = await start(
+                  fault: point,
+                  noDocuments: wasSelected,
+                );
+                await waitReached(child, point);
+                child.process.kill(ProcessSignal.sigkill);
+                expect(await child.process.exitCode, isNot(0));
+              } else {
+                var reached = false;
+                await expectLater(
+                  MacosLibraryStorage(
+                    directory: appDir,
+                    documentsProvider: () async {
+                      if (wasSelected) throw StateError('No legacy access');
+                      return docs;
+                    },
+                    checkpoint: (boundary) async {
+                      if (boundary == point) {
+                        reached = true;
+                        throw const FileSystemException(
+                          'simulated ENOSPC',
+                          '',
+                          OSError('full', 28),
+                        );
+                      }
+                    },
+                  ).prepare(),
+                  throwsA(isA<StorageFailure>()),
+                );
+                expect(
+                  reached,
+                  isTrue,
+                  reason: 'Required damage boundary $point',
+                );
+              }
+              final retained = appDir
+                  .listSync(recursive: true)
+                  .whereType<File>()
+                  .map((f) => f.path)
+                  .toSet();
+              final result = await recover(noDocuments: wasSelected);
+              expect(
+                result['recovery'],
+                repairable ? 'repaired' : 'freshAfterDamage',
+              );
+              for (final entry in originals.entries) {
+                expect(
+                  File(entry.key).readAsBytesSync(),
+                  entry.value,
+                  reason: entry.key,
+                );
+              }
+              expect(retained.every((path) => File(path).existsSync()), isTrue);
+              final raw = sqlite3.open(
+                result['selected'] as String,
+                mode: OpenMode.readWrite,
+              );
+              raw.execute(
+                "PRAGMA journal_mode=PERSIST; INSERT INTO metadata_cache VALUES ('destination-only', 'later edit')",
+              );
+              raw.close();
+              expected = {
+                for (final entry in (result['contents'] as Map).entries)
+                  entry.key as String: List<String>.from(entry.value as List),
+              };
+              expected!['metadata_cache']!.add(
+                '{"cache_key":"destination-only","cache_value":"later edit"}',
+              );
+              expected!['metadata_cache']!.sort();
+              final again = await recover(noDocuments: true);
+              expect(again['selected'], result['selected']);
+              expect(again['recovery'], result['recovery']);
+            },
+          );
+        }
+      }
+    }
+  }
+
   for (final row in ['R', 'D', 'A', 'initialize']) {
     for (final point in _boundaries(row == 'initialize')) {
       test('$row SIGKILL/relaunch $point', () async {

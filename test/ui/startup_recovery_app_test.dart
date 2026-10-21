@@ -103,10 +103,17 @@ void main() {
   Future<void> show(WidgetTester tester, StartupController controller) =>
       tester.pumpWidget(
         StartupRecoveryApp(
+          key: ObjectKey(controller),
           controller: controller,
           normalBuilder: (_) => MaterialApp(
             home: Scaffold(
-              body: Text('Expected library admitted ($activations)'),
+              body: StorageLocationNotice(
+                location: controller.location,
+                recovery: controller.recovery,
+                child: Center(
+                  child: Text('Expected library admitted ($activations)'),
+                ),
+              ),
             ),
           ),
         ),
@@ -716,6 +723,141 @@ void main() {
       expect(find.textContaining('Expected library admitted'), findsNothing);
     },
   );
+
+  for (final repairable in [false, true]) {
+    testWidgets(
+      'real damage Retry shows truthful ${repairable ? 'repair' : 'non-recovery'} notice and preserves later edits on restart',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final original = (await tester.runAsync(() => fixture(docs)))!;
+        final expected = (await tester.runAsync(() => contents(original.app)))!;
+        await tester.runAsync(original.close);
+        fixtures.remove(original);
+        damageLibrary(original.file, repairable: repairable);
+        final retained = storageBytes(original.file);
+        var failInspection = true;
+        final controller = controllerFor(
+          opener(
+            checkpoint: (point) async {
+              if (failInspection && point == 'before:inspect-0') {
+                throw const FileSystemException(
+                  'simulated inspection denial',
+                  '',
+                  OSError('denied', 13),
+                );
+              }
+            },
+          ),
+        );
+        await show(tester, controller);
+        await attempt(tester, controller);
+        expect(controller.ready, isFalse);
+        expect(activations, 0);
+        expect(find.text('Retry'), findsOneWidget);
+        failInspection = false;
+        await clickRetry(tester, controller);
+        await tester.pumpAndSettle();
+        expect(controller.ready, isTrue);
+        expect(activations, 1);
+        if (repairable) {
+          expect(admitted, expected);
+          expect(find.text('Library repaired'), findsOneWidget);
+          expect(
+            find.textContaining('safely repaired in a separate copy'),
+            findsOneWidget,
+          );
+          expect(announcements.toString(), contains('safely repaired'));
+        } else {
+          expect(admitted!.values.every((rows) => rows.isEmpty), isTrue);
+          expect(
+            find.text('Fresh library after database damage'),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining('The previous library was not recovered.'),
+            findsOneWidget,
+          );
+          expect(
+            announcements.toString(),
+            contains('previous library was not recovered'),
+          );
+        }
+        expect(find.textContaining('Start fresh'), findsNothing);
+        expect(
+          tester
+              .getSemantics(
+                find.text(
+                  repairable
+                      ? 'Library repaired'
+                      : 'Fresh library after database damage',
+                ),
+              )
+              .flagsCollection
+              .isHeader,
+          isTrue,
+        );
+        expect(
+          tester
+              .getSemantics(find.byTooltip('Dismiss library storage notice'))
+              .tooltip,
+          'Dismiss library storage notice',
+        );
+        expect(
+          find.textContaining('Originals and recovery files are retained.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining(controller.location!), findsOneWidget);
+        for (final entry in retained.entries) {
+          expect(File(entry.key).readAsBytesSync(), entry.value);
+        }
+        final rect = tester.getRect(find.text('Expected library admitted (1)'));
+        await tester.tap(find.byTooltip('Dismiss library storage notice'));
+        await tester.pump();
+        expect(
+          tester.getRect(find.text('Expected library admitted (1)')),
+          rect,
+        );
+        final identity = controller.location;
+        await tester.runAsync(() async {
+          await controller.database.customStatement(
+            "INSERT INTO metadata_cache VALUES ('destination-only', 'later edit')",
+          );
+          await controller.retry(); // No second initialization after admission.
+          await controller.close();
+        });
+        resetAppDirectoryForTest();
+        final restarted = controllerFor(
+          opener(documents: () async => throw StateError('No legacy access')),
+        );
+        await show(tester, restarted);
+        await attempt(tester, restarted);
+        expect(restarted.ready, isTrue);
+        expect(restarted.location, identity);
+        expect(
+          find.text(
+            repairable
+                ? 'Library repaired'
+                : 'Fresh library after database damage',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          restarted.recovery,
+          repairable
+              ? LibraryRecovery.repaired
+              : LibraryRecovery.freshAfterDamage,
+        );
+        expect(
+          admitted!['metadata_cache']!.where(
+            (row) => row.contains('destination-only'),
+          ),
+          hasLength(1),
+        );
+        semantics.dispose();
+      },
+      skip: !Platform.isMacOS,
+    );
+  }
 
   testWidgets(
     'resolved location and one-way downgrade notice overlays without shifting content',

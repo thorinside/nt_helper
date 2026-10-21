@@ -42,7 +42,7 @@ class _StartupRecoveryAppState extends State<StartupRecoveryApp> {
     final message = controller.closed
         ? 'Closing library'
         : controller.ready
-        ? 'Library ready${controller.location == null ? '' : ' at ${controller.location}'}'
+        ? '${_recoveryMessage(controller.recovery)}Library ready${controller.location == null ? '' : ' at ${controller.location}'}'
         : controller.busy
         ? 'Opening library. Please wait'
         : controller.failure == null
@@ -209,14 +209,24 @@ String _failureMessage(Object failure) {
   };
 }
 
+String _recoveryMessage(LibraryRecovery? recovery) => switch (recovery) {
+  LibraryRecovery.repaired =>
+    'The library was safely repaired in a separate copy. Originals and recovery files are retained. ',
+  LibraryRecovery.freshAfterDamage =>
+    'The previous library was not recovered. Originals and recovery files are retained. A fresh library was opened after confirmed database damage and unsuccessful safe repair. ',
+  null => '',
+};
+
 /// Nonmodal outcome feedback: never changes normal content geometry.
 class StorageLocationNotice extends StatefulWidget {
   const StorageLocationNotice({
     super.key,
     required this.location,
+    this.recovery,
     required this.child,
   });
   final String? location;
+  final LibraryRecovery? recovery;
   final Widget child;
   @override
   State<StorageLocationNotice> createState() => _StorageLocationNoticeState();
@@ -250,10 +260,15 @@ class _StorageLocationNoticeState extends State<StorageLocationNotice> {
                           children: [
                             Semantics(
                               header: true,
-                              child: const Text('Library storage ready'),
+                              child: Text(switch (widget.recovery) {
+                                LibraryRecovery.repaired => 'Library repaired',
+                                LibraryRecovery.freshAfterDamage =>
+                                  'Fresh library after database damage',
+                                null => 'Library storage ready',
+                              }),
                             ),
                             Text(
-                              'Opened in Application Support: ${widget.location}\nOld Documents files are retained. Migration is one-way: older releases may show the old library and do not receive newer changes.',
+                              '${_recoveryMessage(widget.recovery)}Opened in Application Support: ${widget.location}\nOld Documents files are retained. Migration is one-way: older releases may show the old library and do not receive newer changes.',
                             ),
                           ],
                         ),
