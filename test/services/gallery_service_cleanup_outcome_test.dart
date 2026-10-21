@@ -260,6 +260,73 @@ void main() {
     );
   });
 
+  test(
+    'bundled wavetables retain skip-existing and 512-byte upload behavior',
+    () async {
+      const existing = '/wavetables/Existing.wav';
+      const fresh = '/wavetables/New.wav';
+      final data = Uint8List.fromList(
+        List.generate(1025, (index) => index % 256),
+      );
+      when(() => mockDisting.requestDirectoryListing('/wavetables')).thenAnswer(
+        (_) async => DirectoryListing(
+          entries: [
+            DirectoryEntry(
+              name: 'Existing.wav',
+              attributes: 0x20,
+              date: 0,
+              time: 0,
+              size: 42,
+            ),
+          ],
+        ),
+      );
+
+      final result = await galleryService.installPlugin(
+        _plugin,
+        cachedArchiveBytes: ZipEncoder().encode(
+          Archive()
+            ..addFile(ArchiveFile.bytes('seq.o', pluginBytes))
+            ..addFile(ArchiveFile.bytes('Wavetables/Existing.wav', [9]))
+            ..addFile(ArchiveFile.bytes('WAVETABLES/New.wav', data)),
+        ),
+        distingInstallPlugin: _noopInstall,
+        distingInstallSample: distingCubit.installSampleFile,
+      );
+
+      expect(result!.installedSamples, [fresh]);
+      expect(result.skippedSamples, [existing]);
+      expect(result.failedSamples, isEmpty);
+      verifyNever(
+        () => mockDisting.requestFileUploadChunk(
+          existing,
+          any(),
+          any(),
+          createAlways: any(named: 'createAlways'),
+        ),
+      );
+      final calls = verify(
+        () => mockDisting.requestFileUploadChunk(
+          fresh,
+          captureAny(),
+          captureAny(),
+          createAlways: any(named: 'createAlways'),
+        ),
+      );
+      calls.called(3);
+      expect(calls.captured, [
+        data.sublist(0, 512),
+        0,
+        data.sublist(512, 1024),
+        512,
+        data.sublist(1024),
+        1024,
+      ]);
+      verifyNever(() => mockDisting.requestFileDownload(any()));
+      verifyNever(() => mockDisting.requestFileDelete(any()));
+    },
+  );
+
   test('GalleryCubit queue passes the outcome to the UI callback', () async {
     final service = MockGalleryService();
     when(

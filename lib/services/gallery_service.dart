@@ -73,12 +73,12 @@ const String _getCategoriesQuery = r'''
   }
 ''';
 
-/// Result of extracting a plugin archive, separating plugin files from sample files
+/// Result of extracting a plugin archive, separating plugins from bundled data.
 class ExtractedArchiveContents {
   /// Plugin files (*.o, *.lua, *.3pot) to be installed
   final List<MapEntry<String, List<int>>> pluginFiles;
 
-  /// Sample files from the samples/ directory
+  /// Bundled files from samples/ and wavetables/ (legacy sample API name).
   final List<MapEntry<String, List<int>>> sampleFiles;
 
   const ExtractedArchiveContents({
@@ -86,14 +86,14 @@ class ExtractedArchiveContents {
     required this.sampleFiles,
   });
 
-  /// Whether this archive contains sample files
+  /// Whether this archive contains bundled sample or wavetable files.
   bool get hasSamples => sampleFiles.isNotEmpty;
 
   /// Total number of files in the archive
   int get totalFileCount => pluginFiles.length + sampleFiles.length;
 }
 
-/// Result of installing sample files for a plugin
+/// Result of installing bundled samples and wavetables for a plugin.
 class SampleInstallationResult {
   /// Sample files that were successfully installed
   final List<String> installedSamples;
@@ -131,7 +131,7 @@ class SampleInstallationResult {
   int get failedCount => failedSamples.length;
 }
 
-/// Callback type for installing a single sample file to the SD card.
+/// Callback for installing a bundled sample or wavetable at its SD-card path.
 /// Returns `true` if installed, `false` if skipped (already exists).
 /// Throws an exception on failure.
 typedef SampleInstallCallback =
@@ -376,11 +376,8 @@ class GalleryService {
 
   /// Check if a file path is a sample file (for testing purposes)
   @visibleForTesting
-  static bool isSampleFileForTesting(String filePath) {
-    final lowerPath = filePath.toLowerCase();
-    return lowerPath.startsWith('samples/') ||
-        lowerPath.startsWith('/samples/');
-  }
+  static bool isSampleFileForTesting(String filePath) =>
+      _isSampleFile(filePath);
 
   /// Look up a plugin by its 4-character GUID
   ///
@@ -937,7 +934,7 @@ class GalleryService {
   ///
   /// [distingInstallPlugin] - Callback to install plugin files (.o, .lua, .3pot)
   /// [distingInstallSample] - Optional callback to install sample files.
-  ///   If provided, sample files in plugin zips will be installed to /samples/.
+  ///   Installs bundled samples/ and wavetables/ files at their matching SD roots.
   ///   The callback should return true if installed, false if skipped (file exists).
   Future<void> installQueuedPlugins({
     required Function(
@@ -1157,7 +1154,7 @@ class GalleryService {
       final samplePath = sampleEntry.key;
       final sampleData = Uint8List.fromList(sampleEntry.value);
 
-      // Transform path: "samples/x.wav" -> "/samples/x.wav"
+      // Preserve the SD root: samples/x.wav or wavetables/x.wav.
       final targetPath = _getSampleTargetPath(samplePath);
 
       try {
@@ -1228,23 +1225,12 @@ class GalleryService {
     throw lastException ?? Exception('Sample installation failed');
   }
 
-  /// Transform sample path from zip format to SD card target path
-  ///
-  /// Normalizes the path to lowercase to avoid case-sensitivity issues
-  /// on different filesystems. The samples/ prefix is always lowercase.
+  /// Map bundled data to its SD root, preserving filename and subfolder case.
   String _getSampleTargetPath(String zipPath) {
-    // zipPath: "samples/drums/kick.wav" or "Samples/drums/kick.wav"
-    // returns: "/samples/drums/kick.wav" (normalized to lowercase samples/)
-    String path = zipPath;
-    if (!path.startsWith('/')) {
-      path = '/$path';
-    }
-    // Normalize the samples directory prefix to lowercase
-    // This ensures consistent paths regardless of zip file case
-    if (path.toLowerCase().startsWith('/samples/')) {
-      path = '/samples/${path.substring('/samples/'.length)}';
-    }
-    return path;
+    final normalized = PluginInstallationPath.normalize(zipPath);
+    final separator = normalized.indexOf('/');
+    final root = normalized.substring(0, separator).toLowerCase();
+    return '/$root/${normalized.substring(separator + 1)}';
   }
 
   /// Get download URL for a plugin - prioritizes downloadUrl from installation config
@@ -1350,14 +1336,16 @@ class GalleryService {
     return bytes;
   }
 
-  /// Check if a file path is a sample file (case-insensitive check for samples/ prefix)
-  bool _isSampleFile(String filePath) {
+  /// Recognize the existing bundled-data roots before plugin-only filtering.
+  static bool _isSampleFile(String filePath) {
     final lowerPath = filePath.toLowerCase();
     return lowerPath.startsWith('samples/') ||
-        lowerPath.startsWith('/samples/');
+        lowerPath.startsWith('/samples/') ||
+        lowerPath.startsWith('wavetables/') ||
+        lowerPath.startsWith('/wavetables/');
   }
 
-  /// Extract archive and filter relevant files, separating plugin files from sample files
+  /// Extract plugins and bundled samples/wavetables using the same path checks.
   Future<ExtractedArchiveContents> _extractArchive(
     List<int> archiveBytes,
     GalleryPlugin plugin, {
@@ -1381,13 +1369,12 @@ class GalleryService {
     }
 
     for (final file in archive) {
-      if (!file.isFile) continue;
+      if (!file.isFile || file.isSymbolicLink) continue;
 
       String filePath = PluginInstallationPath.normalize(file.name);
       final originalFilePath = filePath;
 
-      // Check for sample files first (before any path manipulation)
-      // Sample files are extracted with their full relative path preserved
+      // Bundled data bypasses plugin/source filters, retaining its SD-root path.
       if (_isSampleFile(originalFilePath)) {
         sampleFiles.add(MapEntry(originalFilePath, file.content as List<int>));
         continue;
