@@ -4,6 +4,7 @@ import 'dart:ui' show AppExitResponse;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:nt_helper/services/macos_library_storage.dart';
+import 'package:nt_helper/services/gallery_cache_storage.dart';
 import 'package:nt_helper/services/startup_controller.dart';
 
 /// Presentation only. Storage, admission and close ownership remain in the controller.
@@ -223,10 +224,12 @@ class StorageLocationNotice extends StatefulWidget {
     super.key,
     required this.location,
     this.recovery,
+    this.galleryStorage,
     required this.child,
   });
   final String? location;
   final LibraryRecovery? recovery;
+  final GalleryCacheStorage? galleryStorage;
   final Widget child;
   @override
   State<StorageLocationNotice> createState() => _StorageLocationNoticeState();
@@ -234,6 +237,68 @@ class StorageLocationNotice extends StatefulWidget {
 
 class _StorageLocationNoticeState extends State<StorageLocationNotice> {
   bool _dismissed = false;
+  String? _lastGalleryAnnouncement;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.galleryStorage?.addListener(_galleryChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _retryGallery();
+    });
+  }
+
+  @override
+  void didUpdateWidget(StorageLocationNotice oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.galleryStorage != widget.galleryStorage) {
+      oldWidget.galleryStorage?.removeListener(_galleryChanged);
+      widget.galleryStorage?.addListener(_galleryChanged);
+      _retryGallery();
+    }
+  }
+
+  void _retryGallery() {
+    unawaited(widget.galleryStorage?.prepare().catchError((Object _) {}));
+  }
+
+  String get _galleryMessage {
+    final storage = widget.galleryStorage;
+    if (storage == null) return '';
+    if (storage.busy) {
+      return 'Gallery cache transfer in progress. Gallery temporarily unavailable; the library remains usable.';
+    }
+    if (storage.failure != null) {
+      return '${storage.failure} The library remains usable.';
+    }
+    return storage.ready
+        ? 'Gallery cache available.'
+        : 'Gallery cache transfer has not completed.';
+  }
+
+  void _galleryChanged() {
+    if (!mounted) return;
+    if (widget.galleryStorage?.failure != null) _dismissed = false;
+    final message = _galleryMessage;
+    if (message != _lastGalleryAnnouncement) {
+      _lastGalleryAnnouncement = message;
+      unawaited(
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          message,
+          TextDirection.ltr,
+        ),
+      );
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.galleryStorage?.removeListener(_galleryChanged);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) => Stack(
     children: [
@@ -249,37 +314,58 @@ class _StorageLocationNoticeState extends State<StorageLocationNotice> {
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Semantics(
-                        liveRegion: true,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Semantics(
-                              header: true,
-                              child: Text(switch (widget.recovery) {
-                                LibraryRecovery.repaired => 'Library repaired',
-                                LibraryRecovery.freshAfterDamage =>
-                                  'Fresh library after database damage',
-                                null => 'Library storage ready',
-                              }),
+                child: SizedBox(
+                  height: 220,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Semantics(
+                                  header: true,
+                                  child: Text(switch (widget.recovery) {
+                                    LibraryRecovery.repaired =>
+                                      'Library repaired',
+                                    LibraryRecovery.freshAfterDamage =>
+                                      'Fresh library after database damage',
+                                    null => 'Library storage ready',
+                                  }),
+                                ),
+                                Text(
+                                  '${_recoveryMessage(widget.recovery)}Opened in Application Support: ${widget.location}\nOld Documents files are retained. Migration is one-way: older releases may show the old library and do not receive newer changes.\n$_galleryMessage',
+                                ),
+                              ],
                             ),
-                            Text(
-                              '${_recoveryMessage(widget.recovery)}Opened in Application Support: ${widget.location}\nOld Documents files are retained. Migration is one-way: older releases may show the old library and do not receive newer changes.',
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      tooltip: 'Dismiss library storage notice',
-                      onPressed: () => setState(() => _dismissed = true),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+                      Row(
+                        children: [
+                          if (widget.galleryStorage != null)
+                            OutlinedButton(
+                              onPressed:
+                                  widget.galleryStorage!.busy ||
+                                      widget.galleryStorage!.ready
+                                  ? null
+                                  : _retryGallery,
+                              child: const Text('Retry gallery transfer'),
+                            ),
+                          const Spacer(),
+                          IconButton(
+                            tooltip: 'Dismiss library storage notice',
+                            onPressed: () => setState(() => _dismissed = true),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:nt_helper/ui/gallery/gallery_recovery_panel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:desktop_drop/desktop_drop.dart';
@@ -65,19 +67,20 @@ Map<String, String>? _getDevicePluginPathsFromState(DistingState state) {
 class PluginGalleryScreen extends StatelessWidget {
   final DistingCubit distingCubit;
   final AppDatabase database;
+  final GalleryService? galleryService;
 
   const PluginGalleryScreen({
     super.key,
     required this.distingCubit,
     required this.database,
+    this.galleryService,
   });
 
   @override
   Widget build(BuildContext context) {
-    final galleryService = GalleryService(
-      settingsService: SettingsService(),
-      database: database,
-    );
+    final galleryService =
+        this.galleryService ??
+        GalleryService(settingsService: SettingsService(), database: database);
 
     return MultiBlocProvider(
       providers: [
@@ -161,7 +164,27 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<GalleryCubit, GalleryState>(
+    return BlocConsumer<GalleryCubit, GalleryState>(
+      listenWhen: (previous, current) =>
+          previous is GalleryUnavailable ||
+          current is GalleryUnavailable ||
+          (previous is! GalleryLoaded && current is GalleryLoaded),
+      listener: (context, state) {
+        final message = state is GalleryUnavailable
+            ? state.retrying
+                  ? 'Retrying gallery transfer'
+                  : state.message
+            : state is GalleryLoaded
+            ? 'Gallery available'
+            : null;
+        if (message != null) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            message,
+            TextDirection.ltr,
+          );
+        }
+      },
       builder: (context, state) {
         Widget content = Scaffold(
           appBar: _buildAppBar(state),
@@ -195,6 +218,7 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
   PreferredSizeWidget _buildAppBar(GalleryState state) {
     final isRefreshing =
         state is GalleryLoading ||
+        (state is GalleryUnavailable && state.retrying) ||
         (state is GalleryLoaded && state.isRefreshing);
 
     return AppBar(
@@ -269,6 +293,16 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
   }
 
   Widget _buildBody(GalleryState state) {
+    if (state is GalleryUnavailable) {
+      return GalleryRecoveryPanel(
+        message: state.message,
+        retrying: state.retrying,
+        onRetry: () => context.read<GalleryCubit>().loadGallery(
+          devicePluginGuids: _getDevicePluginGuids(),
+          devicePluginPaths: _getDevicePluginPaths(),
+        ),
+      );
+    }
     if (state is GalleryInitial || state is GalleryLoading) {
       return const Center(
         child: Column(

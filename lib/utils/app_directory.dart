@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:nt_helper/services/macos_library_storage.dart';
+import 'package:nt_helper/services/gallery_cache_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -17,6 +18,8 @@ const filesToMigrate = ['nt_helper_db.sqlite', 'gallery_cache.json'];
 
 Completer<Directory>? _initCompleter;
 SelectedLibrary? _selectedLibrary;
+GalleryCacheStorage? _galleryCacheStorage;
+GalleryCacheStorage? get galleryCacheStorage => _galleryCacheStorage;
 
 /// Null on platforms retaining their existing storage policy.
 SelectedLibrary? get selectedLibrary => _selectedLibrary;
@@ -37,6 +40,7 @@ SelectedLibrary? get selectedLibrary => _selectedLibrary;
 Future<Directory> getAppDirectory({
   Future<Directory> Function()? docsProvider,
   Future<Directory> Function()? supportProvider,
+  Future<Directory> Function()? galleryDocsProvider,
   bool? isWindows,
   bool? isMacOS,
   StorageCheckpoint? storageCheckpoint,
@@ -60,6 +64,14 @@ Future<Directory> getAppDirectory({
         documentsProvider: docsProvider ?? getApplicationDocumentsDirectory,
         checkpoint: storageCheckpoint,
       ).prepare();
+      _galleryCacheStorage ??= GalleryCacheStorage(
+        directory: app,
+        documentsProvider:
+            galleryDocsProvider ??
+            docsProvider ??
+            getApplicationDocumentsDirectory,
+        checkpoint: storageCheckpoint,
+      );
       completer.complete(app);
       return completer.future;
     }
@@ -139,6 +151,8 @@ Future<Directory> getAppDirectory({
 void resetAppDirectoryForTest() {
   _initCompleter = null;
   _selectedLibrary = null;
+  _galleryCacheStorage?.dispose();
+  _galleryCacheStorage = null;
 }
 
 /// Copies migratable files from [oldDir] to [newDir], then deletes the

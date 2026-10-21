@@ -73,6 +73,7 @@ class StartupStorageOpener {
             return documents!;
           },
           supportProvider: supportProvider,
+          galleryDocsProvider: docsProvider ?? getApplicationDocumentsDirectory,
           storageCheckpoint: checkpoint,
         );
         if (!isMacOS) {

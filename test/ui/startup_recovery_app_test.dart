@@ -859,6 +859,123 @@ void main() {
     );
   }
 
+  for (final kind in [StorageFailureKind.access, StorageFailureKind.busy]) {
+    testWidgets(
+      'blocked $kind, busy and keyboard Retry preserve dialog geometry and announce results',
+      (tester) async {
+        late Completer<void> gate;
+        var fail = true;
+        late Future<void> pending;
+        final controller = StartupController(
+          open: ({bool selectLegacyDirectory = false}) async {
+            await gate.future;
+            if (fail) {
+              throw StorageFailure(kind, 'Simulated required operation');
+            }
+            return OpenedStartupLibrary(
+              AppDatabase.forTesting(NativeDatabase.memory()),
+              location: '/resolved/Support/library.sqlite',
+            );
+          },
+          canSelectLegacyDirectory: () => true,
+          activationSteps: [
+            (_) async {
+              activations++;
+            },
+          ],
+        );
+        controllers.add(controller);
+        final semantics = tester.ensureSemantics();
+        await show(tester, controller);
+        final button = find.widgetWithText(FilledButton, 'Retry');
+        final buttonRect = tester.getRect(button);
+        final titleRect = tester.getRect(find.text('Open your library'));
+        final accessRect = tester.getRect(find.text('Select legacy folder…'));
+        await tester.runAsync(() async {
+          gate = Completer<void>();
+          pending = controller.retry();
+        });
+        await tester.pump();
+        expect(find.text('Opening library…'), findsOneWidget);
+        expect(tester.getRect(button), buttonRect);
+        expect(tester.getRect(find.text('Open your library')), titleRect);
+        expect(tester.getRect(find.text('Select legacy folder…')), accessRect);
+        await tester.runAsync(() async {
+          gate.complete();
+          await pending;
+        });
+        await tester.pump();
+        expect(
+          find.textContaining(
+            kind == StorageFailureKind.busy
+                ? 'Storage is busy.'
+                : 'required storage operation was denied.',
+          ),
+          findsOneWidget,
+        );
+        expect(tester.getRect(button), buttonRect);
+        expect(tester.getRect(find.text('Open your library')), titleRect);
+        expect(
+          tester
+              .getSemantics(find.text('Open your library'))
+              .flagsCollection
+              .isHeader,
+          isTrue,
+        );
+        Focus.of(tester.element(find.text('Retry'))).requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(
+          Focus.of(tester.element(find.text('Select legacy folder…'))).hasFocus,
+          isTrue,
+        );
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pump();
+        expect(Focus.of(tester.element(find.text('Retry'))).hasFocus, isTrue);
+        await tester.runAsync(() async {
+          gate = Completer<void>();
+          fail = false;
+        });
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(controller.busy, isTrue);
+        expect(find.text('Opening library…'), findsOneWidget);
+        expect(tester.getRect(button), buttonRect);
+        expect(tester.getRect(find.text('Open your library')), titleRect);
+        await tester.runAsync(() async {
+          gate.complete();
+        });
+        for (var i = 0; i < 8; i++) {
+          await tester.runAsync(() async {
+            await pumpEventQueue();
+          });
+          await tester.pump();
+        }
+        expect(controller.ready, isTrue);
+        expect(activations, 1);
+        expect(announcements.toString(), contains('Library unavailable'));
+        expect(
+          announcements.toString(),
+          contains('Opening library. Please wait'),
+        );
+        expect(
+          announcements.toString(),
+          contains('Library ready at /resolved/Support/library.sqlite'),
+        );
+        final allText = tester
+            .widgetList<Text>(find.byType(Text))
+            .map((text) => text.data)
+            .join(' ');
+        expect(allText, isNot(contains('Full Disk Access')));
+        expect(allText, isNot(contains('contact Neal')));
+        semantics.dispose();
+      },
+    );
+  }
+
   testWidgets(
     'resolved location and one-way downgrade notice overlays without shifting content',
     (tester) async {
