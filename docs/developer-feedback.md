@@ -30,10 +30,13 @@ requirement. Report selected commands, results, and untested areas honestly.
 
 ## Validation versus distribution
 
-`ci.yml` runs on every pull request, all branch pushes (not tag pushes), and
-manual dispatch, without path filters. Each run executes analysis and the full
-default Flutter suite once on GitHub-hosted Ubuntu. Superseded runs are cancelled
-by ref. The always-running `CI success` aggregate requires the analysis/test job
+`ci.yml` runs on every pull request (including forks), pushes to main (not tags),
+and manual dispatch, without path filters. Feature-branch pushes do not create a
+second run beside the PR run. Each run executes analysis and the full
+default Flutter suite once on GitHub-hosted Ubuntu. Superseded PR runs are cancelled
+by PR number. Main/manual groups are isolated by event and commit, and running
+non-PR jobs are not cancelled; repeated manual runs of the same commit share a
+group and can replace an older pending run. The always-running `CI success` aggregate requires the analysis/test job
 result to be exactly successful; a failed, skipped, or cancelled dependency
 cannot produce a green aggregate.
 
@@ -52,6 +55,12 @@ CI uses `pull_request` (not a privileged target event), read-only repository
 permission, no signing secrets, and checkouts without persisted credentials.
 Only the fixed aggregate shell command runs on the self-hosted machine; it does
 not check out or execute PR code.
+
+Analysis and tests share one setup. A measured uncached run spent 61 seconds on
+SDK setup, 18 seconds on dependency resolution, 69 seconds on code generation,
+26 seconds on analysis, and 544 seconds on the full suite. Splitting analysis
+and tests would repeat setup for little critical-path benefit. Test tiers and
+sharding are not introduced by this change.
 
 ## Download caching
 
