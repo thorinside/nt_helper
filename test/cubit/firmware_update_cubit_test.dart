@@ -20,6 +20,8 @@ import 'package:nt_helper/services/flash_tool_bridge.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
 import 'package:nt_helper/ui/firmware/firmware_error_widget.dart';
 
+import '../test_helpers/firmware_usb_access.dart';
+
 class MockFirmwareVersionService extends Mock
     implements FirmwareVersionService {}
 
@@ -29,7 +31,29 @@ class MockFlashToolBridge extends Mock implements FlashToolBridge {}
 
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
+class _UnavailableUdevFile extends Mock implements File {}
+
+final class _UnavailableUsbAccess extends IOOverrides {
+  _UnavailableUsbAccess() {
+    when(() => _file.exists()).thenAnswer((_) async => false);
+    // Fail before Process.run so this test can never invoke host pkexec.
+    when(() => _file.writeAsString(any())).thenThrow(
+      const FileSystemException('Test USB rules installation denied'),
+    );
+  }
+
+  final _file = _UnavailableUdevFile();
+
+  @override
+  File createFile(String path) =>
+      path == '/etc/udev/rules.d/99-disting-nt.rules' ||
+          path == '${Directory.systemTemp.path}/99-disting-nt.rules'
+      ? _file
+      : super.createFile(path);
+}
+
 void main() {
+  setUpFirmwareUsbAccess();
   late MockFirmwareVersionService mockFirmwareVersionService;
   late MockFlashToolManager mockFlashToolManager;
   late MockFlashToolBridge mockFlashToolBridge;
@@ -291,6 +315,39 @@ void main() {
     });
 
     group('startFlashing', () {
+      if (Platform.isLinux) {
+        blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
+          'missing USB rules block flashing when installation fails',
+          build: () => createCubit(),
+          seed: () => const FirmwareUpdateState.waitingForBootloader(
+            firmwarePath: '/tmp/firmware.zip',
+            targetVersion: '1.12.0',
+          ),
+          act: (cubit) => IOOverrides.runWithIOOverrides(
+            () => cubit.startFlashing(),
+            _UnavailableUsbAccess(),
+          ),
+          expect: () => [
+            isA<FirmwareUpdateStateError>()
+                .having(
+                  (s) => s.errorType,
+                  'errorType',
+                  FirmwareErrorType.udevMissing,
+                )
+                .having(
+                  (s) => s.firmwarePath,
+                  'firmwarePath',
+                  '/tmp/firmware.zip',
+                )
+                .having((s) => s.targetVersion, 'targetVersion', '1.12.0'),
+          ],
+          verify: (_) {
+            verifyNever(() => mockFlashToolManager.getToolPath());
+            verifyNever(() => mockFlashToolBridge.flash(any()));
+          },
+        );
+      }
+
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'does nothing if not in waitingForBootloader state',
         build: () => createCubit(),

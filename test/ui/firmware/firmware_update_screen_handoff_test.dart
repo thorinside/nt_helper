@@ -19,6 +19,8 @@ import 'package:nt_helper/services/flash_tool_bridge.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 
+import '../../test_helpers/firmware_usb_access.dart';
+
 class _MockDistingCubit extends MockCubit<DistingState>
     implements DistingCubit {}
 
@@ -93,6 +95,7 @@ Future<void> _pumpBootloaderWait(WidgetTester tester) async {
 }
 
 void main() {
+  setUpFirmwareUsbAccess();
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _MockDistingCubit distingCubit;
