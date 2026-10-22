@@ -12,7 +12,29 @@ enum PluginInstallRefusal {
   demo('demo_mode'),
 
   /// The connected firmware cannot write to the SD card.
-  noSdCardSupport('sd_card_unsupported');
+  noSdCardSupport('sd_card_unsupported'),
+
+  /// The `.o` file is not a readable ELF object.
+  invalidElf('invalid_elf'),
+
+  /// The `.o` file is not 32-bit little-endian ARM (EM_ARM).
+  wrongArchitecture('wrong_architecture'),
+
+  /// The `.o` file is linked (ET_EXEC/ET_DYN) rather than relocatable.
+  notRelocatable('not_relocatable'),
+
+  /// The `.o` file does not define the `pluginEntry` symbol.
+  missingPluginEntry('missing_plugin_entry'),
+
+  /// The `.o` file declares no factory GUID nt_helper can read.
+  noGuid('no_guid'),
+
+  /// A GUID in the `.o` file already belongs to a different plug-in file or
+  /// to a built-in algorithm.
+  guidCollision('guid_collision'),
+
+  /// The `.lua` file is not valid UTF-8 or contains NUL bytes.
+  invalidLua('invalid_lua');
 
   const PluginInstallRefusal(this.code);
 
@@ -20,16 +42,21 @@ enum PluginInstallRefusal {
   final String code;
 }
 
-/// Thrown by `DistingCubit.installPluginAndVerify` when the current session
-/// cannot accept a plugin upload. Nothing is sent to the device.
+/// Thrown by `DistingCubit.installPluginAndVerify` when the file or the
+/// current session cannot accept a plugin upload. Nothing is sent to the
+/// device.
 class PluginInstallRefused implements Exception {
-  const PluginInstallRefused(this.reason, this.message);
+  const PluginInstallRefused(this.reason, this.message, [this.details]);
 
   /// Machine-readable reason.
   final PluginInstallRefusal reason;
 
   /// Human-readable explanation, suitable for showing to a client.
   final String message;
+
+  /// Extra snake_case fields for the client, such as the conflicting GUID
+  /// and existing plug-in for [PluginInstallRefusal.guidCollision].
+  final Map<String, Object?>? details;
 
   @override
   String toString() => message;
@@ -73,6 +100,7 @@ class PluginInstallReport {
     required this.cleanup,
     required this.filePresent,
     required this.expectedGuids,
+    this.unattributedGuids = const [],
     required this.algorithms,
     required this.rescanAttempts,
     required this.loadResults,
@@ -95,12 +123,16 @@ class PluginInstallReport {
   /// uploaded size. Null when the listing could not be read.
   final bool? filePresent;
 
-  /// GUIDs read from the local `.o` file. Empty for Lua scripts and for
-  /// objects whose GUIDs could not be read.
+  /// GUIDs read from the local `.o` file. Empty for Lua scripts.
   final List<String> expectedGuids;
 
-  /// Algorithms the device reported for this plugin after the rescan,
-  /// matched by expected GUID or by plugin filename. Empty for Lua scripts.
+  /// Expected GUIDs that an installed plug-in already used before the upload
+  /// but whose file the device did not report, so a collision could not be
+  /// ruled out.
+  final List<String> unattributedGuids;
+
+  /// Algorithms the device reported for this plugin's GUIDs after the
+  /// rescan. Empty for Lua scripts.
   final List<InstalledPluginAlgorithm> algorithms;
 
   /// Number of algorithm-list reads made while waiting for the rescan.

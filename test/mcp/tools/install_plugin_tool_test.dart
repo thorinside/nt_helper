@@ -138,6 +138,31 @@ AlgorithmInfo _plugin(int index, String guid, String file) => AlgorithmInfo(
   filename: file,
 );
 
+/// Copy of [source] with [bytes] written at [offset].
+Uint8List _patched(Uint8List source, int offset, List<int> bytes) =>
+    Uint8List.fromList(source)..setRange(offset, offset + bytes.length, bytes);
+
+/// Copy of [source] with every occurrence of the ASCII [from] replaced by
+/// [to], which must be the same length so offsets stay valid.
+Uint8List _renamed(Uint8List source, String from, String to) {
+  assert(from.length == to.length);
+  final bytes = Uint8List.fromList(source);
+  final pattern = from.codeUnits;
+  var replaced = 0;
+  for (var i = 0; i + pattern.length <= bytes.length; i++) {
+    var match = true;
+    for (var j = 0; j < pattern.length && match; j++) {
+      match = bytes[i + j] == pattern[j];
+    }
+    if (match) {
+      bytes.setRange(i, i + pattern.length, to.codeUnits);
+      replaced++;
+    }
+  }
+  expect(replaced, greaterThan(0), reason: '$from not found in fixture');
+  return bytes;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -180,6 +205,12 @@ void main() {
     demo: demo,
     videoStream: null,
   );
+
+  /// The fixture's two algorithms as the device lists them from [file].
+  List<AlgorithmInfo> seqAlgorithms({String file = '$_pluginsDir/seq.o'}) => [
+    _plugin(0, 'ATds', file),
+    _plugin(1, 'ATdm', file),
+  ];
 
   Future<Map<String, dynamic>> install(Map<String, dynamic> args) async =>
       jsonDecode(await tools.installPlugin(args)) as Map<String, dynamic>;
@@ -329,21 +360,19 @@ void main() {
     });
 
     test('waits for a slow rescan before reporting', () async {
-      final source = inAllowed('tiny.o', [0x7f, 0x45, 0x4c, 0x46, 1, 2]);
+      final source = inAllowed('seq.o', fixtureBytes);
       device
-        ..algorithms = [_plugin(0, 'Tiny', '$_pluginsDir/tiny.o')]
+        ..algorithms = seqAlgorithms()
         ..algorithmsVisibleAfterReads = 2;
 
       final result = await install({'path': source});
 
       expect(result['verified'], isTrue, reason: '$result');
       expect(result['rescan_attempts'], 2);
-      expect(result['expected_guids'], isEmpty);
-      expect((result['algorithms'] as List).single['guid'], 'Tiny');
     });
 
     test('reports not found when the rescan never shows the plugin', () async {
-      final source = inAllowed('tiny.o', [0x7f, 0x45, 0x4c, 0x46, 1, 2]);
+      final source = inAllowed('seq.o', fixtureBytes);
 
       final result = await install({'path': source});
 
@@ -351,6 +380,7 @@ void main() {
       expect(result['verified'], isFalse);
       expect(result['file_present'], isTrue);
       expect(result['algorithms'], isEmpty);
+      expect(result['missing_guids'], unorderedEquals(['ATds', 'ATdm']));
       expect(result['rescan_attempts'], 3);
       expect(result['message'], contains('No algorithm for this file'));
     });
@@ -368,21 +398,26 @@ void main() {
     });
 
     test('load loads every algorithm found and reports each', () async {
-      final source = inAllowed('tiny.o', [0x7f, 0x45, 0x4c, 0x46, 1, 2]);
-      device.algorithms = [_plugin(0, 'Tiny', '$_pluginsDir/tiny.o')];
+      final source = inAllowed('seq.o', fixtureBytes);
+      device.algorithms = seqAlgorithms();
 
       final result = await install({'path': source, 'load': true});
 
       expect(result['verified'], isTrue, reason: '$result');
-      expect(result['load_results'], [
-        {'guid': 'Tiny', 'loaded': true},
-      ]);
-      expect(result['message'], contains('Loaded 1 algorithm'));
-      verify(() => manager.requestLoadPlugin('Tiny')).called(1);
+      expect(
+        result['load_results'],
+        unorderedEquals([
+          {'guid': 'ATds', 'loaded': true},
+          {'guid': 'ATdm', 'loaded': true},
+        ]),
+      );
+      expect(result['message'], contains('Loaded 2 algorithm'));
+      verify(() => manager.requestLoadPlugin('ATds')).called(1);
+      verify(() => manager.requestLoadPlugin('ATdm')).called(1);
     });
 
     test('load reports nothing loaded when nothing was found', () async {
-      final source = inAllowed('tiny.o', [0x7f, 0x45, 0x4c, 0x46, 1, 2]);
+      final source = inAllowed('seq.o', fixtureBytes);
 
       final result = await install({'path': source, 'load': true});
 
@@ -392,8 +427,8 @@ void main() {
     });
 
     test('load=false never loads', () async {
-      final source = inAllowed('tiny.o', [0x7f, 0x45, 0x4c, 0x46, 1, 2]);
-      device.algorithms = [_plugin(0, 'Tiny', '$_pluginsDir/tiny.o')];
+      final source = inAllowed('seq.o', fixtureBytes);
+      device.algorithms = seqAlgorithms();
 
       final result = await install({'path': source, 'load': false});
 
@@ -403,14 +438,13 @@ void main() {
     });
 
     test('reports the preset reload when the plugin is in use', () async {
-      const target = '$_pluginsDir/tiny.o';
-      final inUse = _plugin(0, 'Tiny', target);
+      final installed = seqAlgorithms();
       cubit.emit(
         synchronized(
-          algorithms: [inUse],
+          algorithms: installed,
           slots: [
             Slot(
-              algorithm: Algorithm(algorithmIndex: 0, guid: 'Tiny', name: 'T'),
+              algorithm: Algorithm(algorithmIndex: 0, guid: 'ATds', name: 'S'),
               routing: RoutingInfo.filler(),
               pages: ParameterPages(algorithmIndex: 0, pages: []),
               parameters: [],
@@ -422,30 +456,30 @@ void main() {
           ],
         ),
       );
-      device.algorithms = [inUse];
-      final source = inAllowed('tiny.o', [0x7f, 0x45, 0x4c, 0x46, 1, 2]);
+      device.algorithms = installed;
+      final source = inAllowed('seq.o', fixtureBytes);
 
       final result = await install({'path': source});
 
-      expect(result['preset_reloaded'], isTrue);
+      expect(result['preset_reloaded'], isTrue, reason: '$result');
       expect(result['message'], contains('reloaded from its saved copy'));
       verify(() => manager.requestNewPreset()).called(1);
       verify(() => manager.requestLoadPreset('/presets/Test.json', false));
     });
 
     test('accepts an upper-case extension', () async {
-      final source = inAllowed('TINY.O', [0x7f, 0x45, 0x4c, 0x46, 1]);
+      final source = inAllowed('SEQ.O', fixtureBytes);
 
       final result = await install({'path': source});
 
       expect(result['success'], isTrue, reason: '$result');
-      expect(result['destination_path'], '$_pluginsDir/TINY.O');
+      expect(result['destination_path'], '$_pluginsDir/SEQ.O');
       expect(device.rescans, 1);
     });
 
     test('reports an upload failure', () async {
       device.failUploads = true;
-      final source = inAllowed('tiny.o', [0x7f, 0x45, 0x4c, 0x46, 1]);
+      final source = inAllowed('seq.o', fixtureBytes);
 
       final result = await install({'path': source});
 
@@ -453,6 +487,138 @@ void main() {
       expect(result['error'], 'install_failed');
       expect(result['message'], contains('full'));
       verifyNever(() => manager.requestRescanPlugins());
+    });
+  });
+
+  group('.o pre-upload checks', () {
+    Future<Map<String, dynamic>> refused(Uint8List bytes, String code) async {
+      final result = await install({'path': inAllowed('seq.o', bytes)});
+      expect(result['success'], isFalse);
+      expect(result['error'], code, reason: '$result');
+      expect(result['message'], isNotEmpty);
+      expectNothingUploaded();
+      verifyNever(() => manager.requestWake());
+      return result;
+    }
+
+    test('refuses bytes that are not ELF', () async {
+      await refused(
+        Uint8List.fromList(utf8.encode('not an object')),
+        'invalid_elf',
+      );
+    });
+
+    test('refuses a truncated ELF', () async {
+      await refused(Uint8List.sublistView(fixtureBytes, 0, 40), 'invalid_elf');
+    });
+
+    test('refuses a non-ARM machine', () async {
+      final result = await refused(
+        _patched(fixtureBytes, 0x12, [0x03, 0x00]),
+        'wrong_architecture',
+      );
+      expect(result['message'], contains('EM_ARM'));
+    });
+
+    test('refuses a linked executable', () async {
+      final result = await refused(
+        _patched(fixtureBytes, 0x10, [0x02, 0x00]),
+        'not_relocatable',
+      );
+      expect(result['message'], contains('ET_REL'));
+    });
+
+    test('refuses an object without pluginEntry', () async {
+      final result = await refused(
+        _renamed(fixtureBytes, 'pluginEntry', 'pluginEntrX'),
+        'missing_plugin_entry',
+      );
+      expect(result['message'], contains('pluginEntry'));
+    });
+
+    test('refuses an object with no readable GUID', () async {
+      await refused(_renamed(fixtureBytes, 'FactoryE', 'FactorXE'), 'no_guid');
+    });
+
+    test('refuses a GUID owned by a built-in algorithm', () async {
+      cubit.emit(
+        synchronized(
+          algorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'ATds',
+              name: 'Built In',
+              specifications: const [],
+            ),
+          ],
+        ),
+      );
+
+      final result = await refused(fixtureBytes, 'guid_collision');
+
+      expect(result['guid'], 'ATds');
+      expect(result['existing_kind'], 'built_in');
+      expect(result['existing_name'], 'Built In');
+    });
+
+    test('refuses a GUID owned by a plug-in in a different file', () async {
+      cubit.emit(
+        synchronized(
+          algorithms: [_plugin(0, 'ATdm', '$_pluginsDir/other/old_seq.o')],
+        ),
+      );
+
+      final result = await refused(fixtureBytes, 'guid_collision');
+
+      expect(result['guid'], 'ATdm');
+      expect(result['existing_kind'], 'plugin');
+      expect(result['existing_path'], '$_pluginsDir/other/old_seq.o');
+      expect(result['message'], contains('old_seq.o'));
+    });
+
+    test('allows reinstalling the same file', () async {
+      cubit.emit(synchronized(algorithms: seqAlgorithms()));
+      device.algorithms = seqAlgorithms();
+
+      final result = await install({'path': inAllowed('seq.o', fixtureBytes)});
+
+      expect(result['success'], isTrue, reason: '$result');
+      expect(result['verified'], isTrue);
+      expect(result['unattributed_guids'], isEmpty);
+    });
+
+    test('matches the same file without a leading slash or case', () async {
+      cubit.emit(
+        synchronized(
+          algorithms: seqAlgorithms(file: 'programs/plug-ins/SEQ.o'),
+        ),
+      );
+
+      final result = await install({'path': inAllowed('seq.o', fixtureBytes)});
+
+      expect(result['success'], isTrue, reason: '$result');
+    });
+
+    test('allows but reports a GUID whose file is unknown', () async {
+      cubit.emit(
+        synchronized(
+          algorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'ATds',
+              name: 'Unknown file',
+              specifications: const [],
+              isPlugin: true,
+            ),
+          ],
+        ),
+      );
+
+      final result = await install({'path': inAllowed('seq.o', fixtureBytes)});
+
+      expect(result['success'], isTrue, reason: '$result');
+      expect(result['unattributed_guids'], ['ATds']);
+      expect(result['message'], contains('Could not rule out'));
     });
   });
 
@@ -471,6 +637,26 @@ void main() {
       expect(result['verified'], isTrue);
       expect(result.containsKey('algorithms'), isFalse);
       verifyNever(() => manager.requestRescanPlugins());
+    });
+
+    test('refuses a Lua file containing a NUL byte', () async {
+      final source = inAllowed('script.lua', [0x2d, 0x2d, 0x00, 0x0a]);
+
+      final result = await install({'path': source});
+
+      expect(result['error'], 'invalid_lua');
+      expect(result['message'], contains('NUL'));
+      expectNothingUploaded();
+    });
+
+    test('refuses a Lua file that is not UTF-8', () async {
+      final source = inAllowed('script.lua', [0x2d, 0x2d, 0xff, 0xfe, 0x0a]);
+
+      final result = await install({'path': source});
+
+      expect(result['error'], 'invalid_lua');
+      expect(result['message'], contains('UTF-8'));
+      expectNothingUploaded();
     });
 
     test('rejects load for Lua before uploading', () async {
@@ -606,7 +792,7 @@ void main() {
   group('connection mode', () {
     Future<void> expectRefused(DistingState state, String code) async {
       cubit.emit(state);
-      final source = inAllowed('tiny.o', [0x7f, 0x45, 0x4c, 0x46]);
+      final source = inAllowed('seq.o', fixtureBytes);
 
       final result = await install({'path': source});
 

@@ -26,7 +26,12 @@ void registerPluginTools(
           'the algorithms the device reports for the file (matched by the GUIDs '
           'inside it) and whether every expected GUID appeared. .lua files go to '
           '/programs/lua/ and are verified by SD listing only. Requires a live, '
-          'synchronized device; refused in offline and demo mode. The file must '
+          'synchronized device; refused in offline and demo mode. Before any '
+          'upload, a .o must be a 32-bit little-endian ARM relocatable ELF '
+          'that defines pluginEntry and at least one factory GUID, and none of '
+          'its GUIDs may belong to a built-in algorithm or to a plug-in from a '
+          'different file (reinstalling the same file is allowed); a .lua must '
+          'be UTF-8 text without NUL bytes. The file must '
           'be inside an allowed root with MCP read permission (see '
           'list_allowed_roots) and at most 2 MiB. Upload runs at roughly '
           '5-10 KB/s. If the .o is in use by the current preset, the preset is '
@@ -162,7 +167,7 @@ final class PluginTools {
         rescanPollInterval: rescanPollInterval,
       );
     } on PluginInstallRefused catch (e) {
-      return _failure(e.reason.code, e.message);
+      return _failure(e.reason.code, e.message, e.details ?? const {});
     } on FormatException catch (e) {
       return _failure('invalid_file_name', e.message);
     } catch (e) {
@@ -197,6 +202,7 @@ final class PluginTools {
         'rescan_attempts': report.rescanAttempts,
         'expected_guids': report.expectedGuids,
         'missing_guids': missing,
+        'unattributed_guids': report.unattributedGuids,
         'algorithms': [
           for (final a in report.algorithms)
             {'guid': a.guid, 'name': a.name, 'is_loaded': a.isLoaded},
@@ -251,6 +257,13 @@ final class PluginTools {
                   'did not report loaded.',
       );
     }
+    if (report.unattributedGuids.isNotEmpty) {
+      buffer.write(
+        ' Could not rule out a GUID collision for '
+        '${report.unattributedGuids.join(', ')}: the device did not report '
+        'which file already provides it.',
+      );
+    }
     if (report.presetReloaded) {
       buffer.write(' The preset was reloaded from its saved copy.');
     }
@@ -277,7 +290,7 @@ final class PluginTools {
   String _failure(
     String code,
     String message, [
-    Map<String, dynamic> extra = const {},
+    Map<String, Object?> extra = const {},
   ]) => jsonEncode({
     'success': false,
     'error': code,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:nt_helper/utils/plugin_installation_path.dart';
@@ -46,7 +47,9 @@ import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/startup_log_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:collection/collection.dart'; // Add collection package import
+import 'package:collection/collection.dart';
+import 'package:dart_elf/dart_elf.dart'
+    show ElfFileType; // Add collection package import
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/domain/video/usb_video_manager.dart';
 

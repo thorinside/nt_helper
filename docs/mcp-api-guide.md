@@ -771,8 +771,7 @@ reports. This replaces copying the file by SD card or with `ntpush`.
 
 - `.o` files are written to `/programs/plug-ins/<name>.o`. The NT is told to
   rescan plug-ins, and the algorithm list is re-read (up to 5 times, 1 s apart)
-  until every GUID declared in the local `.o` appears. When no GUID can be read
-  from the file, any algorithm whose plug-in filename matches counts.
+  until every GUID declared in the local `.o` appears.
 - `.lua` files are written to `/programs/lua/<name>.lua`. Lua scripts are not
   algorithms, so they are verified by SD directory listing only. Select the
   script with the Program parameter of a Lua Script slot.
@@ -780,6 +779,21 @@ reports. This replaces copying the file by SD card or with `ntpush`.
 - If the `.o` being replaced is used by the current preset, the preset is
   cleared so the NT releases the file, and reloaded afterwards from its last
   saved copy on the SD card. Call `save` first to keep unsaved edits.
+
+**Pre-upload checks**: these run on the local file and the synchronized
+algorithm list before anything is sent to the device.
+
+- A `.o` must be a 32-bit little-endian ARM (`EM_ARM`) relocatable (`ET_REL`)
+  ELF object that defines `pluginEntry` (what `NT_DECLARE_PLUGIN` emits) and
+  at least one factory GUID nt_helper can read. Factories are recognised by the
+  symbol names `factory` (static or not) and `<Class>::Factory`, and their first
+  four bytes must be a printable GUID.
+- No GUID in the `.o` may already belong to a built-in algorithm, or to a
+  plug-in that the device reports from a different file. Reinstalling the same
+  file (compared case-insensitively, relative to `/programs/plug-ins/`) is
+  allowed. If the device lists the GUID as a plug-in but does not report its
+  file, the install goes ahead and the GUID is listed in `unattributed_guids`.
+- A `.lua` must be valid UTF-8 and contain no NUL bytes. It is not parsed.
 
 **Requirements**:
 - A live, synchronized connection. Offline and demo mode are refused.
@@ -818,6 +832,7 @@ Result for a verified `.o` install:
   "rescan_attempts": 1,
   "expected_guids": ["MyFl"],
   "missing_guids": [],
+  "unattributed_guids": [],
   "algorithms": [
     {"guid": "MyFl", "name": "My Filter", "is_loaded": false}
   ],
@@ -857,6 +872,9 @@ Result for a `.lua` install:
   from the old one.
 - `file_present`: the destination directory lists the file with the uploaded
   size; `null` if the listing could not be read.
+- `unattributed_guids`: GUIDs that an installed plug-in already used before
+  the upload, where the device did not say which file provides them, so a
+  collision could not be ruled out. Usually empty.
 - `missing_guids`: GUIDs read from the local file that the device never
   reported. A plug-in that fails to load on the NT (for example an API
   mismatch) shows up here; check the device screen with `show_screen`.
@@ -883,7 +901,8 @@ missing:
 
 **Errors**: `success` is `false`, `error` is a snake_case code, and `message`
 explains it. Nothing is sent to the device for any error except
-`install_failed`.
+`install_failed`. File checks run first, then the connection checks, then the
+GUID collision check.
 
 | `error` | Cause |
 |---|---|
@@ -897,6 +916,13 @@ explains it. Nothing is sent to the device for any error except
 | `file_not_found` | inside a root, but no such file |
 | `empty_file` | the file has zero bytes |
 | `file_too_large` | over 2 MiB; also returns `size` and `max_bytes` |
+| `invalid_elf` | a `.o` that is not a readable ELF file |
+| `wrong_architecture` | a `.o` that is not 32-bit little-endian `EM_ARM` |
+| `not_relocatable` | a linked `.o` (`ET_EXEC`/`ET_DYN`); the NT needs `ET_REL` |
+| `missing_plugin_entry` | a `.o` that does not define `pluginEntry` |
+| `no_guid` | a `.o` with no factory GUID nt_helper can read |
+| `guid_collision` | a GUID already used by a built-in algorithm or by a plug-in from another file; also returns `guid`, `existing_name`, `existing_kind` (`built_in` or `plugin`), and `existing_path` |
+| `invalid_lua` | a `.lua` that is not UTF-8 or contains a NUL byte |
 | `invalid_file_name` | the name cannot be used on the SD card |
 | `not_connected` | no synchronized device |
 | `offline_mode` | nt_helper is in offline mode |
@@ -906,6 +932,10 @@ explains it. Nothing is sent to the device for any error except
 
 ```json
 {"success": false, "error": "demo_mode", "message": "Demo mode has no device to install to. Connect a Disting NT."}
+```
+
+```json
+{"success": false, "error": "guid_collision", "message": "GUID MyFl is already used by My Filter from /programs/plug-ins/old/myfilter.o. Give this plug-in a unique GUID, or delete the other file.", "guid": "MyFl", "existing_name": "My Filter", "existing_kind": "plugin", "existing_path": "/programs/plug-ins/old/myfilter.o"}
 ```
 
 ```json

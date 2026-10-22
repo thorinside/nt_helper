@@ -30,6 +30,42 @@ class PluginGuid {
       'PluginGuid(guid: $guid, raw: 0x${rawValue.toRadixString(16).padLeft(8, '0').toUpperCase()})';
 }
 
+/// Facts about an ELF object that decide whether the Disting NT can load it
+/// as a plug-in. Produced by [ElfGuidExtractor.inspectPluginObject].
+class PluginObjectInfo {
+  const PluginObjectInfo({
+    required this.is32Bit,
+    required this.isLittleEndian,
+    required this.machine,
+    required this.fileType,
+    required this.hasPluginEntry,
+    required this.guids,
+  });
+
+  /// True for ELFCLASS32.
+  final bool is32Bit;
+
+  /// True for ELFDATA2LSB.
+  final bool isLittleEndian;
+
+  /// The `e_machine` value; the NT needs [ElfArchitectureIdentifier.arm].
+  final ElfArchitectureIdentifier machine;
+
+  /// The `e_type` value; the NT needs [ElfFileType.relocatable].
+  final ElfFileType fileType;
+
+  /// Whether `pluginEntry` is defined (not merely referenced).
+  final bool hasPluginEntry;
+
+  /// GUIDs of the recognised factory symbols, without duplicates.
+  final List<PluginGuid> guids;
+
+  /// Whether the header matches the NT's Cortex-M7 target: 32-bit,
+  /// little-endian ARM.
+  bool get isArm32LittleEndian =>
+      is32Bit && isLittleEndian && machine == ElfArchitectureIdentifier.arm;
+}
+
 /// Service for extracting plugin GUIDs from ELF .o files
 class ElfGuidExtractor {
   /// Convert a 32-bit integer to a 4-character GUID string
@@ -127,6 +163,27 @@ class ElfGuidExtractor {
     }
   }
 
+  /// Collects the GUIDs of every recognised factory symbol in [reader],
+  /// from the static and dynamic symbol tables, without duplicates.
+  static List<PluginGuid> _collectGuids(ElfReader reader) {
+    final guids = <PluginGuid>[];
+    void scan(ElfSymbolTableSection? table, ElfStringTable? names) {
+      if (table == null) return;
+      for (final symbol in table.symbols) {
+        final name = names?.at(symbol.nindex) ?? '';
+        if (!_isFactorySymbol(name)) continue;
+        final guid = _extractGuidFromSymbol(reader, symbol, name);
+        if (guid != null && !guids.any((g) => g.guid == guid.guid)) {
+          guids.add(guid);
+        }
+      }
+    }
+
+    scan(reader.symbolTableSection, reader.stringTable);
+    scan(reader.dynamicSymbolTableSection, reader.dynamicStringTable);
+    return guids;
+  }
+
   /// Extract ALL plugin GUIDs from ELF bytes.
   /// A single .o file can contain multiple algorithms, each with its own Factory.
   static Future<List<PluginGuid>> extractAllGuidsFromBytes(
@@ -134,53 +191,55 @@ class ElfGuidExtractor {
     String fileName,
   ) async {
     try {
-      // Parse the ELF file from bytes
-      final reader = ElfReader.fromBytes(bytes);
-      final guids = <PluginGuid>[];
-
-      // Collect all factory symbols from the symbol table
-      if (reader.symbolTableSection != null) {
-        final symbolTable = reader.symbolTableSection!;
-        final stringTable = reader.stringTable;
-
-        for (final symbol in symbolTable.symbols) {
-          final name = stringTable?.at(symbol.nindex) ?? '';
-          if (_isFactorySymbol(name)) {
-            final guid = _extractGuidFromSymbol(reader, symbol, name);
-            if (guid != null) {
-              guids.add(guid);
-            }
-          }
-        }
-      }
-
-      // Also check dynamic symbol table
-      if (reader.dynamicSymbolTableSection != null) {
-        final dynamicSymbolTable = reader.dynamicSymbolTableSection!;
-        final dynamicStringTable = reader.dynamicStringTable;
-
-        for (final symbol in dynamicSymbolTable.symbols) {
-          final name = dynamicStringTable?.at(symbol.nindex) ?? '';
-          if (_isFactorySymbol(name)) {
-            final guid = _extractGuidFromSymbol(reader, symbol, name);
-            // Avoid duplicates
-            if (guid != null && !guids.any((g) => g.guid == guid.guid)) {
-              guids.add(guid);
-            }
-          }
-        }
-      }
-
+      final guids = _collectGuids(ElfReader.fromBytes(bytes));
       if (guids.isEmpty) {
         throw GuidExtractionException('No Factory symbols found in $fileName');
       }
-
       return guids;
     } catch (e) {
       if (e is GuidExtractionException) rethrow;
       throw GuidExtractionException(
         'Failed to extract GUIDs from $fileName: $e',
       );
+    }
+  }
+
+  /// Name of the symbol the Disting NT calls to enter a C++ plug-in, as
+  /// declared by distingNT_API's `NT_DECLARE_PLUGIN`.
+  static const pluginEntrySymbol = 'pluginEntry';
+
+  /// Reads, in one ELF parse, everything needed to judge whether [bytes]
+  /// can be loaded as a Disting NT plug-in: word size, byte order, machine,
+  /// file type, whether [pluginEntrySymbol] is defined, and the factory GUIDs.
+  ///
+  /// Throws [GuidExtractionException] when the bytes are not a readable ELF.
+  static PluginObjectInfo inspectPluginObject(
+    Uint8List bytes,
+    String fileName,
+  ) {
+    try {
+      final reader = ElfReader.fromBytes(bytes);
+      final header = reader.header;
+      var hasPluginEntry = false;
+      final symbols = reader.symbolTableSection;
+      if (symbols != null) {
+        final names = reader.stringTable;
+        hasPluginEntry = symbols.symbols.any(
+          (symbol) =>
+              symbol.shndx != 0 &&
+              names?.at(symbol.nindex) == pluginEntrySymbol,
+        );
+      }
+      return PluginObjectInfo(
+        is32Bit: header.word == ElfWordSize.word32Bit,
+        isLittleEndian: header.endian == Endian.little,
+        machine: header.arch,
+        fileType: header.type,
+        hasPluginEntry: hasPluginEntry,
+        guids: _collectGuids(reader),
+      );
+    } catch (e) {
+      throw GuidExtractionException('$fileName is not a readable ELF file: $e');
     }
   }
 
