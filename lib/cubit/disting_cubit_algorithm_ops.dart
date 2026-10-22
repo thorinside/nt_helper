@@ -760,6 +760,67 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
     }
   }
 
+  /// Awaited counterpart of [onRemoveAlgorithmImpl]: sends the removal,
+  /// then reads the slot count up to [pollAttempts] times, [pollInterval]
+  /// apart, until it drops by one. Only then is the slot removed from state.
+  /// Returns false, with state unchanged, when there is no live session,
+  /// the index is out of range, the request fails, or the drop is never
+  /// seen.
+  Future<bool> removeAlgorithmConfirmedImpl(
+    int algorithmIndex, {
+    required Duration pollInterval,
+    required int pollAttempts,
+    required Duration requestTimeout,
+  }) async {
+    final before = state;
+    if (before is! DistingStateSynchronized || before.offline || before.demo) {
+      return false;
+    }
+    if (algorithmIndex < 0 || algorithmIndex >= before.slots.length) {
+      return false;
+    }
+    final disting = before.disting;
+    final expectedCount = before.slots.length - 1;
+    try {
+      await disting
+          .requestRemoveAlgorithm(algorithmIndex)
+          .timeout(requestTimeout * 2);
+    } catch (_) {
+      return false;
+    }
+
+    for (var attempt = 0; attempt < pollAttempts; attempt++) {
+      await Future<void>.delayed(pollInterval);
+      int? count;
+      try {
+        count = await disting
+            .requestNumAlgorithmsInPreset(
+              timeout: requestTimeout,
+              maxRetries: 1,
+            )
+            .timeout(requestTimeout * 2);
+      } catch (_) {
+        continue;
+      }
+      if (count != expectedCount) continue;
+
+      final current = state;
+      if (current is DistingStateSynchronized &&
+          identical(current.disting, disting) &&
+          algorithmIndex < current.slots.length) {
+        final slots = List<Slot>.from(current.slots)..removeAt(algorithmIndex);
+        for (var i = algorithmIndex; i < slots.length; i++) {
+          slots[i] = _fixAlgorithmIndex(slots[i], i);
+        }
+        emit(current.copyWith(slots: slots, loading: false, isDirty: true));
+        _rebuildCcLookup();
+      }
+      _refreshMemoryAfterDeviceMutation();
+      return true;
+    }
+    return false;
+  }
+
   Future<void> onRemoveAlgorithmImpl(int algorithmIndex) async {
     switch (state) {
       case DistingStateInitial():

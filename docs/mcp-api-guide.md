@@ -948,6 +948,155 @@ use, the preset is reloaded from the saved copy, which restores its slots and
 parameter values. For a Lua script in use, reinstall it and then select the
 script again from the slot's Program parameter.
 
+**Testing after install**: to check that an installed plug-in loads, answers,
+and stays within a CPU budget, call [`smoke_test_plugin`](#smoke_test_plugin)
+after `install_plugin` with `load: true`.
+
+#### smoke_test_plugin
+
+Smoke-test an installed plug-in on the connected Disting NT, then put the
+preset back the way it was.
+
+1. If the plug-in is not loaded, load it. If it does not report loaded, the
+   tool stops with `load_failed` and the preset is unchanged.
+2. Append the plug-in as a new slot at the **end** of the current preset, and
+   wait for the device to confirm that the slot count went up. Slots are only
+   ever appended, so the existing slots keep their positions.
+3. Wait `settle_ms`.
+4. Check that the new slot answers with the plug-in's GUID and reports at
+   least one parameter. With `expected_parameter_count` the count must match
+   exactly; with `expected_parameter_names` the first parameters must have
+   those names, in order.
+5. Sample CPU `cpu_samples` times, 250 ms apart. The test slot's highest
+   sample must not exceed `cpu_budget_percent`. With `max_core_percent`, the
+   higher of the two cores in each sample must not exceed it either.
+6. Remove the test slot and confirm the original slot lineup (slot count and
+   each slot's GUID) with the device. With `keep: true` and every check
+   passed, the slot stays instead.
+
+**The preset is never saved.** Saving would write the current preset,
+including any unsaved edits, over its file on the SD card, so the tool
+removes the slot it added instead. When every check passed and `keep` is set,
+the slot stays in the running preset only. Call `save` yourself to keep it.
+
+**When the slot cannot be removed** (the device does not confirm the removal
+within 5 s, or the lineup does not match afterwards), the tool falls back to
+reloading the preset's last saved copy, `/presets/<preset name>.json`:
+
+- With no unsaved edits, the reload happens automatically and loses nothing.
+- With unsaved edits, it happens only with `reload_saved_on_failure: true`.
+  After the reload, if the slot lineup matches the one before the test, the
+  parameter values from before the test are written back
+  (`restored_parameter_values`). Other unsaved edits, such as added or
+  removed slots, mappings and renames, are lost.
+- Otherwise the slot stays where it is, `rollback` is `failed`, and
+  `rollback_error` says what to do: remove the slot on the device, or allow
+  the reload.
+
+If the plug-in crashes the device, nothing can be undone over MIDI. The
+result reports `device_unresponsive` and, unless the reload worked,
+`rollback: "failed"`. After a power cycle the NT starts with the last saved
+preset, so the test slot is gone, and so are any unsaved edits.
+
+**Requirements**:
+- A live, synchronized connection. Offline and demo mode are refused.
+- A free slot. A preset that already uses all 40 slots is refused with
+  `preset_full`.
+
+**Parameters**:
+
+| Name | Type | Default | Meaning |
+|---|---|---|---|
+| `guid` | string, required | | GUID of the installed plug-in algorithm |
+| `cpu_budget_percent` | integer 1-100, required | | highest per-slot CPU percentage the test slot may reach, in the units `show_cpu` reports as a slot's `usage_percent` |
+| `max_core_percent` | integer 1-100 | none | highest percentage either core may reach (`cpu1_percent`/`cpu2_percent` in `show_cpu`) |
+| `specifications` | integer array | each specification's default | specification values for the test slot |
+| `expected_parameter_count` | integer ≥ 1 | at least 1 | exact parameter count |
+| `expected_parameter_names` | string array | not checked | names of the first parameters, in order; surrounding spaces are ignored |
+| `settle_ms` | integer 0-5000 | 1000 | wait before the checks |
+| `cpu_samples` | integer 1-10 | 3 | number of CPU samples |
+| `keep` | boolean | false | keep the slot when every check passes |
+| `reload_saved_on_failure` | boolean | false | allow the saved-preset reload even with unsaved edits |
+
+**Example**:
+
+```json
+{"tool": "smoke_test_plugin", "arguments": {"guid": "MyFl", "cpu_budget_percent": 30, "max_core_percent": 80, "expected_parameter_names": ["Cutoff", "Resonance"]}}
+```
+
+**Passing result**:
+
+```json
+{
+  "success": true,
+  "guid": "MyFl",
+  "name": "My Filter",
+  "slot_index": 2,
+  "loaded_plugin": false,
+  "checks": [
+    {"name": "slot_added", "passed": true, "detail": "Appended as slot 2."},
+    {"name": "slot_responds", "passed": true},
+    {"name": "algorithm_guid", "passed": true},
+    {"name": "parameter_count", "passed": true, "detail": "Reported 2; expected at least 1."},
+    {"name": "parameter_names", "passed": true, "detail": "Expected [Cutoff, Resonance], got [Cutoff, Resonance]."},
+    {"name": "slot_cpu", "passed": true, "detail": "Peak 12% over 3 sample(s); budget 30%."},
+    {"name": "core_cpu", "passed": true, "detail": "Peak core 41%; ceiling 80%."}
+  ],
+  "cpu": {"budget_percent": 30, "max_core_percent": 80, "slot_samples": [11, 12, 12], "slot_peak": 12, "core_samples": [40, 41, 41], "core_peak": 41},
+  "rollback": "removed_slot",
+  "rolled_back": true,
+  "message": "My Filter (MyFl) passed every check in slot 2. The test slot was removed, and the original slots are confirmed."
+}
+```
+
+**Failing result**: `success` is `false` and `error` says why the test failed
+(see the table below). The test slot is still removed, and `rolled_back`
+says whether the original lineup was confirmed.
+
+```json
+{"success": false, "error": "cpu_over_budget", "guid": "MyFl", "name": "My Filter", "slot_index": 2, "loaded_plugin": false, "checks": [{"name": "slot_added", "passed": true, "detail": "Appended as slot 2."}, {"name": "slot_responds", "passed": true}, {"name": "algorithm_guid", "passed": true}, {"name": "parameter_count", "passed": true, "detail": "Reported 2; expected at least 1."}, {"name": "slot_cpu", "passed": false, "detail": "Peak 47% over 3 sample(s); budget 30%."}], "cpu": {"budget_percent": 30, "max_core_percent": null, "slot_samples": [44, 47, 45], "slot_peak": 47, "core_samples": [70, 72, 71], "core_peak": 72}, "rollback": "removed_slot", "rolled_back": true, "message": "My Filter (MyFl) failed: Slot 2 peaked at 47% CPU; the budget is 30%. The test slot was removed, and the original slots are confirmed."}
+```
+
+**`rollback` values**:
+
+| `rollback` | `rolled_back` | Meaning |
+|---|---|---|
+| `kept` | false | every check passed and `keep` was set; the slot stays, unsaved |
+| `not_needed` | true | the slot never appeared; the original lineup is confirmed |
+| `removed_slot` | true | the slot was removed and the original lineup is confirmed |
+| `reloaded_saved_preset` | true | removal failed, so the saved preset was reloaded; see `rollback_error` and `restored_parameter_values` |
+| `failed` | false | the original lineup could not be confirmed; `rollback_error` says why and what to do |
+
+**Test failures** (the test ran, then rolled back):
+
+| `error` | Cause |
+|---|---|
+| `add_failed` | the device did not confirm the new slot within 10 s |
+| `parameters_unavailable` | the slot did not answer the GUID, parameter-count or parameter-name reads |
+| `parameter_mismatch` | the slot holds another GUID, reports no parameters, or differs from `expected_parameter_count` or `expected_parameter_names` |
+| `cpu_over_budget` | the slot's peak sample exceeded `cpu_budget_percent` |
+| `core_cpu_over_budget` | a core's peak sample exceeded `max_core_percent` (reported only if the slot was within budget) |
+| `cpu_unavailable` | a CPU sample did not arrive or did not include the test slot |
+| `device_unresponsive` | after a failure, the device also stopped answering slot-count reads |
+| `rollback_failed` | every check passed, but the original lineup could not be confirmed |
+| `internal_error` | an unexpected error; the rollback still runs |
+
+**Refusals** (the preset was not touched):
+
+| `error` | Cause |
+|---|---|
+| `missing_guid` | `guid` absent or blank |
+| `missing_cpu_budget` | `cpu_budget_percent` absent |
+| `invalid_<argument>` | an argument has the wrong type or is out of range, for example `invalid_cpu_budget_percent` |
+| `unknown_argument` | an argument the tool does not accept |
+| `not_connected` | no synchronized device |
+| `offline_mode` | nt_helper is in offline mode |
+| `demo_mode` | nt_helper is in demo mode |
+| `unknown_guid` | no installed algorithm has this GUID |
+| `not_a_plugin` | the GUID belongs to a built-in algorithm |
+| `preset_full` | every slot is in use; also returns `max_slots` |
+| `load_failed` | the plug-in did not report loaded |
+
 ---
 
 ## Workflow Examples
