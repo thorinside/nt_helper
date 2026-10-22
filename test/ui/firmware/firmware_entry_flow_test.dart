@@ -34,6 +34,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../test_helpers/mock_midi_command.dart';
 
+import '../../test_helpers/firmware_usb_access.dart';
+
 class _MockDistingCubit extends MockCubit<DistingState>
     implements DistingCubit {}
 
@@ -372,6 +374,7 @@ Future<void> _completeManualFlash(
 }
 
 void main() {
+  setUpFirmwareUsbAccess();
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {

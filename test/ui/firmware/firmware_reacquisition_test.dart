@@ -24,6 +24,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../test_helpers/mock_midi_command.dart';
 
+import '../../test_helpers/firmware_usb_access.dart';
+
 class _MockFirmwareUpdateCubit extends MockCubit<FirmwareUpdateState>
     implements FirmwareUpdateCubit {}
 
@@ -181,6 +183,7 @@ Future<FirmwareUpdateCubit> _openFirmwareAndStartManualFlash(
 }
 
 void main() {
+  setUpFirmwareUsbAccess();
   late _MockFirmwareUpdateCubit firmwareCubit;
 
   setUp(() {
