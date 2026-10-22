@@ -32,49 +32,50 @@ requirement. Report selected commands, results, and untested areas honestly.
 
 `ci.yml` runs on every pull request, all branch pushes (not tag pushes), and
 manual dispatch, without path filters. Each run executes analysis and the full
-default Flutter suite once. Builds depend on that job; each generates its own
-ignored code but does not rerun tests. Matrix fail-fast is disabled so separate
-build failures remain visible. Superseded runs are cancelled by ref; the final
-`CI success` job requires both test and build results to be exactly successful,
-including all matrix entries. A failed, skipped, or cancelled dependency cannot
-produce a green aggregate.
+default Flutter suite once on GitHub-hosted Ubuntu. Superseded runs are cancelled
+by ref. The always-running `CI success` aggregate requires the analysis/test job
+result to be exactly successful; a failed, skipped, or cancelled dependency
+cannot produce a green aggregate.
 
-Only analysis and the full Flutter suite use GitHub-hosted infrastructure.
-All platform builds retain the existing self-hosted routes from `tag-build.yml`,
-corroborated against the organization runner API on 2026-10-21. Hosted build
-minutes are expensive; do not move builds or add hosted build fallbacks.
-
-| Work | Labels | Registered machine |
+| Validation work | Labels | Registered machine |
 | --- | --- | --- |
 | Analysis, full tests | ubuntu-24.04 | GitHub-hosted Ubuntu |
-| Aggregate, Linux, Android | self-hosted, Linux, X64 | dev |
-| Windows | self-hosted, Windows, X64 | dev-Windows |
-| macOS, iOS | self-hosted, macOS, ARM64 | MacBookPro |
+| Aggregate | self-hosted, Linux, X64 | dev |
 
-The self-hosted jobs share existing single-machine capacity and may queue;
-full-suite validation runs independently on GitHub-hosted Ubuntu. Linux native
-prerequisite checks, JDK 17 / Android NDK / UVCCamera setup, Windows x64, and
-Xcode 27 follow the release configuration. Android CI uses a debug APK to avoid
-the required release keystore; macOS and iOS compile without signing. These are
-compile checks, not distribution/package verification. No release, store,
-notarization, installer, or deployment commands run in CI. The existing seven
-signed/distribution jobs in `tag-build.yml` remain unchanged.
+Normal CI does not build binaries. All binary builds remain exclusively in
+`tag-build.yml`, triggered by `v*` tag pushes or explicit release-workflow manual
+dispatch. Its seven signed/distribution jobs, platform routing, prerequisites,
+store uploads, packaging, and release publication are unchanged. PR and ordinary
+branch pushes do not trigger that workflow.
 
-PR execution on persistent self-hosted machines requires trusted code review and
-the organization's fork-workflow approval/isolation policy. Do not approve
-untrusted code onto these hosts merely to obtain green checks. CI uses
-`pull_request` (not a privileged target event), read-only repository permission,
-no signing secrets, and checkouts without persisted credentials. Those measures
-do not sandbox code or protect credentials already present on a host.
+CI uses `pull_request` (not a privileged target event), read-only repository
+permission, no signing secrets, and checkouts without persisted credentials.
+Only the fixed aggregate shell command runs on the self-hosted machine; it does
+not check out or execute PR code.
 
-## Required administrator action before merge
+## Download caching
+
+The hosted validation job enables the Flutter action's built-in SDK and pub
+package caches. Its default keys include OS, architecture, channel, Flutter
+version, and SDK hash; the action additionally appends the `pubspec.lock` hash to
+the pub key. There is one cache layer per download type, with no broad fallback
+keys or cross-OS reuse. See the [Flutter action cache documentation](https://github.com/subosito/flutter-action#caching).
+
+The prior workflow left these caches disabled. Warm caches avoid repeated SDK
+and dependency downloads; no fixed time saving is claimed. `flutter pub get`,
+code generation, analysis, and the full suite still run on every change. Project
+`.dart_tool`, generated sources, `build/`, and test results are not cached. This
+job configures no package registry credentials. Release workflow configuration
+is unchanged.
+
+## Required check configuration
 
 Inspection on 2026-10-21: the main branch protection endpoint returned
 `404 Branch not protected`; repository rulesets and effective main branch rules
 were empty. Auto-merge was disabled. No existing required checks were removed or
 changed by this work.
 
-After the new check has appeared on a PR, an administrator must configure a main
+To enforce this validation for merges, an administrator can configure a main
 branch rule / ruleset requiring:
 
 - Pull requests and the GitHub Actions check **CI success**, with the branch
@@ -82,7 +83,7 @@ branch rule / ruleset requiring:
 - Enforcement for administrators as well; no bypass or automatic merge.
 - Existing review/security policies, if configured elsewhere, preserved.
 
-The aggregate covers analysis, the full suite, and all five platform builds.
-Verify a failed dependency blocks merging after enabling protection. Workflow
-YAML alone does **not** enforce this, and absence of that rule is a merge blocker.
-Do not merge this PR until the latest full CI is green and protection is enabled.
+The aggregate covers analysis and the full default test suite. Verify a failed
+dependency blocks merging after enabling protection. Workflow YAML alone does
+**not** configure or enforce branch protection. Policy changes require separate
+owner authorization; this workflow does not apply them.

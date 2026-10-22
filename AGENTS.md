@@ -110,7 +110,7 @@ Before committing, run relevant checks and report the exact commands and limits.
 The full `flutter test --no-pub` suite runs once per CI run on every PR and branch
 push; it is not required after every local edit. Releases still require the full
 local suite on the release commit. See `test/AGENTS.md` for selection examples and
-`docs/developer-feedback.md` for CI routing and merge-protection requirements.
+`docs/developer-feedback.md` for CI routing and required-check configuration.
 
 ## Updating Flutter (fvm)
 
