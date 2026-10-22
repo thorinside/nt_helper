@@ -11,6 +11,7 @@ import 'package:nt_helper/mcp/mcp_constants.dart';
 import 'package:nt_helper/mcp/tool_reference_store.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
+import 'package:nt_helper/mcp/tools/plugin_tools.dart';
 import 'package:nt_helper/mcp/tools/remote_tools.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
@@ -51,6 +52,7 @@ class ToolRegistry {
   };
 
   final List<ToolRegistryEntry> _entries = [];
+  final DistingCubit _cubit;
   final ToolReferenceStore _referenceStore;
   late final DistingController _controller;
   late final MCPAlgorithmTools _algoTools;
@@ -62,7 +64,8 @@ class ToolRegistry {
     MemoryService? memoryService,
     List<ToolRegistryEntry> extraEntries = const [],
     ToolReferenceStore? referenceStore,
-  }) : _referenceStore = referenceStore ?? ToolReferenceStore() {
+  }) : _cubit = distingCubit,
+       _referenceStore = referenceStore ?? ToolReferenceStore() {
     _controller = DistingControllerImpl(distingCubit);
     _algoTools = MCPAlgorithmTools(_controller, distingCubit);
     _distingTools = DistingTools(_controller, distingCubit);
@@ -140,6 +143,8 @@ class ToolRegistry {
 
   /// Apply all registered tools to an MCP server instance.
   /// Memory tools are excluded — they are for the in-app chat only.
+  /// Local-file and plugin-install tools are added here with the MCP actor,
+  /// so they read only roots that grant MCP permission.
   void applyToMcpServer(McpServer server) {
     for (final entry in _entries) {
       if (_chatOnlyToolNames.contains(entry.name)) continue;
@@ -148,6 +153,7 @@ class ToolRegistry {
 
     final mcpFileEntries = <ToolRegistryEntry>[];
     registerLocalFileTools(mcpFileEntries, actor: FileRootActor.mcp);
+    registerPluginTools(mcpFileEntries, _cubit, actor: FileRootActor.mcp);
     for (final entry in mcpFileEntries) {
       _registerMcpEntry(server, entry);
     }

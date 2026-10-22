@@ -761,6 +761,165 @@ Remove the algorithm from a slot, leaving it empty.
 
 ---
 
+### Plugin Tools
+
+#### install_plugin
+
+Install a C++ plug-in (`.o`) or Lua script (`.lua`) from the computer running
+nt_helper onto the connected Disting NT SD card, then verify what the device
+reports. This replaces copying the file by SD card or with `ntpush`.
+
+- `.o` files are written to `/programs/plug-ins/<name>.o`. The NT is told to
+  rescan plug-ins, and the algorithm list is re-read (up to 5 times, 1 s apart)
+  until every GUID declared in the local `.o` appears. When no GUID can be read
+  from the file, any algorithm whose plug-in filename matches counts.
+- `.lua` files are written to `/programs/lua/<name>.lua`. Lua scripts are not
+  algorithms, so they are verified by SD directory listing only. Select the
+  script with the Program parameter of a Lua Script slot.
+- An existing file with the same name is overwritten.
+- If the `.o` being replaced is used by the current preset, the preset is
+  cleared so the NT releases the file, and reloaded afterwards from its last
+  saved copy on the SD card. Call `save` first to keep unsaved edits.
+
+**Requirements**:
+- A live, synchronized connection. Offline and demo mode are refused.
+- Firmware with SD card support (1.10 or later).
+- The file must be inside an allowed root that grants MCP read permission, the
+  same roots `list_allowed_roots`, `list_files`, and `read_file` use. Roots are
+  configured in nt_helper Settings. Symlinks and `..` cannot leave a root.
+- At most 2 MiB (2,097,152 bytes). Uploads use 512-byte SysEx chunks and run at
+  roughly 5-10 KB/s, so a 500 KB plug-in takes about a minute. The tool's own
+  timeout is 10 minutes; raise your MCP client's tool-call timeout if it is
+  shorter.
+
+**Parameters**:
+- `path` (required, string): Absolute local path ending in `.o` or `.lua`
+  (case-insensitive). The file name is kept on the SD card.
+- `load` (optional, boolean): `.o` only. After the rescan, load every algorithm
+  found for the file. Default: `false`. Rejected for `.lua`.
+
+```json
+{"tool": "install_plugin", "arguments": {"path": "/Users/me/nt-builds/myfilter.o", "load": true}}
+```
+
+Result for a verified `.o` install:
+
+```json
+{
+  "success": true,
+  "plugin_type": "cpp",
+  "source_path": "/Users/me/nt-builds/myfilter.o",
+  "destination_path": "/programs/plug-ins/myfilter.o",
+  "bytes_written": 183204,
+  "file_present": true,
+  "verified": true,
+  "preset_reloaded": false,
+  "root_duplicate": {"status": "not_applicable"},
+  "rescan_attempts": 1,
+  "expected_guids": ["MyFl"],
+  "missing_guids": [],
+  "algorithms": [
+    {"guid": "MyFl", "name": "My Filter", "is_loaded": false}
+  ],
+  "load_results": [
+    {"guid": "MyFl", "loaded": true}
+  ],
+  "message": "Uploaded 183204 bytes to /programs/plug-ins/myfilter.o. Rescan found: My Filter (MyFl). Loaded 1 algorithm(s)."
+}
+```
+
+`algorithms[].is_loaded` is the state reported by the rescan, before any load;
+`load_results` (present only when `load` was requested) is the outcome of
+loading each one.
+
+Result for a `.lua` install:
+
+```json
+{
+  "success": true,
+  "plugin_type": "lua",
+  "source_path": "/Users/me/nt-builds/arp.lua",
+  "destination_path": "/programs/lua/arp.lua",
+  "bytes_written": 2310,
+  "file_present": true,
+  "verified": true,
+  "preset_reloaded": false,
+  "root_duplicate": {"status": "not_applicable"},
+  "message": "Uploaded 2310 bytes to /programs/lua/arp.lua. The file is listed on the SD card."
+}
+```
+
+**Result fields**:
+- `verified`: `.o` — at least one algorithm was found and no expected GUID is
+  missing. `.lua` — the SD listing shows the file with the uploaded size.
+  When a rebuild replaces a plug-in with the same GUIDs, `verified` confirms
+  the GUIDs are still listed after the rescan; it cannot tell the new build
+  from the old one.
+- `file_present`: the destination directory lists the file with the uploaded
+  size; `null` if the listing could not be read.
+- `missing_guids`: GUIDs read from the local file that the device never
+  reported. A plug-in that fails to load on the NT (for example an API
+  mismatch) shows up here; check the device screen with `show_screen`.
+- `root_duplicate.status`: `not_applicable`, `removed`, `deletion_failed`, or
+  `kept_unverified` — cleanup of a same-GUID copy in the plug-ins root, which
+  only applies to installs into a subfolder.
+
+An upload that completes but cannot be verified still returns
+`"success": true` with `"verified": false` and a `message` that says what is
+missing:
+
+```json
+{
+  "success": true,
+  "plugin_type": "cpp",
+  "verified": false,
+  "rescan_attempts": 5,
+  "expected_guids": ["MyFl"],
+  "missing_guids": ["MyFl"],
+  "algorithms": [],
+  "message": "Uploaded 183204 bytes to /programs/plug-ins/myfilter.o. No algorithm for this file appeared after 5 rescan check(s). Check the device screen for a load error, or call search_algorithms later."
+}
+```
+
+**Errors**: `success` is `false`, `error` is a snake_case code, and `message`
+explains it. Nothing is sent to the device for any error except
+`install_failed`.
+
+| `error` | Cause |
+|---|---|
+| `missing_path` | `path` absent or blank |
+| `invalid_load` | `load` is not a boolean |
+| `unknown_argument` | an argument other than `path` or `load` |
+| `unsupported_extension` | not `.o` or `.lua` |
+| `load_not_supported` | `load: true` with a `.lua` file |
+| `absolute_path_required` | `path` is relative |
+| `path_outside_allowed_root` | not inside a root with MCP read permission, or escapes one via `..` or a symlink |
+| `file_not_found` | inside a root, but no such file |
+| `empty_file` | the file has zero bytes |
+| `file_too_large` | over 2 MiB; also returns `size` and `max_bytes` |
+| `invalid_file_name` | the name cannot be used on the SD card |
+| `not_connected` | no synchronized device |
+| `offline_mode` | nt_helper is in offline mode |
+| `demo_mode` | nt_helper is in demo mode |
+| `sd_card_unsupported` | firmware older than 1.10 |
+| `install_failed` | the upload failed partway; `message` has the device error |
+
+```json
+{"success": false, "error": "demo_mode", "message": "Demo mode has no device to install to. Connect a Disting NT."}
+```
+
+```json
+{"success": false, "error": "file_too_large", "message": "/Users/me/big.o is 3145728 bytes; the limit is 2097152 bytes.", "size": 3145728, "max_bytes": 2097152}
+```
+
+**Reloading a rebuilt plug-in**: there is no separate `reload_plugin` tool.
+Call `save`, then `install_plugin` with the rebuilt file. If the plug-in is in
+use, the preset is reloaded from the saved copy, which restores its slots and
+parameter values. For a Lua script in use, reinstall it and then select the
+script again from the slot's Program parameter.
+
+---
+
 ## Workflow Examples
 
 ### Workflow 1: Creating a Simple Preset

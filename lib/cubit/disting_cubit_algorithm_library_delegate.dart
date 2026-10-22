@@ -321,4 +321,20 @@ class _AlgorithmLibraryDelegate {
     await _cubit._metadataDao.invalidateAlgorithmInfoCache();
     refreshAlgorithmsInBackground();
   }
+
+  /// Awaited counterpart of [refreshAlgorithmsInBackground]: re-reads the
+  /// whole algorithm list from the device, bypassing the cache, publishes it
+  /// to state, and returns it.
+  ///
+  /// It sends no rescan command; callers that need one send it first.
+  Future<List<AlgorithmInfo>> refreshAlgorithmsNow() async {
+    final manager = _cubit.requireDisting();
+    await _cubit._metadataDao.invalidateAlgorithmInfoCache();
+    final algorithms = await fetchAlgorithmsWithPriority(manager);
+    final state = _cubit.state;
+    if (state is DistingStateSynchronized && !state.offline) {
+      _cubit._emitState(state.copyWith(algorithms: algorithms));
+    }
+    return algorithms;
+  }
 }
