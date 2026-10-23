@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:nt_helper/utils/plugin_installation_path.dart';
@@ -30,6 +31,7 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/package_file.dart';
 import 'package:nt_helper/models/plugin_cleanup_outcome.dart';
 import 'package:nt_helper/models/plugin_info.dart';
+import 'package:nt_helper/models/plugin_install_report.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/firmware_release.dart';
@@ -45,7 +47,9 @@ import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/startup_log_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:collection/collection.dart'; // Add collection package import
+import 'package:collection/collection.dart';
+import 'package:dart_elf/dart_elf.dart'
+    show ElfFileType; // Add collection package import
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/domain/video/usb_video_manager.dart';
 
@@ -58,6 +62,7 @@ part 'disting_cubit_slot_ops.dart';
 part 'disting_cubit_offline_demo_delegate.dart';
 part 'disting_cubit_parameter_fetch_delegate.dart';
 part 'disting_cubit_plugin_delegate.dart';
+part 'disting_cubit_plugin_verify_delegate.dart';
 part 'disting_cubit_connection_delegate.dart';
 part 'disting_cubit_parameter_refresh_delegate.dart';
 part 'disting_cubit_monitoring_delegate.dart';
@@ -140,6 +145,8 @@ class DistingCubit extends _DistingCubitBase
   late final _ParameterFetchDelegate _parameterFetchDelegate =
       _ParameterFetchDelegate(this);
   late final _PluginDelegate _pluginDelegate = _PluginDelegate(this);
+  late final _PluginVerifyDelegate _pluginVerifyDelegate =
+      _PluginVerifyDelegate(this);
   late final _ConnectionDelegate _connectionDelegate = _ConnectionDelegate(
     this,
   );
@@ -1133,6 +1140,30 @@ class DistingCubit extends _DistingCubitBase
   /// and refresh the specific algorithm info with updated specifications
   Future<AlgorithmInfo?> loadPlugin(String guid) async {
     return _pluginDelegate.loadPlugin(guid);
+  }
+
+  /// Installs a `.o` or `.lua` plugin on live hardware and reports what the
+  /// device shows afterwards: SD listing, algorithms after the rescan, and,
+  /// when [load] is true, the outcome of loading each one.
+  ///
+  /// Throws [PluginInstallRefused] in demo or offline mode, when no device is
+  /// synchronized, or when the firmware cannot write to the SD card.
+  /// [maxRescanAttempts] and [rescanPollInterval] bound the wait for the
+  /// rescanned algorithm list.
+  Future<PluginInstallReport> installPluginAndVerify(
+    String fileName,
+    Uint8List fileData, {
+    bool load = false,
+    int maxRescanAttempts = 5,
+    Duration rescanPollInterval = const Duration(seconds: 1),
+  }) {
+    return _pluginVerifyDelegate.installPluginAndVerify(
+      fileName,
+      fileData,
+      load: load,
+      maxRescanAttempts: maxRescanAttempts,
+      rescanPollInterval: rescanPollInterval,
+    );
   }
 
   /// Check for firmware updates in the background (non-blocking)

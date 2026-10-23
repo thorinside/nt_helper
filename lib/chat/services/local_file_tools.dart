@@ -167,6 +167,24 @@ void registerLocalFileTools(
   ]);
 }
 
+/// Resolves an absolute local [filePath] to an existing regular file inside
+/// an allowed root that grants [actor] the [permission].
+///
+/// Uses the same containment and symlink rules as `read_file`, so a tool that
+/// reads by absolute path cannot reach anything `read_file` could not. On
+/// failure `error` holds one of: `absolute_path_required`,
+/// `path_outside_allowed_root`, or `file_not_found`.
+Future<({File? file, String? error})> resolveAllowedLocalFile(
+  String filePath, {
+  required FileRootActor actor,
+  FileRootPermission permission = FileRootPermission.read,
+}) {
+  return _LocalFileTools(
+    SettingsService(),
+    actor,
+  ).resolveAbsoluteFile(filePath, permission);
+}
+
 class _ResolvedRoot {
   const _ResolvedRoot(this.config, this.directory);
 
@@ -440,6 +458,41 @@ class _LocalFileTools {
       'matches': matches,
       'truncated': false,
     });
+  }
+
+  /// Implements [resolveAllowedLocalFile].
+  Future<({File? file, String? error})> resolveAbsoluteFile(
+    String filePath,
+    FileRootPermission permission,
+  ) async {
+    if (!path.isAbsolute(filePath)) {
+      return (file: null, error: 'absolute_path_required');
+    }
+    final normalized = path.normalize(filePath);
+    var insideRoot = false;
+    for (final root in _settings.allowedFileRoots) {
+      if (!root.allows(_actor, permission)) continue;
+      final directory = Directory(root.path);
+      if (!await directory.exists()) continue;
+      final resolvedRoot = Directory(await directory.resolveSymbolicLinks());
+      for (final base in {path.normalize(root.path), resolvedRoot.path}) {
+        if (!path.isWithin(base, normalized)) continue;
+        final target = await _resolveUnderRoot(
+          resolvedRoot,
+          path.relative(normalized, from: base),
+        );
+        if (target.error != null) continue;
+        insideRoot = true;
+        final entity = target.entity!;
+        if (entity is File && await entity.exists()) {
+          return (file: entity, error: null);
+        }
+      }
+    }
+    return (
+      file: null,
+      error: insideRoot ? 'file_not_found' : 'path_outside_allowed_root',
+    );
   }
 
   Future<({String? error, _ResolvedRoot? root})> _resolveRoot(

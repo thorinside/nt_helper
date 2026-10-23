@@ -32,6 +32,7 @@ The main cubit is decomposed into delegates and mixins for maintainability.
 | `*_state_helpers_delegate.dart` | Delegate | Routing + offline metadata helpers |
 | `*_algorithm_library_delegate.dart` | Delegate | Algorithm library refresh/rescan |
 | `*_plugin_delegate.dart` | Delegate | Plugin installation |
+| `*_plugin_verify_delegate.dart` | Delegate | Live-only plugin install with rescan verification (MCP `install_plugin`) |
 | `*_sd_card_delegate.dart` | Delegate | SD card preset listing/scanning |
 | `*_lua_reload_delegate.dart` | Delegate | Lua reload with state preservation |
 | `*_offline_demo_delegate.dart` | Delegate | Demo/offline mode |
