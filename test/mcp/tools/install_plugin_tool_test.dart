@@ -304,8 +304,11 @@ void main() {
       final entries = <ToolRegistryEntry>[];
       registerPluginTools(entries, cubit, actor: FileRootActor.mcp);
 
-      final entry = entries.single;
-      expect(entry.name, 'install_plugin');
+      expect(entries.map((e) => e.name), [
+        'install_plugin',
+        'smoke_test_plugin',
+      ]);
+      final entry = entries.first;
       expect(entry.description, contains('/programs/plug-ins/'));
       expect(entry.description, contains('offline and demo mode'));
       expect(entry.description, contains('list_allowed_roots'));

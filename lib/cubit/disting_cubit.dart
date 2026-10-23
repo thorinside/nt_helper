@@ -14,6 +14,7 @@ import 'package:nt_helper/db/daos/metadata_dao.dart'; // Added
 import 'package:nt_helper/db/daos/presets_dao.dart'; // Added
 import 'package:nt_helper/db/database.dart'; // Added
 import 'package:nt_helper/domain/cc_reverse_lookup.dart';
+import 'package:nt_helper/domain/disting_limits.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_request_control.dart';
 import 'package:nt_helper/domain/midi_command_factory.dart';
@@ -32,6 +33,7 @@ import 'package:nt_helper/models/package_file.dart';
 import 'package:nt_helper/models/plugin_cleanup_outcome.dart';
 import 'package:nt_helper/models/plugin_info.dart';
 import 'package:nt_helper/models/plugin_install_report.dart';
+import 'package:nt_helper/models/plugin_smoke_test_report.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/firmware_release.dart';
@@ -63,6 +65,7 @@ part 'disting_cubit_offline_demo_delegate.dart';
 part 'disting_cubit_parameter_fetch_delegate.dart';
 part 'disting_cubit_plugin_delegate.dart';
 part 'disting_cubit_plugin_verify_delegate.dart';
+part 'disting_cubit_plugin_smoke_test_delegate.dart';
 part 'disting_cubit_connection_delegate.dart';
 part 'disting_cubit_parameter_refresh_delegate.dart';
 part 'disting_cubit_monitoring_delegate.dart';
@@ -147,6 +150,8 @@ class DistingCubit extends _DistingCubitBase
   late final _PluginDelegate _pluginDelegate = _PluginDelegate(this);
   late final _PluginVerifyDelegate _pluginVerifyDelegate =
       _PluginVerifyDelegate(this);
+  late final _PluginSmokeTestDelegate _pluginSmokeTestDelegate =
+      _PluginSmokeTestDelegate(this);
   late final _ConnectionDelegate _connectionDelegate = _ConnectionDelegate(
     this,
   );
@@ -599,6 +604,24 @@ class DistingCubit extends _DistingCubitBase
 
   Future<void> onRemoveAlgorithm(int algorithmIndex) async {
     return onRemoveAlgorithmImpl(algorithmIndex);
+  }
+
+  /// Removes the algorithm in [algorithmIndex] and waits until the device
+  /// reports one slot fewer. Returns false, leaving state unchanged, when
+  /// that is not confirmed after [pollAttempts] reads [pollInterval] apart.
+  /// [onRemoveAlgorithm] does not wait.
+  Future<bool> removeAlgorithmConfirmed(
+    int algorithmIndex, {
+    Duration pollInterval = const Duration(milliseconds: 500),
+    int pollAttempts = 10,
+    Duration requestTimeout = const Duration(seconds: 1),
+  }) {
+    return removeAlgorithmConfirmedImpl(
+      algorithmIndex,
+      pollInterval: pollInterval,
+      pollAttempts: pollAttempts,
+      requestTimeout: requestTimeout,
+    );
   }
 
   PreparedAlgorithmRespecification prepareAlgorithmRespecification(
@@ -1164,6 +1187,21 @@ class DistingCubit extends _DistingCubitBase
       maxRescanAttempts: maxRescanAttempts,
       rescanPollInterval: rescanPollInterval,
     );
+  }
+
+  /// Smoke-tests the installed plug-in [guid] on live hardware: appends it
+  /// to the end of the preset, checks that the slot answers and stays within
+  /// the CPU limits in [options], and removes it again unless
+  /// [PluginSmokeTestOptions.keep] is set and every check passed.
+  ///
+  /// Never saves the preset. Throws [PluginSmokeTestRefused] before the
+  /// preset is touched; every later outcome, including a failed rollback,
+  /// is returned in the report.
+  Future<PluginSmokeTestReport> smokeTestPlugin(
+    String guid,
+    PluginSmokeTestOptions options,
+  ) {
+    return _pluginSmokeTestDelegate.smokeTestPlugin(guid, options);
   }
 
   /// Check for firmware updates in the background (non-blocking)
