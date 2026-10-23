@@ -250,7 +250,10 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
                 includeOutputMode: true,
               ).copyWith(
                 modeParameterNumber: modeParameterNumber,
-                channelNumber: coerceInt(item['channel']),
+                channelNumber: coerceInt(
+                  item['channelNumber'] ?? item['channel'],
+                ),
+                isMultiChannel: item['channelNumber'] != null,
                 isStereoChannel: item['channel'] != null,
                 stereoSide: item['channel']?.toString(),
               );
@@ -556,10 +559,47 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
     return 1; // Default to 1 if no width parameter found
   }
 
+  static String _implicitChannelName(String base, int channel) {
+    final suffix = RegExp(r'\d+$').firstMatch(base);
+    if (suffix == null) return '$base $channel';
+    final first = int.tryParse(suffix.group(0)!);
+    if (first == null) return '$base $channel';
+    return '${base.substring(0, suffix.start)}${first + channel - 1}';
+  }
+
+  /// Reads a named channel-count specification only when its matching
+  /// construction value is known. Never guess from the first integer or from
+  /// a default: other specifications describe delay lengths, voices, etc.
+  static int? _specificationChannels(Slot slot, AlgorithmInfo? info) {
+    if (info == null || info.guid != slot.algorithm.guid) return null;
+    final values = slot.algorithm.specifications;
+    if (values.length != info.specifications.length) return null;
+    final indices = info.specifications.indexed
+        .where(
+          (entry) => const {
+            'channels',
+            'channel count',
+            'width',
+          }.contains(entry.$2.name.trim().toLowerCase()),
+        )
+        .toList();
+    if (indices.length != 1) return null;
+    final (index, definition) = indices.single;
+    if (definition.type != 0) return null; // A count, not seconds/boolean.
+    final count = values[index];
+    if (count < 1 || count < definition.min || count > definition.max) {
+      return null;
+    }
+    return count;
+  }
+
   /// Creates a MultiChannelAlgorithmRouting instance from a slot.
   ///
   /// Converts all routing parameters to input/output ports based on their names.
-  /// Checks for a 'Width' parameter to determine channel count for multi-channel algorithms.
+  /// Uses a Width parameter, or a named channel-count construction specification
+  /// from [algorithmInfo] when there is one unnumbered audio input/output pair.
+  /// Additional specification-driven channels are fixed, derived ports; CV and
+  /// explicit per-channel routing parameters are never multiplied.
   ///
   /// Parameters:
   /// - [slot]: The slot containing algorithm and parameter information
@@ -581,6 +621,7 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
     String? algorithmUuid,
     OutputMode? defaultOutputMode,
     bool replaceNoneOutputWithInput = false,
+    AlgorithmInfo? algorithmInfo,
   }) {
     // Process routing parameters as regular ports
     final inputPorts = <Map<String, Object?>>[];
@@ -961,8 +1002,36 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       }
     }
 
-    // Check for Width parameter to determine channel count
-    final channelCount = getWidthFromSlot(slot);
+    // Some algorithms (e.g. SDK gainMultichannel and Airwindows kernels)
+    // expose only the first bus of a contiguous group. A Channels construction
+    // specification supplies its span, not a second editable routing parameter.
+    // Do not expand explicit stereo/multi-channel I/O or CV/control ports.
+    final specificationChannels = _specificationChannels(slot, algorithmInfo);
+    final hasWidthParameter =
+        ['width', 'channels', 'channel count', 'poly', 'voices'].any(
+          (name) => slot.parameters.any(
+            (p) =>
+                AlgorithmRouting.stripPagePrefix(p.name).trim().toLowerCase() ==
+                name,
+          ),
+        );
+    final audioInputs = inputPorts.where((p) => p['type'] == 'audio').toList();
+    final audioOutputs = outputPorts
+        .where((p) => p['type'] == 'audio')
+        .toList();
+    final hasExplicitChannels = [
+      ...audioInputs,
+      ...audioOutputs,
+    ].any((p) => RegExp(r'^\d+:').hasMatch(p['busParam'] as String? ?? ''));
+    final usesSpecificationChannels =
+        !hasWidthParameter &&
+        specificationChannels != null &&
+        !hasExplicitChannels &&
+        audioInputs.length == 1 &&
+        audioOutputs.length == 1;
+    final channelCount = usesSpecificationChannels
+        ? specificationChannels
+        : getWidthFromSlot(slot);
 
     // Duplicate I/O ports for width-based algorithms (all ports identified by ioFlags)
     if (channelCount > 1) {
@@ -970,18 +1039,28 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       final inputInsertions = <int, List<Map<String, Object?>>>{};
       for (int i = 0; i < inputPorts.length; i++) {
         final port = inputPorts[i];
+        if (usesSpecificationChannels && port['type'] != 'audio') continue;
         final baseBusValue = port['busValue'] as int? ?? 0;
         if (baseBusValue > 0) {
           final portName = port['name'] as String? ?? 'Input';
           final virtualPorts = <Map<String, Object?>>[];
           for (int channel = 2; channel <= channelCount; channel++) {
+            if (baseBusValue + channel - 1 > deviceIoProfile.maxBus) break;
             virtualPorts.add({
               'id': '${algorithmUuid ?? 'algo'}_input_${i}_$channel',
-              'name': '$portName $channel',
+              'name': usesSpecificationChannels
+                  ? _implicitChannelName(portName, channel)
+                  : '$portName $channel',
+              if (usesSpecificationChannels)
+                'description':
+                    'Implicit channel $channel; follows $portName. '
+                    'Change the base bus to move this channel group.',
               'type': port['type'],
               'busParam': null,
               'busValue': baseBusValue + (channel - 1),
-              'parameterNumber': -(i * 100 + channel),
+              'parameterNumber': usesSpecificationChannels
+                  ? null
+                  : -(i * 100 + channel),
               'isVirtualPort': true,
               'channelNumber': channel,
               'basedOn': portName,
@@ -997,23 +1076,34 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       final outputInsertions = <int, List<Map<String, Object?>>>{};
       for (int i = 0; i < outputPorts.length; i++) {
         final port = outputPorts[i];
+        if (usesSpecificationChannels && port['type'] != 'audio') continue;
         final baseBusValue = port['busValue'] as int? ?? 0;
         if (baseBusValue > 0) {
           final portName = port['name'] as String? ?? 'Output';
           final virtualPorts = <Map<String, Object?>>[];
           for (int channel = 2; channel <= channelCount; channel++) {
+            if (baseBusValue + channel - 1 > deviceIoProfile.maxBus) break;
             virtualPorts.add({
               'id': '${algorithmUuid ?? 'algo'}_output_${i}_$channel',
-              'name': '$portName $channel',
+              'name': usesSpecificationChannels
+                  ? _implicitChannelName(portName, channel)
+                  : '$portName $channel',
+              if (usesSpecificationChannels)
+                'description':
+                    'Implicit channel $channel; follows $portName. '
+                    'Change the base bus to move this channel group.',
               'type': port['type'],
               'busParam': null,
               'busValue': baseBusValue + (channel - 1),
-              'parameterNumber': -(i * 100 + channel + 50),
+              'parameterNumber': usesSpecificationChannels
+                  ? null
+                  : -(i * 100 + channel + 50),
               'isVirtualPort': true,
               'channelNumber': channel,
               'basedOn': portName,
               if (port['outputMode'] != null) 'outputMode': port['outputMode'],
-              if (port['modeParameterNumber'] != null)
+              if (!usesSpecificationChannels &&
+                  port['modeParameterNumber'] != null)
                 'modeParameterNumber': port['modeParameterNumber'],
             });
           }

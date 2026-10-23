@@ -389,12 +389,16 @@ abstract class AlgorithmRouting {
   /// Parameters:
   /// - [slot]: The slot containing algorithm and parameter information
   /// - [algorithmUuid]: Optional UUID for the algorithm instance
+  /// - [algorithmInfo]: Matching library entry supplying specification names.
+  ///   Used with known construction values for implicit contiguous audio spans;
+  ///   without it routing never guesses what a specification integer means.
   ///
   /// Returns an appropriate AlgorithmRouting implementation
   static AlgorithmRouting fromSlot(
     Slot slot, {
     required DeviceIoProfile deviceIoProfile,
     String? algorithmUuid,
+    AlgorithmInfo? algorithmInfo,
   }) {
     // Extract mode parameters once (used by all implementations)
     final modeParametersWithNumbers = extractModeParametersWithNumbers(slot);
@@ -509,6 +513,7 @@ abstract class AlgorithmRouting {
         modeParametersWithNumbers: modeParametersWithNumbers,
         algorithmUuid: algorithmUuid,
         defaultOutputMode: OutputMode.replace,
+        algorithmInfo: algorithmInfo,
       );
     } else if (PolyAlgorithmRouting.canHandle(slot)) {
       instance = PolyAlgorithmRouting.createFromSlot(
@@ -531,6 +536,7 @@ abstract class AlgorithmRouting {
         replaceNoneOutputWithInput: isConditionalInPlaceGuid(
           slot.algorithm.guid,
         ),
+        algorithmInfo: algorithmInfo,
       );
     }
 

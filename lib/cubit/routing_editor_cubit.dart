@@ -78,9 +78,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   NodeLayoutAlgorithm? _layoutAlgorithm;
   List<Slot>? _lastProcessedSlots;
   DeviceIoProfile? _lastProcessedProfile;
+  List<AlgorithmInfo>? _lastProcessedAlgorithms;
   int _batchDepth = 0;
   List<Slot>? _deferredSlots;
   DeviceIoProfile? _deferredProfile;
+  List<AlgorithmInfo>? _deferredAlgorithms;
 
   RoutingEditorCubit(
     this._distingCubit, {
@@ -183,7 +185,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             isDirty,
             renameConfirmationName,
           ) {
-            _processSynchronizedState(slots, deviceIoProfile);
+            _processSynchronizedState(slots, deviceIoProfile, algorithms);
           },
     );
   }
@@ -202,9 +204,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             _deferredProfile ??
             _lastProcessedProfile ??
             DeviceIoProfile.distingExtended;
+        final algorithms = _deferredAlgorithms ?? const <AlgorithmInfo>[];
         _deferredSlots = null;
         _deferredProfile = null;
-        _processSynchronizedState(slots, profile);
+        _deferredAlgorithms = null;
+        _processSynchronizedState(slots, profile, algorithms);
       }
     }
   }
@@ -232,17 +236,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Extract routing data from synchronized state and build visual representation.
   ///
-  /// Only skips processing when the slots list is the exact same reference
-  /// (meaning a non-slot field changed, like loading or screenshot). Otherwise,
-  /// always recalculates — Bloc's emit() deduplicates via Freezed equality,
+  /// Skips processing when slots, algorithm library, and bus profile are
+  /// unchanged (e.g. only loading or screenshot changed). Otherwise,
+  /// recalculates — Bloc's emit() deduplicates via Freezed equality,
   /// so unchanged routing results won't trigger UI rebuilds.
   void _processSynchronizedState(
     List<Slot> slots,
     DeviceIoProfile deviceIoProfile,
+    List<AlgorithmInfo> algorithmLibrary,
   ) {
-    // Identical slots and profile means only unrelated state changed.
+    // Library metadata can arrive after slots, supplying channel-count
+    // specification names. Rebuild when it changes even if slots do not.
     if (identical(slots, _lastProcessedSlots) &&
-        deviceIoProfile == _lastProcessedProfile) {
+        deviceIoProfile == _lastProcessedProfile &&
+        identical(algorithmLibrary, _lastProcessedAlgorithms)) {
       return;
     }
 
@@ -250,11 +257,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     if (_batchDepth > 0) {
       _deferredSlots = slots;
       _deferredProfile = deviceIoProfile;
+      _deferredAlgorithms = algorithmLibrary;
       return;
     }
 
     _lastProcessedSlots = slots;
     _lastProcessedProfile = deviceIoProfile;
+    _lastProcessedAlgorithms = algorithmLibrary;
 
     try {
       // Compute firmware capability early — needed for ES-5 ports and connection discovery
@@ -278,6 +287,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Generate stable UUIDs for each algorithm instance
       final algorithmUuids = generateStableAlgorithmIds(slots);
+      final infoByGuid = {for (final info in algorithmLibrary) info.guid: info};
 
       for (int i = 0; i < slots.length; i++) {
         final slot = slots[i];
@@ -288,6 +298,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           slot,
           deviceIoProfile: deviceIoProfile,
           algorithmUuid: algorithmUuid,
+          algorithmInfo: infoByGuid[slot.algorithm.guid],
         );
 
         final inputPorts = routing.inputPorts;
@@ -1063,10 +1074,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return null;
     }
 
-    // Detect virtual ports (negative parameterNumber = firmware-implicit bus)
+    // Derived ports carry an implicit, fixed bus rather than a writable
+    // parameter. Older width-based ports use a negative sentinel instead.
     final targetIsVirtual =
-        targetInputPort.parameterNumber != null &&
-        targetInputPort.parameterNumber! < 0;
+        (targetInputPort.parameterNumber == null &&
+            targetInputPort.busValue != null) ||
+        (targetInputPort.parameterNumber != null &&
+            targetInputPort.parameterNumber! < 0);
 
     // Detect fixed-bus source ports (null parameterNumber with a busValue,
     // e.g. the right channel of a stereo send whose bus = left bus + 1).
@@ -1105,13 +1119,17 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       targetBusValue = targetParam.value;
     }
 
+    if (sourceIsFixed && targetIsVirtual && sourceBusValue != targetBusValue) {
+      return null; // Neither endpoint can be moved independently.
+    }
+
     int busToUse;
     if (targetIsVirtual && targetBusValue != null) {
       // Virtual port's bus is fixed by firmware — route source to match it.
       busToUse = targetBusValue;
     } else if (sourceBusValue != null &&
-        state.deviceIoProfile.isAux(sourceBusValue)) {
-      // Source already on an AUX bus — reuse for fan-out
+        (sourceIsFixed || state.deviceIoProfile.isAux(sourceBusValue))) {
+      // Fixed sources must keep their implicit bus; AUX sources can fan out.
       busToUse = sourceBusValue;
     } else {
       // Source unassigned or on a physical bus — allocate an AUX bus
