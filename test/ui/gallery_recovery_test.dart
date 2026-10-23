@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -75,7 +74,7 @@ void main() {
     'gallery:after:publish',
   ]) {
     testWidgets(
-      'real ready database and visible gallery Retry retain rows after simulated $boundary failure',
+      'real ready database and on-demand gallery retry retain rows without a startup banner after simulated $boundary failure',
       (tester) async {
         final source = (await tester.runAsync(
           () => StorageFixture.create(docs),
@@ -124,11 +123,7 @@ void main() {
             controller: controller,
             normalBuilder: (_) => MaterialApp(
               home: Scaffold(
-                body: StorageLocationNotice(
-                  location: controller.location,
-                  galleryStorage: galleryCacheStorage,
-                  child: const Center(child: Text('Normal database use')),
-                ),
+                body: const Center(child: Text('Normal database use')),
               ),
             ),
           ),
@@ -141,27 +136,25 @@ void main() {
           await tester.runAsync(() => contents(controller.database)),
           expected,
         );
+        // Gallery preparation is now on demand, not driven by a startup notice.
+        expect(galleryCacheStorage!.busy, isFalse);
+        expect(galleryCacheStorage!.failure, isNull);
+        await run(tester, () async {
+          await expectLater(
+            galleryCacheStorage!.prepare(),
+            throwsA(isA<GalleryStorageUnavailable>()),
+          );
+        });
         expect(galleryCacheStorage!.failure, isA<GalleryStorageUnavailable>());
         expect(
           find.textContaining('Gallery temporarily unavailable'),
-          findsOneWidget,
+          findsNothing,
         );
-        expect(find.textContaining(controller.location!), findsOneWidget);
-        expect(find.textContaining('older releases'), findsOneWidget);
+        expect(find.textContaining(controller.location!), findsNothing);
+        expect(find.textContaining('older releases'), findsNothing);
+        expect(find.byTooltip('Dismiss library storage notice'), findsNothing);
+        expect(tester.takeException(), isNull);
         final contentRect = tester.getRect(find.text('Normal database use'));
-        final retryRect = tester.getRect(find.text('Retry gallery transfer'));
-        final titleRect = tester.getRect(find.text('Library storage ready'));
-        expect(
-          tester
-              .getSemantics(find.text('Library storage ready'))
-              .flagsCollection
-              .isHeader,
-          isTrue,
-        );
-        expect(
-          tester.getSemantics(find.text('Retry gallery transfer')).label,
-          contains('Retry gallery transfer'),
-        );
         await tester.runAsync(
           () => controller.database.customStatement(
             "INSERT INTO metadata_cache VALUES ('destination-only','gallery failure edit')",
@@ -183,26 +176,21 @@ void main() {
         if (boundary != 'gallery:read') expect(retained, isNotEmpty);
         fail = false;
         hold = true;
-        Focus.of(
-          tester.element(find.text('Retry gallery transfer')),
-        ).requestFocus();
-        await tester.pump();
-        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-        await tester.pump(const Duration(milliseconds: 200));
+        late Future<void> retry;
         await tester.runAsync(() async {
-          await pumpEventQueue();
+          retry = galleryCacheStorage!.prepare();
+          await entered.future;
         });
-        expect(entered.isCompleted, isTrue);
         await tester.pump();
+        expect(entered.isCompleted, isTrue);
         expect(galleryCacheStorage!.busy, isTrue);
-        expect(tester.getRect(find.text('Retry gallery transfer')), retryRect);
-        expect(tester.getRect(find.text('Library storage ready')), titleRect);
         expect(tester.getRect(find.text('Normal database use')), contentRect);
         expect(
           await tester.runAsync(() => contents(controller.database)),
           edited,
         );
         release.complete();
+        await tester.runAsync(() => retry);
         for (var i = 0; i < 10; i++) {
           await tester.runAsync(() async {
             await pumpEventQueue();
@@ -211,18 +199,8 @@ void main() {
         }
         await tester.pump();
         expect(galleryCacheStorage!.ready, isTrue);
-        expect(find.textContaining('Gallery cache available.'), findsOneWidget);
-        expect(tester.getRect(find.text('Retry gallery transfer')), retryRect);
+        expect(find.textContaining('Gallery cache available.'), findsNothing);
         expect(tester.getRect(find.text('Normal database use')), contentRect);
-        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.pump();
-        expect(
-          tester
-              .getSemantics(find.byTooltip('Dismiss library storage notice'))
-              .flagsCollection
-              .isFocused,
-          Tristate.isTrue,
-        );
         expect(
           await tester.runAsync(() => contents(controller.database)),
           edited,
@@ -233,8 +211,7 @@ void main() {
         for (final entry in retained.entries) {
           expect(File(entry.key).readAsBytesSync(), entry.value);
         }
-        expect(announcements.toString(), contains('temporarily unavailable'));
-        expect(announcements.toString(), contains('Gallery cache available'));
+        expect(announcements.toString(), isNot(contains('Gallery cache')));
         final settings = _Settings();
         when(
           () => settings.graphqlEndpoint,

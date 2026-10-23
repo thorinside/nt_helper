@@ -3,11 +3,12 @@ import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/macos_library_storage.dart';
-import 'package:nt_helper/services/gallery_cache_storage.dart';
 import 'package:nt_helper/services/startup_controller.dart';
 
-/// Presentation only. Storage, admission and close ownership remain in the controller.
+/// Displays recovery controls only after a startup failure. Successful storage
+/// preparation is silent; admission and close ownership remain in the controller.
 class StartupRecoveryApp extends StatefulWidget {
   const StartupRecoveryApp({
     super.key,
@@ -73,114 +74,180 @@ class _StartupRecoveryAppState extends State<StartupRecoveryApp> {
   Widget build(BuildContext context) {
     final controller = widget.controller;
     if (controller.ready) return widget.normalBuilder(context);
+    return DistingApp(startupPage: _RecoveryPage(controller: controller));
+  }
+}
+
+/// A database-independent route in the real application shell. Recovery uses
+/// its Navigator's dialog overlay, never a second standalone MaterialApp.
+class _RecoveryPage extends StatefulWidget {
+  const _RecoveryPage({required this.controller});
+
+  final StartupController controller;
+
+  @override
+  State<_RecoveryPage> createState() => _RecoveryPageState();
+}
+
+class _RecoveryPageState extends State<_RecoveryPage> {
+  bool _dialogShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_scheduleRecovery);
+    _scheduleRecovery();
+  }
+
+  @override
+  void didUpdateWidget(_RecoveryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_scheduleRecovery);
+      widget.controller.addListener(_scheduleRecovery);
+    }
+    _scheduleRecovery();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_scheduleRecovery);
+    super.dispose();
+  }
+
+  void _scheduleRecovery() {
+    if (widget.controller.failure == null || _dialogShowing) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _dialogShowing || widget.controller.closed) return;
+      _dialogShowing = true;
+      unawaited(
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => PopScope(
+            canPop: false,
+            child: ListenableBuilder(
+              listenable: widget.controller,
+              builder: (_, _) => _RecoveryDialog(controller: widget.controller),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('nt_helper')),
+    body: const SizedBox.expand(),
+  );
+}
+
+class _RecoveryDialog extends StatelessWidget {
+  const _RecoveryDialog({required this.controller});
+
+  final StartupController controller;
+
+  @override
+  Widget build(BuildContext context) {
     final failure = controller.failure;
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Dialog(
-            child: SizedBox(
-              width: 560,
-              height: 460,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: FocusTraversalGroup(
-                  policy: OrderedTraversalPolicy(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Semantics(
-                        header: true,
-                        namesRoute: true,
-                        child: Text(
-                          'Open your library',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Normal library features wait until the selected database opens. Existing files and recovery data are retained.',
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Semantics(
-                            liveRegion: true,
-                            child: SelectableText(
-                              failure == null
-                                  ? 'Preparing storage.'
-                                  : '${_failureMessage(failure)}\n\nOperation details: $failure',
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'After resolving the reported condition, use Retry here; restarting the app is not required. Folder selection, when offered, does not guarantee that macOS will permit access.',
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 24,
-                        child: controller.busy
-                            ? const Row(
-                                children: [
-                                  SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      semanticsLabel: 'Opening library',
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text('Opening library…'),
-                                ],
-                              )
-                            : Text(
-                                controller.closed
-                                    ? 'Closing…'
-                                    : failure == null
-                                    ? 'Ready to open'
-                                    : 'Library remains unavailable',
-                              ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          FocusTraversalOrder(
-                            order: const NumericFocusOrder(1),
-                            child: FilledButton(
-                              autofocus: true,
-                              onPressed: controller.canRetry && !controller.busy
-                                  ? () => unawaited(controller.retry())
-                                  : null,
-                              child: const Text('Retry'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: FocusTraversalOrder(
-                              order: const NumericFocusOrder(2),
-                              child: OutlinedButton(
-                                onPressed:
-                                    controller.canSelectAccess &&
-                                        !controller.busy
-                                    ? () => unawaited(
-                                        controller.retry(
-                                          selectLegacyDirectory: true,
-                                        ),
-                                      )
-                                    : null,
-                                child: const Text('Select legacy folder…'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+    return Dialog(
+      child: SizedBox(
+        width: 560,
+        height: 460,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Semantics(
+                  header: true,
+                  namesRoute: true,
+                  child: Text(
+                    'Open your library',
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
-              ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Normal library features wait until the selected database opens. Existing files and recovery data are retained.',
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Semantics(
+                      liveRegion: true,
+                      child: SelectableText(
+                        failure == null
+                            ? 'Preparing storage.'
+                            : '${_failureMessage(failure)}\n\nOperation details: $failure',
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'After resolving the reported condition, use Retry here; restarting the app is not required. Folder selection, when offered, does not guarantee that macOS will permit access.',
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 24,
+                  child: controller.busy
+                      ? const Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                semanticsLabel: 'Opening library',
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text('Opening library…'),
+                          ],
+                        )
+                      : Text(
+                          controller.closed
+                              ? 'Closing…'
+                              : failure == null
+                              ? 'Ready to open'
+                              : 'Library remains unavailable',
+                        ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    FocusTraversalOrder(
+                      order: const NumericFocusOrder(1),
+                      child: FilledButton(
+                        autofocus: true,
+                        onPressed: controller.canRetry && !controller.busy
+                            ? () => unawaited(controller.retry())
+                            : null,
+                        child: const Text('Retry'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FocusTraversalOrder(
+                        order: const NumericFocusOrder(2),
+                        child: OutlinedButton(
+                          onPressed:
+                              controller.canSelectAccess && !controller.busy
+                              ? () => unawaited(
+                                  controller.retry(selectLegacyDirectory: true),
+                                )
+                              : null,
+                          child: const Text('Select legacy folder…'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -217,160 +284,3 @@ String _recoveryMessage(LibraryRecovery? recovery) => switch (recovery) {
     'The previous library was not recovered. Originals and recovery files are retained. A fresh library was opened after confirmed database damage and unsuccessful safe repair. ',
   null => '',
 };
-
-/// Nonmodal outcome feedback: never changes normal content geometry.
-class StorageLocationNotice extends StatefulWidget {
-  const StorageLocationNotice({
-    super.key,
-    required this.location,
-    this.recovery,
-    this.galleryStorage,
-    required this.child,
-  });
-  final String? location;
-  final LibraryRecovery? recovery;
-  final GalleryCacheStorage? galleryStorage;
-  final Widget child;
-  @override
-  State<StorageLocationNotice> createState() => _StorageLocationNoticeState();
-}
-
-class _StorageLocationNoticeState extends State<StorageLocationNotice> {
-  bool _dismissed = false;
-  String? _lastGalleryAnnouncement;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.galleryStorage?.addListener(_galleryChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _retryGallery();
-    });
-  }
-
-  @override
-  void didUpdateWidget(StorageLocationNotice oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.galleryStorage != widget.galleryStorage) {
-      oldWidget.galleryStorage?.removeListener(_galleryChanged);
-      widget.galleryStorage?.addListener(_galleryChanged);
-      _retryGallery();
-    }
-  }
-
-  void _retryGallery() {
-    unawaited(widget.galleryStorage?.prepare().catchError((Object _) {}));
-  }
-
-  String get _galleryMessage {
-    final storage = widget.galleryStorage;
-    if (storage == null) return '';
-    if (storage.busy) {
-      return 'Gallery cache transfer in progress. Gallery temporarily unavailable; the library remains usable.';
-    }
-    if (storage.failure != null) {
-      return '${storage.failure} The library remains usable.';
-    }
-    return storage.ready
-        ? 'Gallery cache available.'
-        : 'Gallery cache transfer has not completed.';
-  }
-
-  void _galleryChanged() {
-    if (!mounted) return;
-    if (widget.galleryStorage?.failure != null) _dismissed = false;
-    final message = _galleryMessage;
-    if (message != _lastGalleryAnnouncement) {
-      _lastGalleryAnnouncement = message;
-      unawaited(
-        SemanticsService.sendAnnouncement(
-          View.of(context),
-          message,
-          TextDirection.ltr,
-        ),
-      );
-    }
-    setState(() {});
-  }
-
-  @override
-  void dispose() {
-    widget.galleryStorage?.removeListener(_galleryChanged);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Stack(
-    children: [
-      widget.child,
-      if (widget.location != null && !_dismissed)
-        Positioned(
-          left: 16,
-          right: 16,
-          bottom: 16,
-          child: SafeArea(
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: SizedBox(
-                  height: 220,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Semantics(
-                            liveRegion: true,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Semantics(
-                                  header: true,
-                                  child: Text(switch (widget.recovery) {
-                                    LibraryRecovery.repaired =>
-                                      'Library repaired',
-                                    LibraryRecovery.freshAfterDamage =>
-                                      'Fresh library after database damage',
-                                    null => 'Library storage ready',
-                                  }),
-                                ),
-                                Text(
-                                  '${_recoveryMessage(widget.recovery)}Opened in Application Support: ${widget.location}\nOld Documents files are retained. Migration is one-way: older releases may show the old library and do not receive newer changes.\n$_galleryMessage',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          if (widget.galleryStorage != null)
-                            OutlinedButton(
-                              onPressed:
-                                  widget.galleryStorage!.busy ||
-                                      widget.galleryStorage!.ready
-                                  ? null
-                                  : _retryGallery,
-                              child: const Text('Retry gallery transfer'),
-                            ),
-                          const Spacer(),
-                          IconButton(
-                            tooltip: 'Dismiss library storage notice',
-                            onPressed: () => setState(() => _dismissed = true),
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-    ],
-  );
-}
