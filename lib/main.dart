@@ -275,10 +275,7 @@ Future<void> _bootstrapApp(List<String> args) async {
           RepositoryProvider<AppDatabase>.value(value: startup.database),
           ChangeNotifierProvider(create: (_) => InAppLogger()),
         ],
-        child: DistingApp(
-          startupStorageLocation: startup.location,
-          startupRecovery: startup.recovery,
-        ),
+        child: const DistingApp(),
       ),
     ),
   );

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/startup_storage_opener.dart';
+import 'package:nt_helper/services/startup_log_service.dart';
 import 'package:nt_helper/services/macos_library_storage.dart';
 
 /// One observable startup lifecycle: settled storage retries, then once-only
@@ -74,9 +75,16 @@ class StartupController extends ChangeNotifier {
         if (_closed) return;
         await activate(database);
       }
-      if (!_closed) _ready = true;
-    } catch (error) {
+      if (!_closed) {
+        _ready = true;
+        StartupLogService.log(
+          'Library ready: location=${location ?? 'default'}, '
+          'recovery=${recovery?.name ?? 'none'}; original recovery files retained',
+        );
+      }
+    } catch (error, stackTrace) {
       failure = error;
+      StartupLogService.logError('Library startup failed', error, stackTrace);
     } finally {
       if (!ready) {
         try {

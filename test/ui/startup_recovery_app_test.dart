@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/disting_app.dart';
+import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/ui/theme/app_theme.dart';
 import 'package:nt_helper/services/macos_library_storage.dart';
 import 'package:nt_helper/services/startup_controller.dart';
 import 'package:nt_helper/services/startup_storage_opener.dart';
@@ -107,12 +110,8 @@ void main() {
           controller: controller,
           normalBuilder: (_) => MaterialApp(
             home: Scaffold(
-              body: StorageLocationNotice(
-                location: controller.location,
-                recovery: controller.recovery,
-                child: Center(
-                  child: Text('Expected library admitted ($activations)'),
-                ),
+              body: Center(
+                child: Text('Expected library admitted ($activations)'),
               ),
             ),
           ),
@@ -125,7 +124,7 @@ void main() {
     await tester.runAsync(
       () => controller.retry().timeout(const Duration(seconds: 10)),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
   }
 
   Future<void> clickRetry(
@@ -136,7 +135,7 @@ void main() {
       await tester.tap(find.text('Retry'));
       await controller.retry(); // Coalesces with the button's attempt.
     });
-    await tester.pump();
+    await tester.pumpAndSettle();
   }
 
   void blocked(StartupController controller) {
@@ -592,9 +591,8 @@ void main() {
         );
         controllers.add(controller);
         await show(tester, controller);
-        final initialRect = tester.getRect(
-          find.widgetWithText(FilledButton, 'Retry'),
-        );
+        expect(find.byType(Dialog), findsNothing);
+        expect(find.text('Retry'), findsNothing);
         late Future<void> first;
         await tester.runAsync(() async {
           schemaEntered = Completer<void>();
@@ -612,10 +610,9 @@ void main() {
         expect(controller.busy, isTrue);
         expect(opens, 1);
         expect(activations, 0);
-        expect(
-          tester.getRect(find.widgetWithText(FilledButton, 'Retry')),
-          initialRect,
-        );
+        expect(find.byType(Dialog), findsNothing);
+        expect(find.text('Retry'), findsNothing);
+        expect(tester.takeException(), isNull);
         await tester.runAsync(() async {
           final closing = closeWhilePending ? controller.close() : null;
           allowSchema.complete();
@@ -726,7 +723,7 @@ void main() {
 
   for (final repairable in [false, true]) {
     testWidgets(
-      'real damage Retry shows truthful ${repairable ? 'repair' : 'non-recovery'} notice and preserves later edits on restart',
+      'real damage Retry retains ${repairable ? 'repair' : 'non-recovery'} outcome without a banner and preserves later edits on restart',
       (tester) async {
         final semantics = tester.ensureSemantics();
         final original = (await tester.runAsync(() => fixture(docs)))!;
@@ -761,62 +758,30 @@ void main() {
         expect(activations, 1);
         if (repairable) {
           expect(admitted, expected);
-          expect(find.text('Library repaired'), findsOneWidget);
-          expect(
-            find.textContaining('safely repaired in a separate copy'),
-            findsOneWidget,
-          );
           expect(announcements.toString(), contains('safely repaired'));
         } else {
           expect(admitted!.values.every((rows) => rows.isEmpty), isTrue);
-          expect(
-            find.text('Fresh library after database damage'),
-            findsOneWidget,
-          );
-          expect(
-            find.textContaining('The previous library was not recovered.'),
-            findsOneWidget,
-          );
           expect(
             announcements.toString(),
             contains('previous library was not recovered'),
           );
         }
+        expect(
+          controller.recovery,
+          repairable
+              ? LibraryRecovery.repaired
+              : LibraryRecovery.freshAfterDamage,
+        );
         expect(find.textContaining('Start fresh'), findsNothing);
-        expect(
-          tester
-              .getSemantics(
-                find.text(
-                  repairable
-                      ? 'Library repaired'
-                      : 'Fresh library after database damage',
-                ),
-              )
-              .flagsCollection
-              .isHeader,
-          isTrue,
-        );
-        expect(
-          tester
-              .getSemantics(find.byTooltip('Dismiss library storage notice'))
-              .tooltip,
-          'Dismiss library storage notice',
-        );
-        expect(
-          find.textContaining('Originals and recovery files are retained.'),
-          findsOneWidget,
-        );
-        expect(find.textContaining(controller.location!), findsOneWidget);
+        expect(find.text('Library repaired'), findsNothing);
+        expect(find.text('Fresh library after database damage'), findsNothing);
+        expect(find.byTooltip('Dismiss library storage notice'), findsNothing);
+        expect(find.textContaining(controller.location!), findsNothing);
+        expect(find.text('Expected library admitted (1)'), findsOneWidget);
+        expect(tester.takeException(), isNull);
         for (final entry in retained.entries) {
           expect(File(entry.key).readAsBytesSync(), entry.value);
         }
-        final rect = tester.getRect(find.text('Expected library admitted (1)'));
-        await tester.tap(find.byTooltip('Dismiss library storage notice'));
-        await tester.pump();
-        expect(
-          tester.getRect(find.text('Expected library admitted (1)')),
-          rect,
-        );
         final identity = controller.location;
         await tester.runAsync(() async {
           await controller.database.customStatement(
@@ -839,7 +804,7 @@ void main() {
                 ? 'Library repaired'
                 : 'Fresh library after database damage',
           ),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           restarted.recovery,
@@ -887,24 +852,19 @@ void main() {
         controllers.add(controller);
         final semantics = tester.ensureSemantics();
         await show(tester, controller);
-        final button = find.widgetWithText(FilledButton, 'Retry');
-        final buttonRect = tester.getRect(button);
-        final titleRect = tester.getRect(find.text('Open your library'));
-        final accessRect = tester.getRect(find.text('Select legacy folder…'));
+        expect(find.byType(Dialog), findsNothing);
         await tester.runAsync(() async {
           gate = Completer<void>();
           pending = controller.retry();
         });
         await tester.pump();
-        expect(find.text('Opening library…'), findsOneWidget);
-        expect(tester.getRect(button), buttonRect);
-        expect(tester.getRect(find.text('Open your library')), titleRect);
-        expect(tester.getRect(find.text('Select legacy folder…')), accessRect);
+        expect(find.text('Opening library…'), findsNothing);
+        expect(find.byType(Dialog), findsNothing);
         await tester.runAsync(() async {
           gate.complete();
           await pending;
         });
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(
           find.textContaining(
             kind == StorageFailureKind.busy
@@ -913,8 +873,10 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(tester.getRect(button), buttonRect);
-        expect(tester.getRect(find.text('Open your library')), titleRect);
+        final button = find.widgetWithText(FilledButton, 'Retry');
+        final buttonRect = tester.getRect(button);
+        final titleRect = tester.getRect(find.text('Open your library'));
+        final accessRect = tester.getRect(find.text('Select legacy folder…'));
         expect(
           tester
               .getSemantics(find.text('Open your library'))
@@ -945,6 +907,7 @@ void main() {
         expect(find.text('Opening library…'), findsOneWidget);
         expect(tester.getRect(button), buttonRect);
         expect(tester.getRect(find.text('Open your library')), titleRect);
+        expect(tester.getRect(find.text('Select legacy folder…')), accessRect);
         await tester.runAsync(() async {
           gate.complete();
         });
@@ -976,33 +939,102 @@ void main() {
     );
   }
 
-  testWidgets(
-    'resolved location and one-way downgrade notice overlays without shifting content',
-    (tester) async {
-      final visible = ValueNotifier<bool>(true);
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ValueListenableBuilder<bool>(
-              valueListenable: visible,
-              builder: (_, show, _) => StorageLocationNotice(
-                location: show ? '/resolved/Support/selected.sqlite' : null,
-                child: const Center(child: Text('Normal content')),
-              ),
-            ),
-          ),
-        ),
+  for (final brightness in Brightness.values) {
+    for (final highContrast in [false, true]) {
+      testWidgets(
+        'recovery is modal in the normal $brightness shell with high contrast $highContrast and saved theme settings',
+        (tester) async {
+          final settings = SettingsService();
+          final previousSeed = settings.themeSeedColorNotifier.value;
+          final previousScale = settings.uiScaleNotifier.value;
+          addTearDown(() {
+            tester.platformDispatcher.clearPlatformBrightnessTestValue();
+            tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+            settings.themeSeedColorNotifier.value = previousSeed;
+            settings.uiScaleNotifier.value = previousScale;
+          });
+          const seed = Color(0xFFB34173);
+          settings.themeSeedColorNotifier.value = seed;
+          settings.uiScaleNotifier.value = 1.1;
+          tester.platformDispatcher.platformBrightnessTestValue = brightness;
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              FakeAccessibilityFeatures(highContrast: highContrast);
+          final controller = StartupController(
+            open: ({bool selectLegacyDirectory = false}) async =>
+                throw const StorageFailure(
+                  StorageFailureKind.access,
+                  'Simulated storage denial',
+                ),
+          );
+          controllers.add(controller);
+          await show(tester, controller);
+          expect(find.byType(DistingApp), findsOneWidget);
+          expect(find.text('nt_helper'), findsOneWidget);
+          expect(find.byType(Dialog), findsNothing);
+          await attempt(tester, controller);
+          final context = tester.element(find.text('Open your library'));
+          final expected = AppTheme.build(
+            seedColor: seed,
+            brightness: brightness,
+            contrastLevel: highContrast ? 1 : 0,
+          );
+          expect(Theme.of(context).colorScheme, expected.colorScheme);
+          expect(MediaQuery.textScalerOf(context).scale(10), 11);
+          final route = ModalRoute.of(context)!;
+          expect(route, isA<DialogRoute<void>>());
+          expect(route.barrierDismissible, isFalse);
+          expect(find.byType(Dialog), findsOneWidget);
+          expect(find.byType(DistingApp), findsOneWidget);
+          expect(controller.ready, isFalse);
+          expect(tester.takeException(), isNull);
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.tapAt(const Offset(8, 8));
+          await tester.pumpAndSettle();
+          expect(find.text('Open your library'), findsOneWidget);
+          settings.themeSeedColorNotifier.value = const Color(0xFF125C77);
+          await tester.pumpAndSettle();
+          expect(
+            Theme.of(context).colorScheme.primary,
+            AppTheme.build(
+              seedColor: const Color(0xFF125C77),
+              brightness: brightness,
+              contrastLevel: highContrast ? 1 : 0,
+            ).colorScheme.primary,
+          );
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox.shrink());
+        },
       );
-      final rect = tester.getRect(find.text('Normal content'));
+    }
+  }
+
+  testWidgets(
+    'successful startup stays silent and admits normal content without a storage overlay',
+    (tester) async {
+      final controller = StartupController(
+        open: ({bool selectLegacyDirectory = false}) async =>
+            OpenedStartupLibrary(
+              AppDatabase.forTesting(NativeDatabase.memory()),
+              location: '/resolved/Support/selected.sqlite',
+            ),
+      );
+      controllers.add(controller);
+      await show(tester, controller);
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.text('Open your library'), findsNothing);
+      expect(find.textContaining('Expected library admitted'), findsNothing);
+      await attempt(tester, controller);
+      await tester.pumpAndSettle();
+      expect(controller.ready, isTrue);
+      expect(find.text('Expected library admitted (0)'), findsOneWidget);
       expect(
         find.textContaining('/resolved/Support/selected.sqlite'),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.textContaining('older releases'), findsOneWidget);
-      await tester.tap(find.byTooltip('Dismiss library storage notice'));
-      await tester.pump();
-      expect(tester.getRect(find.text('Normal content')), rect);
-      visible.dispose();
+      expect(find.textContaining('older releases'), findsNothing);
+      expect(find.byTooltip('Dismiss library storage notice'), findsNothing);
+      expect(find.byType(Dialog), findsNothing);
+      expect(tester.takeException(), isNull);
     },
   );
 }
