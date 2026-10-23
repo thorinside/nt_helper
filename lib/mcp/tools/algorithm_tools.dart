@@ -249,10 +249,15 @@ class MCPAlgorithmTools {
 
     final slots = state.slots;
     final routings = <AlgorithmRouting>[];
+    final infoByGuid = {for (final info in state.algorithms) info.guid: info};
 
     for (final slot in slots) {
       routings.add(
-        AlgorithmRouting.fromSlot(slot, deviceIoProfile: state.deviceIoProfile),
+        AlgorithmRouting.fromSlot(
+          slot,
+          deviceIoProfile: state.deviceIoProfile,
+          algorithmInfo: infoByGuid[slot.algorithm.guid],
+        ),
       );
     }
 

@@ -466,6 +466,23 @@ class _ConnectionDelegate {
             );
           },
         );
+        // A cached library may have observed an unloaded plug-in with zero
+        // specifications. Active slot readback can prove that cache incomplete.
+        // Use the existing background library refresh rather than guessing the
+        // meaning of the slot's construction values (e.g. Channels).
+        if (algorithms.isNotEmpty) {
+          final cachedByGuid = {for (final info in algorithms) info.guid: info};
+          final incomplete = slots.any(
+            (slot) =>
+                slot.algorithm.specifications.isNotEmpty &&
+                cachedByGuid[slot.algorithm.guid]?.specifications.length !=
+                    slot.algorithm.specifications.length,
+          );
+          if (incomplete) {
+            await _cubit._metadataDao.invalidateAlgorithmInfoCache();
+            algorithms = [];
+          }
+        }
         if (!_isCurrentSync(generation, currentState, distingManager)) {
           return;
         }
