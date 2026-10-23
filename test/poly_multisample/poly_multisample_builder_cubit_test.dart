@@ -2235,7 +2235,7 @@ void main() {
     });
 
     test(
-      'loop edit preview is debounced so rapid edits do not backlog',
+      'loop edit preview debounces to the latest draft without queuing stale previews',
       () async {
         final source = File('${tempRoot.path}/loop-preview.wav');
         _writeTinyPreviewWav(source, frames: 240);
@@ -2257,23 +2257,62 @@ void main() {
           ),
         );
 
-        cubit.updateLoopDraft(
-          source.path,
-          const PolyWaveformDraft(loopStart: 70, loopEnd: 118),
+        // Control only debounce timers. Filesystem and preview Futures still
+        // run normally; observe completion instead of sleeping for I/O.
+        final timers = <_ControlledPreviewTimer>[];
+        runZoned(
+          () {
+            cubit.updateLoopDraft(
+              source.path,
+              const PolyWaveformDraft(loopStart: 70, loopEnd: 118),
+            );
+            cubit.updateLoopDraft(
+              source.path,
+              const PolyWaveformDraft(loopStart: 78, loopEnd: 158),
+            );
+            cubit.updateLoopDraft(
+              source.path,
+              const PolyWaveformDraft(loopStart: 82, loopEnd: 218),
+            );
+          },
+          zoneSpecification: ZoneSpecification(
+            createTimer: (self, parent, zone, duration, callback) {
+              expect(duration, greaterThan(Duration.zero));
+              final timer = _ControlledPreviewTimer(
+                zone.bindCallbackGuarded(callback),
+              );
+              timers.add(timer);
+              return timer;
+            },
+          ),
         );
-        cubit.updateLoopDraft(
-          source.path,
-          const PolyWaveformDraft(loopStart: 78, loopEnd: 158),
+
+        expect(timers, hasLength(3));
+        expect(timers.take(2).every((timer) => !timer.isActive), isTrue);
+        expect(timers.last.isActive, isTrue);
+        expect(adapter.playedPaths, isEmpty);
+        timers[0].fire();
+        timers[1].fire();
+        expect(adapter.playedPaths, isEmpty);
+
+        final playback = cubit.stream.firstWhere(
+          (state) => state.previewState.visiblePath == source.path,
         );
-        cubit.updateLoopDraft(
-          source.path,
-          const PolyWaveformDraft(loopStart: 82, loopEnd: 162),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 160));
+        timers.last.fire();
+        await playback.timeout(const Duration(seconds: 10));
 
         expect(adapter.playedPaths, hasLength(1));
         expect(adapter.playedPaths.single, isNot(source.path));
         expect(cubit.state.previewState.visiblePath, source.path);
+        expect(cubit.state.loopDrafts[source.path]?.loopStart, 80);
+        expect(cubit.state.loopDrafts[source.path]?.loopEnd, 220);
+        final rendered = WavMetadataReader.parse(
+          await File(adapter.playedPaths.single).readAsBytes(),
+        );
+        // Final 80..220 loop: 140-frame pre-roll plus two 141-frame cycles.
+        // Earlier drafts would produce a shorter preview.
+        expect(rendered?.frameCount, 422);
+        expect(timers.last.isActive, isFalse);
       },
     );
 
@@ -4312,6 +4351,30 @@ class _ThrowingPreviewAdapter implements PolyAudioPreviewAdapter {
 
   @override
   Future<void> dispose() async {}
+}
+
+/// Controls the debounce timer without faking the async filesystem zone.
+class _ControlledPreviewTimer implements Timer {
+  _ControlledPreviewTimer(this._callback);
+  final void Function() _callback;
+  bool _active = true;
+  int _tick = 0;
+
+  @override
+  bool get isActive => _active;
+
+  @override
+  int get tick => _tick;
+
+  @override
+  void cancel() => _active = false;
+
+  void fire() {
+    if (!_active) return;
+    _active = false;
+    _tick = 1;
+    _callback();
+  }
 }
 
 class _FakePreviewAdapter implements PolyAudioPreviewAdapter {
