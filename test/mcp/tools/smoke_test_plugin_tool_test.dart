@@ -208,9 +208,15 @@ class _FakeNt {
       guids = List.of(saved);
       values.clear();
     });
-    when(
-      () => m.requestAllParameterValues(any()),
-    ).thenAnswer((_) async => null);
+    when(() => m.requestAllParameterValues(any())).thenAnswer((call) {
+      final index = call.positionalArguments[0] as int;
+      return answer(
+        () => AllParameterValues(
+          algorithmIndex: index,
+          values: slot(index).values,
+        ),
+      );
+    });
     when(() => m.requestLoadPlugin(any())).thenAnswer((_) async {});
     when(() => m.requestAlgorithmInfo(any())).thenAnswer(
       (call) async =>
@@ -358,6 +364,161 @@ void main() {
     verifyNever(() => manager.requestSavePreset(option: any(named: 'option')));
     expect(cubit.checkpoints, isEmpty);
     await cubit.close();
+  });
+
+  group('preset preservation regressions', () {
+    test('never removes an unrelated slot when the app baseline is stale', () {
+      cubit.emit(synchronized(isDirty: true));
+      // A user has appended an algorithm on the module since the last app sync.
+      device.guids.add('USER');
+      final result = smoke(base());
+      expect(device.guids, contains('USER'), reason: '$result');
+      verifyNever(() => manager.requestRemoveAlgorithm(2));
+    });
+
+    test('preserves edits and their dirty flag during a successful test', () {
+      device.onChecks = () {
+        device.values[0] = 77; // Simulate a knob edit while sampling.
+        final state = current();
+        cubit.emit(
+          state.copyWith(
+            slots: [device.slot(0), ...state.slots.skip(1)],
+            isDirty: true,
+          ),
+        );
+      };
+      final result = smoke(base());
+      expect(result['success'], isTrue);
+      expect(device.values[0], 77);
+      expect(current().isDirty, isTrue, reason: '$result');
+    });
+
+    test('does not reload away edits made after starting clean', () {
+      device.acceptRemoves = false;
+      device.onChecks = () {
+        device.values[0] = 77;
+        final state = current();
+        cubit.emit(
+          state.copyWith(
+            slots: [device.slot(0), ...state.slots.skip(1)],
+            isDirty: true,
+          ),
+        );
+      };
+      final result = smoke(base());
+      expect(device.reloads, 0, reason: '$result');
+      expect(device.values[0], 77, reason: '$result');
+    });
+
+    test('refuses an out-of-range Channels specification before adding', () {
+      final result = smoke(
+        base({
+          'specifications': [0],
+        }),
+      );
+      expect(result['success'], isFalse, reason: '$result');
+      expectPresetUntouched();
+    });
+
+    test('same-count hardware changes are refused before appending', () {
+      device.guids[0] = 'USER';
+      final result = smoke(base());
+      expect(result['error'], 'preset_changed');
+      expectPresetUntouched();
+      expect(device.guids.first, 'USER');
+    });
+
+    test(
+      'panel structural edits during the test never trigger deletion or reload',
+      () {
+        device.onChecks = () => device.guids[0] = 'USER';
+        final result = smoke(base());
+        expect(result['rollback'], 'failed');
+        expect(device.guids.first, 'USER');
+        expect(device.removes, 0);
+        expect(device.reloads, 0);
+      },
+    );
+
+    test(
+      'panel parameter edits not yet reflected in app state block reload',
+      () {
+        device.acceptRemoves = false;
+        device.onChecks = () => device.values[0] = 77;
+        final result = smoke(base());
+        expect(result['rollback'], 'failed');
+        expect(device.reloads, 0);
+        expect(device.values[0], 77);
+      },
+    );
+
+    test('structural app edits during the test are left alone', () {
+      device.onChecks = () {
+        device.guids.add('USER');
+        cubit.emit(synchronized(isDirty: true));
+      };
+      final result = smoke(base());
+      expect(result['rollback'], 'failed');
+      expect(device.guids.last, 'USER');
+      expect(device.removes, 0);
+      expect(device.reloads, 0);
+    });
+
+    for (final specs in <List<int>>[
+      [],
+      [9],
+      [-1],
+      [2, 3],
+    ]) {
+      test('refuses invalid specification count/range $specs', () {
+        final result = smoke(base({'specifications': specs}));
+        expect(result['error'], 'invalid_specifications');
+        expectPresetUntouched();
+      });
+    }
+
+    test(
+      'switching sessions during checks never cleans up the new session',
+      () {
+        final originalManager = manager;
+        device.onChecks = () {
+          manager = _MockDistingMidiManager();
+          device.wire(manager);
+          cubit.emit(synchronized());
+        };
+        final result = smoke(base());
+        expect(result['rollback'], 'failed');
+        verifyNever(() => originalManager.requestRemoveAlgorithm(any()));
+        verifyNever(() => manager.requestRemoveAlgorithm(any()));
+        verifyNever(() => manager.requestLoadPreset(any(), any()));
+      },
+    );
+
+    test(
+      'null required budget returns a validation error without mutation',
+      () {
+        final result = smoke(base({'cpu_budget_percent': null}));
+        expect(result['error'], 'invalid_cpu_budget_percent');
+        expectPresetUntouched();
+      },
+    );
+
+    test('a concurrent second smoke test is refused without adding a slot', () {
+      Map<String, dynamic>? first;
+      Map<String, dynamic>? second;
+      fakeAsync((async) {
+        tools.smokeTestPlugin(base()).then((r) => first = jsonDecode(r));
+        async.elapse(const Duration(milliseconds: 500));
+        expect(first, isNull);
+        tools.smokeTestPlugin(base()).then((r) => second = jsonDecode(r));
+        async.flushMicrotasks();
+        expect(second?['error'], 'smoke_test_busy');
+        expect(device.adds, 1);
+        async.elapse(const Duration(minutes: 3));
+      });
+      expect(first?['success'], isTrue);
+      expectBaselineRestored();
+    });
   });
 
   group('registration', () {
@@ -702,7 +863,9 @@ void main() {
 
       expect(result['error'], 'parameter_mismatch');
       expect(check(result, 'algorithm_guid')['passed'], isFalse);
-      expect(result['rollback'], 'removed_slot');
+      expect(result['rollback'], 'failed');
+      expect(device.removes, 0);
+      expect(device.reloads, 0);
     });
 
     test('slot CPU over budget, judged on the peak sample', () {
@@ -840,7 +1003,8 @@ void main() {
       expect(result['success'], isTrue);
       expect(result['rollback'], 'reloaded_saved_preset');
       expect(result['restored_parameter_values'], 1);
-      expect(result['rollback_error'], contains('unsaved edits'));
+      expect(result['rollback_error'], contains('pre-test parameter snapshot'));
+      expect(result['rollback_error'], contains('were discarded'));
       expect(device.reloads, 1);
       expectBaselineRestored();
     });

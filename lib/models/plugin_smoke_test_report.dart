@@ -1,5 +1,14 @@
 /// Why a plug-in smoke test was refused before the preset was touched.
 enum PluginSmokeTestRefusal {
+  /// Another smoke test already owns the temporary-slot lifecycle.
+  busy('smoke_test_busy'),
+
+  /// The live preset no longer matches the synchronized baseline.
+  presetChanged('preset_changed'),
+
+  /// Construction values do not match the plug-in's specification metadata.
+  invalidSpecifications('invalid_specifications'),
+
   /// No synchronized device session exists.
   notConnected('not_connected'),
 

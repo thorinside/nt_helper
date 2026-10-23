@@ -13,6 +13,7 @@ class _PluginSmokeTestDelegate {
   _PluginSmokeTestDelegate(this._cubit);
 
   final DistingCubit _cubit;
+  bool _running = false;
 
   /// Runs the smoke test for the plug-in [guid] with [options].
   ///
@@ -21,6 +22,24 @@ class _PluginSmokeTestDelegate {
   /// use, or the plug-in cannot be loaded. Every other outcome, including
   /// device errors, is returned as a [PluginSmokeTestReport].
   Future<PluginSmokeTestReport> smokeTestPlugin(
+    String guid,
+    PluginSmokeTestOptions options,
+  ) async {
+    if (_running) {
+      throw const PluginSmokeTestRefused(
+        PluginSmokeTestRefusal.busy,
+        'Another plug-in smoke test is still running or rolling back.',
+      );
+    }
+    _running = true;
+    try {
+      return await _run(guid, options);
+    } finally {
+      _running = false;
+    }
+  }
+
+  Future<PluginSmokeTestReport> _run(
     String guid,
     PluginSmokeTestOptions options,
   ) async {
@@ -48,14 +67,23 @@ class _PluginSmokeTestDelegate {
       algorithm = loaded;
     }
 
+    _validateSpecifications(algorithm, options.specifications);
+    final observed = _requireLiveSession();
+    await _verifyBaseline(observed, options);
     final baseline = _requireLiveSession();
+    if (baseline.slots.length >= DistingLimits.maxPresetSlots) {
+      throw const PluginSmokeTestRefused(
+        PluginSmokeTestRefusal.presetFull,
+        'The preset filled up while preparing the smoke test.',
+      );
+    }
     final run = _SmokeRun(
       cubit: _cubit,
       options: options,
       algorithm: algorithm,
       disting: baseline.disting,
       slotIndex: baseline.slots.length,
-      baselineGuids: [for (final s in baseline.slots) s.algorithm.guid],
+      baselineSlots: List.unmodifiable(baseline.slots),
       presetName: baseline.presetName,
       wasDirty: baseline.isDirty,
       checkpoint: _cubit._checkpointDelegate.createCheckpoint(
@@ -63,13 +91,83 @@ class _PluginSmokeTestDelegate {
       ),
       loadedPlugin: loadedPlugin,
     );
+    run.watchChanges();
     try {
       return await run.execute();
     } finally {
+      await run.stopWatching();
       final checkpoint = run.checkpoint;
       if (checkpoint != null) {
         _cubit._checkpointDelegate.removeCheckpoint(checkpoint);
       }
+    }
+  }
+
+  void _validateSpecifications(AlgorithmInfo algorithm, List<int>? supplied) {
+    if (supplied == null) return;
+    final definitions = algorithm.specifications;
+    if (supplied.length != definitions.length) {
+      throw PluginSmokeTestRefused(
+        PluginSmokeTestRefusal.invalidSpecifications,
+        '${algorithm.guid} requires ${definitions.length} specification(s); '
+        'got ${supplied.length}.',
+      );
+    }
+    for (var i = 0; i < supplied.length; i++) {
+      final definition = definitions[i];
+      if (supplied[i] < definition.min || supplied[i] > definition.max) {
+        throw PluginSmokeTestRefused(
+          PluginSmokeTestRefusal.invalidSpecifications,
+          'Specification "${definition.name}" must be from '
+          '${definition.min} to ${definition.max}; got ${supplied[i]}.',
+        );
+      }
+    }
+  }
+
+  /// Read the hardware lineup before appending, not just the cached app state.
+  Future<void> _verifyBaseline(
+    DistingStateSynchronized baseline,
+    PluginSmokeTestOptions options,
+  ) async {
+    Future<T?> read<T>(Future<T?> Function() request) async {
+      try {
+        return await request().timeout(options.requestTimeout * 2);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final count = await read(
+      () => baseline.disting.requestNumAlgorithmsInPreset(
+        timeout: options.requestTimeout,
+        maxRetries: 1,
+      ),
+    );
+    var matches = count == baseline.slots.length;
+    for (var i = 0; matches && i < baseline.slots.length; i++) {
+      final slot = await read(
+        () => baseline.disting.requestAlgorithmGuid(
+          i,
+          timeout: options.requestTimeout,
+          maxRetries: 1,
+        ),
+      );
+      matches = slot?.guid == baseline.slots[i].algorithm.guid;
+    }
+    final current = _requireLiveSession();
+    if (!matches ||
+        !identical(current.disting, baseline.disting) ||
+        current.presetName != baseline.presetName ||
+        !const ListEquality<String>().equals(
+          [for (final slot in current.slots) slot.algorithm.guid],
+          [for (final slot in baseline.slots) slot.algorithm.guid],
+        )) {
+      throw const PluginSmokeTestRefused(
+        PluginSmokeTestRefusal.presetChanged,
+        'The live preset could not be confirmed against the app snapshot. '
+        'Refresh the preset and retry; no test slot was added.',
+      );
     }
   }
 
@@ -124,7 +222,7 @@ class _SmokeRun {
     required this.algorithm,
     required this.disting,
     required this.slotIndex,
-    required this.baselineGuids,
+    required this.baselineSlots,
     required this.presetName,
     required this.wasDirty,
     required this.checkpoint,
@@ -136,7 +234,10 @@ class _SmokeRun {
   final AlgorithmInfo algorithm;
   final IDistingMidiManager disting;
   final int slotIndex;
-  final List<String> baselineGuids;
+  final List<Slot> baselineSlots;
+  List<String> get baselineGuids => [
+    for (final s in baselineSlots) s.algorithm.guid,
+  ];
   final String presetName;
   final bool wasDirty;
   final PresetCheckpoint? checkpoint;
@@ -144,6 +245,46 @@ class _SmokeRun {
 
   final checks = <PluginSmokeCheck>[];
   PluginSmokeCpuReport? cpu;
+  StreamSubscription<DistingState>? _changes;
+  bool _userChanges = false;
+  bool _structureChanged = false;
+
+  void watchChanges() {
+    _changes = cubit.stream.listen(_observeChanges);
+  }
+
+  Future<void> stopWatching() async => _changes?.cancel();
+
+  /// Ignore this run's appended slot and dirty flag, but retain evidence of
+  /// any change to the original preset, including changes later undone/saved.
+  void _observeChanges(DistingState state) {
+    if (state is! DistingStateSynchronized ||
+        !identical(state.disting, disting) ||
+        state.presetName != presetName ||
+        state.slots.length < slotIndex ||
+        state.slots.length > slotIndex + 1) {
+      _userChanges = true;
+      _structureChanged = true;
+      return;
+    }
+    for (var i = 0; i < slotIndex; i++) {
+      final before = baselineSlots[i];
+      final after = state.slots[i];
+      if (before != after) _userChanges = true;
+      if (before.algorithm.guid != after.algorithm.guid ||
+          !const ListEquality<int>().equals(
+            before.algorithm.specifications,
+            after.algorithm.specifications,
+          )) {
+        _structureChanged = true;
+      }
+    }
+    if (state.slots.length == slotIndex + 1 &&
+        state.slots.last.algorithm.guid != algorithm.guid) {
+      _userChanges = true;
+      _structureChanged = true;
+    }
+  }
 
   Future<PluginSmokeTestReport> execute() async {
     _SmokeFailure? failure;
@@ -180,7 +321,23 @@ class _SmokeRun {
       return _report(null, PluginSmokeTestRollback.kept);
     }
 
-    final rollback = await _rollBack(slotAdded: slotAdded);
+    _observeChanges(cubit.state);
+    final _SmokeRollback rollback;
+    try {
+      rollback = await _rollBack(slotAdded: slotAdded);
+    } catch (error) {
+      failure ??= _SmokeFailure(
+        PluginSmokeTestFailure.internalError,
+        'Cleanup stopped unexpectedly: $error',
+      );
+      return _report(
+        failure,
+        PluginSmokeTestRollback.failed,
+        rollbackError:
+            'Cleanup could not be confirmed: $error. Refresh and '
+            'inspect the preset before removing any slot manually.',
+      );
+    }
     if (failure == null && !rollback.status.restoredLineup) {
       failure = const _SmokeFailure(
         PluginSmokeTestFailure.rollbackFailed,
@@ -402,11 +559,89 @@ class _SmokeRun {
   /// Puts the preset back to [baselineGuids]: removes the test slot, and
   /// when that cannot be confirmed, reloads the saved preset if allowed.
   Future<_SmokeRollback> _rollBack({required bool slotAdded}) async {
+    _observeChanges(cubit.state);
+    if (_structureChanged) {
+      return const _SmokeRollback(
+        PluginSmokeTestRollback.failed,
+        error:
+            'The preset or connection changed during the test. No positional '
+            'removal or saved-preset reload was attempted. Refresh and inspect '
+            'the test slot before removing it manually.',
+      );
+    }
     final count = await _readSlotCount();
+    if (count != null && count != slotIndex && count != slotIndex + 1) {
+      return const _SmokeRollback(
+        PluginSmokeTestRollback.failed,
+        error:
+            'The hardware slot count changed unexpectedly. No slot was '
+            'removed or preset reloaded; refresh and inspect the lineup.',
+      );
+    }
+    // Confirm ownership of the original prefix as well as the appended slot.
+    // Panel changes need not have reached the app stream yet.
+    for (var i = 0; count != null && i < slotIndex; i++) {
+      final original = await _read(
+        () => disting.requestAlgorithmGuid(
+          i,
+          timeout: options.requestTimeout,
+          maxRetries: 1,
+        ),
+      );
+      if (original != null &&
+          original.guid != baselineSlots[i].algorithm.guid) {
+        return const _SmokeRollback(
+          PluginSmokeTestRollback.failed,
+          error:
+              'An original hardware slot changed during the test. No slot '
+              'was removed and the saved preset was not reloaded.',
+        );
+      }
+      if (original == null) break; // Do not repeat timed-out prefix reads.
+      final values = await _read(() => disting.requestAllParameterValues(i));
+      if (values != null) {
+        final before = {
+          for (final v in baselineSlots[i].values) v.parameterNumber: v.value,
+        };
+        if (values.values.any(
+          (v) =>
+              before.containsKey(v.parameterNumber) &&
+              before[v.parameterNumber] != v.value,
+        )) {
+          _userChanges = true;
+        }
+      }
+    }
+    if (count == slotIndex + 1) {
+      final candidate = await _read(
+        () => disting.requestAlgorithmGuid(
+          slotIndex,
+          timeout: options.requestTimeout,
+          maxRetries: 1,
+        ),
+      );
+      if (candidate != null && candidate.guid != algorithm.guid) {
+        return _SmokeRollback(
+          PluginSmokeTestRollback.failed,
+          error:
+              'Slot $slotIndex is ${candidate.guid}, not ${algorithm.guid}. '
+              'It was not removed and the saved preset was not reloaded.',
+        );
+      }
+    }
     // An add that was not confirmed in time may still land afterwards.
     final slotPresent = slotAdded || (count != null && count == slotIndex + 1);
 
     String? error;
+    _observeChanges(cubit.state);
+    if (_structureChanged) {
+      return const _SmokeRollback(
+        PluginSmokeTestRollback.failed,
+        error:
+            'The preset or connection changed before cleanup; no removal '
+            'or reload was attempted.',
+      );
+    }
     if (slotPresent) {
       final removed = await cubit.removeAlgorithmConfirmed(
         slotIndex,
@@ -430,7 +665,14 @@ class _SmokeRun {
       );
     }
 
-    if (wasDirty && !options.reloadSavedOnFailure) {
+    _observeChanges(cubit.state);
+    if (_structureChanged) {
+      return _SmokeRollback(
+        PluginSmokeTestRollback.failed,
+        error: '$error The original preset changed, so it was not reloaded.',
+      );
+    }
+    if ((wasDirty || _userChanges) && !options.reloadSavedOnFailure) {
       return _SmokeRollback(
         PluginSmokeTestRollback.failed,
         error:
@@ -442,6 +684,16 @@ class _SmokeRun {
       );
     }
 
+    final hadUnsavedChanges = wasDirty || _userChanges;
+    await stopWatching();
+    _observeChanges(cubit.state);
+    if (_structureChanged) {
+      return const _SmokeRollback(
+        PluginSmokeTestRollback.failed,
+        error:
+            'The connection or preset changed before reload; reload aborted.',
+      );
+    }
     try {
       await cubit
           .loadPreset('/presets/$presetName.json', false)
@@ -461,14 +713,23 @@ class _SmokeRun {
         error: '$error After reloading /presets/$presetName.json: $reloadError',
       );
     }
-    final restored = wasDirty && checkpoint != null
+    final restored = hadUnsavedChanges && checkpoint != null
         ? await cubit._checkpointDelegate.restoreCheckpoint(checkpoint!)
         : null;
+    if (restored != null && restored < 0) {
+      return _SmokeRollback(
+        PluginSmokeTestRollback.failed,
+        error:
+            '$error The saved preset reloaded but the pre-test parameter '
+            'snapshot could not be restored.',
+      );
+    }
     return _SmokeRollback(
       PluginSmokeTestRollback.reloadedSavedPreset,
-      error: wasDirty
-          ? '$error Reloaded the saved preset; unsaved edits other than '
-                'parameter values were discarded.'
+      error: hadUnsavedChanges
+          ? '$error Reloaded the saved preset and reapplied the pre-test '
+                'parameter snapshot. Edits made during the test and unsaved '
+                'non-parameter edits were discarded.'
           : '$error Reloaded the saved preset, which had no unsaved edits.',
       restoredParameterValues: restored,
     );
@@ -492,6 +753,10 @@ class _SmokeRun {
         ),
       );
       if (reported?.guid != baselineGuids[i]) {
+        if (reported != null) {
+          _userChanges = true;
+          _structureChanged = true;
+        }
         return 'Slot $i holds ${reported?.guid ?? 'no answer'}; expected '
             '${baselineGuids[i]}.';
       }
@@ -503,8 +768,10 @@ class _SmokeRun {
   /// the add raised goes back to what it was.
   void _restoreDirtyFlag() {
     final state = cubit.state;
-    if (state is DistingStateSynchronized && state.isDirty != wasDirty) {
-      cubit._emitState(state.copyWith(isDirty: wasDirty));
+    _observeChanges(state);
+    final dirty = wasDirty || _userChanges;
+    if (state is DistingStateSynchronized && state.isDirty != dirty) {
+      cubit._emitState(state.copyWith(isDirty: dirty));
     }
   }
 

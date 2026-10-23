@@ -81,8 +81,11 @@ void registerPluginTools(
           'slot lineup, unless every check passed and keep is true. The '
           'preset is never saved. If the removal cannot be confirmed, the '
           'last saved preset is reloaded from the SD card, automatically only '
-          'when the preset had no unsaved edits, or with '
-          'reload_saved_on_failure. The result reports each check, the CPU '
+          'when the preset had no pre-existing or observed intervening edits, '
+          'or with reload_saved_on_failure. Stale baselines are refused; '
+          'structural/connection conflicts or a different cleanup-slot GUID '
+          'stop deletion and reload. Concurrent smoke tests are refused. '
+          'The result reports each check, the CPU '
           'samples, and rollback (kept, not_needed, removed_slot, '
           'reloaded_saved_preset or failed). Requires a live, synchronized '
           'device; refused in offline and demo mode and when all slots are '
@@ -117,7 +120,8 @@ void registerPluginTools(
             'type': 'array',
             'items': {'type': 'integer'},
             'description':
-                'Specification values for the test slot, as in add. Default: '
+                'Specification values for the test slot, as in add. Count and '
+                'ranges must match the loaded plug-in\'s definitions. Default: '
                 'each specification\'s default value.',
           },
           'expected_parameter_count': {
@@ -158,7 +162,8 @@ void registerPluginTools(
             'description':
                 'Keep the test slot when every check passes. It stays at the '
                 'end of the preset and the preset is not saved. Default: '
-                'false. A failed test always removes the slot.',
+                'false. Failed tests attempt cleanup only when the target can '
+                'be identified safely.',
           },
           'reload_saved_on_failure': {
             'type': 'boolean',
@@ -167,7 +172,9 @@ void registerPluginTools(
                 'If removing the test slot cannot be confirmed and the preset '
                 'has unsaved edits, reload the last saved preset anyway. '
                 'Parameter values from before the test are written back when '
-                'the slot lineup matches; other unsaved edits are lost. '
+                'the slot lineup matches; later parameter edits and other '
+                'unsaved edits are lost. Structural/connection conflicts '
+                'detected during the test block reload even with opt-in. '
                 'Default: false, which leaves the slot and reports '
                 'rollback: failed.',
           },
@@ -348,7 +355,19 @@ final class PluginTools {
     final bool keep;
     final bool reloadSaved;
     try {
-      budget = _intArg(args, 'cpu_budget_percent', min: 1, max: 100)!;
+      final requestedBudget = _intArg(
+        args,
+        'cpu_budget_percent',
+        min: 1,
+        max: 100,
+      );
+      if (requestedBudget == null) {
+        throw const _ArgumentProblem(
+          'cpu_budget_percent',
+          'cpu_budget_percent must be an integer from 1 to 100.',
+        );
+      }
+      budget = requestedBudget;
       maxCore = _intArg(args, 'max_core_percent', min: 1, max: 100);
       specifications = _listArg<int>(args, 'specifications', 'integers');
       expectedCount = _intArg(args, 'expected_parameter_count', min: 1);

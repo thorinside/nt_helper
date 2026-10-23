@@ -959,7 +959,10 @@ preset back the way it was.
 
 1. If the plug-in is not loaded, load it. If it does not report loaded, the
    tool stops with `load_failed` and the preset is unchanged.
-2. Append the plug-in as a new slot at the **end** of the current preset, and
+2. Validate specification counts/ranges and confirm the hardware slot count
+   and GUID lineup against the app snapshot. A stale or unconfirmed snapshot
+   is refused with `preset_changed`, before adding anything. Append the
+   plug-in as a new slot at the **end** of the current preset, and
    wait for the device to confirm that the slot count went up. Slots are only
    ever appended, so the existing slots keep their positions.
 3. Wait `settle_ms`.
@@ -972,7 +975,16 @@ preset back the way it was.
    higher of the two cores in each sample must not exceed it either.
 6. Remove the test slot and confirm the original slot lineup (slot count and
    each slot's GUID) with the device. With `keep: true` and every check
-   passed, the slot stays instead.
+   passed, the slot stays instead. Before removal, verify that the original
+   slots and the cleanup target still belong to this test. An unexpected GUID,
+   structural edit or connection change stops positional cleanup and reload;
+   the result reports `rollback: failed` rather than deleting an unrelated slot.
+
+Only one smoke test may run at a time (`smoke_test_busy`). Avoid editing the
+preset during the test. App-side edits and observed hardware parameter changes
+are treated as unsaved changes, even when the preset started clean. Successful
+cleanup preserves their dirty status; an automatic reload is not allowed to
+silently discard them.
 
 **The preset is never saved.** Saving would write the current preset,
 including any unsaved edits, over its file on the SD card, so the tool
@@ -983,12 +995,15 @@ the slot stays in the running preset only. Call `save` yourself to keep it.
 within 5 s, or the lineup does not match afterwards), the tool falls back to
 reloading the preset's last saved copy, `/presets/<preset name>.json`:
 
-- With no unsaved edits, the reload happens automatically and loses nothing.
+- With no pre-existing or observed intervening edits, the reload happens
+  automatically.
 - With unsaved edits, it happens only with `reload_saved_on_failure: true`.
   After the reload, if the slot lineup matches the one before the test, the
   parameter values from before the test are written back
-  (`restored_parameter_values`). Other unsaved edits, such as added or
-  removed slots, mappings and renames, are lost.
+  (`restored_parameter_values`). The snapshot is from before the test: later
+  parameter edits and other unsaved edits, such as mappings and renames, are
+  lost. A structural/connection conflict detected during the test blocks reload
+  even with opt-in; inspect the live preset rather than overwriting it.
 - Otherwise the slot stays where it is, `rollback` is `failed`, and
   `rollback_error` says what to do: remove the slot on the device, or allow
   the reload.
@@ -1010,7 +1025,7 @@ preset, so the test slot is gone, and so are any unsaved edits.
 | `guid` | string, required | | GUID of the installed plug-in algorithm |
 | `cpu_budget_percent` | integer 1-100, required | | highest per-slot CPU percentage the test slot may reach, in the units `show_cpu` reports as a slot's `usage_percent` |
 | `max_core_percent` | integer 1-100 | none | highest percentage either core may reach (`cpu1_percent`/`cpu2_percent` in `show_cpu`) |
-| `specifications` | integer array | each specification's default | specification values for the test slot |
+| `specifications` | integer array | each specification's default | exact number of values required by the loaded plug-in, each within its advertised range |
 | `expected_parameter_count` | integer ≥ 1 | at least 1 | exact parameter count |
 | `expected_parameter_names` | string array | not checked | names of the first parameters, in order; surrounding spaces are ignored |
 | `settle_ms` | integer 0-5000 | 1000 | wait before the checks |
@@ -1050,8 +1065,8 @@ preset, so the test slot is gone, and so are any unsaved edits.
 ```
 
 **Failing result**: `success` is `false` and `error` says why the test failed
-(see the table below). The test slot is still removed, and `rolled_back`
-says whether the original lineup was confirmed.
+(see the table below). Cleanup is attempted only when its target can be
+identified safely; `rolled_back` says whether the original lineup was confirmed.
 
 ```json
 {"success": false, "error": "cpu_over_budget", "guid": "MyFl", "name": "My Filter", "slot_index": 2, "loaded_plugin": false, "checks": [{"name": "slot_added", "passed": true, "detail": "Appended as slot 2."}, {"name": "slot_responds", "passed": true}, {"name": "algorithm_guid", "passed": true}, {"name": "parameter_count", "passed": true, "detail": "Reported 2; expected at least 1."}, {"name": "slot_cpu", "passed": false, "detail": "Peak 47% over 3 sample(s); budget 30%."}], "cpu": {"budget_percent": 30, "max_core_percent": null, "slot_samples": [44, 47, 45], "slot_peak": 47, "core_samples": [70, 72, 71], "core_peak": 72}, "rollback": "removed_slot", "rolled_back": true, "message": "My Filter (MyFl) failed: Slot 2 peaked at 47% CPU; the budget is 30%. The test slot was removed, and the original slots are confirmed."}
@@ -1087,6 +1102,9 @@ says whether the original lineup was confirmed.
 |---|---|
 | `missing_guid` | `guid` absent or blank |
 | `missing_cpu_budget` | `cpu_budget_percent` absent |
+| `smoke_test_busy` | another smoke test is still running or rolling back |
+| `preset_changed` | hardware/app lineup or session could not be confirmed before adding; refresh and retry |
+| `invalid_specifications` | wrong number of construction values or a value outside the loaded plug-in's advertised range |
 | `invalid_<argument>` | an argument has the wrong type or is out of range, for example `invalid_cpu_budget_percent` |
 | `unknown_argument` | an argument the tool does not accept |
 | `not_connected` | no synchronized device |
